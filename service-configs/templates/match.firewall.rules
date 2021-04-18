@@ -1,0 +1,41 @@
+*nat
+
+-A POSTROUTING -o ens18 -j MASQUERADE
+
+COMMIT
+
+*filter
+
+# Enable localhost, disable 127.0.0.0/8 on anything but localhost
+-A INPUT -i lo -j ACCEPT
+-A INPUT -d 127.0.0.0/8 -j REJECT
+
+# Enable established inbound
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Enable SSH on WAN
+-A INPUT -p tcp -m state --state NEW --dport 22 -i {{ .WAN.Interface.Attrs.Name }}
+
+# ADMIN Network Rules
+#   Allow access to whole admin network (as multiple addresses are served by this host)
+#   Allow outbound internet access
+-A INPUT -i {{ .Admin.Interface.Attrs.Name }} -d {{ .Admin.Network.IP }}/{{ .Admin.Netmask }} -j ACCEPT
+-A FORWARD -i {{ .Admin.Interface.Attrs.Name }} -o {{ .WAN.Interface.Attrs.Name }} -j ACCEPT
+-A FORWARD -i {{ .WAN.Interface.Attrs.Name }} -o {{ .Admin.Interface.Attrs.Name }} -j ACCEPT
+
+# Robot Networks - Router and Server access ONLY
+{{- range .Teams }}
+# {{ .DS.Colour }} {{ .DS.Position }} - Team {{ .Team }} (iface {{ .Interface.Attrs.Name }})
+-A INPUT -i {{ .Interface.Attrs.Name }} -d {{ .Router }} -p icmp -j ACCEPT
+-A INPUT -i {{ .Interface.Attrs.Name }} -d {{ $.Admin.Server }} -p udp --dport 1160 -j ACCEPT
+-A INPUT -i {{ .Interface.Attrs.Name }} -d {{ $.Admin.Server }} -p icmp -j ACCEPT
+{{ end }}
+
+# Default deny
+-A INPUT -j DROP
+-A FORWARD -j DROP
+
+# Allow outgoing by default
+-A OUTPUT -j ACCEPT
+
+COMMIT

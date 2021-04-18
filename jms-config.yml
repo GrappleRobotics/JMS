@@ -1,0 +1,12 @@
+networking:
+  interfaces:
+    wan: "ens18"
+    admin: "ens19.100"
+    blue:
+      - "ens19.10"
+      - "ens19.20"
+      - "ens19.30"
+    red:
+      - "ens19.40"
+      - "ens19.50"
+      - "ens19.60"
