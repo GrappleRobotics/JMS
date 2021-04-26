@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"os"
 	"os/exec"
-	"syscall"
 
 	"github.com/JaciBrunning/jms/util"
 )
@@ -44,27 +43,14 @@ func applyIPTablesRules(file *os.File) error {
 		logger.Warn("iptables routing could not be applied: danger zone disabled.")
 		return nil
 	}
-	env := os.Environ()
 	// Enable ipv4 forwarding
-	sysctl, err := exec.LookPath("sysctl")
-	if err != nil {
-		return err
-	}
-
-	args := []string{"sysctl", "-q", "net.ipv4.ip_forward=1"}
-	err = syscall.Exec(sysctl, args, env)
+	err := exec.Command("sysctl", "-q", "net.ipv4.ip_forward=1").Run()
 	if err != nil {
 		return err
 	}
 
 	// Write iptables rules
-	iptables_restore, err := exec.LookPath("iptables-restore")
-	if err != nil {
-		return err
-	}
-
-	args = []string{"iptables-restore", file.Name()}
-	err = syscall.Exec(iptables_restore, args, env)
+	err = exec.Command("iptables-restore", file.Name()).Run()
 	if err != nil {
 		return err
 	}
