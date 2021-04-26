@@ -14,11 +14,32 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const JMS_DHCP_CONF_FILE = "/etc/dhcp/jms-dhcp.conf"
+
 var (
 	logger = log.New()
 )
 
-func GenerateDHCPDConfig(arenaNet ArenaNetwork, file *os.File) error {
+func ConfigureDHCPD(arenaNet ArenaNetwork) error {
+	if !util.DANGER_ZONE_ENABLED {
+		logger.Warn("DHCP Configuration Ignored: danger zone disabled.")
+		return nil
+	}
+
+	dhcpd_file, err := os.Create(JMS_DHCP_CONF_FILE)
+	if err != nil {
+		return err
+	}
+	defer dhcpd_file.Close()
+	err = generateDHCPDConfig(arenaNet, dhcpd_file)
+	if err != nil {
+		return err
+	}
+	err = reloadDHCPDService()
+	return err
+}
+
+func generateDHCPDConfig(arenaNet ArenaNetwork, file *os.File) error {
 	template_file_content, err := util.ReadModuleFile("service-configs", "templates", "dhcp.conf")
 	if err != nil {
 		return err
@@ -30,7 +51,12 @@ func GenerateDHCPDConfig(arenaNet ArenaNetwork, file *os.File) error {
 	return t.Execute(file, arenaNet)
 }
 
-func ReloadDHCPDService() error {
+func reloadDHCPDService() error {
+	if !util.DANGER_ZONE_ENABLED {
+		logger.Warn("DHCP Service could not be reloaded: danger zone disabled.")
+		return nil
+	}
+
 	conn, err := dbus.NewSystemdConnection()
 	if err != nil {
 		return err
@@ -82,13 +108,18 @@ func ReloadDHCPDService() error {
 }
 
 func maybeUpdateDHCPdConf() {
+	if !util.DANGER_ZONE_ENABLED {
+		logger.Warn("DHCP configuration could not be updated: danger zone disabled.")
+		return
+	}
+
 	content, err := ioutil.ReadFile("/etc/dhcp/dhcpd.conf")
 	if err != nil {
 		logger.Warnf("Cannot check /etc/dhcp/dhcpd.conf - %s", err)
 		return
 	}
 
-	include_string := "include \"/etc/dhcp/jms-dhcp.conf\";"
+	include_string := fmt.Sprintf("include \"%s\";", JMS_DHCP_CONF_FILE)
 	if !strings.Contains(string(content), include_string) {
 		f, err := os.OpenFile("/etc/dhcp/dhcpd.conf", os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {

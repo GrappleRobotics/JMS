@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 
+	"github.com/JaciBrunning/jms/arena"
 	"github.com/JaciBrunning/jms/network"
 	"github.com/JaciBrunning/jms/util"
 
@@ -38,12 +39,12 @@ func main() {
 
 	n := network.ArenaNetwork{}
 	n.Teams = []network.TeamNetwork{
-		// util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 1}, 5333)).(network.TeamNetwork),
-		// util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 2}, 4788)).(network.TeamNetwork),
-		// util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 3}, 5663)).(network.TeamNetwork),
-		// util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 1}, 3132)).(network.TeamNetwork),
-		// util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 2}, 4613)).(network.TeamNetwork),
-		// util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 3}, 5331)).(network.TeamNetwork),
+		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 1}, 5333)).(network.TeamNetwork),
+		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 2}, 4788)).(network.TeamNetwork),
+		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 3}, 5663)).(network.TeamNetwork),
+		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 1}, 3132)).(network.TeamNetwork),
+		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 2}, 4613)).(network.TeamNetwork),
+		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 3}, 5331)).(network.TeamNetwork),
 	}
 	n.Admin = util.ElideError(network.GenerateAdminNetwork(cfg.Networking)).(network.AdminNetwork)
 	n.WAN = util.ElideError(network.GenerateWANNetwork(cfg.Networking)).(network.WANNetwork)

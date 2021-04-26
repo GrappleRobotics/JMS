@@ -9,7 +9,25 @@ import (
 	"github.com/JaciBrunning/jms/util"
 )
 
-func GenerateIPTablesRules(arenaNet ArenaNetwork, file *os.File) error {
+func ConfigureIPTables(arenaNet ArenaNetwork) error {
+	if !util.DANGER_ZONE_ENABLED {
+		logger.Warn("iptables configuration skipped: danger zone disabled.")
+		return nil
+	}
+
+	f, err := os.CreateTemp(os.TempDir(), "jms-firewall-*.rules")
+	if err != nil {
+		return err
+	}
+	err = generateIPTablesRules(arenaNet, f)
+	if err != nil {
+		return err
+	}
+	err = applyIPTablesRules(f)
+	return err
+}
+
+func generateIPTablesRules(arenaNet ArenaNetwork, file *os.File) error {
 	template_file_content, err := util.ReadModuleFile("service-configs", "templates", "match.firewall.rules")
 	if err != nil {
 		return err
@@ -21,7 +39,11 @@ func GenerateIPTablesRules(arenaNet ArenaNetwork, file *os.File) error {
 	return t.Execute(file, arenaNet)
 }
 
-func ApplyIPTablesRules(file *os.File) error {
+func applyIPTablesRules(file *os.File) error {
+	if !util.DANGER_ZONE_ENABLED {
+		logger.Warn("iptables routing could not be applied: danger zone disabled.")
+		return nil
+	}
 	env := os.Environ()
 	// Enable ipv4 forwarding
 	sysctl, err := exec.LookPath("sysctl")

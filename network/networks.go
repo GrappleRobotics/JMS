@@ -3,7 +3,6 @@ package network
 import (
 	"fmt"
 	"net"
-	"os"
 
 	"github.com/JaciBrunning/jms/arena"
 
@@ -178,29 +177,13 @@ func (nws ArenaNetwork) Up() error {
 	}
 	// Setup DHCPD
 	clog.Info("Configuring Arena DHCP...")
-	dhcpd_file, err := os.Create("/etc/dhcp/jms-dhcp.conf")
-	if err != nil {
-		return err
-	}
-	err = GenerateDHCPDConfig(nws, dhcpd_file)
-	if err != nil {
-		return err
-	}
-	err = ReloadDHCPDService()
+	err = ConfigureDHCPD(nws)
 	if err != nil {
 		return err
 	}
 	// Setup iptables
 	clog.Info("Configuring Arena Firewall...")
-	f, err := os.CreateTemp(os.TempDir(), "jms-firewall-*.rules")
-	if err != nil {
-		return err
-	}
-	err = GenerateIPTablesRules(nws, f)
-	if err != nil {
-		return err
-	}
-	err = ApplyIPTablesRules(f)
+	err = ConfigureIPTables(nws)
 	if err != nil {
 		return err
 	}
