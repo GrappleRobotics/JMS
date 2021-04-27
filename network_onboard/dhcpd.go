@@ -1,4 +1,4 @@
-package network
+package network_onboard
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JaciBrunning/jms/types"
 	"github.com/JaciBrunning/jms/util"
 	"github.com/coreos/go-systemd/v22/dbus"
 
@@ -16,13 +17,9 @@ import (
 
 const JMS_DHCP_CONF_FILE = "/etc/dhcp/jms-dhcp.conf"
 
-var (
-	logger = log.New()
-)
-
-func ConfigureDHCPD(arenaNet ArenaNetwork) error {
+func configureDHCPD(arenaNet types.ArenaNetwork) error {
 	if !util.DANGER_ZONE_ENABLED {
-		logger.Warn("DHCP Configuration Ignored: danger zone disabled.")
+		log.Warn("DHCP Configuration Ignored: danger zone disabled.")
 		return nil
 	}
 
@@ -39,7 +36,8 @@ func ConfigureDHCPD(arenaNet ArenaNetwork) error {
 	return err
 }
 
-func generateDHCPDConfig(arenaNet ArenaNetwork, file *os.File) error {
+func generateDHCPDConfig(arenaNet types.ArenaNetwork, file *os.File) error {
+	util.AssertDangerZone()
 	template_file_content, err := util.ReadModuleFile("service-configs", "templates", "dhcp.conf")
 	if err != nil {
 		return err
@@ -52,10 +50,7 @@ func generateDHCPDConfig(arenaNet ArenaNetwork, file *os.File) error {
 }
 
 func reloadDHCPDService() error {
-	if !util.DANGER_ZONE_ENABLED {
-		logger.Warn("DHCP Service could not be reloaded: danger zone disabled.")
-		return nil
-	}
+	util.AssertDangerZone()
 
 	conn, err := dbus.NewSystemdConnection()
 	if err != nil {
@@ -64,7 +59,7 @@ func reloadDHCPDService() error {
 	defer conn.Close()
 	channel := make(chan string)
 
-	logger.Info("Stopping DHCP Service...")
+	log.Info("Stopping DHCP Service...")
 	_, err = conn.StopUnit("isc-dhcp-server.service", "replace", channel)
 	if err != nil {
 		return err
@@ -87,7 +82,7 @@ func reloadDHCPDService() error {
 	// 	return err
 	// }
 
-	logger.Info("Starting DHCP Service...")
+	log.Info("Starting DHCP Service...")
 	_, err = conn.ReloadOrRestartUnit("isc-dhcp-server.service", "replace", channel)
 	if err != nil {
 		return err
@@ -95,7 +90,7 @@ func reloadDHCPDService() error {
 	_ = <-channel               // Wait for reload to be done
 	time.Sleep(2 * time.Second) // Wait for the service to know what's going on
 
-	logger.Info("Checking if DHCP Service is active...")
+	log.Info("Checking if DHCP Service is active...")
 	props, err := conn.GetUnitProperties("isc-dhcp-server.service")
 	if err != nil {
 		return err
@@ -103,19 +98,16 @@ func reloadDHCPDService() error {
 	if props["ActiveState"] != "active" {
 		return fmt.Errorf("DHCP service failed to start")
 	}
-	logger.Info("DHCP Service is up!")
+	log.Info("DHCP Service is up!")
 	return nil
 }
 
 func maybeUpdateDHCPdConf() {
-	if !util.DANGER_ZONE_ENABLED {
-		logger.Warn("DHCP configuration could not be updated: danger zone disabled.")
-		return
-	}
+	util.AssertDangerZone()
 
 	content, err := ioutil.ReadFile("/etc/dhcp/dhcpd.conf")
 	if err != nil {
-		logger.Warnf("Cannot check /etc/dhcp/dhcpd.conf - %s", err)
+		log.Warnf("Cannot check /etc/dhcp/dhcpd.conf - %s", err)
 		return
 	}
 
@@ -123,10 +115,10 @@ func maybeUpdateDHCPdConf() {
 	if !strings.Contains(string(content), include_string) {
 		f, err := os.OpenFile("/etc/dhcp/dhcpd.conf", os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
-			logger.Warnf("Cannot append to /etc/dhcp/dhcpd.conf - %s", err)
+			log.Warnf("Cannot append to /etc/dhcp/dhcpd.conf - %s", err)
 		} else {
 			fmt.Fprintf(f, "\n# Automatically added by JMS\n%s\n", include_string)
-			logger.Info("JMS added to /etc/dhcp/dhcpd.conf (first-run)")
+			log.Info("JMS added to /etc/dhcp/dhcpd.conf (first-run)")
 		}
 	}
 }

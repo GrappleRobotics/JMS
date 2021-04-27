@@ -24,10 +24,10 @@ import (
 )
 
 var (
-	DANGER_ZONE_ENABLED = IsDangerZone()
+	DANGER_ZONE_ENABLED = isDangerZone()
 )
 
-func IsDangerZone() bool {
+func isDangerZone() bool {
 	data, err := ioutil.ReadFile("/etc/jms-danger-zone")
 	danger := false
 	if err == nil {
@@ -48,4 +48,14 @@ func IsDangerZone() bool {
 		log.Info("\033[32m/etc/jms-danger-zone file not present. Running in development mode, no lasting configuration changes will be made.")
 	}
 	return danger
+}
+
+/**
+ * Only to be used in internal methods where a DANGER_ZONE_ENABLED check has already
+ * been performed in the callier - in case things get called in a weird order.
+ */
+func AssertDangerZone() {
+	if !DANGER_ZONE_ENABLED {
+		log.Panic("Assertion failed: Not in the danger zone!")
+	}
 }

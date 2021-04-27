@@ -1,4 +1,4 @@
-package arena
+package types
 
 type DriverStation struct {
 	Colour   string

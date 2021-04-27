@@ -3,8 +3,8 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/JaciBrunning/jms/arena"
-	"github.com/JaciBrunning/jms/network"
+	"github.com/JaciBrunning/jms/network_onboard"
+	"github.com/JaciBrunning/jms/types"
 	"github.com/JaciBrunning/jms/util"
 
 	"gopkg.in/yaml.v2"
@@ -13,7 +13,7 @@ import (
 )
 
 type JMSConfig struct {
-	Networking network.JMSNetworkConfig
+	Networking network_onboard.OnboardNetworkConfig
 }
 
 type DHCPConfig struct {
@@ -33,23 +33,22 @@ func main() {
 		log.Fatalf("Error: %v", err)
 	}
 
-	if err := cfg.Networking.Validate(); err != nil {
-		log.Fatalf("Error: %v", err)
+	n := types.ArenaNetwork{}
+	n.Blue = []types.TeamNetwork{
+		util.ElideError(types.NewTeamNetwork(types.DriverStation{"Blue", 1}, 5333)).(types.TeamNetwork),
+		util.ElideError(types.NewTeamNetwork(types.DriverStation{"Blue", 2}, 5663)).(types.TeamNetwork),
+		util.ElideError(types.NewTeamNetwork(types.DriverStation{"Blue", 3}, 4788)).(types.TeamNetwork),
 	}
-
-	n := network.ArenaNetwork{}
-	n.Teams = []network.TeamNetwork{
-		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 1}, 5333)).(network.TeamNetwork),
-		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 2}, 4788)).(network.TeamNetwork),
-		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Blue", 3}, 5663)).(network.TeamNetwork),
-		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 1}, 3132)).(network.TeamNetwork),
-		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 2}, 4613)).(network.TeamNetwork),
-		util.ElideError(network.GenerateTeamNetwork(cfg.Networking, arena.DriverStation{"Red", 3}, 5331)).(network.TeamNetwork),
+	n.Red = []types.TeamNetwork{
+		util.ElideError(types.NewTeamNetwork(types.DriverStation{"Red", 1}, 4613)).(types.TeamNetwork),
+		util.ElideError(types.NewTeamNetwork(types.DriverStation{"Red", 2}, 0)).(types.TeamNetwork),
+		util.ElideError(types.NewTeamNetwork(types.DriverStation{"Red", 3}, 6510)).(types.TeamNetwork),
 	}
-	n.Admin = util.ElideError(network.GenerateAdminNetwork(cfg.Networking)).(network.AdminNetwork)
-	n.WAN = util.ElideError(network.GenerateWANNetwork(cfg.Networking)).(network.WANNetwork)
+	n.Admin = util.ElideError(types.NewAdminNetwork()).(types.AdminNetwork)
 
-	err = n.Up()
+	var net types.NetworkProvider
+	net = network_onboard.New(cfg.Networking)
+	err = net.Up(n)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}

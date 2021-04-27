@@ -1,4 +1,4 @@
-package network
+package network_onboard
 
 import (
 	"html/template"
@@ -6,11 +6,12 @@ import (
 	"os/exec"
 
 	"github.com/JaciBrunning/jms/util"
+	log "github.com/sirupsen/logrus"
 )
 
-func ConfigureIPTables(arenaNet ArenaNetwork) error {
+func configureIPTables(arenaNet ConfigurationAwareNetwork) error {
 	if !util.DANGER_ZONE_ENABLED {
-		logger.Warn("iptables configuration skipped: danger zone disabled.")
+		log.Warn("iptables configuration skipped: danger zone disabled.")
 		return nil
 	}
 
@@ -18,6 +19,7 @@ func ConfigureIPTables(arenaNet ArenaNetwork) error {
 	if err != nil {
 		return err
 	}
+	log.Infof("IPTables Config File: %s", f.Name())
 	err = generateIPTablesRules(arenaNet, f)
 	if err != nil {
 		return err
@@ -26,7 +28,7 @@ func ConfigureIPTables(arenaNet ArenaNetwork) error {
 	return err
 }
 
-func generateIPTablesRules(arenaNet ArenaNetwork, file *os.File) error {
+func generateIPTablesRules(arenaNet ConfigurationAwareNetwork, file *os.File) error {
 	template_file_content, err := util.ReadModuleFile("service-configs", "templates", "match.firewall.rules")
 	if err != nil {
 		return err
@@ -39,10 +41,8 @@ func generateIPTablesRules(arenaNet ArenaNetwork, file *os.File) error {
 }
 
 func applyIPTablesRules(file *os.File) error {
-	if !util.DANGER_ZONE_ENABLED {
-		logger.Warn("iptables routing could not be applied: danger zone disabled.")
-		return nil
-	}
+	util.AssertDangerZone()
+
 	// Enable ipv4 forwarding
 	err := exec.Command("sysctl", "-q", "net.ipv4.ip_forward=1").Run()
 	if err != nil {
