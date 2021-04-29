@@ -155,12 +155,15 @@ fn builder() -> Builder {
     let mut style = f.style();
     let lineno = render_record_line(&mut style, record.file(), record.line());
 
+    let mut style = f.style();
+    let splitter = style.set_color(COLOR_GRAY_DARK).set_bold(true).value(">");
+
     if record.level() <= Level::Error {
-      writeln!(f, " {} {} {}{} > {}: {}", 
+      writeln!(f, " {} {} {}{} {} {}: {}", 
                 time, level, target,
-                breadcrumb, lineno, message)
+                breadcrumb, splitter, lineno, message)
     } else {
-      writeln!(f, " {} {} {}{} > {}", time, level, target, breadcrumb, message)
+      writeln!(f, " {} {} {}{} {} {}", time, level, target, breadcrumb, splitter, message)
     }
   });
 
@@ -218,10 +221,11 @@ fn message_colored_level(style: &mut Style, level: Level) -> &mut Style {
 }
 
 static MAX_MODULE_WIDTH: AtomicUsize = AtomicUsize::new(0);
+static ABSOLUTE_MAX: usize = 20;
 
 fn max_target_width(target: &str) -> usize {
     let max_width = MAX_MODULE_WIDTH.load(Ordering::Relaxed);
-    if max_width < target.len() {
+    if max_width < target.len() && target.len() < ABSOLUTE_MAX {
         MAX_MODULE_WIDTH.store(target.len(), Ordering::Relaxed);
         target.len()
     } else {

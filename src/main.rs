@@ -1,4 +1,5 @@
 mod logging;
+mod utils;
 
 use clap::{App, Arg};
 
@@ -12,14 +13,5 @@ fn main() {
 
   logging::configure(matches.is_present("debug"));
 
-  info!("In Root");
-  context!("A", {
-    debug!("A only... {}", 12);
-    context!("Test1", "DHCP", {
-      info!("Log 1");
-    });
-    debug!("A only... {}", 12);
-    warn!("Oh No!");
-    error!("AAAA");
-  });
+  info!("In danger? {}", *utils::danger::IS_DANGER_ZONE);
 }
