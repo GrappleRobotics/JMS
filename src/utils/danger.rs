@@ -1,11 +1,34 @@
 use std::{env, fs, str::FromStr};
 
 use crate::warn;
+use std::result::Result;
 use lazy_static::lazy_static;
 use lexical_bool::{LexicalBool, initialize_false_values, initialize_true_values};
 
 lazy_static! {
-  pub static ref IS_DANGER_ZONE: bool = eval_danger_zone();
+  static ref IS_DANGER_ZONE: bool = eval_danger_zone();
+}
+
+#[derive(Debug, Clone)]
+pub struct DangerZoneNotEnabledError;
+
+impl std::fmt::Display for DangerZoneNotEnabledError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "Danger Zone is not enabled!")
+  }
+}
+
+#[allow(dead_code)]
+pub fn danger_or_err() -> Result<(), DangerZoneNotEnabledError> {
+  if !*IS_DANGER_ZONE {
+    Err(DangerZoneNotEnabledError)
+  } else {
+    Ok(())
+  }
+}
+
+pub fn is_danger() -> bool {
+  return *IS_DANGER_ZONE;
 }
 
 const JMS_DANGER_FILE: &str = "/etc/jms-danger-zone";
