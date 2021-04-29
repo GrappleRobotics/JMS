@@ -68,6 +68,23 @@ macro_rules! context {
   }};
 }
 
+// Error wrapping
+#[macro_export]
+macro_rules! log_expect {
+  ($result:expr, $($arg:tt)+) => {{
+    $result.unwrap_or_else(|e| {
+      error!($($arg)+, e);
+      std::panic!($($arg)+, e);
+    })
+  }};
+  (debug $result:expr) => {{
+    log_expect!($result, "Unexpected FATAL error: {:?}")
+  }};
+  ($result:expr) => {{
+    log_expect!($result, "Unexpected FATAL error: {}")
+  }}
+}
+
 // Re-exports of logging level macros, including support for log_context
 
 #[macro_export]
