@@ -1,12 +1,20 @@
-use std::{cell::RefCell, env, fmt, sync::atomic::{AtomicUsize, Ordering}};
+use std::{
+  cell::RefCell,
+  env, fmt,
+  sync::atomic::{AtomicUsize, Ordering},
+};
 
 use chrono::Local;
-use env_logger::{Builder, Target, fmt::{Color, Style, StyledValue}};
+use env_logger::{
+  fmt::{Color, Style, StyledValue},
+  Builder, Target,
+};
 use log::Level;
+use regex::Regex;
 
 pub fn configure(debug_mode: bool) {
   let mut default_level = log::LevelFilter::Info;
-  if cfg!(debug_assertions) || debug_mode {
+  if debug_mode {
     default_level = log::LevelFilter::Debug;
   }
 
@@ -43,37 +51,33 @@ pub fn pop() {
 
 #[allow(dead_code)]
 pub fn store() -> Vec<String> {
-  BREADCRUMB.with(|bc| {
-    bc.borrow().clone()
-  })
+  BREADCRUMB.with(|bc| bc.borrow().clone())
 }
 
 #[allow(dead_code)]
 pub fn load(breadcrumb: &Vec<String>) {
-  BREADCRUMB.with(|bc| {
-    bc.borrow_mut().clone_from(breadcrumb)
-  })
+  BREADCRUMB.with(|bc| bc.borrow_mut().clone_from(breadcrumb))
 }
 
 // TT munch to allow context stacking
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! context {
   ($f:expr) => (
     $f
   );
   ($head:expr, $($further:tt)+) => {{
     $crate::logging::push($head);
-    $crate::context!($($further)+);
-    $crate::logging::pop();
+    scopeguard::defer!($crate::logging::pop());
+    context!($($further)+);
   }};
 }
 
 // Error wrapping
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! log_expect {
   ($result:expr, $($arg:tt)+) => {{
     $result.unwrap_or_else(|e| {
-      error!($($arg)+, e);
+      log::error!($($arg)+, e);
       std::panic!($($arg)+, e);
     })
   }};
@@ -85,56 +89,47 @@ macro_rules! log_expect {
   }}
 }
 
-// Re-exports of logging level macros, including support for log_context
-
-#[macro_export]
-macro_rules! debug {
-  (context: $context:expr, $($arg:tt)+) => (
-    $crate::logc!($context, log::debug!($($arg)+));
-  );
-  ($($arg:tt)+) => (
-    log::debug!($($arg)+)
-  )
+// Silencing
+#[derive(Clone, PartialEq)]
+pub struct SilenceCriteria {
+  target: Option<String>,
+  level: Option<Level>,
 }
 
-#[macro_export]
-macro_rules! info {
-  (context: $context:expr, $($arg:tt)+) => (
-    $crate::logc!($context, log::info!($($arg)+));
-  );
-  ($($arg:tt)+) => (
-    log::info!($($arg)+)
-  )
+thread_local!(static SILENCERS: RefCell<Vec<SilenceCriteria>> = RefCell::new(Vec::new()));
+
+#[allow(dead_code)]
+pub fn silence(target: Option<&str>, level: Option<Level>) -> SilenceCriteria {
+  let crit = SilenceCriteria {
+    target: target.map(|s| String::from(s)),
+    level,
+  };
+  SILENCERS.with(|s| {
+    s.borrow_mut().push(crit.clone());
+  });
+  crit
 }
 
-#[macro_export]
-macro_rules! warn {
-  (context: $context:expr, $($arg:tt)+) => (
-    $crate::logc!($context, log::warn!($($arg)+));
-  );
-  ($($arg:tt)+) => (
-    log::warn!($($arg)+)
-  )
+#[allow(dead_code)]
+pub fn unsilence(criteria: SilenceCriteria) {
+  SILENCERS.with(|s| s.borrow_mut().retain(|x| *x != criteria));
 }
 
-#[macro_export]
-macro_rules! error {
-  (context: $context:expr, $($arg:tt)+) => (
-    $crate::logc!($context, log::error!($($arg)+));
-  );
-  ($($arg:tt)+) => (
-    log::error!($($arg)+)
-  )
-}
-
-#[macro_export]
-macro_rules! trace {
-  (context: $context:expr, $($arg:tt)+) => (
-    $crate::logc!($context, log::trace!($($arg)+));
-  );
-  ($($arg:tt)+) => (
-    log::trace!($($arg)+)
-  )
+// silenced!(target: Some("jms"), level: Some(Level::Info), { /* ...  */ })
+// will silence all logs emitted by jms at Info or lower.
+#[macro_export(local_inner_macros)]
+macro_rules! silenced {
+  (target: $t:expr, level: $l:expr, $f:expr) => {{
+    let _sc = $crate::logging::silence($t, $l);
+    scopeguard::defer!($crate::logging::unsilence(_sc));
+    $f;
+  }};
+  (target: $t:expr, $f:expr) => {
+    silenced!(target: $t, level: None, $f);
+  };
+  (level: $t:expr, $f:expr) => {
+    silenced!(target: None, level: $t, $f);
+  };
 }
 
 const COLOR_GRAY_DARK: Color = Color::Rgb(100, 100, 100);
@@ -146,22 +141,28 @@ fn builder() -> Builder {
 
   builder.format(|f, record| {
     use std::io::Write;
+
+    if is_silenced(record.target(), record.level()) {
+      return Ok(());
+    }
+
     let target = record.target();
+
     let max_width = max_target_width(target);
 
     let mut style = f.style();
     let level = colored_level(&mut style, record.level());
 
     let mut style = f.style();
-    let target = style.set_bold(true).value( Padded {
+    let target = style.set_bold(true).value(Padded {
       value: target,
       width: max_width,
     });
 
     let mut style = f.style();
-    let time = style.set_color(COLOR_GRAY_DARK).value(
-      Local::now().format("%Y-%m-%d %H:%M:%S.%3f %z")
-    );
+    let time = style
+      .set_color(COLOR_GRAY_DARK)
+      .value(Local::now().format("%Y-%m-%d %H:%M:%S.%3f %z"));
 
     let mut style = f.style();
     let breadcrumb = style.set_color(COLOR_GRAY).value(render_breadcrumb());
@@ -176,19 +177,40 @@ fn builder() -> Builder {
     let splitter = style.set_color(COLOR_GRAY_DARK).set_bold(true).value(">");
 
     if record.level() <= Level::Error {
-      writeln!(f, " {} {} {}{} {} {}: {}", 
-                time, level, target,
-                breadcrumb, splitter, lineno, message)
+      writeln!(
+        f,
+        " {} {} {}{} {} {}: {}",
+        time, level, target, breadcrumb, splitter, lineno, message
+      )
     } else {
-      writeln!(f, " {} {} {}{} {} {}", time, level, target, breadcrumb, splitter, message)
+      writeln!(
+        f,
+        " {} {} {}{} {} {}",
+        time, level, target, breadcrumb, splitter, message
+      )
     }
   });
 
   builder
 }
 
+fn is_silenced(target: &str, level: Level) -> bool {
+  SILENCERS.with(|s| {
+    s.borrow().iter().any(|el| {
+      let mut matched = [true, true];
+      if let Some(t) = el.target.as_ref() {
+        matched[0] = Regex::new(t).unwrap().is_match(target); // This will panic without a valid regex! Beware!
+      }
+      if let Some(l) = el.level {
+        matched[1] = level >= l;
+      }
+      matched.iter().all(|x| *x)
+    })
+  })
+}
+
 fn render_breadcrumb() -> String {
-  let joined = BREADCRUMB.with( |bc| { bc.borrow().join("::")});
+  let joined = BREADCRUMB.with(|bc| bc.borrow().join("::"));
   if joined.is_empty() {
     joined
   } else {
@@ -196,7 +218,11 @@ fn render_breadcrumb() -> String {
   }
 }
 
-fn render_record_line<'a>(style: &'a mut Style, file: Option<&str>, num: Option<u32>) -> StyledValue<'a, String> {
+fn render_record_line<'a>(
+  style: &'a mut Style,
+  file: Option<&str>,
+  num: Option<u32>,
+) -> StyledValue<'a, String> {
   let file = file.unwrap_or("<unknown>");
   let ln = match num {
     Some(n) => n.to_string(),
@@ -207,14 +233,14 @@ fn render_record_line<'a>(style: &'a mut Style, file: Option<&str>, num: Option<
 
 // from pretty_env_logger
 struct Padded<T> {
-    value: T,
-    width: usize,
+  value: T,
+  width: usize,
 }
 
 impl<T: fmt::Display> fmt::Display for Padded<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{: <width$}", self.value, width=self.width)
-    }
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    write!(f, "{: <width$}", self.value, width = self.width)
+  }
 }
 
 fn colored_level<'a>(style: &'a mut Style, level: Level) -> StyledValue<'a, &'static str> {
@@ -233,7 +259,7 @@ fn message_colored_level(style: &mut Style, level: Level) -> &mut Style {
     Level::Debug => style.set_color(COLOR_GRAY),
     Level::Info => style.set_color(Color::White),
     Level::Warn => style.set_color(Color::Yellow),
-    Level::Error => style.set_color(Color::Red).set_bold(true)
+    Level::Error => style.set_color(Color::Red).set_bold(true),
   }
 }
 
@@ -241,11 +267,11 @@ static MAX_MODULE_WIDTH: AtomicUsize = AtomicUsize::new(0);
 static ABSOLUTE_MAX: usize = 20;
 
 fn max_target_width(target: &str) -> usize {
-    let max_width = MAX_MODULE_WIDTH.load(Ordering::Relaxed);
-    if max_width < target.len() && target.len() < ABSOLUTE_MAX {
-        MAX_MODULE_WIDTH.store(target.len(), Ordering::Relaxed);
-        target.len()
-    } else {
-        max_width
-    }
+  let max_width = MAX_MODULE_WIDTH.load(Ordering::Relaxed);
+  if max_width < target.len() && target.len() < ABSOLUTE_MAX {
+    MAX_MODULE_WIDTH.store(target.len(), Ordering::Relaxed);
+    target.len()
+  } else {
+    max_width
+  }
 }

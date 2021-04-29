@@ -1,9 +1,9 @@
 use std::{env, fs, str::FromStr};
 
-use crate::warn;
-use std::result::Result;
 use lazy_static::lazy_static;
-use lexical_bool::{LexicalBool, initialize_false_values, initialize_true_values};
+use lexical_bool::{initialize_false_values, initialize_true_values, LexicalBool};
+use log::warn;
+use std::result::Result;
 
 lazy_static! {
   static ref IS_DANGER_ZONE: bool = eval_danger_zone();
@@ -27,6 +27,7 @@ pub fn danger_or_err() -> Result<(), DangerZoneNotEnabledError> {
   }
 }
 
+#[allow(dead_code)]
 pub fn is_danger() -> bool {
   return *IS_DANGER_ZONE;
 }
@@ -50,19 +51,20 @@ fn eval_danger_zone() -> bool {
       } else {
         danger = true;
       }
-    },
-    _ => ()
+    }
+    _ => (),
   }
 
   // Parse env var
   match env::var(JMS_DANGER_ENV_VAR) {
-    Ok(s) => {
-      match LexicalBool::from_str(&s.to_lowercase()) {
-        Ok(lb) => danger = *lb,
-        Err(_) => warn!("Couldn't parse {}. Are you sure the value \"{}\" is correct?", JMS_DANGER_ENV_VAR, s)
-      }
+    Ok(s) => match LexicalBool::from_str(&s.to_lowercase()) {
+      Ok(lb) => danger = *lb,
+      Err(_) => warn!(
+        "Couldn't parse {}. Are you sure the value \"{}\" is correct?",
+        JMS_DANGER_ENV_VAR, s
+      ),
     },
-    _ => ()
+    _ => (),
   }
 
   if danger {
@@ -72,7 +74,10 @@ fn eval_danger_zone() -> bool {
     warn!("|                                                     |");
     warn!("|  If this is not what you intend, stop JMS now and   |");
     warn!("|     delete the {} file and/or     |", JMS_DANGER_FILE);
-    warn!("|              unset {}.              |", JMS_DANGER_ENV_VAR);
+    warn!(
+      "|              unset {}.              |",
+      JMS_DANGER_ENV_VAR
+    );
     warn!("================= DANGER ZONE ENABLED =================");
   } else {
     warn!("JMS is in safe mode. To allow JMS to modify system files, populate the {} file or {} env var.", JMS_DANGER_FILE, JMS_DANGER_ENV_VAR);
