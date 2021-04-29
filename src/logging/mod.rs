@@ -1,7 +1,7 @@
 use std::{cell::RefCell, env, fmt, sync::atomic::{AtomicUsize, Ordering}};
 
 use chrono::Local;
-use env_logger::{Builder, fmt::{Color, Style, StyledValue}};
+use env_logger::{Builder, Target, fmt::{Color, Style, StyledValue}};
 use log::Level;
 
 pub fn configure(debug_mode: bool) {
@@ -15,6 +15,7 @@ pub fn configure(debug_mode: bool) {
   builder()
     .filter_level(default_level)
     .parse_filters(&env_filters)
+    .target(Target::Stdout)
     .init();
 }
 
