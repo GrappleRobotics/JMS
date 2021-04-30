@@ -16,8 +16,8 @@
 
 # Added by cargo
 
-/target
-/old
-/debug
+target/
+old/
+debug/
 Cargo.lock
 **/*.rs.bk
