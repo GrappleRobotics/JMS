@@ -1,11 +1,10 @@
-use std::env;
 use crate::log_expect;
-use log::info;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
+use log::info;
+use std::env;
 // use diesel::sqlite::SqliteConnection;
 use diesel::pg::PgConnection;
 use lazy_static::lazy_static;
-
 
 embed_migrations!("migrations");
 
@@ -19,7 +18,10 @@ fn pool() -> DbPool {
       info!("DB Pool Starting...");
       let uri = log_expect!(env::var("DATABASE_URL"), "DATABASE_URL is not set: {}");
       let mgr = ConnectionManager::<ConnectionT>::new(uri);
-      let p = log_expect!(Pool::builder().build(mgr), "Could not start DB connection pool! {}");
+      let p = log_expect!(
+        Pool::builder().build(mgr),
+        "Could not start DB connection pool! {}"
+      );
       info!("DB Pool Ready!");
       p
     };
@@ -28,5 +30,8 @@ fn pool() -> DbPool {
 }
 
 pub fn connection() -> DbPooledConnection {
-  log_expect!(pool().get(), "Could not get a DB connection from the connection pool! {}")
+  log_expect!(
+    pool().get(),
+    "Could not get a DB connection from the connection pool! {}"
+  )
 }

@@ -1,13 +1,15 @@
 mod logging;
 // mod network;
-mod utils;
 mod db;
+mod utils;
 
 mod models;
 mod schema;
 
-#[macro_use] extern crate diesel_migrations;
-#[macro_use] extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
+#[macro_use]
+extern crate diesel;
 
 use std::{thread, time::Duration};
 
@@ -29,19 +31,27 @@ async fn main() {
         .help("Enable debug logging."),
     )
     .get_matches();
-  
+
   logging::configure(matches.is_present("debug"));
 
   let conn = db::connection();
 
   // let team = models::Team { id: 5333, name: String::from("Can't C#"), affiliation: Some(String::from("Curtin University")), location: None, notes: None };
   // info!("{:?}", log_expect!(diesel::insert_into(schema::teams::table).values(&team).execute(&conn)));
-  
+
   diesel::delete(schema::teams::table).execute(&conn);
   for _ in 1..20 {
     thread::spawn(|| {
-      let team = models::Team { id: rand::thread_rng().gen(), name: String::from("Some Team"), affiliation: None, location: None, notes: None };
-      log_expect!(diesel::insert_into(schema::teams::table).values(&team).execute(&db::connection()));
+      let team = models::Team {
+        id: rand::thread_rng().gen(),
+        name: String::from("Some Team"),
+        affiliation: None,
+        location: None,
+        notes: None,
+      };
+      log_expect!(diesel::insert_into(schema::teams::table)
+        .values(&team)
+        .execute(&db::connection()));
     });
   }
 
