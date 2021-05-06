@@ -68,7 +68,7 @@ macro_rules! context {
   ($head:expr, $($further:tt)+) => {{
     $crate::logging::push($head);
     scopeguard::defer!($crate::logging::pop());
-    context!($($further)+);
+    context!($($further)+)
   }};
 }
 
