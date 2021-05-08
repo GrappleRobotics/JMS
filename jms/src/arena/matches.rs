@@ -11,7 +11,7 @@ pub enum MatchPlayState {
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub struct Match {
-  state: MatchPlayState,
+  pub state: MatchPlayState,
 }
 
 impl Match {

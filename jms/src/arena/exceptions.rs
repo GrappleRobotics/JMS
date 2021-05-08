@@ -2,41 +2,36 @@ use std::error;
 
 use crate::network::NetworkError;
 
-use super::ArenaState;
+use super::ArenaStateVariant;
 
 pub type ArenaResult<T> = std::result::Result<T, ArenaError>;
 
 #[derive(Debug)]
+pub struct StateTransitionError {
+  pub from: ArenaStateVariant,
+  pub to: ArenaStateVariant,
+  pub condition: String
+}
+
+impl std::fmt::Display for StateTransitionError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "State Transition Error: {} to {} ({})", self.from, self.to, self.condition)
+  }
+}
+
+#[derive(Debug)]
 pub enum ArenaError {
-  Misc(String),
-  IllegalStateChange {
-    from: ArenaState,
-    to: ArenaState,
-    condition: String,
-  },
-  AlreadyInState(ArenaState),
-  UnimplementedStateError(ArenaState),
+  IllegalStateChange(StateTransitionError),
+  UnimplementedStateError(ArenaStateVariant),
   NetworkError(NetworkError)
 }
 
 impl std::fmt::Display for ArenaError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match *self {
-      ArenaError::Misc(ref s) => write!(f, "ArenaError::Misc: {}", s),
-      ArenaError::IllegalStateChange {
-        ref from,
-        ref to,
-        ref condition,
-      } => {
-        write!(
-          f,
-          "ArenaError: Illegal State Change from {:?} to {:?} (failed condition: {})",
-          from, to, condition
-        )
-      }
-      ArenaError::AlreadyInState(ref s) => write!(f, "Already in state {:?}", s),
-      ArenaError::UnimplementedStateError(ref s) => write!(f, "Unimplemented state: {:?}", s),
-      ArenaError::NetworkError(ref e) => write!(f, "Network Error: {}", e),
+      ArenaError::IllegalStateChange(ref e) => write!(f, "{}", e),
+      ArenaError::UnimplementedStateError(ref s) => write!(f, "Unimplemented State: {}", s),
+      ArenaError::NetworkError(ref e) => write!(f, "Network Error: {}", e)
     }
   }
 }

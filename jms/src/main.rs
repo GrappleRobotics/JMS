@@ -11,11 +11,16 @@ mod schema;
 extern crate diesel_migrations;
 #[macro_use]
 extern crate diesel;
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
 
 use clap::{App, Arg};
 use dotenv::dotenv;
 use log::info;
 use network::NetworkProvider;
+
+use crate::arena::matches::Match;
 
 struct FakeNetwork {}
 impl NetworkProvider for FakeNetwork {
@@ -55,5 +60,23 @@ async fn main() {
   let network = Box::new(FakeNetwork {});
 
   let mut arena = arena::Arena::new(3, network);
-  log_expect!(arena.update());
+  arena.load_match(Match{state: arena::matches::MatchPlayState::Waiting});
+  info!("{}", arena.current_state().variant());
+  info!("{:?}", arena.queue_state_change(arena::ArenaStateVariant::MatchPlay));
+  info!("{:?}", arena.perform_state_change());
+  info!("{}", arena.current_state().variant());
+  info!("{:?}", arena.queue_state_change(arena::ArenaStateVariant::PreMatch));
+  info!("{:?}", arena.perform_state_change());
+  info!("{}", arena.current_state().variant());
+
+  let mut s = "".to_owned();
+
+  while arena.current_state().variant() != arena::ArenaStateVariant::PreMatchComplete {
+    match arena.maybe_queue_state_change(arena::ArenaStateVariant::PreMatchComplete) {
+      Err(_) => { s = s + "."; Some(1) },
+      Ok(()) => { arena.perform_state_change(); Some(1) }
+    };
+  }
+  info!("{}", s);
+  info!("{}", arena.current_state().variant());
 }
