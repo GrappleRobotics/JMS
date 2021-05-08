@@ -35,7 +35,10 @@ impl NetworkProvider for FakeNetwork {
     force_reload: bool,
   ) -> network::NetworkResult<()> {
     let alls: Vec<&arena::AllianceStation> = stations.collect();
-    info!("Configuring Alliances (Force? {}): {:?}", force_reload, alls);
+    info!(
+      "Configuring Alliances (Force? {}): {:?}",
+      force_reload, alls
+    );
     Ok(())
   }
 }
@@ -60,23 +63,4 @@ async fn main() {
   let network = Box::new(FakeNetwork {});
 
   let mut arena = arena::Arena::new(3, network);
-  arena.load_match(Match{state: arena::matches::MatchPlayState::Waiting});
-  info!("{}", arena.current_state().variant());
-  info!("{:?}", arena.queue_state_change(arena::ArenaStateVariant::MatchPlay));
-  info!("{:?}", arena.perform_state_change());
-  info!("{}", arena.current_state().variant());
-  info!("{:?}", arena.queue_state_change(arena::ArenaStateVariant::PreMatch));
-  info!("{:?}", arena.perform_state_change());
-  info!("{}", arena.current_state().variant());
-
-  let mut s = "".to_owned();
-
-  while arena.current_state().variant() != arena::ArenaStateVariant::PreMatchComplete {
-    match arena.maybe_queue_state_change(arena::ArenaStateVariant::PreMatchComplete) {
-      Err(_) => { s = s + "."; Some(1) },
-      Ok(()) => { arena.perform_state_change(); Some(1) }
-    };
-  }
-  info!("{}", s);
-  info!("{}", arena.current_state().variant());
 }
