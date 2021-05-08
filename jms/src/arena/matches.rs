@@ -6,12 +6,12 @@ pub enum MatchPlayState {
   Pause,
   Teleop,
   Cooldown,
-  Complete
+  Complete,
 }
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub struct Match {
-  state: MatchPlayState
+  state: MatchPlayState,
 }
 
 impl Match {

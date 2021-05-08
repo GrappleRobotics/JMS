@@ -25,7 +25,7 @@ where
       .get()
       .set_link_index_filter(link.header.index)
       .execute();
-    
+
     let mut futs = Vec::new();
     while let Some(addr) = addrs.try_next().await? {
       futs.push(handle.address().del(addr).execute());
