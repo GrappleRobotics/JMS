@@ -45,6 +45,7 @@ enum StateData {
 }
 
 struct LoadedState {
+  first: bool,    // First run?
   state: ArenaState,
   data: StateData,
 }
@@ -105,6 +106,7 @@ impl Arena {
     let mut a = Arena {
       network: Arc::new(Mutex::new(network)),
       state: LoadedState {
+        first: true,
         state: ArenaState::Idle,
         data: StateData::Idle,
       },
@@ -176,25 +178,20 @@ impl Arena {
         });
       }
 
-      // Need to start scaffolding the Network, DS Comms, and Field I/O to get the rest of
-      // this fleshed out.
+      // General state updates
+      context!(&format!("State Update ({})", self.state.state), {
+        let state_result = self.update_states();
+        match state_result {
+          Err(e) => {
+            error!("Error during state update: {}", e)
+          },
+          Ok(()) => (),
+        }
+      });
 
-      // let result = match self.state {
-      //   ArenaState::Idle => {
-      //     self.maybe_process_signal(ArenaSignal::PreStart, ArenaState::PreMatch(None))?;
-      //     Ok(())
-      //   }
-      //   ArenaState::Estop => Err(ArenaError::UnimplementedStateError(self.state.variant())),
-      //   ArenaState::PreMatch(_) => Err(ArenaError::UnimplementedStateError(self.state.variant())),
-      //   ArenaState::PreMatchComplete => Err(ArenaError::UnimplementedStateError(self.state.variant())),
-      //   ArenaState::MatchArmed => Err(ArenaError::UnimplementedStateError(self.state.variant())),
-      //   ArenaState::MatchPlay => Err(ArenaError::UnimplementedStateError(self.state.variant())),
-      //   ArenaState::MatchComplete => Err(ArenaError::UnimplementedStateError(self.state.variant())),
-      //   ArenaState::CommitMatch => Err(ArenaError::UnimplementedStateError(self.state.variant())),
-      // };
+      self.state.first = false;
 
-      // self.do_change_state()?;
-
+      // Perform state update
       context!("State Change", {
         self.clear_signal();
         match self.perform_state_change() {
@@ -215,6 +212,24 @@ impl Arena {
   }
 
   fn update_states(&mut self) -> ArenaResult<()> {
+    let first = self.state.first;
+    match (&self.state.state, &mut self.state.data) {
+      (ArenaState::Idle, _) => {
+        if let Some(ArenaSignal::PreMatch(force)) = self.current_signal() {
+          self.queue_state_change(ArenaState::PreMatch(force))?;
+        }
+      },
+      (ArenaState::Estop, _) => (),
+      (ArenaState::PreMatch(_), StateData::PreMatch(_)) => {
+        
+      },
+      (ArenaState::PreMatchComplete, _) => (),
+      (ArenaState::MatchArmed, _) => (),
+      (ArenaState::MatchPlay, _) => (),
+      (ArenaState::MatchComplete, _) => (),
+      (ArenaState::MatchCommit, _) => (),
+      (state, _) => Err(ArenaError::UnimplementedStateError(*state))?,
+    };
     Ok(())
   }
 
@@ -238,7 +253,7 @@ impl Arena {
     }
 
     let basic = |data: StateData| -> PendingState {
-      let init = Box::new(move |_: &mut Arena, state: ArenaState| Ok(LoadedState { state, data }));
+      let init = Box::new(move |_: &mut Arena, state: ArenaState| Ok(LoadedState { first: true, state, data }));
       PendingState {
         state: desired,
         init,
@@ -328,6 +343,7 @@ impl Arena {
       });
 
       Ok(LoadedState {
+        first: true,
         state,
         data: StateData::PreMatch(rx),
       })
