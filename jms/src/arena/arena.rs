@@ -24,9 +24,8 @@ pub enum ArenaState {
   Estop, // Arena is emergency stopped and can only be unlocked by FTA
 
   // Match Pipeline //
-  PreMatch(/* force */ bool), // Configure network and devices.
-  PreMatchComplete,           // Pre-Match configuration is complete.
-  MatchArmed,                 // Arm the match - ensure field crew is off. Can revert to PreMatch.
+  Prestart(/* ready */ bool, /* forced */ bool), // Configure network and devices. Expose ready so we can see it outside.
+  MatchArmed,                 // Arm the match - ensure field crew is off. Can revert to Prestart.
   MatchPlay,                  // Currently running a match - handed off to Match runner
   MatchComplete, // Match just finished, waiting to commit. Refs can still change scores
   MatchCommit,   // Commit the match score - lock ref tablets, publish to TBA and Audience Display
@@ -36,8 +35,7 @@ enum StateData {
   Idle,
   Estop,
 
-  PreMatch(Receiver<NetworkResult<()>>),
-  PreMatchComplete,
+  Prestart(Option<Receiver<NetworkResult<()>>>),  // recv: network ready receiver
   MatchArmed,
   MatchPlay,
   MatchComplete,
@@ -61,7 +59,7 @@ struct PendingState {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
 pub enum ArenaSignal {
   Estop,
-  PreMatch(bool),
+  Prestart(bool),
   MatchArm,
   MatchPlay,
   MatchCommit,
@@ -215,15 +213,32 @@ impl Arena {
     let first = self.state.first;
     match (&self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
-        if let Some(ArenaSignal::PreMatch(force)) = self.current_signal() {
-          self.queue_state_change(ArenaState::PreMatch(force))?;
+        if let Some(ArenaSignal::Prestart(force)) = self.current_signal() {
+          self.queue_state_change(ArenaState::Prestart(false, force))?;
         }
       },
       (ArenaState::Estop, _) => (),
-      (ArenaState::PreMatch(_), StateData::PreMatch(_)) => {
-        
+      (ArenaState::Prestart(false, force), StateData::Prestart(maybe_recv)) => {
+        // Check if network is ready
+        if let Some(recv) = maybe_recv {
+          let recv_result = recv.try_recv();
+          match recv_result {
+            Err(TryRecvError::Empty) => (), // Not ready yet
+            Err(e) => panic!("Network runner fault: {}", e),
+            Ok(result) => {
+              result?;
+              *maybe_recv = None;    // Data received, ready to go.
+
+              // We can change the state ready directly since there is no special 
+              // init logic, we want to keep the value of 'first', and we do not
+              // want to queue. This is the only place where this transition can happen,
+              // so we keep it out of get_state_change.
+              info!("Prestart Ready!");
+              self.state.state = ArenaState::Prestart(true, *force);
+            }
+          };
+        }
       },
-      (ArenaState::PreMatchComplete, _) => (),
       (ArenaState::MatchArmed, _) => (),
       (ArenaState::MatchPlay, _) => (),
       (ArenaState::MatchComplete, _) => (),
@@ -233,8 +248,8 @@ impl Arena {
     Ok(())
   }
 
-  pub fn current_state(&self) -> &ArenaState {
-    return &self.state.state;
+  pub fn current_state(&self) -> ArenaState {
+    return self.state.state;
   }
 
   fn get_state_change(&self, desired: ArenaState) -> ArenaResult<PendingState> {
@@ -267,13 +282,13 @@ impl Arena {
       }
     };
 
-    match (&self.state.state, desired) {
+    match (&self.state.state, desired, &self.state.data) {
       // E-Stops
-      (_, ArenaState::Estop) => Ok(basic(StateData::Estop)),
-      (ArenaState::Estop, ArenaState::Idle) => Ok(basic(StateData::Idle)),
+      (_, ArenaState::Estop, _) => Ok(basic(StateData::Estop)),
+      (ArenaState::Estop, ArenaState::Idle, _) => Ok(basic(StateData::Idle)),
 
       // Primary Flows
-      (ArenaState::Idle, ArenaState::PreMatch(_)) => {
+      (ArenaState::Idle, ArenaState::Prestart(false, _), _) => {   // Prestart must not be ready (false)
         let m = self
           .current_match
           .ok_or(illegal("Cannot PreStart without a Match"))?;
@@ -283,23 +298,7 @@ impl Arena {
           Ok(wrap(Box::new(Arena::state_init_prestart)))
         }
       }
-      (ArenaState::PreMatch(_), ArenaState::PreMatchComplete) => {
-        if let StateData::PreMatch(recv) = &self.state.data {
-          let recv_result = recv.try_recv();
-          match recv_result {
-            Err(TryRecvError::Empty) => Err(illegal("Network not ready")),
-            Err(TryRecvError::Disconnected) => panic!("Network runner fault!"), // TODO: Better fatal handling here
-            Ok(net_result) => {
-              net_result?; // TODO: In update, if this error is hit the arena should fall back to Idle.
-                           // In any case, the receiver should be cleared.
-              Ok(basic(StateData::PreMatchComplete))
-            }
-          }
-        } else {
-          panic!("PreMatch data is not the correct type!")
-        }
-      }
-      (ArenaState::PreMatchComplete, ArenaState::MatchArmed) => {
+      (ArenaState::Prestart(true, _), ArenaState::MatchArmed, _) => {    // Prestart must be ready (true)
         // TODO: Driver stations ready and match ready
         let m = log_expect!(self.current_match.ok_or("No match!"));
         if !m.ready() {
@@ -308,8 +307,8 @@ impl Arena {
           Ok(basic(StateData::MatchArmed))
         }
       }
-      (ArenaState::MatchArmed, ArenaState::MatchPlay) => Ok(basic(StateData::MatchPlay)),
-      (ArenaState::MatchPlay, ArenaState::MatchComplete) => {
+      (ArenaState::MatchArmed, ArenaState::MatchPlay, _) => Ok(basic(StateData::MatchPlay)),
+      (ArenaState::MatchPlay, ArenaState::MatchComplete, _) => {
         let m = log_expect!(self.current_match.ok_or("No match!"));
         if !m.complete() {
           Err(illegal("Match is not complete."))
@@ -317,8 +316,8 @@ impl Arena {
           Ok(basic(StateData::MatchComplete))
         }
       }
-      (ArenaState::MatchComplete, ArenaState::MatchCommit) => Ok(basic(StateData::MatchCommit)),
-      (ArenaState::MatchCommit, ArenaState::Idle) => Ok(basic(StateData::Idle)),
+      (ArenaState::MatchComplete, ArenaState::MatchCommit, _) => Ok(basic(StateData::MatchCommit)),
+      (ArenaState::MatchCommit, ArenaState::Idle, _) => Ok(basic(StateData::Idle)),
 
       _ => Err(illegal("Undefined Transition")),
     }
@@ -328,7 +327,7 @@ impl Arena {
     // Need to clone these since there's no guarantee the thread will finish before
     // the arena is destructed.
     // Note of course that the arena won't be able to exit prestart until this is complete.
-    if let ArenaState::PreMatch(force) = state {
+    if let ArenaState::Prestart(false, force) = state {
       let netw_arc = self.network.clone();
       let stations = self.stations.clone();
 
@@ -336,19 +335,21 @@ impl Arena {
 
       thread::spawn(move || {
         context!("Arena Prestart Network", {
+          info!("Configuring alliances...");
           let mut net = netw_arc.lock().unwrap();
           let result = net.configure_alliances(&mut stations.iter(), force);
           tx.send(result).unwrap(); // TODO: Better fatal handling
+          info!("Alliances configured!");
         })
       });
 
       Ok(LoadedState {
         first: true,
         state,
-        data: StateData::PreMatch(rx),
+        data: StateData::Prestart(Some(rx)),
       })
     } else {
-      panic!("PreMatch state is not the correct type!")
+      panic!("Prestart state is not the correct type!")
     }
   }
 
@@ -359,7 +360,7 @@ impl Arena {
   fn queue_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
     context!("Queue State Change", {
       info!(
-        "Queuing state transition: {} -> {}",
+        "Queuing state transition: {:?} -> {:?}",
         self.state.state, desired
       );
 
@@ -378,7 +379,7 @@ impl Arena {
   }
 
   // Don't error to the console if a state transition is not possible. Good for automatic transitions
-  // like from PreMatch to PreMatchComplete, without evaluating can_change_state_to.
+  // like from Prestart to PrestartComplete, without evaluating can_change_state_to.
   fn maybe_queue_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
     match self.get_state_change(desired) {
       Err(e) => Err(e),
@@ -399,6 +400,7 @@ impl Arena {
       None => Ok(()),
       Some(pend) => {
         self.state = (pend.init)(self, pend.state)?;
+        info!("State transition performed!");
         Ok(())
       }
     }

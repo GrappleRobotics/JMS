@@ -15,12 +15,14 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 
+use std::{thread, time::Duration};
+
 use clap::{App, Arg};
 use dotenv::dotenv;
 use log::info;
 use network::NetworkProvider;
 
-use crate::arena::matches::Match;
+use crate::arena::{ArenaSignal, ArenaState, matches::Match};
 
 struct FakeNetwork {}
 impl NetworkProvider for FakeNetwork {
@@ -39,6 +41,7 @@ impl NetworkProvider for FakeNetwork {
       "Configuring Alliances (Force? {}): {:?}",
       force_reload, alls
     );
+    thread::sleep(Duration::from_millis(1000));
     Ok(())
   }
 }
@@ -63,4 +66,17 @@ async fn main() {
   let network = Box::new(FakeNetwork {});
 
   let mut arena = arena::Arena::new(3, network);
+  arena.load_match(Match { state: arena::matches::MatchPlayState::Waiting });
+  arena.update();
+  assert_eq!(arena.current_state(), ArenaState::Idle);
+  arena.signal(ArenaSignal::Prestart(false));
+  arena.update();
+  assert_eq!(arena.current_state(), ArenaState::Prestart(false, false));
+  let mut s= "".to_owned();
+  while let ArenaState::Prestart(false, _) = arena.current_state() {
+    arena.update();
+    s = s + ".";
+    thread::sleep(Duration::from_millis(10));
+  }
+  assert_eq!(arena.current_state(), ArenaState::Prestart(true, false));
 }
