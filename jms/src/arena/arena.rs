@@ -203,7 +203,7 @@ impl Arena {
   fn update_field_estop(&mut self) -> ArenaResult<()> {
     if self.state.state != ArenaState::Estop {
       if let Some(ArenaSignal::Estop) = self.current_signal() {
-        self.queue_state_change(ArenaState::Estop)?;
+        self.prepare_state_change(ArenaState::Estop)?;
       }
     }
     Ok(())
@@ -214,7 +214,7 @@ impl Arena {
     match (&self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
         if let Some(ArenaSignal::Prestart(force)) = self.current_signal() {
-          self.queue_state_change(ArenaState::Prestart(false, force))?;
+          self.prepare_state_change(ArenaState::Prestart(false, force))?;
         }
       },
       (ArenaState::Estop, _) => (),
@@ -243,13 +243,35 @@ impl Arena {
           // want to queue. This is the only place where this transition can happen,
           // so we keep it out of get_state_change.
 
-          info!("Prestart Ready!");
           self.state.state = ArenaState::Prestart(true, *force);
         }
       },
-      (ArenaState::MatchArmed, _) => (),
-      (ArenaState::MatchPlay, _) => (),
-      (ArenaState::MatchComplete, _) => (),
+      (ArenaState::Prestart(true, _), _) => {
+        if first { info!("Prestart Ready!") }
+        if let Some(ArenaSignal::MatchArm) = self.current_signal() {
+          self.prepare_state_change(ArenaState::MatchArmed)?;
+        }
+      }
+      (ArenaState::MatchArmed, _) => {
+        if first { info!("Match Armed!") }
+        if let Some(ArenaSignal::MatchPlay) = self.current_signal() {
+          self.prepare_state_change(ArenaState::MatchPlay)?;
+        }
+      },
+      (ArenaState::MatchPlay, _) => {
+        if first {
+          info!("Match play!")
+        }
+        if self.current_match.unwrap().complete() {
+          self.prepare_state_change(ArenaState::MatchComplete)?;
+        }
+      },
+      (ArenaState::MatchComplete, _) => {
+        if first { info!("Match complete!") }
+        if let Some(ArenaSignal::MatchCommit) = self.current_signal() {
+          self.prepare_state_change(ArenaState::MatchCommit)?;
+        }
+      },
       (ArenaState::MatchCommit, _) => (),
       (state, _) => Err(ArenaError::UnimplementedStateError(*state))?,
     };
@@ -375,7 +397,7 @@ impl Arena {
     self.get_state_change(desired).is_ok()
   }
 
-  fn queue_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
+  fn prepare_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
     context!("Queue State Change", {
       info!(
         "Queuing state transition: {:?} -> {:?}",
