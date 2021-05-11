@@ -134,72 +134,6 @@ impl Arena {
     self.current_match = Some(m);
   }
 
-  pub fn signal(&mut self, signal: ArenaSignal) {
-    *log_expect!(self.pending_signal.lock()) = Some(signal);
-  }
-
-  fn current_signal(&self) -> Option<ArenaSignal> {
-    *log_expect!(self.pending_signal.lock())
-  }
-
-  fn clear_signal(&self) {
-    *log_expect!(self.pending_signal.lock()) = None;
-  }
-
-  // TODO: Split into phases - state transition failures should not prevent I/O or DS comms.
-  //        DS comms and I/O should include a 'heartbeat' and signify a fault.
-  pub fn update(&mut self) {
-    context!("Arena Update", {
-      // Field Emergency Stop
-      context!("E-stop", {
-        let estop_result = self.update_field_estop();
-        match estop_result {
-          Err(ArenaError::IllegalStateChange(ref isc)) => {
-            error!(
-              "Cannot transition to E-STOP from {} ({})",
-              isc.from, isc.why
-            );
-          }
-          Err(x) => error!("Other error for estop: {}", x),
-          Ok(()) => (),
-        }
-      });
-
-      // If E-stop state change detected, do the state change ASAP
-      if self.pending_state_change.is_some() {
-        context!("Post E-stop State Change", {
-          self.clear_signal();
-          match self.perform_state_change() {
-            Ok(()) => (),
-            Err(e) => error!("Error during state change: {}", e),
-          };
-        });
-      }
-
-      // General state updates
-      context!(&format!("State Update ({})", self.state.state), {
-        let state_result = self.update_states();
-        match state_result {
-          Err(e) => {
-            error!("Error during state update: {}", e)
-          },
-          Ok(()) => (),
-        }
-      });
-
-      self.state.first = false;
-
-      // Perform state update
-      context!("State Change", {
-        self.clear_signal();
-        match self.perform_state_change() {
-          Ok(()) => (),
-          Err(e) => error!("Error during state change: {}", e),
-        };
-      });
-    })
-  }
-
   fn update_field_estop(&mut self) -> ArenaResult<()> {
     if self.state.state != ArenaState::Estop {
       if let Some(ArenaSignal::Estop) = self.current_signal() {
@@ -276,10 +210,6 @@ impl Arena {
       (state, _) => Err(ArenaError::UnimplementedStateError(*state))?,
     };
     Ok(())
-  }
-
-  pub fn current_state(&self) -> ArenaState {
-    return self.state.state;
   }
 
   fn get_state_change(&self, desired: ArenaState) -> ArenaResult<PendingState> {
@@ -390,6 +320,76 @@ impl Arena {
     } else {
       panic!("Prestart state is not the correct type!")
     }
+  }
+
+  pub fn update(&mut self) {
+    context!("Arena Update", {
+      // Field Emergency Stop
+      context!("E-stop", {
+        let estop_result = self.update_field_estop();
+        match estop_result {
+          Err(ArenaError::IllegalStateChange(ref isc)) => {
+            error!(
+              "Cannot transition to E-STOP from {} ({})",
+              isc.from, isc.why
+            );
+          }
+          Err(x) => error!("Other error for estop: {}", x),
+          Ok(()) => (),
+        }
+      });
+
+      // If E-stop state change detected, do the state change ASAP
+      if self.pending_state_change.is_some() {
+        context!("Post E-stop State Change", {
+          self.clear_signal();
+          match self.perform_state_change() {
+            Ok(()) => (),
+            Err(e) => error!("Error during state change: {}", e),
+          };
+        });
+      }
+
+      // General state updates
+      context!(&format!("State Update ({})", self.state.state), {
+        let state_result = self.update_states();
+        match state_result {
+          Err(e) => {
+            error!("Error during state update: {}", e)
+          },
+          Ok(()) => (),
+        }
+      });
+
+      self.state.first = false;
+
+      // Perform state update
+      context!("State Change", {
+        self.clear_signal();
+        match self.perform_state_change() {
+          Ok(()) => (),
+          Err(e) => error!("Error during state change: {}", e),
+        };
+      });
+    })
+  }
+
+  // Signals
+  pub fn signal(&mut self, signal: ArenaSignal) {
+    *log_expect!(self.pending_signal.lock()) = Some(signal);
+  }
+
+  fn current_signal(&self) -> Option<ArenaSignal> {
+    *log_expect!(self.pending_signal.lock())
+  }
+
+  fn clear_signal(&self) {
+    *log_expect!(self.pending_signal.lock()) = None;
+  }
+
+  // State Generals
+  pub fn current_state(&self) -> ArenaState {
+    return self.state.state;
   }
 
   #[allow(dead_code)]
