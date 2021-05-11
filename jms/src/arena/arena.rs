@@ -53,14 +53,6 @@ struct BoundState {
   data: StateData,
 }
 
-// Functions responsible for initialising a new state to be loaded onto the arena.
-type ArenaStateInitialiser = dyn FnOnce(&mut Arena, ArenaState) -> ArenaResult<BoundState>;
-
-struct PendingState {
-  state: ArenaState,
-  init: Box<ArenaStateInitialiser>,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
 pub enum ArenaSignal {
   Estop,
@@ -85,6 +77,7 @@ pub enum Alliance {
   Blue,
   Red,
 }
+
 #[derive(Debug, Clone)]
 pub struct AllianceStation {
   alliance: Alliance,
@@ -98,7 +91,7 @@ pub struct AllianceStation {
 pub struct Arena {
   network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
   state: BoundState,
-  pending_state_change: Option<PendingState>,
+  pending_state_change: Option<ArenaState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
   current_match: Option<Match>,
   stations: Vec<AllianceStation>,
@@ -223,9 +216,8 @@ impl Arena {
     Ok(())
   }
 
-  fn get_state_change(&self, desired: ArenaState) -> ArenaResult<PendingState> {
+  pub fn can_change_state_to(&self, desired: ArenaState) -> ArenaResult<()> {
     let current = self.state.state;
-
     let illegal = move |why: &str| {
       ArenaError::IllegalStateChange(StateTransitionError {
         from: current,
@@ -235,34 +227,13 @@ impl Arena {
     };
 
     if current == desired {
-      return Err(illegal("Can't change to the same state!"));
+      return Err(illegal("Can't change state to the current state!"));
     }
-
-    let basic = |data: StateData| -> PendingState {
-      let init = Box::new(move |_: &mut Arena, state: ArenaState| {
-        Ok(BoundState {
-          first: true,
-          state,
-          data,
-        })
-      });
-      PendingState {
-        state: desired,
-        init,
-      }
-    };
-
-    let wrap = |init: Box<ArenaStateInitialiser>| -> PendingState {
-      PendingState {
-        state: desired,
-        init,
-      }
-    };
 
     match (&self.state.state, desired, &self.state.data) {
       // E-Stops
-      (_, ArenaState::Estop, _) => Ok(basic(StateData::Estop)),
-      (ArenaState::Estop, ArenaState::Idle, _) => Ok(basic(StateData::Idle)),
+      (_, ArenaState::Estop, _) => Ok(()),
+      (ArenaState::Estop, ArenaState::Idle, _) => Ok(()),
 
       // Primary Flows
       (ArenaState::Idle, ArenaState::Prestart(false, _), _) => {
@@ -272,31 +243,57 @@ impl Arena {
           .as_ref()
           .ok_or(illegal("Cannot PreStart without a Match"))?;
         if m.current_state() != MatchPlayState::Waiting {
-          Err(illegal(&format!("Match is not in waiting state! {:?}", m.current_state())))
+          Err(illegal(&format!(
+            "Match is not in waiting state! {:?}",
+            m.current_state()
+          )))
         } else {
-          Ok(wrap(Box::new(Arena::state_init_prestart)))
+          Ok(())
         }
       }
-      (ArenaState::Prestart(false, _), ArenaState::Prestart(true, _), _) => {
-        Ok(basic(StateData::Prestart(None)))
-      }
+      (ArenaState::Prestart(false, _), ArenaState::Prestart(true, _), _) => Ok(()),
       (ArenaState::Prestart(true, _), ArenaState::MatchArmed, _) => {
         // Prestart must be ready (true)
-        Ok(basic(StateData::MatchArmed))
+        Ok(())
       }
-      (ArenaState::MatchArmed, ArenaState::MatchPlay, _) => Ok(basic(StateData::MatchPlay)),
+      (ArenaState::MatchArmed, ArenaState::MatchPlay, _) => Ok(()),
       (ArenaState::MatchPlay, ArenaState::MatchComplete, _) => {
         let m = log_expect!(self.current_match.as_ref().ok_or("No match!"));
         if m.current_state() != MatchPlayState::Complete {
           Err(illegal("Match is not complete."))
         } else {
-          Ok(basic(StateData::MatchComplete))
+          Ok(())
         }
       }
-      (ArenaState::MatchComplete, ArenaState::MatchCommit, _) => Ok(basic(StateData::MatchCommit)),
-      (ArenaState::MatchCommit, ArenaState::Idle, _) => Ok(basic(StateData::Idle)),
+      (ArenaState::MatchComplete, ArenaState::MatchCommit, _) => Ok(()),
+      (ArenaState::MatchCommit, ArenaState::Idle, _) => Ok(()),
 
       _ => Err(illegal("Undefined Transition")),
+    }
+  }
+
+  fn do_state_init(&mut self, state: ArenaState) -> ArenaResult<BoundState> {
+    self.can_change_state_to(state)?;
+
+    let current = self.state.state;
+
+    let basic = move |data: StateData| -> ArenaResult<BoundState> {
+      Ok(BoundState {
+        first: true,
+        state,
+        data,
+      })
+    };
+
+    match (current, state, &self.state.data) {
+      (_, ArenaState::Estop, _) => basic(StateData::Estop),
+      (_, ArenaState::Idle, _) => basic(StateData::Idle),
+      (_, ArenaState::Prestart(false, _), _) => self.state_init_prestart(state),
+      (_, ArenaState::Prestart(true, _), _) => basic(StateData::Prestart(None)),
+      (_, ArenaState::MatchArmed, _) => basic(StateData::MatchArmed),
+      (_, ArenaState::MatchPlay, _) => basic(StateData::MatchPlay),
+      (_, ArenaState::MatchComplete, _) => basic(StateData::MatchComplete),
+      (_, ArenaState::MatchCommit, _) => basic(StateData::MatchCommit),
     }
   }
 
@@ -411,11 +408,6 @@ impl Arena {
     return self.state.state;
   }
 
-  #[allow(dead_code)]
-  pub fn can_change_state_to(&self, desired: ArenaState) -> bool {
-    self.get_state_change(desired).is_ok()
-  }
-
   fn prepare_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
     context!("Queue State Change", {
       info!(
@@ -423,13 +415,13 @@ impl Arena {
         self.state.state, desired
       );
 
-      match self.get_state_change(desired) {
+      match self.can_change_state_to(desired) {
         Err(e) => {
           error!("Could not perform state transition: {}", e);
           Err(e)
         }
         Ok(pending) => {
-          self.pending_state_change = Some(pending);
+          self.pending_state_change = Some(desired);
           Ok(())
         }
       }
@@ -441,7 +433,7 @@ impl Arena {
     match pending {
       None => Ok(()),
       Some(pend) => {
-        self.state = (pend.init)(self, pend.state)?;
+        self.state = self.do_state_init(pend)?;
         info!("State transition performed!");
         Ok(())
       }
