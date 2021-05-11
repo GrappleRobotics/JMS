@@ -22,7 +22,7 @@ use dotenv::dotenv;
 use log::info;
 use network::NetworkProvider;
 
-use crate::arena::{ArenaSignal, ArenaState, matches::Match};
+use crate::arena::{matches::Match, ArenaSignal, ArenaState};
 
 struct FakeNetwork {}
 impl NetworkProvider for FakeNetwork {
@@ -66,13 +66,13 @@ async fn main() {
   let network = Box::new(FakeNetwork {});
 
   let mut arena = arena::Arena::new(3, Some(network));
-  arena.load_match(Match { state: arena::matches::MatchPlayState::Waiting });
+  arena.load_match(Match::new());
   arena.update();
   assert_eq!(arena.current_state(), ArenaState::Idle);
   arena.signal(ArenaSignal::Prestart(false));
   arena.update();
   assert_eq!(arena.current_state(), ArenaState::Prestart(false, false));
-  let mut s= "".to_owned();
+  let mut s = "".to_owned();
   while let ArenaState::Prestart(false, _) = arena.current_state() {
     arena.update();
     s = s + ".";
@@ -80,5 +80,15 @@ async fn main() {
   }
   assert_eq!(arena.current_state(), ArenaState::Prestart(true, false));
   arena.update();
-  info!("{:?}", arena.current_state());
+  arena.signal(ArenaSignal::MatchArm);
+  arena.update();
+  assert_eq!(arena.current_state(), ArenaState::MatchArmed);
+  arena.signal(ArenaSignal::MatchPlay);
+  arena.update();
+  assert_eq!(arena.current_state(), ArenaState::MatchPlay);
+  while let ArenaState::MatchPlay = arena.current_state() {
+    arena.update();
+    thread::sleep(Duration::from_millis(10));
+  }
+  assert_eq!(arena.current_state(), ArenaState::MatchComplete);
 }
