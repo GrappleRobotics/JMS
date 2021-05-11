@@ -153,13 +153,18 @@ impl Arena {
 
   fn update_states(&mut self) -> ArenaResult<()> {
     let first = self.state.first;
-    match (&self.state.state, &mut self.state.data) {
+    match (self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
         if let Some(ArenaSignal::Prestart(force)) = self.current_signal() {
           self.prepare_state_change(ArenaState::Prestart(false, force))?;
         }
       }
-      (ArenaState::Estop, _) => (),
+      (ArenaState::Estop, _) => {
+        if let Some(ref mut m) = self.current_match {
+          // Fault the match - it can't be run and must be reloaded.
+          m.fault();
+        }
+      }
       (ArenaState::Prestart(false, force), StateData::Prestart(maybe_recv)) => {
         if first {
           info!("Prestart begin...")
@@ -173,7 +178,7 @@ impl Arena {
             Err(e) => panic!("Network runner fault: {}", e),
             Ok(result) => {
               result?;
-              self.prepare_state_change(ArenaState::Prestart(true, *force))?;
+              self.prepare_state_change(ArenaState::Prestart(true, force))?;
             }
           };
         }
@@ -213,7 +218,7 @@ impl Arena {
         }
       }
       (ArenaState::MatchCommit, _) => (),
-      (state, _) => Err(ArenaError::UnimplementedStateError(*state))?,
+      (state, _) => Err(ArenaError::UnimplementedStateError(state))?,
     };
     Ok(())
   }
@@ -267,7 +272,7 @@ impl Arena {
           .as_ref()
           .ok_or(illegal("Cannot PreStart without a Match"))?;
         if m.current_state() != MatchPlayState::Waiting {
-          Err(illegal("Match is not in waiting state!"))
+          Err(illegal(&format!("Match is not in waiting state! {:?}", m.current_state())))
         } else {
           Ok(wrap(Box::new(Arena::state_init_prestart)))
         }
@@ -277,13 +282,7 @@ impl Arena {
       }
       (ArenaState::Prestart(true, _), ArenaState::MatchArmed, _) => {
         // Prestart must be ready (true)
-        // TODO: Driver stations ready and match ready
-        let m = log_expect!(self.current_match.as_ref().ok_or("No match!"));
-        if m.current_state() != MatchPlayState::Waiting {
-          Err(illegal("Match is not in waiting state."))
-        } else {
-          Ok(basic(StateData::MatchArmed))
-        }
+        Ok(basic(StateData::MatchArmed))
       }
       (ArenaState::MatchArmed, ArenaState::MatchPlay, _) => Ok(basic(StateData::MatchPlay)),
       (ArenaState::MatchPlay, ArenaState::MatchComplete, _) => {
