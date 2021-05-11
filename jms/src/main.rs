@@ -79,4 +79,6 @@ async fn main() {
     thread::sleep(Duration::from_millis(10));
   }
   assert_eq!(arena.current_state(), ArenaState::Prestart(true, false));
+  arena.update();
+  info!("{:?}", arena.current_state());
 }

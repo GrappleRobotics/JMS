@@ -8,6 +8,7 @@ use std::{
 };
 
 use log::{error, info};
+use enum_as_inner::EnumAsInner;
 
 use super::exceptions::{ArenaError, ArenaResult, StateTransitionError};
 use crate::{
@@ -18,7 +19,7 @@ use crate::{
 
 use super::matches::Match;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, EnumAsInner)]
 pub enum ArenaState {
   Idle,  // Idle state
   Estop, // Arena is emergency stopped and can only be unlocked by FTA
@@ -31,6 +32,7 @@ pub enum ArenaState {
   MatchCommit,   // Commit the match score - lock ref tablets, publish to TBA and Audience Display
 }
 
+#[derive(EnumAsInner)]
 enum StateData {
   Idle,
   Estop,
@@ -42,14 +44,14 @@ enum StateData {
   MatchCommit,
 }
 
-struct LoadedState {
+struct BoundState {
   first: bool,    // First run?
   state: ArenaState,
   data: StateData,
 }
 
 // Functions responsible for initialising a new state to be loaded onto the arena.
-type ArenaStateInitialiser = dyn FnOnce(&mut Arena, ArenaState) -> ArenaResult<LoadedState>;
+type ArenaStateInitialiser = dyn FnOnce(&mut Arena, ArenaState) -> ArenaResult<BoundState>;
 
 struct PendingState {
   state: ArenaState,
@@ -92,7 +94,7 @@ pub struct AllianceStation {
 
 pub struct Arena {
   network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
-  state: LoadedState,
+  state: BoundState,
   pending_state_change: Option<PendingState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
   current_match: Option<Match>,
@@ -103,7 +105,7 @@ impl Arena {
   pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send>>) -> Arena {
     let mut a = Arena {
       network: Arc::new(Mutex::new(network)),
-      state: LoadedState {
+      state: BoundState {
         first: true,
         state: ArenaState::Idle,
         data: StateData::Idle,
@@ -165,19 +167,9 @@ impl Arena {
             Err(e) => panic!("Network runner fault: {}", e),
             Ok(result) => {
               result?;
-              *maybe_recv = None;    // Data received, ready to go.
+              self.prepare_state_change(ArenaState::Prestart(true, *force))?;
             }
           };
-        }
-
-        // This enters both above, as well as if we are provided no network on the first update.
-        if maybe_recv.is_none() {
-          // We can change the state ready directly since there is no special 
-          // init logic, we want to keep the value of 'first', and we do not
-          // want to queue. This is the only place where this transition can happen,
-          // so we keep it out of get_state_change.
-
-          self.state.state = ArenaState::Prestart(true, *force);
         }
       },
       (ArenaState::Prestart(true, _), _) => {
@@ -228,7 +220,7 @@ impl Arena {
     }
 
     let basic = |data: StateData| -> PendingState {
-      let init = Box::new(move |_: &mut Arena, state: ArenaState| Ok(LoadedState { first: true, state, data }));
+      let init = Box::new(move |_: &mut Arena, state: ArenaState| Ok(BoundState { first: true, state, data }));
       PendingState {
         state: desired,
         init,
@@ -258,6 +250,9 @@ impl Arena {
           Ok(wrap(Box::new(Arena::state_init_prestart)))
         }
       }
+      (ArenaState::Prestart(false, _), ArenaState::Prestart(true, _), _) => {
+        Ok(basic(StateData::Prestart(None)))
+      }
       (ArenaState::Prestart(true, _), ArenaState::MatchArmed, _) => {    // Prestart must be ready (true)
         // TODO: Driver stations ready and match ready
         let m = log_expect!(self.current_match.ok_or("No match!"));
@@ -283,43 +278,40 @@ impl Arena {
     }
   }
 
-  fn state_init_prestart(&mut self, state: ArenaState) -> ArenaResult<LoadedState> {
-    if let ArenaState::Prestart(false, force) = state {
-      let the_rx = match *self.network.lock().unwrap() {
-        // No network provided means prestart is ready.
-        None => None,
-        Some(_) => {
-          // Need to clone these since there's no guarantee the thread will finish before
-          // the arena is destructed.
-          // Note of course that the arena won't be able to exit prestart until this is complete.
-          let netw_arc = self.network.clone();
-          let stations = self.stations.clone();
+  fn state_init_prestart(&mut self, state: ArenaState) -> ArenaResult<BoundState> {
+    let (_, force) = state.into_prestart().unwrap();
+    let the_rx = match *self.network.lock().unwrap() {
+      // No network provided means prestart is ready.
+      None => None,
+      Some(_) => {
+        // Need to clone these since there's no guarantee the thread will finish before
+        // the arena is destructed.
+        // Note of course that the arena won't be able to exit prestart until this is complete.
+        let netw_arc = self.network.clone();
+        let stations = self.stations.clone();
 
-          let (tx, rx) = channel();
+        let (tx, rx) = channel();
 
-          thread::spawn(move || {
-            context!("Arena Prestart Network", {
-              info!("Configuring alliances...");
-              let mut mtx_net = netw_arc.lock().unwrap();
-              let ref mut net = mtx_net.as_mut().unwrap();
-              let result = net.configure_alliances(&mut stations.iter(), force);     // Unwrap is safe if net optional is immutable due to match call.
-              tx.send(result).unwrap(); // TODO: Better fatal handling
-              info!("Alliances configured!");
-            })
-          });
+        thread::spawn(move || {
+          context!("Arena Prestart Network", {
+            info!("Configuring alliances...");
+            let mut mtx_net = netw_arc.lock().unwrap();
+            let ref mut net = mtx_net.as_mut().unwrap();
+            let result = net.configure_alliances(&mut stations.iter(), force);     // Unwrap is safe if net optional is immutable due to match call.
+            tx.send(result).unwrap(); // TODO: Better fatal handling
+            info!("Alliances configured!");
+          })
+        });
 
-          Some(rx)
-        },
-      };
+        Some(rx)
+      },
+    };
 
-      Ok(LoadedState {
-        first: true,
-        state,
-        data: StateData::Prestart(the_rx),
-      })
-    } else {
-      panic!("Prestart state is not the correct type!")
-    }
+    Ok(BoundState {
+      first: true,
+      state: ArenaState::Prestart(the_rx.is_none(), force),    // Ready if there's no network
+      data: StateData::Prestart(the_rx),
+    })
   }
 
   pub fn update(&mut self) {
@@ -410,7 +402,6 @@ impl Arena {
           Err(e)
         }
         Ok(pending) => {
-          info!("State transition queued!");
           self.pending_state_change = Some(pending);
           Ok(())
         }

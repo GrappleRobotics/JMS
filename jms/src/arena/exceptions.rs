@@ -17,7 +17,7 @@ impl std::fmt::Display for StateTransitionError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "State Transition Error: {} to {} ({})",
+      "State Transition Error: {:?} to {:?} ({})",
       self.from, self.to, self.why
     )
   }
