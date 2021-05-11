@@ -65,7 +65,7 @@ async fn main() {
 
   let network = Box::new(FakeNetwork {});
 
-  let mut arena = arena::Arena::new(3, network);
+  let mut arena = arena::Arena::new(3, Some(network));
   arena.load_match(Match { state: arena::matches::MatchPlayState::Waiting });
   arena.update();
   assert_eq!(arena.current_state(), ArenaState::Idle);

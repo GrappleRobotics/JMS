@@ -91,7 +91,7 @@ pub struct AllianceStation {
 }
 
 pub struct Arena {
-  network: Arc<Mutex<Box<dyn NetworkProvider + Send>>>,
+  network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
   state: LoadedState,
   pending_state_change: Option<PendingState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
@@ -100,7 +100,7 @@ pub struct Arena {
 }
 
 impl Arena {
-  pub fn new(num_stations_per_alliance: u32, network: Box<dyn NetworkProvider + Send>) -> Arena {
+  pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send>>) -> Arena {
     let mut a = Arena {
       network: Arc::new(Mutex::new(network)),
       state: LoadedState {
@@ -219,8 +219,12 @@ impl Arena {
       },
       (ArenaState::Estop, _) => (),
       (ArenaState::Prestart(false, force), StateData::Prestart(maybe_recv)) => {
-        // Check if network is ready
+        if first {
+          info!("Prestart begin...")
+        }
+
         if let Some(recv) = maybe_recv {
+          // Check if network is ready
           let recv_result = recv.try_recv();
           match recv_result {
             Err(TryRecvError::Empty) => (), // Not ready yet
@@ -228,15 +232,19 @@ impl Arena {
             Ok(result) => {
               result?;
               *maybe_recv = None;    // Data received, ready to go.
-
-              // We can change the state ready directly since there is no special 
-              // init logic, we want to keep the value of 'first', and we do not
-              // want to queue. This is the only place where this transition can happen,
-              // so we keep it out of get_state_change.
-              info!("Prestart Ready!");
-              self.state.state = ArenaState::Prestart(true, *force);
             }
           };
+        }
+
+        // This enters both above, as well as if we are provided no network on the first update.
+        if maybe_recv.is_none() {
+          // We can change the state ready directly since there is no special 
+          // init logic, we want to keep the value of 'first', and we do not
+          // want to queue. This is the only place where this transition can happen,
+          // so we keep it out of get_state_change.
+
+          info!("Prestart Ready!");
+          self.state.state = ArenaState::Prestart(true, *force);
         }
       },
       (ArenaState::MatchArmed, _) => (),
@@ -324,35 +332,45 @@ impl Arena {
   }
 
   fn state_init_prestart(&mut self, state: ArenaState) -> ArenaResult<LoadedState> {
-    // Need to clone these since there's no guarantee the thread will finish before
-    // the arena is destructed.
-    // Note of course that the arena won't be able to exit prestart until this is complete.
     if let ArenaState::Prestart(false, force) = state {
-      let netw_arc = self.network.clone();
-      let stations = self.stations.clone();
+      let the_rx = match *self.network.lock().unwrap() {
+        // No network provided means prestart is ready.
+        None => None,
+        Some(_) => {
+          // Need to clone these since there's no guarantee the thread will finish before
+          // the arena is destructed.
+          // Note of course that the arena won't be able to exit prestart until this is complete.
+          let netw_arc = self.network.clone();
+          let stations = self.stations.clone();
 
-      let (tx, rx) = channel();
+          let (tx, rx) = channel();
 
-      thread::spawn(move || {
-        context!("Arena Prestart Network", {
-          info!("Configuring alliances...");
-          let mut net = netw_arc.lock().unwrap();
-          let result = net.configure_alliances(&mut stations.iter(), force);
-          tx.send(result).unwrap(); // TODO: Better fatal handling
-          info!("Alliances configured!");
-        })
-      });
+          thread::spawn(move || {
+            context!("Arena Prestart Network", {
+              info!("Configuring alliances...");
+              let mut mtx_net = netw_arc.lock().unwrap();
+              let ref mut net = mtx_net.as_mut().unwrap();
+              let result = net.configure_alliances(&mut stations.iter(), force);     // Unwrap is safe if net optional is immutable due to match call.
+              tx.send(result).unwrap(); // TODO: Better fatal handling
+              info!("Alliances configured!");
+            })
+          });
+
+          Some(rx)
+        },
+      };
 
       Ok(LoadedState {
         first: true,
         state,
-        data: StateData::Prestart(Some(rx)),
+        data: StateData::Prestart(the_rx),
       })
     } else {
       panic!("Prestart state is not the correct type!")
     }
   }
 
+  #[allow(dead_code)]
   pub fn can_change_state_to(&self, desired: ArenaState) -> bool {
     self.get_state_change(desired).is_ok()
   }
@@ -376,22 +394,6 @@ impl Arena {
         }
       }
     })
-  }
-
-  // Don't error to the console if a state transition is not possible. Good for automatic transitions
-  // like from Prestart to PrestartComplete, without evaluating can_change_state_to.
-  fn maybe_queue_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
-    match self.get_state_change(desired) {
-      Err(e) => Err(e),
-      Ok(pending) => {
-        info!(
-          "State transition queued: {} -> {}",
-          self.state.state, desired
-        );
-        self.pending_state_change = Some(pending);
-        Ok(())
-      }
-    }
   }
 
   fn perform_state_change(&mut self) -> ArenaResult<()> {
