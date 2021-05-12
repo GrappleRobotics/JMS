@@ -29,10 +29,10 @@ pub enum ArenaState {
 
   // Match Pipeline //
   Prestart(/* ready */ bool, /* forced */ bool), // Configure network and devices. Expose ready so we can see it outside.
-  MatchArmed,    // Arm the match - ensure field crew is off. Can revert to Prestart.
-  MatchPlay,     // Currently running a match - handed off to Match runner
-  MatchComplete, // Match just finished, waiting to commit. Refs can still change scores
-  MatchCommit,   // Commit the match score - lock ref tablets, publish to TBA and Audience Display
+  MatchArmed,                                    // Arm the match - ensure field crew is off. Can revert to Prestart.
+  MatchPlay,                                     // Currently running a match - handed off to Match runner
+  MatchComplete,                                 // Match just finished, waiting to commit. Refs can still change scores
+  MatchCommit, // Commit the match score - lock ref tablets, publish to TBA and Audience Display
 }
 
 #[derive(EnumAsInner)]
@@ -98,10 +98,7 @@ pub struct Arena {
 }
 
 impl Arena {
-  pub fn new(
-    num_stations_per_alliance: u32,
-    network: Option<Box<dyn NetworkProvider + Send>>,
-  ) -> Arena {
+  pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send>>) -> Arena {
     let mut a = Arena {
       network: Arc::new(Mutex::new(network)),
       state: BoundState {
@@ -340,10 +337,7 @@ impl Arena {
         let estop_result = self.update_field_estop();
         match estop_result {
           Err(ArenaError::IllegalStateChange(ref isc)) => {
-            error!(
-              "Cannot transition to E-STOP from {} ({})",
-              isc.from, isc.why
-            );
+            error!("Cannot transition to E-STOP from {} ({})", isc.from, isc.why);
           }
           Err(x) => error!("Other error for estop: {}", x),
           Ok(()) => (),
@@ -410,10 +404,7 @@ impl Arena {
 
   fn prepare_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
     context!("Queue State Change", {
-      info!(
-        "Queuing state transition: {:?} -> {:?}",
-        self.state.state, desired
-      );
+      info!("Queuing state transition: {:?} -> {:?}", self.state.state, desired);
 
       match self.can_change_state_to(desired) {
         Err(e) => {

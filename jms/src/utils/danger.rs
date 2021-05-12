@@ -47,7 +47,10 @@ fn eval_danger_zone() -> bool {
   match file_content {
     Ok(s) => {
       if s.trim() != JMS_DANGER_STRING {
-        warn!("The content of {} is unexpected. To enable danger zone, the file should have content \"{}\" only.", JMS_DANGER_FILE, JMS_DANGER_STRING);
+        warn!(
+          "The content of {} is unexpected. To enable danger zone, the file should have content \"{}\" only.",
+          JMS_DANGER_FILE, JMS_DANGER_STRING
+        );
       } else {
         danger = true;
       }
@@ -74,13 +77,13 @@ fn eval_danger_zone() -> bool {
     warn!("|                                                     |");
     warn!("|  If this is not what you intend, stop JMS now and   |");
     warn!("|     delete the {} file and/or     |", JMS_DANGER_FILE);
-    warn!(
-      "|              unset {}.              |",
-      JMS_DANGER_ENV_VAR
-    );
+    warn!("|              unset {}.              |", JMS_DANGER_ENV_VAR);
     warn!("================= DANGER ZONE ENABLED =================");
   } else {
-    warn!("JMS is in safe mode. To allow JMS to modify system files, populate the {} file or {} env var.", JMS_DANGER_FILE, JMS_DANGER_ENV_VAR);
+    warn!(
+      "JMS is in safe mode. To allow JMS to modify system files, populate the {} file or {} env var.",
+      JMS_DANGER_FILE, JMS_DANGER_ENV_VAR
+    );
   }
 
   danger

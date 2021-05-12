@@ -18,10 +18,7 @@ fn pool() -> DbPool {
       info!("DB Pool Starting...");
       let uri = log_expect!(env::var("DATABASE_URL"), "DATABASE_URL is not set: {}");
       let mgr = ConnectionManager::<ConnectionT>::new(uri);
-      let p = log_expect!(
-        Pool::builder().build(mgr),
-        "Could not start DB connection pool! {}"
-      );
+      let p = log_expect!(Pool::builder().build(mgr), "Could not start DB connection pool! {}");
       info!("DB Pool Ready!");
       p
     };

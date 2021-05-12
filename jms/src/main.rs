@@ -37,10 +37,7 @@ impl NetworkProvider for FakeNetwork {
     force_reload: bool,
   ) -> network::NetworkResult<()> {
     let alls: Vec<&arena::AllianceStation> = stations.collect();
-    info!(
-      "Configuring Alliances (Force? {}): {:?}",
-      force_reload, alls
-    );
+    info!("Configuring Alliances (Force? {}): {:?}", force_reload, alls);
     thread::sleep(Duration::from_millis(1000));
     Ok(())
   }
@@ -52,11 +49,7 @@ async fn main() {
 
   let matches = App::new("JMS")
     .about("An Alternative Field-Management-System for FRC Offseason Events.")
-    .arg(
-      Arg::with_name("debug")
-        .short("d")
-        .help("Enable debug logging."),
-    )
+    .arg(Arg::with_name("debug").short("d").help("Enable debug logging."))
     .get_matches();
 
   logging::configure(matches.is_present("debug"));

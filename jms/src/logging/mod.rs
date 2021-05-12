@@ -218,11 +218,7 @@ fn render_breadcrumb() -> String {
   }
 }
 
-fn render_record_line<'a>(
-  style: &'a mut Style,
-  file: Option<&str>,
-  num: Option<u32>,
-) -> StyledValue<'a, String> {
+fn render_record_line<'a>(style: &'a mut Style, file: Option<&str>, num: Option<u32>) -> StyledValue<'a, String> {
   let file = file.unwrap_or("<unknown>");
   let ln = match num {
     Some(n) => n.to_string(),
