@@ -1,9 +1,9 @@
 use std::time::{Duration, Instant};
 
-use log::warn;
+use log::{info, warn};
 
 use super::exceptions::{MatchError, MatchResult};
-use crate::{context, info};
+use crate::{context};
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Display)]
 pub enum MatchPlayState {

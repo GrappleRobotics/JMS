@@ -10,10 +10,8 @@ use std::{
 use enum_as_inner::EnumAsInner;
 use log::{error, info};
 
-use super::{
-  exceptions::{ArenaError, ArenaResult, StateTransitionError},
-  matches::MatchPlayState,
-};
+use super::{exceptions::{ArenaError, ArenaResult, StateTransitionError}, matches::MatchPlayState, station::{Alliance, AllianceStationId}};
+
 use crate::{
   context, log_expect,
   models::Team,
@@ -72,16 +70,9 @@ pub enum ArenaEntryCondition {
   Any,       // Anyone (Idle only - awards etc)
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum Alliance {
-  Blue,
-  Red,
-}
-
 #[derive(Debug, Clone)]
 pub struct AllianceStation {
-  alliance: Alliance,
-  number: u32,
+  station: AllianceStationId,
   team: Option<Team>,
   bypass: bool,
   estop: bool,
@@ -115,8 +106,7 @@ impl Arena {
     for alliance in vec![Alliance::Blue, Alliance::Red] {
       for i in 1..(num_stations_per_alliance + 1) {
         a.stations.push(AllianceStation {
-          alliance,
-          number: i,
+          station: AllianceStationId { alliance, station: i },
           team: None,
           bypass: false,
           estop: false,
