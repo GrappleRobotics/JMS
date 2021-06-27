@@ -1,33 +1,21 @@
 #include <mbed.h>
-#include <EthernetInterface.h>
-#include <FlashIAP.h>
+#include "Network.h"
+#include "OLED.h"
 
-DigitalOut led(PB_0);
-
+// @TODO Sensor Beam breaks/Reflections
 int main() {
-  char buf[256];
+	OLED oled(D14, D15);
+	DigitalIn userButton(USER_BUTTON);
 
-  EthernetInterface eth;
-  eth.connect();
+	int goal = 0;
 
-  SocketAddress a;
-  eth.get_ip_address(&a);
-  printf("Server IP Address is: %s\n", a.get_ip_address());
-
-  TCPSocket srv, *client;
-  srv.open(&eth);
-  
-  srv.bind(9999);
-  
-  srv.listen(1);
-
-  while (1) {
-    client = srv.accept();
-    while (client != nullptr && client->recv(buf, 256) > 0) {
-      led = (atoi(buf) != 0);
-    }
-    ThisThread::sleep_for(50ms);
-  }
+	// If user pressed blue button. End program
+	while (userButton != 1) {
+		oled.print(goal);
+		goal++;
+	}
+	
+	oled.~OLED();
 }
 
 // int main() {
