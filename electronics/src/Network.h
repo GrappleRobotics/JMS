@@ -9,6 +9,9 @@
 
 DigitalOut led(PB_0);
 
+/**
+ * Network controller test
+ */
 class Network {
  public:
 
