@@ -14,7 +14,6 @@ use super::{exceptions::{ArenaError, ArenaResult, StateTransitionError}, matches
 
 use crate::{
   context, log_expect,
-  models::Team,
   network::{NetworkProvider, NetworkResult},
 };
 
@@ -70,13 +69,14 @@ pub enum ArenaEntryCondition {
   Any,       // Anyone (Idle only - awards etc)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct AllianceStation {
-  station: AllianceStationId,
-  team: Option<Team>,
-  bypass: bool,
-  estop: bool,
-  astop: bool,
+  pub station: AllianceStationId,
+  pub team: Option<u16>,
+  pub bypass: bool,
+  pub estop: bool,
+  pub astop: bool,
+  // TODO: Add connection state
 }
 
 pub struct Arena {
@@ -85,8 +85,10 @@ pub struct Arena {
   pending_state_change: Option<ArenaState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
   current_match: Option<Match>,
-  stations: Vec<AllianceStation>,
+  pub stations: Vec<AllianceStation>,
 }
+
+pub type SharedArena = Arc<Mutex<Arena>>;
 
 impl Arena {
   pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send>>) -> Arena {
@@ -120,6 +122,12 @@ impl Arena {
 
   pub fn load_match(&mut self, m: Match) {
     self.current_match = Some(m);
+  }
+
+  pub fn station_for_team(&self, team: u16) -> Option<AllianceStation> {
+    self.stations.iter()
+      .find(|&&stn| stn.team == Some(team))
+      .map(|&a| a)  // Copy the AllianceStation to avoid reference lifetime issues
   }
 
   fn update_field_estop(&mut self) -> ArenaResult<()> {

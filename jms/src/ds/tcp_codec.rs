@@ -62,9 +62,9 @@ pub struct Fms2DsTCP {
 
 #[derive(Debug)]
 pub enum Fms2DsTCPTags {
-  EventCode(String),
+  #[allow(dead_code)] EventCode(String),
   StationInfo(AllianceStationId, Fms2DsStationStatus),
-  GameData(String)
+  #[allow(dead_code)] GameData(String)
 }
 
 #[derive(Debug)]

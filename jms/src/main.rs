@@ -1,128 +1,122 @@
-use std::{error::Error, net::SocketAddr, sync::{Arc, Mutex}, thread, time::Duration};
-
-use chrono::{Local, Utc};
-use ds::{DSUDPCodec, Fms2DsUDP};
-use futures::{SinkExt, StreamExt};
-use tokio::{join, net::{TcpListener, UdpSocket}, try_join};
-use tokio_util::{codec::Framed, udp::UdpFramed};
-
-use crate::{arena::station::AllianceStationId, ds::{DSTCPCodec, Ds2FmsTCP, Ds2FmsTCPTags, Fms2DsStationStatus, Fms2DsTCP, Fms2DsTCPTags}};
-
-mod ds;
-mod utils;
-
-extern crate strum;
-#[macro_use]
-extern crate strum_macros;
-
 mod arena;
+mod db;
 mod logging;
 mod network;
+mod utils;
+mod ds;
+
 mod models;
-mod db;
 mod schema;
 
 #[macro_use]
 extern crate diesel_migrations;
 #[macro_use]
 extern crate diesel;
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
+
+use std::{error::Error, sync::{Arc, Mutex}, thread, time::Duration};
+
+use arena::SharedArena;
+use clap::{App, Arg};
+use dotenv::dotenv;
+use ds::connector::DSConnectionService;
+use log::info;
+use network::NetworkProvider;
+use tokio::{net::TcpListener, try_join};
+
+use crate::{arena::{matches::Match, ArenaSignal, ArenaState}, ds::connector::DSConnection};
+
+struct FakeNetwork {}
+impl NetworkProvider for FakeNetwork {
+  fn configure_admin(&mut self) -> network::NetworkResult<()> {
+    info!("Configuring Admin");
+    Ok(())
+  }
+
+  fn configure_alliances(
+    &mut self,
+    stations: &mut dyn Iterator<Item = &arena::AllianceStation>,
+    force_reload: bool,
+  ) -> network::NetworkResult<()> {
+    let alls: Vec<&arena::AllianceStation> = stations.collect();
+    info!("Configuring Alliances (Force? {}): {:?}", force_reload, alls);
+    thread::sleep(Duration::from_millis(1000));
+    Ok(())
+  }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-  // let server = UdpSocket::bind("0.0.0.0:1160").await?;
-  // let mut incoming = UdpFramed::new(server, DSUDPCodec::new());
-  // println!("Listening for clients...");
+  dotenv().ok();
 
-  // while let Some(Ok((msg, addr))) = incoming.next().await {
-  //   println!("Received from {}: {:#?}", addr, msg);
-  // }
+  let matches = App::new("JMS")
+    .about("An Alternative Field-Management-System for FRC Offseason Events.")
+    .arg(Arg::with_name("debug").short("d").help("Enable debug logging."))
+    .get_matches();
 
-  let dses = Arc::new(Mutex::new(vec![] as Vec<SocketAddr>));
-  let fut_tcp = tcp(dses.clone());
-  let fut_udp = udp(dses.clone());
+  logging::configure(matches.is_present("debug"));
 
-  try_join!(fut_tcp, fut_udp)?;
+  db::connection(); // Start connection
+
+  let network = Box::new(FakeNetwork {});
+
+  // let mut arena = arena::Arena::new(3, Some(network));
+  // let mut arena = arena::SharedArena::new(Mutex::new(3, Some(network)));
+  let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
+  {
+    let mut a = arena.lock().unwrap();
+    a.load_match(Match::new());
+    a.stations[1].team = Some(4788);
+    a.stations[2].team = Some(100);
+    a.update();
+  }
+
+  let mut ds_service = DSConnectionService::new(arena);
+  ds_service.run().await?;
+
+  // let fut_tcp = tcp(arena);
   // try_join!(fut_tcp)?;
 
   Ok(())
+  // assert_eq!(arena.current_state(), ArenaState::Idle);
+  // arena.signal(ArenaSignal::Prestart(false));
+  // arena.update();
+  // assert_eq!(arena.current_state(), ArenaState::Prestart(false, false));
+  // let mut s = "".to_owned();
+  // while let ArenaState::Prestart(false, _) = arena.current_state() {
+  //   arena.update();
+  //   s = s + ".";
+  //   thread::sleep(Duration::from_millis(10));
+  // }
+  // assert_eq!(arena.current_state(), ArenaState::Prestart(true, false));
+  // arena.update();
+  // arena.signal(ArenaSignal::MatchArm);
+  // arena.update();
+  // assert_eq!(arena.current_state(), ArenaState::MatchArmed);
+  // arena.signal(ArenaSignal::MatchPlay);
+  // arena.update();
+  // assert_eq!(arena.current_state(), ArenaState::MatchPlay);
+  // while let ArenaState::MatchPlay = arena.current_state() {
+  //   arena.update();
+  //   thread::sleep(Duration::from_millis(10));
+  // }
+  // assert_eq!(arena.current_state(), ArenaState::MatchComplete);
 }
 
-async fn tcp(dses: Arc<Mutex<Vec<SocketAddr>>>) -> Result<(), Box<dyn Error>> {
-  let server = TcpListener::bind("0.0.0.0:1750").await?;
-  loop {
-    println!("Listening...");
-    let (stream, addr) = server.accept().await?;
-    println!("Connected: {}", addr);
-    dses.lock().unwrap().push(addr);
-    
-    tokio::spawn(async move {
-      let mut trans = Framed::new(stream, DSTCPCodec::new());
+// async fn tcp(arena: SharedArena) -> Result<(), Box<dyn Error>> {
+//   let server = TcpListener::bind("0.0.0.0:1750").await?;
+//   loop {
+//     info!("Listening...");
+//     let (stream, addr) = server.accept().await?;
+//     info!("Connected: {}", addr);
+//     let this_arena = arena.clone();
+//     tokio::spawn(async move {
+//       let mut conn = DSConnection::new(this_arena, addr, stream);
+//       conn.process_tcp().await;
+//     });
+//   }
+// }
 
-      while let Some(req) = trans.next().await {
-        match req {
-          Ok(req) => {
-            let mut response = Fms2DsTCP { tags: vec![] };
-            response.tags.push(Fms2DsTCPTags::StationInfo(
-              AllianceStationId { alliance: arena::station::Alliance::Red, station: 3 },
-              Fms2DsStationStatus::Good
-            ));
-            // response.tags.push(Fms2DsTCPTags::EventCode("2021auwarp".to_owned()));
-            // response.tags.push(Fms2DsTCPTags::GameData("CAB".to_owned()));
-
-            // req.tags.iter().for_each(|x| {
-            //   match x {
-            //     Ds2FmsTCPTags::LogData(dat) => {
-            //       println!("LogData => A: {} T: {} D: {} A: {} D: {}", dat.rtt, dat.ds_teleop, dat.ds_disable, dat.robot_auto, dat.robot_disable);
-            //     }
-            //     x => println!("{:?}", x)
-            //   }
-            // });
-            trans.send(response).await.unwrap();
-          },
-          Err(e) => println!("Error: {}", e)
-        }
-      }
-    });
-  }
-}
-
-async fn udp(dses: Arc<Mutex<Vec<SocketAddr>>>) -> Result<(), Box<dyn Error>> {
-  let mut i = 0;
-  let sock = UdpSocket::bind("0.0.0.0:1160").await?;
-  let mut framed = UdpFramed::new(sock, DSUDPCodec::new());
-  let time = Duration::from_millis(500);
-  loop {
-    while let Ok(Some(result)) = tokio::time::timeout(time,  framed.next()).await {
-      match result {
-        Ok((req, _)) => {
-          println!("{:?}", req);
-        },
-        Err(e) => println!("Error: {}", e)
-      }
-    }
-
-    for ds in dses.lock().unwrap().iter() {
-      let mut addr = *ds;
-      addr.set_port(1121);
-
-      let msg = Fms2DsUDP {
-        estop: false,
-        enabled: (i > 5),
-        mode: ds::DSMode::Auto,
-        station: AllianceStationId { alliance: arena::station::Alliance::Red, station: 3 },
-        tournament_level: ds::TournamentLevel::Qualification,
-        match_number: 42,
-        play_number: 1,
-        time: Local::now(),
-        remaining_seconds: 15,
-      };
-
-      // println!("UDP {:?} -> {:?}", addr, msg);
-
-      i += 1;
-      framed.send((msg, addr)).await?;
-    }
-
-    // tokio::time::sleep(time).await;
-  }
-}
+// async fn udp()

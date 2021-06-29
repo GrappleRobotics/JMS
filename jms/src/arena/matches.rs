@@ -70,6 +70,7 @@ impl Match {
   }
 
   // TODO: Implement a self-timing guard for update functions, generating an error if we miss our timing.
+  // TODO: Or, async with timeout?
   pub fn update(&mut self) {
     let first = self.state_first;
     self.state_first = false;
