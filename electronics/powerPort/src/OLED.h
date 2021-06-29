@@ -27,7 +27,7 @@ class OLED {
 	 * Only prints numbers 0 - 9 and '+', '-', '.'
 	 */
 	void print(std::string value) {
-		for (int i = 0; i < value.size(); i++) {
+		for (size_t i = 0; i < value.size(); i++) {
 			this->oled->writeBigChar(50, i*16, value[i]);
 		}
 	}

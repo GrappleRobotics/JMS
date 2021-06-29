@@ -1,29 +1,38 @@
 #include <mbed.h>
 #include <iostream>
-#include "Network.h"
-#include "OLED.h"
 #include <stdio.h>
 #include <string>
 
+#include "Network.h"
+#include "OLED.h"
+#include "BeamBreak.h"
+
 // @TODO Sensor Beam breaks/Reflections
 int main() {
-	// OLED oled(D14, D15);
+	OLED oled(D14, D15);
+	BeamBreak beamBreak(D7);
 	DigitalIn userButton(USER_BUTTON);
-	AnalogIn opticalIn(A0);
 	
 
-	int goal = 0;
+	int goalCount = 0;
 
 	// If user pressed blue button. End program
+	// opticalIn.set_reference_voltage(5.0f);
 	while (userButton != 1) {
-		// std::cout << "Sensor Input: " << opticalIn.read() << std::endl;
-		// std::cout << "Sensor Input Short: " << opticalIn.read_u16() << std::endl;
-		std::cout << "Sensor Input pls: " << opticalIn.read_u16() << std::endl;
+		
+		if (beamBreak.broke()) {
+			goalCount++;
+		}
 
-		// oled.get()->writeString(0,0, "Input: " + to_string(opticalIn.read()));
+		std::cout << "Goal number" << std::endl;
+		oled.print(goalCount);
+
+		beamBreak.update();
+		ThisThread::sleep_for(200ms);
 	}
 	
-	// oled.~OLED();
+	oled.~OLED();
+	beamBreak.~BeamBreak();
 }
 
 // int main() {
