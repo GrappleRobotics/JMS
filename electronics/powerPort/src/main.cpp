@@ -9,29 +9,35 @@
 
 // @TODO Sensor Beam breaks/Reflections
 int main() {
-	OLED oled(D14, D15);
-	BeamBreak beamBreak(D7);
+	// OLED oled(D14, D15);
+	BeamBreak beamBreak(A0);
+
 	DigitalIn userButton(USER_BUTTON);
-	
+	// AnalogIn beam(A0);
 
 	int goalCount = 0;
 
 	// If user pressed blue button. End program
 	// opticalIn.set_reference_voltage(5.0f);
 	while (userButton != 1) {
+		beamBreak.updateStart(); // START
 		
 		if (beamBreak.broke()) {
 			goalCount++;
 		}
 
-		std::cout << "Goal number" << std::endl;
-		oled.print(goalCount);
+		std::cout << "Goal count: " << goalCount << std::endl;
+		// printf("Value: %d\n", beam.read_u16());
+		// oled.print(goalCount);
 
-		beamBreak.update();
-		ThisThread::sleep_for(200ms);
+		// std::cout << "State: " << (int)beamBreak.getStates().first << std::endl;
+
+		// ThisThread::sleep_for(200ms);
+
+		beamBreak.updateEnd(); // END
 	}
 	
-	oled.~OLED();
+	// oled.~OLED();
 	beamBreak.~BeamBreak();
 }
 
