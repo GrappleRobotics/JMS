@@ -69,14 +69,39 @@ pub enum ArenaEntryCondition {
   Any,       // Anyone (Idle only - awards etc)
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct AllianceStationDSReport {
+  pub robot_ping: bool,
+  pub rio_ping: bool,
+  pub radio_ping: bool,
+  pub battery: f64,
+
+  pub pkts_sent: u16,
+  pub pkts_lost: u16,
+  pub rtt: u8,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct AllianceStation {
   pub station: AllianceStationId,
   pub team: Option<u16>,
   pub bypass: bool,
   pub estop: bool,
-  pub astop: bool,
-  // TODO: Add connection state
+  pub astop: bool,  // TODO: Handle this
+  pub ds_report: Option<AllianceStationDSReport>
+}
+
+impl AllianceStation {
+  pub fn new(id: AllianceStationId) -> AllianceStation {
+    return AllianceStation {
+      station: id,
+      team: None,
+      bypass: false,
+      estop: false,
+      astop: false,
+      ds_report: None
+    }
+  }
 }
 
 pub struct Arena {
@@ -84,7 +109,7 @@ pub struct Arena {
   state: BoundState,
   pending_state_change: Option<ArenaState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
-  current_match: Option<Match>,
+  pub current_match: Option<Match>,
   pub stations: Vec<AllianceStation>,
 }
 
@@ -107,13 +132,7 @@ impl Arena {
 
     for alliance in vec![Alliance::Blue, Alliance::Red] {
       for i in 1..(num_stations_per_alliance + 1) {
-        a.stations.push(AllianceStation {
-          station: AllianceStationId { alliance, station: i },
-          team: None,
-          bypass: false,
-          estop: false,
-          astop: false,
-        });
+        a.stations.push(AllianceStation::new(AllianceStationId { alliance, station: i }));
       }
     }
 
@@ -124,10 +143,25 @@ impl Arena {
     self.current_match = Some(m);
   }
 
-  pub fn station_for_team(&self, team: u16) -> Option<AllianceStation> {
-    self.stations.iter()
-      .find(|&&stn| stn.team == Some(team))
-      .map(|&a| a)  // Copy the AllianceStation to avoid reference lifetime issues
+  pub fn station_for_team(&self, team: Option<u16>) -> Option<AllianceStation> {
+    match team {
+      None => None,
+      Some(team) => {
+        self.stations.iter()
+          .find(|&&stn| stn.team == Some(team))
+          .map(|&a| a)  // Copy the AllianceStation to avoid reference lifetime issues
+      }
+    }
+  }
+
+  pub fn station_for_team_mut(&mut self, team: Option<u16>) -> Option<&mut AllianceStation> {
+    match team {
+      None => None,
+      Some(team) => {
+        self.stations.iter_mut()
+          .find(|stn| stn.team == Some(team))
+      }
+    }
   }
 
   fn update_field_estop(&mut self) -> ArenaResult<()> {

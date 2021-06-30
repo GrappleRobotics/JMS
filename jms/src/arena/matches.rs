@@ -30,6 +30,7 @@ pub struct Match {
   state: MatchPlayState,
   state_first: bool,
   state_start_time: Instant,
+  remaining_time: Duration,
   config: MatchConfig,
 }
 
@@ -39,6 +40,7 @@ impl Match {
       state: MatchPlayState::Waiting,
       state_first: true,
       state_start_time: Instant::now(),
+      remaining_time: Duration::from_secs(0),
       config: MatchConfig {
         warmup_cooldown_time: Duration::from_secs(3),
         auto_time: Duration::from_secs(4),
@@ -80,27 +82,32 @@ impl Match {
       match self.state {
         MatchPlayState::Waiting => (),
         MatchPlayState::Warmup => {
-          if elapsed >= self.config.warmup_cooldown_time {
+          self.remaining_time = self.config.warmup_cooldown_time - elapsed;
+          if self.remaining_time <= Duration::from_secs(0) {
             self.do_change_state(MatchPlayState::Auto);
           }
         }
         MatchPlayState::Auto => {
-          if elapsed >= self.config.auto_time {
+          self.remaining_time = self.config.auto_time - elapsed;
+          if self.remaining_time <= Duration::from_secs(0) {
             self.do_change_state(MatchPlayState::Pause);
           }
         }
         MatchPlayState::Pause => {
-          if elapsed >= self.config.pause_time {
+          self.remaining_time = self.config.pause_time - elapsed;
+          if self.remaining_time <= Duration::from_secs(0) {
             self.do_change_state(MatchPlayState::Teleop);
           }
         }
         MatchPlayState::Teleop => {
-          if elapsed >= self.config.teleop_time {
+          self.remaining_time = self.config.teleop_time - elapsed;
+          if self.remaining_time <= Duration::from_secs(0) {
             self.do_change_state(MatchPlayState::Cooldown);
           }
         }
         MatchPlayState::Cooldown => {
-          if elapsed >= self.config.warmup_cooldown_time {
+          self.remaining_time = self.config.warmup_cooldown_time - elapsed;
+          if self.remaining_time <= Duration::from_secs(0) {
             self.do_change_state(MatchPlayState::Complete);
           }
         }
@@ -112,6 +119,10 @@ impl Match {
         }
       }
     });
+  }
+
+  pub fn remaining_time(&self) -> Duration {
+    self.remaining_time
   }
 
   fn do_change_state(&mut self, state: MatchPlayState) {

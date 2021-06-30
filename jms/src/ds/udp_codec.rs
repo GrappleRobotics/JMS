@@ -11,7 +11,7 @@ use super::{DSMode, TournamentLevel};
 
 // https://github.com/tokio-rs/tokio/blob/master/examples/tinyhttp.rs
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Ds2FmsUDP {
   pub seq: u16,
   pub team: u16,
@@ -25,7 +25,7 @@ pub struct Ds2FmsUDP {
   pub tags: Vec<Ds2FmsUDPTags>
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone)]
 pub enum Ds2FmsUDPTags {
   FieldRadioMetrics(u8, u16),  // Signal strength, Bandwidth Util
   CommsMetrics(u16, u16, u8), // Lost pkts, Sent pkts, Average trip time

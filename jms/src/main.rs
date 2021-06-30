@@ -73,7 +73,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     a.update();
   }
 
-  let mut ds_service = DSConnectionService::new(arena);
+  let mut ds_service = DSConnectionService::new(arena).await;
   ds_service.run().await?;
 
   // let fut_tcp = tcp(arena);

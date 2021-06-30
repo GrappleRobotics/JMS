@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{convert::TryInto, fmt::Display};
 
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub enum Alliance {
@@ -6,10 +6,22 @@ pub enum Alliance {
   Red,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AllianceStationId {
   pub alliance: Alliance,
   pub station: u32
+}
+
+impl AllianceStationId {
+  pub fn blue1() -> AllianceStationId {
+    AllianceStationId { alliance: Alliance::Blue, station: 1 }
+  }
+}
+
+impl Display for AllianceStationId {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{} {}", self.alliance, self.station)
+  }
 }
 
 impl Into<u8> for AllianceStationId {
