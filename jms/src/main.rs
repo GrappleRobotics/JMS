@@ -4,6 +4,7 @@ mod logging;
 mod network;
 mod utils;
 mod ds;
+mod ui;
 
 mod models;
 mod schema;
@@ -25,6 +26,9 @@ use ds::connector::DSConnectionService;
 use log::info;
 use network::NetworkProvider;
 use tokio::{net::TcpListener, try_join};
+
+use ui::websocket::{self, ArenaWebsocketHandler};
+use ui::websocket::Websockets;
 
 use crate::{arena::{matches::Match, ArenaSignal, ArenaState}, ds::connector::DSConnection};
 
@@ -60,63 +64,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
   db::connection(); // Start connection
 
-  let network = Box::new(FakeNetwork {});
+  // let network = Box::new(FakeNetwork {});
 
-  // let mut arena = arena::Arena::new(3, Some(network));
-  // let mut arena = arena::SharedArena::new(Mutex::new(3, Some(network)));
-  let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
-  {
-    let mut a = arena.lock().unwrap();
-    a.load_match(Match::new());
-    a.stations[1].team = Some(4788);
-    a.stations[2].team = Some(100);
-    a.update();
-  }
+  // let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
+  // {
+  //   let mut a = arena.lock().unwrap();
+  //   a.load_match(Match::new());
+  //   a.stations[1].team = Some(4788);
+  //   a.stations[2].team = Some(100);
+  //   a.update();
+  // }
 
-  let mut ds_service = DSConnectionService::new(arena).await;
-  ds_service.run().await?;
+  // let mut ds_service = DSConnectionService::new(arena).await;
+  // ds_service.run().await?;
 
-  // let fut_tcp = tcp(arena);
-  // try_join!(fut_tcp)?;
+    let mut ws = Websockets::new();
+    ws.register("arena", Box::new(ArenaWebsocketHandler {})).await;
+    ws.begin().await?;
+
+  // websocket::begin().await?;
 
   Ok(())
-  // assert_eq!(arena.current_state(), ArenaState::Idle);
-  // arena.signal(ArenaSignal::Prestart(false));
-  // arena.update();
-  // assert_eq!(arena.current_state(), ArenaState::Prestart(false, false));
-  // let mut s = "".to_owned();
-  // while let ArenaState::Prestart(false, _) = arena.current_state() {
-  //   arena.update();
-  //   s = s + ".";
-  //   thread::sleep(Duration::from_millis(10));
-  // }
-  // assert_eq!(arena.current_state(), ArenaState::Prestart(true, false));
-  // arena.update();
-  // arena.signal(ArenaSignal::MatchArm);
-  // arena.update();
-  // assert_eq!(arena.current_state(), ArenaState::MatchArmed);
-  // arena.signal(ArenaSignal::MatchPlay);
-  // arena.update();
-  // assert_eq!(arena.current_state(), ArenaState::MatchPlay);
-  // while let ArenaState::MatchPlay = arena.current_state() {
-  //   arena.update();
-  //   thread::sleep(Duration::from_millis(10));
-  // }
-  // assert_eq!(arena.current_state(), ArenaState::MatchComplete);
 }
-
-// async fn tcp(arena: SharedArena) -> Result<(), Box<dyn Error>> {
-//   let server = TcpListener::bind("0.0.0.0:1750").await?;
-//   loop {
-//     info!("Listening...");
-//     let (stream, addr) = server.accept().await?;
-//     info!("Connected: {}", addr);
-//     let this_arena = arena.clone();
-//     tokio::spawn(async move {
-//       let mut conn = DSConnection::new(this_arena, addr, stream);
-//       conn.process_tcp().await;
-//     });
-//   }
-// }
-
-// async fn udp()
