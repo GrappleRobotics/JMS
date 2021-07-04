@@ -17,15 +17,19 @@ use crate::{
   network::{NetworkProvider, NetworkResult},
 };
 
+use serde::{Serialize, Deserialize};
+
 use super::matches::Match;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, EnumAsInner)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, EnumAsInner, Serialize)]
+#[serde(tag="state")]
 pub enum ArenaState {
   Idle,  // Idle state
   Estop, // Arena is emergency stopped and can only be unlocked by FTA
 
   // Match Pipeline //
-  Prestart(/* ready */ bool, /* forced */ bool), // Configure network and devices. Expose ready so we can see it outside.
+  // Prestart(/* ready */ bool, /* forced */ bool), // Configure network and devices. Expose ready so we can see it outside.
+  Prestart { ready: bool, force: bool },
   MatchArmed,                                    // Arm the match - ensure field crew is off. Can revert to Prestart.
   MatchPlay,                                     // Currently running a match - handed off to Match runner
   MatchComplete,                                 // Match just finished, waiting to commit. Refs can still change scores
@@ -50,10 +54,11 @@ struct BoundState {
   data: StateData,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Display)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, Deserialize)]
+#[serde(tag="signal")]
 pub enum ArenaSignal {
   Estop,
-  Prestart(bool),
+  Prestart { force: bool },
   MatchArm,
   MatchPlay,
   MatchCommit,
@@ -69,7 +74,7 @@ pub enum ArenaEntryCondition {
   Any,       // Anyone (Idle only - awards etc)
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize)]
 pub struct AllianceStationDSReport {
   pub robot_ping: bool,
   pub rio_ping: bool,
@@ -81,14 +86,23 @@ pub struct AllianceStationDSReport {
   pub rtt: u8,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
+pub enum AllianceStationOccupancy {
+  Vacant,
+  Occupied,
+  WrongStation,
+  WrongMatch
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct AllianceStation {
   pub station: AllianceStationId,
   pub team: Option<u16>,
   pub bypass: bool,
   pub estop: bool,
   pub astop: bool,  // TODO: Handle this
-  pub ds_report: Option<AllianceStationDSReport>
+  pub ds_report: Option<AllianceStationDSReport>,
+  pub occupancy: AllianceStationOccupancy
 }
 
 impl AllianceStation {
@@ -99,7 +113,8 @@ impl AllianceStation {
       bypass: false,
       estop: false,
       astop: false,
-      ds_report: None
+      ds_report: None,
+      occupancy: AllianceStationOccupancy::Vacant
     }
   }
 }
@@ -177,8 +192,8 @@ impl Arena {
     let first = self.state.first;
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
-        if let Some(ArenaSignal::Prestart(force)) = self.current_signal() {
-          self.prepare_state_change(ArenaState::Prestart(false, force))?;
+        if let Some(ArenaSignal::Prestart { force }) = self.current_signal() {
+          self.prepare_state_change(ArenaState::Prestart { ready: false, force })?;
         }
       }
       (ArenaState::Estop, _) => {
@@ -187,7 +202,7 @@ impl Arena {
           m.fault();
         }
       }
-      (ArenaState::Prestart(false, force), StateData::Prestart(maybe_recv)) => {
+      (ArenaState::Prestart { ready: false, force }, StateData::Prestart(maybe_recv)) => {
         if first {
           info!("Prestart begin...")
         }
@@ -200,12 +215,12 @@ impl Arena {
             Err(e) => panic!("Network runner fault: {}", e),
             Ok(result) => {
               result?;
-              self.prepare_state_change(ArenaState::Prestart(true, force))?;
+              self.prepare_state_change(ArenaState::Prestart { ready: true, force })?;
             }
           };
         }
       }
-      (ArenaState::Prestart(true, _), _) => {
+      (ArenaState::Prestart {ready: true, force: _}, _) => {
         if first {
           info!("Prestart Ready!")
         }
@@ -265,7 +280,7 @@ impl Arena {
       (ArenaState::Estop, ArenaState::Idle, _) => Ok(()),
 
       // Primary Flows
-      (ArenaState::Idle, ArenaState::Prestart(false, _), _) => {
+      (ArenaState::Idle, ArenaState::Prestart { ready: false, force: _ }, _) => {
         // Prestart must not be ready (false)
         let m = self
           .current_match
@@ -280,8 +295,8 @@ impl Arena {
           Ok(())
         }
       }
-      (ArenaState::Prestart(false, _), ArenaState::Prestart(true, _), _) => Ok(()),
-      (ArenaState::Prestart(true, _), ArenaState::MatchArmed, _) => {
+      (ArenaState::Prestart { ready: false, force: _ }, ArenaState::Prestart { ready: true, force: _ }, _) => Ok(()),
+      (ArenaState::Prestart { ready: true, force: _ }, ArenaState::MatchArmed, _) => {
         // Prestart must be ready (true)
         Ok(())
       }
@@ -317,8 +332,8 @@ impl Arena {
     match (current, state, &self.state.data) {
       (_, ArenaState::Estop, _) => basic(StateData::Estop),
       (_, ArenaState::Idle, _) => basic(StateData::Idle),
-      (_, ArenaState::Prestart(false, _), _) => self.state_init_prestart(state),
-      (_, ArenaState::Prestart(true, _), _) => basic(StateData::Prestart(None)),
+      (_, ArenaState::Prestart { ready: false, force: _ }, _) => self.state_init_prestart(state),
+      (_, ArenaState::Prestart { ready: true, force: _ }, _) => basic(StateData::Prestart(None)),
       (_, ArenaState::MatchArmed, _) => basic(StateData::MatchArmed),
       (_, ArenaState::MatchPlay, _) => basic(StateData::MatchPlay),
       (_, ArenaState::MatchComplete, _) => basic(StateData::MatchComplete),
@@ -357,7 +372,7 @@ impl Arena {
 
     Ok(BoundState {
       first: true,
-      state: ArenaState::Prestart(the_rx.is_none(), force), // Ready if there's no network
+      state: ArenaState::Prestart { ready: the_rx.is_none(), force }, // Ready if there's no network
       data: StateData::Prestart(the_rx),
     })
   }

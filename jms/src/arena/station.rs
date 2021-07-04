@@ -1,12 +1,13 @@
 use std::{convert::TryInto, fmt::Display};
+use serde::Serialize;
 
-#[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum Alliance {
   Blue,
   Red,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize)]
 pub struct AllianceStationId {
   pub alliance: Alliance,
   pub station: u32

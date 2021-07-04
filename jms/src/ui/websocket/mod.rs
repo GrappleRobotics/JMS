@@ -13,19 +13,87 @@ use tokio_tungstenite::{accept_async, tungstenite};
 use crate::context;
 
 pub trait WebsocketMessageHandler {
-  fn handle(&mut self, object: String, noun: String, verb: String, data: Option<Value>) -> Result<Option<JsonMessage>>;
+  fn handle(&mut self, msg: JsonMessage) -> Result<Option<JsonMessage>>;
 }
 
 pub struct Websockets {
   handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct JsonMessageError {
+  pub error: String,
+  pub what: String,
+  pub why: Option<Value>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JsonMessage {
   pub object: String,
   pub noun: String,
   pub verb: String,
-  pub data: Option<Value>
+  pub data: Option<Value>,
+  pub error: Option<JsonMessageError>
+}
+
+// Basic builder pattern
+impl JsonMessage {
+  pub fn new(object: &str, noun: &str, verb: &str) -> JsonMessage {
+    JsonMessage { 
+      object: object.to_owned(),
+      noun: noun.to_owned(),
+      verb: verb.to_owned(),
+      data: None,
+      error: None
+    }
+  }
+
+  pub fn response(&self) -> JsonMessage {
+    let mut n = self.clone();
+    n.data = None;
+    n.error = None;
+    n
+  }
+
+  pub fn noun(&self, noun: &str) -> JsonMessage {
+    let mut n = self.clone();
+    n.noun = noun.to_owned();
+    n
+  }
+
+  pub fn verb(&self, verb: &str) -> JsonMessage {
+    let mut n = self.clone();
+    n.verb = verb.to_owned();
+    n
+  }
+
+  pub fn data(&self, data: Value) -> JsonMessage {
+    let mut n = self.clone();
+    n.data = Some(data);
+    n
+  }
+
+  pub fn error(&self, error: &str, what: &str, why: Option<Value>) -> JsonMessage {
+    let mut n = self.clone();
+    n.error = Some(JsonMessageError {
+      error: error.to_owned(),
+      what: what.to_owned(),
+      why
+    });
+    n
+  }
+
+  pub fn unknown_object(&self) -> JsonMessage {
+    self.error("unknown", "object", None)
+  }
+
+  pub fn unknown_noun(&self) -> JsonMessage {
+    self.error("unknown", "noun", None)
+  }
+
+  pub fn invalid_verb_or_data(&self) -> JsonMessage {
+    self.error("invalid", "verb/data", None)
+  }
 }
 
 impl Websockets {
@@ -74,13 +142,17 @@ impl Websockets {
           
           match hs.get_mut(&m.object) {
             Some(h) => {
-              let response = h.handle(m.object, m.noun, m.verb, m.data)?;
+              let response = h.handle(m)?;
               if let Some(ref r) = response {
                 let response_msg = serde_json::to_string(r)?;
                 ws.send(tungstenite::Message::Text(response_msg)).await?;
               }
             },
-            None => warn!("No WS handler for object {}", m.object),
+            None => {
+              warn!("No WS handler for object {}", m.object);
+              let response = serde_json::to_string(&JsonMessage::new(&m.object, &m.noun, &m.verb).unknown_object())?;
+              ws.send(tungstenite::Message::Text(response)).await?;
+            }
           }
         },
         _ => ()
