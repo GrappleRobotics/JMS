@@ -21,19 +21,12 @@ pub struct Websockets {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct JsonMessageError {
-  pub error: String,
-  pub what: String,
-  pub why: Option<Value>
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JsonMessage {
   pub object: String,
   pub noun: String,
   pub verb: String,
   pub data: Option<Value>,
-  pub error: Option<JsonMessageError>
+  pub error: Option<String>
 }
 
 // Basic builder pattern
@@ -73,26 +66,22 @@ impl JsonMessage {
     n
   }
 
-  pub fn error(&self, error: &str, what: &str, why: Option<Value>) -> JsonMessage {
+  pub fn error(&self, msg: &str) -> JsonMessage {
     let mut n = self.clone();
-    n.error = Some(JsonMessageError {
-      error: error.to_owned(),
-      what: what.to_owned(),
-      why
-    });
+    n.error = Some(msg.to_owned());
     n
   }
 
   pub fn unknown_object(&self) -> JsonMessage {
-    self.error("unknown", "object", None)
+    self.error("Unknown object")
   }
 
   pub fn unknown_noun(&self) -> JsonMessage {
-    self.error("unknown", "noun", None)
+    self.error("Unknown noun")
   }
 
   pub fn invalid_verb_or_data(&self) -> JsonMessage {
-    self.error("invalid", "verb/data", None)
+    self.error("Invalid verb/data")
   }
 }
 
@@ -142,10 +131,17 @@ impl Websockets {
           
           match hs.get_mut(&m.object) {
             Some(h) => {
-              let response = h.handle(m)?;
-              if let Some(ref r) = response {
-                let response_msg = serde_json::to_string(r)?;
-                ws.send(tungstenite::Message::Text(response_msg)).await?;
+              let response = h.handle(m.clone());
+              match response {
+                Ok(Some(ref r)) => {
+                  let response_msg = serde_json::to_string(r)?;
+                  ws.send(tungstenite::Message::Text(response_msg)).await?;
+                },
+                Ok(None) => (),
+                Err(e) => {
+                  let response_msg = serde_json::to_string(&m.response().error(&e.to_string()))?;
+                  ws.send(tungstenite::Message::Text(response_msg)).await?;
+                }
               }
             },
             None => {

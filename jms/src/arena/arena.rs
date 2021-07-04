@@ -26,6 +26,7 @@ use super::matches::Match;
 pub enum ArenaState {
   Idle,  // Idle state
   Estop, // Arena is emergency stopped and can only be unlocked by FTA
+  EstopReset,  // E-stop resetting...
 
   // Match Pipeline //
   // Prestart(/* ready */ bool, /* forced */ bool), // Configure network and devices. Expose ready so we can see it outside.
@@ -40,6 +41,7 @@ pub enum ArenaState {
 enum StateData {
   Idle,
   Estop,
+  EstopReset,
 
   Prestart(Option<Receiver<NetworkResult<()>>>), // recv: network ready receiver
   MatchArmed,
@@ -58,6 +60,7 @@ struct BoundState {
 #[serde(tag="signal")]
 pub enum ArenaSignal {
   Estop,
+  EstopReset,
   Prestart { force: bool },
   MatchArm,
   MatchPlay,
@@ -197,10 +200,20 @@ impl Arena {
         }
       }
       (ArenaState::Estop, _) => {
+        // TODO: Implement transition out of estop
         if let Some(ref mut m) = self.current_match {
           // Fault the match - it can't be run and must be reloaded.
           m.fault();
         }
+
+        if let Some(ArenaSignal::EstopReset) = self.current_signal() {
+          self.prepare_state_change(ArenaState::EstopReset)?;
+        }
+      }
+      (ArenaState::EstopReset, _) => {
+        // TODO:
+        self.current_match = None;
+        self.prepare_state_change(ArenaState::Idle)?;
       }
       (ArenaState::Prestart { ready: false, force }, StateData::Prestart(maybe_recv)) => {
         if first {
@@ -277,7 +290,8 @@ impl Arena {
     match (&self.state.state, desired, &self.state.data) {
       // E-Stops
       (_, ArenaState::Estop, _) => Ok(()),
-      (ArenaState::Estop, ArenaState::Idle, _) => Ok(()),
+      (ArenaState::Estop, ArenaState::EstopReset, _) => Ok(()),
+      (ArenaState::EstopReset, ArenaState::Idle, _) => Ok(()),
 
       // Primary Flows
       (ArenaState::Idle, ArenaState::Prestart { ready: false, force: _ }, _) => {
@@ -331,6 +345,7 @@ impl Arena {
 
     match (current, state, &self.state.data) {
       (_, ArenaState::Estop, _) => basic(StateData::Estop),
+      (_, ArenaState::EstopReset, _) => basic(StateData::EstopReset),
       (_, ArenaState::Idle, _) => basic(StateData::Idle),
       (_, ArenaState::Prestart { ready: false, force: _ }, _) => self.state_init_prestart(state),
       (_, ArenaState::Prestart { ready: true, force: _ }, _) => basic(StateData::Prestart(None)),

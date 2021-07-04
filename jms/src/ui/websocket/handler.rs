@@ -18,7 +18,7 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
         ("signal", Some(data)) => {
           let sig: ArenaSignal = serde_json::from_value(data)?;
           self.arena.lock().unwrap().signal(sig);
-          Some(response_msg.data(json!("ok")))
+          None
         },
         ("current", None) => {
           let current = self.arena.lock().unwrap().current_state();
@@ -41,10 +41,17 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
 impl ArenaWebsocketHandler {
   fn status(&self) -> super::Result<Option<Value>> {
     let arena = self.arena.lock().unwrap();
+    let ref the_match = arena.current_match;  // match is a reserved word in rust :)
 
     Ok(Some(json!({ 
       "state": arena.current_state(),
-      "alliances": arena.stations
+      "alliances": arena.stations,
+      "match": the_match.as_ref().map(|m| {
+        json!({
+          "state": m.current_state(),
+          "remaining_time": m.remaining_time()
+        })
+      })
     })))
   }
 }
