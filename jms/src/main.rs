@@ -73,6 +73,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     a.load_match(Match::new())?;
     a.stations[1].team = Some(4788);
     a.stations[2].team = Some(100);
+    a.stations[0].bypass = true;
     a.update();
   }
   
