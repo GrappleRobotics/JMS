@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
   let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
   {
     let mut a = arena.lock().unwrap();
-    a.load_match(Match::new());
+    a.load_match(Match::new())?;
     a.stations[1].team = Some(4788);
     a.stations[2].team = Some(100);
     a.update();

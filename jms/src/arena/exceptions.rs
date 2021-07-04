@@ -32,6 +32,7 @@ pub enum ArenaError {
   UnimplementedStateError(ArenaState),
   NetworkError(NetworkError),
   MatchError(MatchError),
+  CannotLoadMatchError(String)
 }
 
 impl std::fmt::Display for ArenaError {
@@ -41,6 +42,7 @@ impl std::fmt::Display for ArenaError {
       ArenaError::UnimplementedStateError(ref s) => write!(f, "Unimplemented State: {}", s),
       ArenaError::NetworkError(ref e) => write!(f, "Network Error: {}", e),
       ArenaError::MatchError(ref e) => write!(f, "Match Error: {}", e),
+      ArenaError::CannotLoadMatchError(ref s) => write!(f, "Could not load match: {}", s),
     }
   }
 }

@@ -157,8 +157,19 @@ impl Arena {
     a
   }
 
-  pub fn load_match(&mut self, m: Match) {
-    self.current_match = Some(m);
+  pub fn load_match(&mut self, m: Match) -> ArenaResult<()> {
+    match self.state.state {
+      ArenaState::Idle => {
+        self.current_match = Some(m);
+        Ok(())
+      },
+      ArenaState::MatchCommit => {
+        self.current_match = Some(m);
+        self.prepare_state_change(ArenaState::Idle)?;
+        Ok(())
+      },
+      ref s => Err(ArenaError::CannotLoadMatchError(format!("Can't load match in state {}", s)))
+    }
   }
 
   pub fn station_for_team(&self, team: Option<u16>) -> Option<AllianceStation> {

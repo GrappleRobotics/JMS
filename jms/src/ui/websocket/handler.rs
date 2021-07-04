@@ -1,7 +1,7 @@
 use log::info;
 use serde_json::{Value, json};
 
-use crate::arena::{ArenaSignal, ArenaState, SharedArena};
+use crate::arena::{ArenaSignal, ArenaState, SharedArena, matches::Match};
 
 use super::WebsocketMessageHandler;
 
@@ -29,6 +29,13 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
       "alliances" => match (msg.verb.as_str(), msg.data) {
         _ => Some(response_msg.invalid_verb_or_data())
       },
+      "match" => match (msg.verb.as_str(), msg.data) {
+        ("loadTest", None) => {
+          self.arena.lock().unwrap().load_match(Match::new())?;
+          None
+        },
+        _ => Some(response_msg.invalid_verb_or_data())
+      }
       "status" => match (msg.verb.as_str(), msg.data) {
         ("get", None) => self.status()?.map(|x| response_msg.data(x)),
         _ => Some(response_msg.invalid_verb_or_data())

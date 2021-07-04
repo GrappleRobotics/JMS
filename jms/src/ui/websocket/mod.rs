@@ -10,7 +10,7 @@ use serde_json::Value;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::context;
+use crate::{arena::exceptions::ArenaError, context};
 
 pub trait WebsocketMessageHandler {
   fn handle(&mut self, msg: JsonMessage) -> Result<Option<JsonMessage>>;
@@ -139,6 +139,7 @@ impl Websockets {
                 },
                 Ok(None) => (),
                 Err(e) => {
+                  error!("WS Error: {}", e);
                   let response_msg = serde_json::to_string(&m.response().error(&e.to_string()))?;
                   ws.send(tungstenite::Message::Text(response_msg)).await?;
                 }
@@ -163,7 +164,8 @@ impl Websockets {
 pub enum WebsocketError {
   Tungstenite(tungstenite::Error),
   JSON(serde_json::Error),
-  IO(std::io::Error)
+  IO(std::io::Error),
+  Arena(ArenaError)
 }
 
 impl std::fmt::Display for WebsocketError {
@@ -172,6 +174,7 @@ impl std::fmt::Display for WebsocketError {
       WebsocketError::Tungstenite(ref e) => write!(f, "Tungstenite Error: {}", e),
       WebsocketError::JSON(ref e) => write!(f, "JSON Error: {}", e),
       WebsocketError::IO(ref e) => write!(f, "IO Error: {}", e),
+      WebsocketError::Arena(ref e) => write!(f, "Arena Error: {}", e)
     }
   }
 }
@@ -185,7 +188,8 @@ impl error::Error for WebsocketError {
     match *self {
       WebsocketError::Tungstenite(ref e) => Some(e),
       WebsocketError::JSON(ref e) => Some(e),
-      WebsocketError::IO(ref e) => Some(e)
+      WebsocketError::IO(ref e) => Some(e),
+      WebsocketError::Arena(ref e) => Some(e)
     }
   }
 }
@@ -205,5 +209,11 @@ impl From<serde_json::Error> for WebsocketError {
 impl From<std::io::Error> for WebsocketError {
   fn from(e: std::io::Error) -> Self {
     WebsocketError::IO(e)
+  }
+}
+
+impl From<ArenaError> for WebsocketError {
+  fn from(e: ArenaError) -> Self {
+    WebsocketError::Arena(e)
   }
 }
