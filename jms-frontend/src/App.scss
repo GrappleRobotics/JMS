@@ -133,3 +133,24 @@ $hazard-red-dark-secondary: #590000;
   padding: 2px 4px !important;
   margin: 1px;
 }
+
+input.team-num {
+  font-size: 14px;
+  background-color:rgba(255, 255, 255, 0.75);
+  padding: 5px;
+  height: 30px;
+  min-width: 45px;
+  text-align: right;
+  color: #000;
+
+  &::-webkit-inner-spin-button, &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+
+  &.buffer-diff {
+    background-color: rgb(255, 251, 0);
+  }
+}

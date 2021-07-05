@@ -61,6 +61,7 @@ class App extends React.Component {
                   colour="Blue"
                   state={this.state.status?.state}
                   stations={this.state.status?.alliances?.filter(x => x.station.alliance === "Blue")}
+                  onStationUpdate={ (data) => this.ws.send("arena", "alliances", "update", data) }
                 />
               </Col>
               <Col>
@@ -68,6 +69,7 @@ class App extends React.Component {
                   colour="Red"
                   state={this.state.status?.state}
                   stations={this.state.status?.alliances?.filter(x => x.station.alliance === "Red").reverse()}  // Red teams go 3-2-1 to order how they're seen from the scoring table
+                  onStationUpdate={ (data) => this.ws.send("arena", "alliances", "update", data) }
                 />
               </Col>
             </Row>

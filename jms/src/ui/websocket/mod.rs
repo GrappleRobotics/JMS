@@ -165,7 +165,8 @@ pub enum WebsocketError {
   Tungstenite(tungstenite::Error),
   JSON(serde_json::Error),
   IO(std::io::Error),
-  Arena(ArenaError)
+  Arena(ArenaError),
+  Other(String)
 }
 
 impl std::fmt::Display for WebsocketError {
@@ -174,7 +175,8 @@ impl std::fmt::Display for WebsocketError {
       WebsocketError::Tungstenite(ref e) => write!(f, "Tungstenite Error: {}", e),
       WebsocketError::JSON(ref e) => write!(f, "JSON Error: {}", e),
       WebsocketError::IO(ref e) => write!(f, "IO Error: {}", e),
-      WebsocketError::Arena(ref e) => write!(f, "Arena Error: {}", e)
+      WebsocketError::Arena(ref e) => write!(f, "Arena Error: {}", e),
+      WebsocketError::Other(ref s) => write!(f, "Error: {}", s)
     }
   }
 }
@@ -189,7 +191,8 @@ impl error::Error for WebsocketError {
       WebsocketError::Tungstenite(ref e) => Some(e),
       WebsocketError::JSON(ref e) => Some(e),
       WebsocketError::IO(ref e) => Some(e),
-      WebsocketError::Arena(ref e) => Some(e)
+      WebsocketError::Arena(ref e) => Some(e),
+      WebsocketError::Other(_) => None
     }
   }
 }

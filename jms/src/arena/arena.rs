@@ -193,6 +193,10 @@ impl Arena {
     }
   }
 
+  pub fn station_mut(&mut self, station: AllianceStationId) -> Option<&mut AllianceStation> {
+    self.stations.iter_mut().find(|stn| stn.station == station)
+  }
+
   fn update_field_estop(&mut self) -> ArenaResult<()> {
     if self.state.state != ArenaState::Estop {
       if let Some(ArenaSignal::Estop) = self.current_signal() {

@@ -80,7 +80,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
   // Arena gets its own thread to keep timing strict
   let a2 = arena.clone();
   tokio::spawn(async move {
-    let mut interval = tokio::time::interval(Duration::from_millis(100));
+    let mut interval = tokio::time::interval(Duration::from_millis(50));
     loop {
       interval.tick().await;
       a2.lock().unwrap().update();

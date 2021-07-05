@@ -302,8 +302,8 @@ impl DSConnection {
       None => Fms2DsStationStatus::Waiting,
       Some(stn_desired) => {
         match actual {
-          // Can't determine actual station, assume it's OK
-          None => Fms2DsStationStatus::Good,
+          // Can't determine actual station, mustn't be in this match. TODO: Delegate these checks to the NetworkProvider
+          None => Fms2DsStationStatus::Waiting,
           // Team is in the correct station
           Some(stn_actual) if stn_actual.station == stn_desired.station => Fms2DsStationStatus::Good,
           // Team's desired station doesn't match their actual station

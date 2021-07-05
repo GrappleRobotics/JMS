@@ -1,5 +1,6 @@
 import React from 'react';
-import { Row, Col, Button } from 'react-bootstrap';
+import { Row, Col, Button, FormControl } from 'react-bootstrap';
+import BufferedFormControl from './elements/buffered_control';
  
 class Indicator extends React.PureComponent {
   render() {
@@ -27,6 +28,7 @@ class AllianceStation extends React.Component {
     let s = this.props.station;
     let cname = ["alliance-station"];
     let can_bypass = this.props.state?.state === "Prestart" || this.props.state?.state === "Idle";
+    let can_change_team = this.props.state?.state === "Idle";
 
     if (s.astop)
       cname.push("bg-hazard-dark-active");
@@ -44,12 +46,21 @@ class AllianceStation extends React.Component {
           size="sm"
           variant={s.bypass ? "success" : (can_bypass ? "danger" : "dark")}
           disabled={ !can_bypass }
+          onClick={() => this.props.onUpdate({ bypass: !s.bypass })}
         >
             BY
         </Button>
       </Col>
       <Col sm="2">
-        { s.team || "-" }
+        {/* { s.team || "-" } */}
+        <BufferedFormControl
+          className="team-num"
+          type="number"
+          onUpdate={(n) => this.props.onUpdate({ team: parseInt(n) })}
+          value={s.team}
+          disabled={ !can_change_team }
+          placeholder={"----"}
+        />
       </Col>
       <Col sm="1">
         {
@@ -100,7 +111,13 @@ export default class Alliance extends React.Component {
             <Col> RTT </Col>
           </Row>
           {
-            this.props.stations?.map(s => <AllianceStation state={this.props.state} station={s} key={s.station.station} />)
+            this.props.stations?.map(s => 
+              <AllianceStation
+                key={s.station.station}
+                station={s}
+                state={this.props.state}
+                onUpdate={(data) => this.props.onStationUpdate({ station: s.station, update: data })}
+              />)
           }
         </Col>
       </Row>
