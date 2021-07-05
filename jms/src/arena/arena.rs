@@ -89,7 +89,7 @@ pub struct AllianceStationDSReport {
   pub rtt: u8,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub enum AllianceStationOccupancy {
   Vacant,
   Occupied,
@@ -119,6 +119,10 @@ impl AllianceStation {
       ds_report: None,
       occupancy: AllianceStationOccupancy::Vacant
     }
+  }
+
+  pub fn can_arm_match(&self) -> bool {
+    self.bypass || self.estop || (self.occupancy == AllianceStationOccupancy::Occupied)
   }
 }
 
@@ -327,7 +331,11 @@ impl Arena {
       (ArenaState::Prestart { ready: false, force: _ }, ArenaState::Prestart { ready: true, force: _ }, _) => Ok(()),
       (ArenaState::Prestart { ready: true, force: _ }, ArenaState::MatchArmed, _) => {
         // Prestart must be ready (true)
-        Ok(())
+        if self.stations.iter().all(|x| x.can_arm_match()) {
+          Ok(())
+        } else {
+          Err(illegal("Cannot Arm Match: Not all teams are ready. Bypass any no-show teams."))
+        }
       }
       (ArenaState::MatchArmed, ArenaState::MatchPlay, _) => Ok(()),
       (ArenaState::MatchPlay, ArenaState::MatchComplete, _) => {
