@@ -12,8 +12,9 @@ use tokio_tungstenite::{accept_async, tungstenite};
 
 use crate::{arena::exceptions::ArenaError, context};
 
+#[async_trait::async_trait]
 pub trait WebsocketMessageHandler {
-  fn handle(&mut self, msg: JsonMessage) -> Result<Option<JsonMessage>>;
+  async fn handle(&mut self, msg: JsonMessage) -> Result<Option<JsonMessage>>;
 }
 
 pub struct Websockets {
@@ -48,17 +49,17 @@ impl JsonMessage {
     n
   }
 
-  pub fn noun(&self, noun: &str) -> JsonMessage {
-    let mut n = self.clone();
-    n.noun = noun.to_owned();
-    n
-  }
+  // pub fn noun(&self, noun: &str) -> JsonMessage {
+  //   let mut n = self.clone();
+  //   n.noun = noun.to_owned();
+  //   n
+  // }
 
-  pub fn verb(&self, verb: &str) -> JsonMessage {
-    let mut n = self.clone();
-    n.verb = verb.to_owned();
-    n
-  }
+  // pub fn verb(&self, verb: &str) -> JsonMessage {
+  //   let mut n = self.clone();
+  //   n.verb = verb.to_owned();
+  //   n
+  // }
 
   pub fn data(&self, data: Value) -> JsonMessage {
     let mut n = self.clone();
@@ -131,7 +132,7 @@ impl Websockets {
           
           match hs.get_mut(&m.object) {
             Some(h) => {
-              let response = h.handle(m.clone());
+              let response = h.handle(m.clone()).await;
               match response {
                 Ok(Some(ref r)) => {
                   let response_msg = serde_json::to_string(r)?;

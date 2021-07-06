@@ -50,7 +50,7 @@ impl std::fmt::Display for ArenaError {
 impl error::Error for ArenaError {
   fn source(&self) -> Option<&(dyn error::Error + 'static)> {
     match *self {
-      ArenaError::NetworkError(ref e) => Some(e),
+      ArenaError::NetworkError(ref e) => Some(e.as_ref()),
       ArenaError::MatchError(ref e) => Some(e),
       _ => None,
     }

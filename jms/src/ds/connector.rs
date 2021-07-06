@@ -96,9 +96,9 @@ impl DSConnection {
       tokio::select! {
         // UDP Update
         _ = udp_timer.tick() => {
-          if self._get_station_status() == Fms2DsStationStatus::Good {
+          if self._get_station_status().await == Fms2DsStationStatus::Good {
             if let Some(team) = self.team {
-              let msg = self._encode_udp_update(team);
+              let msg = self._encode_udp_update(team).await;
               self.framed_udp.send((msg, self.addr_udp)).await.unwrap();  // TODO: Handle error
             }
 
@@ -117,7 +117,7 @@ impl DSConnection {
           // them, the DS thinks it's still connected even if we close the socket.
           // Nice one, NI.
 
-          let status = self._get_station_status();
+          let status = self._get_station_status().await;
 
           // if let Some(team) = self.team {
           //   let mut tags = vec![];
@@ -130,7 +130,7 @@ impl DSConnection {
 
           // Update arena record of station status
           {
-            let mut arena = self.arena.lock().unwrap();
+            let mut arena = self.arena.lock().await;
 
             match status {
               Fms2DsStationStatus::Good => {
@@ -161,7 +161,7 @@ impl DSConnection {
           match udp_frame {
             Ok(pkt) if Some(pkt.team) == self.team => {
               self.last_packet_time = Instant::now();
-              self._decode_udp_update(pkt);
+              self._decode_udp_update(pkt).await;
             },
             Ok(_) => (),  // Ignore it, not for us
             Err(e) => error!("UDP Receive error: {}", e),
@@ -178,13 +178,13 @@ impl DSConnection {
                 }
 
                 // TCP Update
-                let status = self._get_station_status();
+                let status = self._get_station_status().await;
 
                 if let Some(team) = self.team {
                   let mut tags = vec![];
                   // TODO: Event Code (once implemented)
                   // TODO: Game Data (once implemented)
-                  tags.push(self._construct_station_tag(status));
+                  tags.push(self._construct_station_tag(status).await);
 
                   self.framed_tcp.send(Fms2DsTCP{ tags }).await.unwrap(); // TODO: Handle error
                 }
@@ -206,7 +206,7 @@ impl DSConnection {
 
     // Connection closed, notify Arena
     {
-      let mut arena = self.arena.lock().unwrap();
+      let mut arena = self.arena.lock().await;
       if let Some(stn) = arena.station_for_team_mut(self.team_by_ip()) {
         stn.ds_report = None;
         stn.occupancy = AllianceStationOccupancy::Vacant;
@@ -217,9 +217,9 @@ impl DSConnection {
     }
   }
 
-  fn _encode_udp_update(&self, _team: u16) -> Fms2DsUDP {
-    let station = self._get_desired_alliance_station().unwrap(); // Unwrap safe as UDP updates are only issued for correct stations (precondition)
-    let arena = self.arena.lock().unwrap();
+  async fn _encode_udp_update(&self, _team: u16) -> Fms2DsUDP {
+    let station = self._get_desired_alliance_station().await.unwrap(); // Unwrap safe as UDP updates are only issued for correct stations (precondition)
+    let arena = self.arena.lock().await;
 
     let match_state = arena.current_match.as_ref().map(|m| m.current_state());
     let estop = station.estop || (arena.current_state() == ArenaState::Estop);
@@ -249,8 +249,8 @@ impl DSConnection {
     }
   }
 
-  fn _decode_udp_update(&self, pkt: Ds2FmsUDP) {
-    let mut arena = self.arena.lock().unwrap();
+  async fn _decode_udp_update(&self, pkt: Ds2FmsUDP) {
+    let mut arena = self.arena.lock().await;
     let station_mut = arena.station_for_team_mut(self.team);
     
     match station_mut {
@@ -288,8 +288,8 @@ impl DSConnection {
     }
   }
 
-  fn _construct_station_tag(&self, status: Fms2DsStationStatus) -> Fms2DsTCPTags {
-    let correct_station = self._get_desired_alliance_station().map(|x| x.station);
+  async fn _construct_station_tag(&self, status: Fms2DsStationStatus) -> Fms2DsTCPTags {
+    let correct_station = self._get_desired_alliance_station().await.map(|x| x.station);
 
     // if let Some(team) = self.team {
     //   match (&status, correct_station) {
@@ -310,9 +310,9 @@ impl DSConnection {
     )
   }
 
-  fn _get_station_status(&self) -> Fms2DsStationStatus {
-    let desired = self._get_desired_alliance_station();
-    let actual = self._get_occupied_alliance_station();
+  async fn _get_station_status(&self) -> Fms2DsStationStatus {
+    let desired = self._get_desired_alliance_station().await;
+    let actual = self._get_occupied_alliance_station().await;
 
     match desired {
       // This team isn't in this match
@@ -330,16 +330,16 @@ impl DSConnection {
     }
   }
 
-  fn _get_desired_alliance_station(&self) -> Option<AllianceStation> {
-    self._get_alliance_station(self.team)
+  async fn _get_desired_alliance_station(&self) -> Option<AllianceStation> {
+    self._get_alliance_station(self.team).await
   }
 
-  fn _get_occupied_alliance_station(&self) -> Option<AllianceStation> {
-    self._get_alliance_station(self.team_by_ip())
+  async fn _get_occupied_alliance_station(&self) -> Option<AllianceStation> {
+    self._get_alliance_station(self.team_by_ip()).await
   }
 
-  fn _get_alliance_station(&self, team: Option<u16>) -> Option<AllianceStation> {
-    self.arena.lock().unwrap().station_for_team(team)
+  async fn _get_alliance_station(&self, team: Option<u16>) -> Option<AllianceStation> {
+    self.arena.lock().await.station_for_team(team)
   }
 }
 

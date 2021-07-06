@@ -10,39 +10,40 @@ pub struct ArenaWebsocketHandler {
   pub arena: SharedArena
 }
 
+#[async_trait::async_trait]
 impl WebsocketMessageHandler for ArenaWebsocketHandler {
-  fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Option<super::JsonMessage>> {
+  async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Option<super::JsonMessage>> {
     let response_msg = msg.response();
 
     Ok(match msg.noun.as_str() {
       "state" => match (msg.verb.as_str(), msg.data) {
         ("signal", Some(data)) => {
           let sig: ArenaSignal = serde_json::from_value(data)?;
-          self.arena.lock().unwrap().signal(sig);
+          self.arena.lock().await.signal(sig).await;
           None
         },
         ("current", None) => {
-          let current = self.arena.lock().unwrap().current_state();
+          let current = self.arena.lock().await.current_state();
           Some(response_msg.data(serde_json::to_value(current)?))
         },
         _ => Some(response_msg.invalid_verb_or_data())
       },
       "alliances" => match (msg.verb.as_str(), msg.data) {
         ("update", Some(data)) => {
-          self.alliance_update(serde_json::from_value(data)?)?;
+          self.alliance_update(serde_json::from_value(data)?).await?;
           None
         },
         _ => Some(response_msg.invalid_verb_or_data())
       },
       "match" => match (msg.verb.as_str(), msg.data) {
         ("loadTest", None) => {
-          self.arena.lock().unwrap().load_match(Match::new())?;
+          self.arena.lock().await.load_match(Match::new())?;
           None
         },
         _ => Some(response_msg.invalid_verb_or_data())
       }
       "status" => match (msg.verb.as_str(), msg.data) {
-        ("get", None) => self.status()?.map(|x| response_msg.data(x)),
+        ("get", None) => self.status().await?.map(|x| response_msg.data(x)),
         _ => Some(response_msg.invalid_verb_or_data())
       }
       _ => Some(response_msg.unknown_noun())
@@ -57,8 +58,8 @@ struct AllianceStationUpdate {
 }
 
 impl ArenaWebsocketHandler {
-  fn status(&self) -> super::Result<Option<Value>> {
-    let arena = self.arena.lock().unwrap();
+  async fn status(&self) -> super::Result<Option<Value>> {
+    let arena = self.arena.lock().await;
     let ref the_match = arena.current_match;  // match is a reserved word in rust :)
 
     Ok(Some(json!({ 
@@ -73,8 +74,8 @@ impl ArenaWebsocketHandler {
     })))
   }
 
-  fn alliance_update(&self, data: AllianceStationUpdate) -> super::Result<()> {
-    let mut arena = self.arena.lock().unwrap();
+  async fn alliance_update(&self, data: AllianceStationUpdate) -> super::Result<()> {
+    let mut arena = self.arena.lock().await;
 
     let current_state = arena.current_state();
     let idle = matches!(current_state, ArenaState::Idle);

@@ -7,7 +7,7 @@ use rtnetlink::{new_connection, Error, Handle};
 use crate::{log_expect, utils::danger::danger_or_err};
 
 // TODO: Only configure what's changing.
-pub async fn configure_addresses<I>(handle: Handle, iface: &str, addresses: I) -> Result<(), Error>
+pub async fn configure_addresses<I>(handle: &Handle, iface: &str, addresses: I) -> Result<(), Error>
 where
   I: IntoIterator<Item = IpNetwork>,
 {

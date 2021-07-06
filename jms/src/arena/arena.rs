@@ -2,13 +2,16 @@ use std::{
   mem,
   sync::{
     mpsc::{channel, Receiver, TryRecvError},
-    Arc, Mutex,
+    Arc
   },
   thread,
 };
 
+use futures::FutureExt;
+
 use enum_as_inner::EnumAsInner;
 use log::{error, info};
+use tokio::sync::Mutex;
 
 use super::{exceptions::{ArenaError, ArenaResult, StateTransitionError}, matches::MatchPlayState, station::{Alliance, AllianceStationId}};
 
@@ -127,7 +130,8 @@ impl AllianceStation {
 }
 
 pub struct Arena {
-  network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
+  // network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
+  network: Option<Arc<Mutex<Box<dyn NetworkProvider + Send + Sync>>>>,
   state: BoundState,
   pending_state_change: Option<ArenaState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
@@ -138,9 +142,10 @@ pub struct Arena {
 pub type SharedArena = Arc<Mutex<Arena>>;
 
 impl Arena {
-  pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send>>) -> Arena {
+  pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send + Sync>>) -> Arena {
     let mut a = Arena {
-      network: Arc::new(Mutex::new(network)),
+      // network: Arc::new(Mutex::new(network)),
+      network: network.map(|x| Arc::new(Mutex::new(x))),
       state: BoundState {
         first: true,
         state: ArenaState::Idle,
@@ -201,20 +206,21 @@ impl Arena {
     self.stations.iter_mut().find(|stn| stn.station == station)
   }
 
-  fn update_field_estop(&mut self) -> ArenaResult<()> {
+  async fn update_field_estop(&mut self) -> ArenaResult<()> {
     if self.state.state != ArenaState::Estop {
-      if let Some(ArenaSignal::Estop) = self.current_signal() {
+      if let Some(ArenaSignal::Estop) = self.current_signal().await {
         self.prepare_state_change(ArenaState::Estop)?;
       }
     }
     Ok(())
   }
 
-  fn update_states(&mut self) -> ArenaResult<()> {
+  async fn update_states(&mut self) -> ArenaResult<()> {
     let first = self.state.first;
+    let signal = self.current_signal().await;
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
-        if let Some(ArenaSignal::Prestart { force }) = self.current_signal() {
+        if let Some(ArenaSignal::Prestart { force }) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false, force })?;
         }
       }
@@ -225,7 +231,7 @@ impl Arena {
           m.fault();
         }
 
-        if let Some(ArenaSignal::EstopReset) = self.current_signal() {
+        if let Some(ArenaSignal::EstopReset) = signal {
           self.prepare_state_change(ArenaState::EstopReset)?;
         }
       }
@@ -256,7 +262,7 @@ impl Arena {
         if first {
           info!("Prestart Ready!")
         }
-        if let Some(ArenaSignal::MatchArm) = self.current_signal() {
+        if let Some(ArenaSignal::MatchArm) = signal {
           self.prepare_state_change(ArenaState::MatchArmed)?;
         }
       }
@@ -264,7 +270,7 @@ impl Arena {
         if first {
           info!("Match Armed!")
         }
-        if let Some(ArenaSignal::MatchPlay) = self.current_signal() {
+        if let Some(ArenaSignal::MatchPlay) = signal {
           self.prepare_state_change(ArenaState::MatchPlay)?;
         }
       }
@@ -282,7 +288,7 @@ impl Arena {
         if first {
           info!("Match complete!")
         }
-        if let Some(ArenaSignal::MatchCommit) = self.current_signal() {
+        if let Some(ArenaSignal::MatchCommit) = signal {
           self.prepare_state_change(ArenaState::MatchCommit)?;
         }
       }
@@ -381,32 +387,23 @@ impl Arena {
 
   fn state_init_prestart(&mut self, state: ArenaState) -> ArenaResult<BoundState> {
     let (_, force) = state.into_prestart().unwrap();
-    let the_rx = match *self.network.lock().unwrap() {
-      // No network provided means prestart is ready.
-      None => None,
-      Some(_) => {
-        // Need to clone these since there's no guarantee the thread will finish before
-        // the arena is destructed.
-        // Note of course that the arena won't be able to exit prestart until this is complete.
-        let netw_arc = self.network.clone();
-        let stations = self.stations.clone();
+    let the_rx = self.network.clone().map(|nw| {
+      let (tx, rx) = channel();
 
-        let (tx, rx) = channel();
+      let stations = self.stations.clone();
 
-        thread::spawn(move || {
-          context!("Arena Prestart Network", {
-            info!("Configuring alliances...");
-            let mut mtx_net = netw_arc.lock().unwrap();
-            let ref mut net = mtx_net.as_mut().unwrap();
-            let result = net.configure_alliances(&mut stations.iter(), force); // Unwrap is safe if net optional is immutable due to match call.
-            tx.send(result).unwrap(); // TODO: Better fatal handling
-            info!("Alliances configured!");
-          })
+      tokio::task::spawn(async move {
+        context!("Arena Prestart Network", {
+          info!("Configuring Alliances...");
+          let mtx = nw.lock().await;
+          let result = mtx.configure_alliances(&stations[..], force).await;
+          tx.send(result).unwrap();
+          info!("Alliances configured!");
         });
+      });
 
-        Some(rx)
-      }
-    };
+      rx
+    });
 
     Ok(BoundState {
       first: true,
@@ -415,11 +412,11 @@ impl Arena {
     })
   }
 
-  pub fn update(&mut self) {
+  pub async fn update(&mut self) {
     context!("Arena Update", {
       // Field Emergency Stop
       context!("E-stop", {
-        let estop_result = self.update_field_estop();
+        let estop_result = self.update_field_estop().await;
         match estop_result {
           Err(ArenaError::IllegalStateChange(ref isc)) => {
             error!("Cannot transition to E-STOP from {} ({})", isc.from, isc.why);
@@ -432,7 +429,7 @@ impl Arena {
       // If E-stop state change detected, do the state change ASAP
       if self.pending_state_change.is_some() {
         context!("Post E-stop State Change", {
-          self.clear_signal();
+          self.clear_signal().await;
           match self.perform_state_change() {
             Ok(()) => (),
             Err(e) => error!("Error during state change: {}", e),
@@ -442,7 +439,7 @@ impl Arena {
 
       // General state updates
       context!(&format!("State Update ({})", self.state.state), {
-        let state_result = self.update_states();
+        let state_result = self.update_states().await;
         match state_result {
           Err(e) => {
             error!("Error during state update: {}", e)
@@ -460,7 +457,7 @@ impl Arena {
 
       // Perform state update
       context!("State Change", {
-        self.clear_signal();
+        self.clear_signal().await;
         match self.perform_state_change() {
           Ok(()) => (),
           Err(e) => error!("Error during state change: {}", e),
@@ -470,16 +467,16 @@ impl Arena {
   }
 
   // Signals
-  pub fn signal(&mut self, signal: ArenaSignal) {
-    *log_expect!(self.pending_signal.lock()) = Some(signal);
+  pub async fn signal(&mut self, signal: ArenaSignal) {
+    *self.pending_signal.lock().await = Some(signal);
   }
 
-  fn current_signal(&self) -> Option<ArenaSignal> {
-    *log_expect!(self.pending_signal.lock())
+  async fn current_signal(&self) -> Option<ArenaSignal> {
+    *self.pending_signal.lock().await
   }
 
-  fn clear_signal(&self) {
-    *log_expect!(self.pending_signal.lock()) = None;
+  async fn clear_signal(&self) {
+    *self.pending_signal.lock().await = None;
   }
 
   // State Generals
