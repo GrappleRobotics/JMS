@@ -17,7 +17,7 @@ use super::{
 };
 
 use crate::{
-  context, log_expect,
+  log_expect,
   network::{NetworkProvider, NetworkResult},
 };
 
@@ -394,13 +394,11 @@ impl Arena {
       let stations = self.stations.clone();
 
       tokio::task::spawn(async move {
-        context!("Arena Prestart Network", {
-          info!("Configuring Alliances...");
-          let mtx = nw.lock().await;
-          let result = mtx.configure_alliances(&stations[..], force).await;
-          tx.send(result).unwrap();
-          info!("Alliances configured!");
-        });
+        info!("Configuring Alliances...");
+        let mtx = nw.lock().await;
+        let result = mtx.configure_alliances(&stations[..], force).await;
+        tx.send(result).unwrap();
+        info!("Alliances configured!");
       });
 
       rx
@@ -417,57 +415,47 @@ impl Arena {
   }
 
   pub async fn update(&mut self) {
-    context!("Arena Update", {
-      // Field Emergency Stop
-      context!("E-stop", {
-        let estop_result = self.update_field_estop().await;
-        match estop_result {
-          Err(ArenaError::IllegalStateChange(ref isc)) => {
-            error!("Cannot transition to E-STOP from {} ({})", isc.from, isc.why);
-          }
-          Err(x) => error!("Other error for estop: {}", x),
-          Ok(()) => (),
-        }
-      });
-
-      // If E-stop state change detected, do the state change ASAP
-      if self.pending_state_change.is_some() {
-        context!("Post E-stop State Change", {
-          self.clear_signal().await;
-          match self.perform_state_change() {
-            Ok(()) => (),
-            Err(e) => error!("Error during state change: {}", e),
-          };
-        });
+    // Field Emergency Stop
+    let estop_result = self.update_field_estop().await;
+    match estop_result {
+      Err(ArenaError::IllegalStateChange(ref isc)) => {
+        error!("Cannot transition to E-STOP from {} ({})", isc.from, isc.why);
       }
+      Err(x) => error!("Other error for estop: {}", x),
+      Ok(()) => (),
+    }
 
-      // General state updates
-      context!(&format!("State Update ({})", self.state.state), {
-        let state_result = self.update_states().await;
-        match state_result {
-          Err(e) => {
-            error!("Error during state update: {}", e)
-          }
-          Ok(()) => (),
-        }
-      });
+    // If E-stop state change detected, do the state change ASAP
+    if self.pending_state_change.is_some() {
+      self.clear_signal().await;
+      match self.perform_state_change() {
+        Ok(()) => (),
+        Err(e) => error!("Error during state change: {}", e),
+      };
+    }
 
-      self.state.first = false;
-
-      // Match update
-      if let Some(ref mut m) = self.current_match {
-        m.update();
+    // General state updates
+    let state_result = self.update_states().await;
+    match state_result {
+      Err(e) => {
+        error!("Error during state update: {}", e)
       }
+      Ok(()) => (),
+    }
 
-      // Perform state update
-      context!("State Change", {
-        self.clear_signal().await;
-        match self.perform_state_change() {
-          Ok(()) => (),
-          Err(e) => error!("Error during state change: {}", e),
-        };
-      });
-    })
+    self.state.first = false;
+
+    // Match update
+    if let Some(ref mut m) = self.current_match {
+      m.update();
+    }
+
+    // Perform state update
+    self.clear_signal().await;
+    match self.perform_state_change() {
+      Ok(()) => (),
+      Err(e) => error!("Error during state change: {}", e),
+    };
   }
 
   // Signals
@@ -489,20 +477,18 @@ impl Arena {
   }
 
   fn prepare_state_change(&mut self, desired: ArenaState) -> ArenaResult<()> {
-    context!("Queue State Change", {
-      info!("Queuing state transition: {:?} -> {:?}", self.state.state, desired);
+    info!("Queuing state transition: {:?} -> {:?}", self.state.state, desired);
 
-      match self.can_change_state_to(desired) {
-        Err(e) => {
-          error!("Could not perform state transition: {}", e);
-          Err(e)
-        }
-        Ok(_) => {
-          self.pending_state_change = Some(desired);
-          Ok(())
-        }
+    match self.can_change_state_to(desired) {
+      Err(e) => {
+        error!("Could not perform state transition: {}", e);
+        Err(e)
       }
-    })
+      Ok(_) => {
+        self.pending_state_change = Some(desired);
+        Ok(())
+      }
+    }
   }
 
   fn perform_state_change(&mut self) -> ArenaResult<()> {

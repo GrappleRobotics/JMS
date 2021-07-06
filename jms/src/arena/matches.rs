@@ -3,7 +3,6 @@ use std::time::{Duration, Instant};
 use log::{info, warn};
 
 use super::exceptions::{MatchError, MatchResult};
-use crate::context;
 
 use serde::Serialize;
 
@@ -80,47 +79,45 @@ impl Match {
     self.state_first = false;
     let elapsed = self.elapsed();
 
-    context!(&format!("Match::Update ({:?})", self.state), {
-      match self.state {
-        MatchPlayState::Waiting => (),
-        MatchPlayState::Warmup => {
-          self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
-          if self.remaining_time == Duration::ZERO {
-            self.do_change_state(MatchPlayState::Auto);
-          }
-        }
-        MatchPlayState::Auto => {
-          self.remaining_time = self.config.auto_time.saturating_sub(elapsed);
-          if self.remaining_time == Duration::ZERO {
-            self.do_change_state(MatchPlayState::Pause);
-          }
-        }
-        MatchPlayState::Pause => {
-          self.remaining_time = self.config.pause_time.saturating_sub(elapsed);
-          if self.remaining_time == Duration::ZERO {
-            self.do_change_state(MatchPlayState::Teleop);
-          }
-        }
-        MatchPlayState::Teleop => {
-          self.remaining_time = self.config.teleop_time.saturating_sub(elapsed);
-          if self.remaining_time == Duration::ZERO {
-            self.do_change_state(MatchPlayState::Cooldown);
-          }
-        }
-        MatchPlayState::Cooldown => {
-          self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
-          if self.remaining_time == Duration::ZERO {
-            self.do_change_state(MatchPlayState::Complete);
-          }
-        }
-        MatchPlayState::Complete => {}
-        MatchPlayState::Fault => {
-          if first {
-            warn!("Match fault");
-          }
+    match self.state {
+      MatchPlayState::Waiting => (),
+      MatchPlayState::Warmup => {
+        self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Auto);
         }
       }
-    });
+      MatchPlayState::Auto => {
+        self.remaining_time = self.config.auto_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Pause);
+        }
+      }
+      MatchPlayState::Pause => {
+        self.remaining_time = self.config.pause_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Teleop);
+        }
+      }
+      MatchPlayState::Teleop => {
+        self.remaining_time = self.config.teleop_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Cooldown);
+        }
+      }
+      MatchPlayState::Cooldown => {
+        self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Complete);
+        }
+      }
+      MatchPlayState::Complete => {}
+      MatchPlayState::Fault => {
+        if first {
+          warn!("Match fault");
+        }
+      }
+    }
   }
 
   pub fn remaining_time(&self) -> Duration {

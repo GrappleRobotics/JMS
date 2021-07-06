@@ -10,7 +10,7 @@ use std::{collections::HashMap, error, sync::Arc};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::{arena::exceptions::ArenaError, context};
+use crate::{arena::exceptions::ArenaError};
 
 #[async_trait::async_trait]
 pub trait WebsocketMessageHandler {
@@ -104,17 +104,15 @@ impl Websockets {
     while let Ok((stream, _addr)) = listener.accept().await {
       let h = self.handlers.clone();
       tokio::spawn(async move {
-        context!(&format!("Websocket {}", _addr), {
-          if let Err(e) = Self::connection_handler(stream, h).await {
-            match e {
-              WebsocketError::Tungstenite(ref e) => match e {
-                tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8 => (),
-                err => error!("Tungstenite Error: {}", err),
-              },
-              err => error!("Error: {}", err),
-            }
+        if let Err(e) = Self::connection_handler(stream, h).await {
+          match e {
+            WebsocketError::Tungstenite(ref e) => match e {
+              tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8 => (),
+              err => error!("Tungstenite Error: {}", err),
+            },
+            err => error!("Error: {}", err),
           }
-        })
+        }
       });
     }
 
