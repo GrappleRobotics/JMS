@@ -2,11 +2,11 @@ mod handler;
 
 pub use handler::*;
 
-use std::{collections::HashMap, error, sync::{Arc}};
-use futures::{SinkExt, StreamExt, lock::Mutex};
+use futures::{lock::Mutex, SinkExt, StreamExt};
 use log::{error, info, warn};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::{collections::HashMap, error, sync::Arc};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite};
 
@@ -18,7 +18,7 @@ pub trait WebsocketMessageHandler {
 }
 
 pub struct Websockets {
-  handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>
+  handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -27,18 +27,18 @@ pub struct JsonMessage {
   pub noun: String,
   pub verb: String,
   pub data: Option<Value>,
-  pub error: Option<String>
+  pub error: Option<String>,
 }
 
 // Basic builder pattern
 impl JsonMessage {
   pub fn new(object: &str, noun: &str, verb: &str) -> JsonMessage {
-    JsonMessage { 
+    JsonMessage {
       object: object.to_owned(),
       noun: noun.to_owned(),
       verb: verb.to_owned(),
       data: None,
-      error: None
+      error: None,
     }
   }
 
@@ -88,7 +88,9 @@ impl JsonMessage {
 
 impl Websockets {
   pub fn new() -> Self {
-    Websockets { handlers: Arc::new(Mutex::new(HashMap::new())) }
+    Websockets {
+      handlers: Arc::new(Mutex::new(HashMap::new())),
+    }
   }
 
   pub async fn register(&mut self, object_key: &'static str, handler: Box<dyn WebsocketMessageHandler + Send>) {
@@ -107,9 +109,9 @@ impl Websockets {
             match e {
               WebsocketError::Tungstenite(ref e) => match e {
                 tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8 => (),
-                err => error!("Tungstenite Error: {}", err)
-              }
-              err => error!("Error: {}", err)
+                err => error!("Tungstenite Error: {}", err),
+              },
+              err => error!("Error: {}", err),
             }
           }
         })
@@ -120,7 +122,10 @@ impl Websockets {
   }
 
   // Can't be a self method as tokio::spawn may outlive the object itself, unless we constrain to be 'static lifetime
-  async fn connection_handler(stream: TcpStream, handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>) -> Result<()> {
+  async fn connection_handler(
+    stream: TcpStream,
+    handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
+  ) -> Result<()> {
     let mut ws = accept_async(stream).await?;
 
     while let Some(msg) = ws.next().await {
@@ -129,7 +134,7 @@ impl Websockets {
         tungstenite::Message::Text(msg_str) => {
           let m: JsonMessage = serde_json::from_str(&msg_str)?;
           let mut hs = handlers.lock().await;
-          
+
           match hs.get_mut(&m.object) {
             Some(h) => {
               let response = h.handle(m.clone()).await;
@@ -137,7 +142,7 @@ impl Websockets {
                 Ok(Some(ref r)) => {
                   let response_msg = serde_json::to_string(r)?;
                   ws.send(tungstenite::Message::Text(response_msg)).await?;
-                },
+                }
                 Ok(None) => (),
                 Err(e) => {
                   error!("WS Error: {}", e);
@@ -145,15 +150,15 @@ impl Websockets {
                   ws.send(tungstenite::Message::Text(response_msg)).await?;
                 }
               }
-            },
+            }
             None => {
               warn!("No WS handler for object {}", m.object);
               let response = serde_json::to_string(&JsonMessage::new(&m.object, &m.noun, &m.verb).unknown_object())?;
               ws.send(tungstenite::Message::Text(response)).await?;
             }
           }
-        },
-        _ => ()
+        }
+        _ => (),
       }
     }
 
@@ -167,7 +172,7 @@ pub enum WebsocketError {
   JSON(serde_json::Error),
   IO(std::io::Error),
   Arena(ArenaError),
-  Other(String)
+  Other(String),
 }
 
 impl std::fmt::Display for WebsocketError {
@@ -177,7 +182,7 @@ impl std::fmt::Display for WebsocketError {
       WebsocketError::JSON(ref e) => write!(f, "JSON Error: {}", e),
       WebsocketError::IO(ref e) => write!(f, "IO Error: {}", e),
       WebsocketError::Arena(ref e) => write!(f, "Arena Error: {}", e),
-      WebsocketError::Other(ref s) => write!(f, "Error: {}", s)
+      WebsocketError::Other(ref s) => write!(f, "Error: {}", s),
     }
   }
 }
@@ -193,7 +198,7 @@ impl error::Error for WebsocketError {
       WebsocketError::JSON(ref e) => Some(e),
       WebsocketError::IO(ref e) => Some(e),
       WebsocketError::Arena(ref e) => Some(e),
-      WebsocketError::Other(_) => None
+      WebsocketError::Other(_) => None,
     }
   }
 }

@@ -11,9 +11,5 @@ pub type NetworkResult<T> = std::result::Result<T, NetworkError>;
 pub trait NetworkProvider {
   async fn configure_admin(&self) -> NetworkResult<()>;
 
-  async fn configure_alliances(
-    &self,
-    stations: &[AllianceStation],
-    force_reload: bool,
-  ) -> NetworkResult<()>;
+  async fn configure_alliances(&self, stations: &[AllianceStation], force_reload: bool) -> NetworkResult<()>;
 }

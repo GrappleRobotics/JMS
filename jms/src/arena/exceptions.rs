@@ -32,7 +32,7 @@ pub enum ArenaError {
   UnimplementedStateError(ArenaState),
   NetworkError(NetworkError),
   MatchError(MatchError),
-  CannotLoadMatchError(String)
+  CannotLoadMatchError(String),
 }
 
 impl std::fmt::Display for ArenaError {

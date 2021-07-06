@@ -1,10 +1,10 @@
 mod arena;
 mod db;
+mod ds;
 mod logging;
 mod network;
-mod utils;
-mod ds;
 mod ui;
+mod utils;
 
 mod models;
 mod schema;
@@ -17,19 +17,18 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 
-use std::{error::Error, sync::{Arc}, thread, time::Duration};
+use std::{error::Error, sync::Arc, time::Duration};
 
 use arena::SharedArena;
 use clap::{App, Arg};
 use dotenv::dotenv;
 use ds::connector::DSConnectionService;
 use futures::TryFutureExt;
-use log::info;
-use network::NetworkProvider;
 use network::onboard::OnboardNetwork;
+use network::NetworkProvider;
 use tokio::{sync::Mutex, try_join};
 
-use ui::websocket::{ArenaWebsocketHandler};
+use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
 use crate::arena::matches::Match;
@@ -67,11 +66,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
   db::connection(); // Start connection
 
   // let network = Box::new(FakeNetwork {});
-  let network = Box::new(OnboardNetwork::new(
-    "ens19.100",
-    &vec!["ens19.10", "ens19.20", "ens19.30"],
-    &vec!["ens19.40", "ens19.50", "ens19.60"]
-  ).unwrap());
+  let network = Box::new(
+    OnboardNetwork::new(
+      "ens19.100",
+      &vec!["ens19.10", "ens19.20", "ens19.30"],
+      &vec!["ens19.40", "ens19.50", "ens19.60"],
+    )
+    .unwrap(),
+  );
 
   network.configure_admin().await.unwrap();
 
@@ -84,7 +86,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     a.stations[0].bypass = true;
     a.update().await;
   }
-  
+
   // Arena gets its own thread to keep timing strict
   let a2 = arena.clone();
   let arena_fut = async move {

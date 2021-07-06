@@ -1,2 +1,2 @@
-pub mod danger;
 pub mod bufutil;
+pub mod danger;

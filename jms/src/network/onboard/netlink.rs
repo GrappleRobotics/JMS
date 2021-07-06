@@ -13,11 +13,7 @@ where
 {
   log_expect!(danger_or_err());
 
-  let mut links = handle
-    .link()
-    .get()
-    .set_name_filter(iface.to_string())
-    .execute();
+  let mut links = handle.link().get().set_name_filter(iface.to_string()).execute();
   if let Some(link) = links.try_next().await? {
     // Flush addresses
     let mut addrs = handle

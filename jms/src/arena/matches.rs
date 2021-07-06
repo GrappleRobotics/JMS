@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use log::{info, warn};
 
 use super::exceptions::{MatchError, MatchResult};
-use crate::{context};
+use crate::context;
 
 use serde::Serialize;
 
