@@ -11,7 +11,7 @@ use tokio_util::codec::Framed;
 use tokio_util::udp::UdpFramed;
 
 use crate::arena::matches::MatchPlayState;
-use crate::arena::{AllianceStation, AllianceStationDSReport, ArenaState, SharedArena};
+use crate::arena::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy, ArenaState, SharedArena};
 use crate::arena::station::{AllianceStationId};
 use crate::ds::{self, Fms2DsTCP, Fms2DsUDP};
 
@@ -43,7 +43,6 @@ pub struct DSConnection {
   framed_udp: UdpFramed<DSUDPCodec>,    // UDP Outgoing
   udp_rx: broadcast::Receiver<Ds2FmsUDP>,
   arena: SharedArena,
-  correct_station: bool, // Is correct station?
   last_packet_time: Instant
 }
 
@@ -63,7 +62,6 @@ impl DSConnection {
       udp_rx,
       state: DSConnectionState::Connected,
       arena,
-      correct_station: false,
       last_packet_time: Instant::now()
     }
   }
@@ -98,10 +96,9 @@ impl DSConnection {
       tokio::select! {
         // UDP Update
         _ = udp_timer.tick() => {
-          if self.correct_station {
+          if self._get_station_status() == Fms2DsStationStatus::Good {
             if let Some(team) = self.team {
               let msg = self._encode_udp_update(team);
-              info!("UDP Out: {:?}", msg);
               self.framed_udp.send((msg, self.addr_udp)).await.unwrap();  // TODO: Handle error
             }
 
@@ -115,13 +112,47 @@ impl DSConnection {
 
         // TCP Update
         _ = tcp_timer.tick() => {
-          if let Some(team) = self.team {
-            let mut tags = vec![];
-            // TODO: Event Code (once implemented)
-            // TODO: Game Data (once implemented)
-            tags.push(self._construct_station_tag());
+          // TODO: Can't TCP Update here
+          // The DS buffers all TCP messages, so if we send TCP messages more often than the DS sends
+          // them, the DS thinks it's still connected even if we close the socket.
+          // Nice one, NI.
 
-            self.framed_tcp.send(Fms2DsTCP{ tags }).await.unwrap(); // TODO: Handle error
+          let status = self._get_station_status();
+
+          // if let Some(team) = self.team {
+          //   let mut tags = vec![];
+          //   // TODO: Event Code (once implemented)
+          //   // TODO: Game Data (once implemented)
+          //   tags.push(self._construct_station_tag(status));
+
+          //   self.framed_tcp.send(Fms2DsTCP{ tags }).await.unwrap(); // TODO: Handle error
+          // }
+
+          // Update arena record of station status
+          {
+            let mut arena = self.arena.lock().unwrap();
+
+            match status {
+              Fms2DsStationStatus::Good => {
+                if let Some(stn) = arena.station_for_team_mut(self.team) {
+                  stn.occupancy = AllianceStationOccupancy::Occupied;
+                }
+              },
+              Fms2DsStationStatus::Bad => {
+                if let Some(stn) = arena.station_for_team_mut(self.team_by_ip()) {
+                  stn.occupancy = AllianceStationOccupancy::WrongStation;
+                } else if let Some(stn) = arena.station_for_team_mut(self.team) {
+                  // Fallback to team (not actual occupied station) if not available
+                  stn.occupancy = AllianceStationOccupancy::WrongStation;
+                }
+              },
+              Fms2DsStationStatus::Waiting => {
+                if let Some(stn) = arena.station_for_team_mut(self.team_by_ip()) {
+                  stn.occupancy = AllianceStationOccupancy::WrongMatch;
+                }
+                // No fallback - Waiting status means that the station for self.team is None
+              },
+            }
           }
         }
 
@@ -130,7 +161,7 @@ impl DSConnection {
           match udp_frame {
             Ok(pkt) if Some(pkt.team) == self.team => {
               self.last_packet_time = Instant::now();
-              // info!("UDP for {}: {:?}", self.team.unwrap(), pkt);
+              self._decode_udp_update(pkt);
             },
             Ok(_) => (),  // Ignore it, not for us
             Err(e) => error!("UDP Receive error: {}", e),
@@ -145,9 +176,21 @@ impl DSConnection {
                 for tag in pkt.tags.iter() {
                   self._process_tcp_tag(tag);
                 }
+
+                // TCP Update
+                let status = self._get_station_status();
+
+                if let Some(team) = self.team {
+                  let mut tags = vec![];
+                  // TODO: Event Code (once implemented)
+                  // TODO: Game Data (once implemented)
+                  tags.push(self._construct_station_tag(status));
+
+                  self.framed_tcp.send(Fms2DsTCP{ tags }).await.unwrap(); // TODO: Handle error
+                }
               },
               Err(e) => {
-                error!("TCP Error: {}", e);
+                error!("TCP Error({:?}): {}", self.team, e);
                 self.state = DSConnectionState::Disconnected(DSDisconnectionReason::TCPFault);
                 break;
               }
@@ -164,8 +207,12 @@ impl DSConnection {
     // Connection closed, notify Arena
     {
       let mut arena = self.arena.lock().unwrap();
-      if let Some(stn) = arena.station_for_team_mut(self.team) {
+      if let Some(stn) = arena.station_for_team_mut(self.team_by_ip()) {
         stn.ds_report = None;
+        stn.occupancy = AllianceStationOccupancy::Vacant;
+      } else if let Some(stn) = arena.station_for_team_mut(self.team) {
+        stn.ds_report = None;
+        stn.occupancy = AllianceStationOccupancy::Vacant;
       }
     }
   }
@@ -241,24 +288,21 @@ impl DSConnection {
     }
   }
 
-  fn _construct_station_tag(&mut self) -> Fms2DsTCPTags {
-    let status = self._get_station_status();
+  fn _construct_station_tag(&self, status: Fms2DsStationStatus) -> Fms2DsTCPTags {
     let correct_station = self._get_desired_alliance_station().map(|x| x.station);
 
-    if let Some(team) = self.team {
-      match (&status, correct_station) {
-          (Fms2DsStationStatus::Good, _) => (),
-          (Fms2DsStationStatus::Bad, Some(correct)) => {
-            warn!("WRONG STATION: Team {} is in the wrong station. Move to {}", team, correct);
-          },
-          (Fms2DsStationStatus::Bad, None) => error!("Uh oh!"),   // This shouldn't ever trigger
-          (Fms2DsStationStatus::Waiting, _) => {
-            warn!("WRONG MATCH: Team {} is not in this match.", team);
-          }
-      }
-    }
-
-    self.correct_station = status == Fms2DsStationStatus::Good;
+    // if let Some(team) = self.team {
+    //   match (&status, correct_station) {
+    //       (Fms2DsStationStatus::Good, _) => (),
+    //       (Fms2DsStationStatus::Bad, Some(correct)) => {
+    //         warn!("WRONG STATION: Team {} is in the wrong station. Move to {}", team, correct);
+    //       },
+    //       (Fms2DsStationStatus::Bad, None) => error!("Uh oh!"),   // This shouldn't ever trigger
+    //       (Fms2DsStationStatus::Waiting, _) => {
+    //         warn!("WRONG MATCH: Team {} is not in this match.", team);
+    //       }
+    //   }
+    // }
 
     Fms2DsTCPTags::StationInfo(
       correct_station.unwrap_or(AllianceStationId::blue1()),  // Default to Blue 1 for Waiting
@@ -275,8 +319,8 @@ impl DSConnection {
       None => Fms2DsStationStatus::Waiting,
       Some(stn_desired) => {
         match actual {
-          // Can't determine actual station, assume it's OK
-          None => Fms2DsStationStatus::Good,
+          // Can't determine actual station, mustn't be in this match. TODO: Delegate these checks to the NetworkProvider
+          None => Fms2DsStationStatus::Waiting,
           // Team is in the correct station
           Some(stn_actual) if stn_actual.station == stn_desired.station => Fms2DsStationStatus::Good,
           // Team's desired station doesn't match their actual station

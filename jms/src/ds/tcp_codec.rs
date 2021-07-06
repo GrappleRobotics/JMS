@@ -67,7 +67,7 @@ pub enum Fms2DsTCPTags {
   #[allow(dead_code)] GameData(String)
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Fms2DsStationStatus {
   Good = 0,
   Bad = 1,
