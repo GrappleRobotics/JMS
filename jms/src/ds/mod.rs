@@ -5,7 +5,9 @@ mod tcp_codec;
 pub use udp_codec::*;
 pub use tcp_codec::*;
 
-#[derive(Debug)]
+pub mod connector;
+
+#[derive(Debug, Clone)]
 pub enum DSMode {
   Teleop = 0,
   Test = 1,
