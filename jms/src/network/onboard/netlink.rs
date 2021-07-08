@@ -1,7 +1,7 @@
 use std::io;
 
 use futures::{future::try_join_all, TryStreamExt};
-use ipnetwork::IpNetwork;
+use ipnetwork::Ipv4Network;
 use rtnetlink::{new_connection, Error, Handle};
 
 use crate::{log_expect, utils::danger::danger_or_err};
@@ -9,7 +9,7 @@ use crate::{log_expect, utils::danger::danger_or_err};
 // TODO: Only configure what's changing.
 pub async fn configure_addresses<I>(handle: &Handle, iface: &str, addresses: I) -> Result<(), Error>
 where
-  I: IntoIterator<Item = IpNetwork>,
+  I: IntoIterator<Item = Ipv4Network>,
 {
   log_expect!(danger_or_err());
 
@@ -34,7 +34,7 @@ where
       futs.push(
         handle
           .address()
-          .add(link.header.index, addr.ip(), addr.prefix())
+          .add(link.header.index, addr.ip().into(), addr.prefix())
           .execute(),
       );
     }

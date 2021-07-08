@@ -12,3 +12,17 @@ Robot radio has address .1
 Field router has address .4 (except on admin, where we use .1 for convention)
 
 The RIO has a MAC prefix of 00:80:2F (for all NI devices).
+
+## Permissions
+### Polkit DBUS
+`/etc/polkit-1/localauthority/50-local.d/10-jms.pkla`
+```
+[systemd]
+Identity=unix-group:jaci
+Action=org.freedesktop.systemd1.manage-units
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+```
+
+Required to give `jaci` user access to system dbus to stop/start/reload services without sudo. Should change into a group for final deployment. Ansible might be suitable to make this work.

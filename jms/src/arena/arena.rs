@@ -396,7 +396,7 @@ impl Arena {
       tokio::task::spawn(async move {
         info!("Configuring Alliances...");
         let mtx = nw.lock().await;
-        let result = mtx.configure_alliances(&stations[..], force).await;
+        let result = mtx.configure(&stations[..], force).await;
         tx.send(result).unwrap();
         info!("Alliances configured!");
       });

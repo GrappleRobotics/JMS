@@ -68,6 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
   // let network = Box::new(FakeNetwork {});
   let network = Box::new(
     OnboardNetwork::new(
+      "ens18",
       "ens19.100",
       &vec!["ens19.10", "ens19.20", "ens19.30"],
       &vec!["ens19.40", "ens19.50", "ens19.60"],
@@ -75,7 +76,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .unwrap(),
   );
 
-  network.configure_admin().await.unwrap();
+  network.configure(&vec![], false).await.unwrap();
 
   let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
   {

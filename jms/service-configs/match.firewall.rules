@@ -1,0 +1,47 @@
+*nat
+
+-A POSTROUTING -o ens18 -j MASQUERADE
+
+COMMIT
+
+*filter
+
+# Enable localhost, disable 127.0.0.0/8 on anything but localhost
+-A INPUT -i lo -j ACCEPT
+-A INPUT -d 127.0.0.0/8 -j REJECT
+
+# Enable established inbound
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Enable SSH on WAN
+-A INPUT -p tcp -m state --state NEW --dport 22 -i {{ .Cfg.Interfaces.WAN }}
+
+# ADMIN Network Rules
+#   Allow access to whole admin network (as multiple addresses are served by this host)
+#   Allow outbound internet access
+-A INPUT -i {{ .Cfg.Interfaces.Admin }} -d {{ .Net.Admin.Network.IP }}/{{ .Net.Admin.Netmask }} -j ACCEPT
+-A FORWARD -i {{ .Cfg.Interfaces.Admin }} -o {{ .Cfg.Interfaces.WAN }} -j ACCEPT
+-A FORWARD -i {{ .Cfg.Interfaces.WAN }} -o {{ .Cfg.Interfaces.Admin }} -j ACCEPT
+
+# Robot Networks - Router and Server access ONLY
+{{- $teamInterfaces := .Cfg.EachTeamInterface -}}
+{{- range $i, $t := .Net.EachTeam -}}
+{{- $interface := (index $teamInterfaces $i) -}}
+{{- if $t.Present }}
+# {{ $t.DS.Colour }} {{ $t.DS.Position }} - Team {{ $t.Team }} (iface {{ $interface }})
+-A INPUT -i {{ $interface }} -d {{ $t.Router }} -p icmp -j ACCEPT
+-A INPUT -i {{ $interface }} -d {{ $.Net.Admin.Server }} -p udp --dport 1160 -j ACCEPT
+-A INPUT -i {{ $interface }} -d {{ $.Net.Admin.Server }} -p icmp -j ACCEPT
+{{- else }}
+# {{ $t.DS.Colour }} {{ $t.DS.Position }} (iface {{ $interface }}) is unoccupied.
+{{- end -}}
+{{ end }}
+
+# Default deny
+-A INPUT -j DROP
+-A FORWARD -j DROP
+
+# Allow outgoing by default
+-A OUTPUT -j ACCEPT
+
+COMMIT
