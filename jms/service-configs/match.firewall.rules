@@ -14,30 +14,33 @@ COMMIT
 -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Enable SSH on WAN
--A INPUT -p tcp -m state --state NEW --dport 22 -i {{ .Cfg.Interfaces.WAN }}
+-A INPUT -p tcp -m state --state NEW --dport 22 -i {{ wan }}
 
 # ADMIN Network Rules
 #   Allow access to whole admin network (as multiple addresses are served by this host)
 #   Allow outbound internet access
--A INPUT -i {{ .Cfg.Interfaces.Admin }} -d {{ .Net.Admin.Network.IP }}/{{ .Net.Admin.Netmask }} -j ACCEPT
--A FORWARD -i {{ .Cfg.Interfaces.Admin }} -o {{ .Cfg.Interfaces.WAN }} -j ACCEPT
--A FORWARD -i {{ .Cfg.Interfaces.WAN }} -o {{ .Cfg.Interfaces.Admin }} -j ACCEPT
+-A INPUT -i {{ admin.iface }} -d {{ network admin.router }}/{{ netmask admin.router }} -j ACCEPT
+-A FORWARD -i {{ admin.iface }} -o {{ wan }} -j ACCEPT
+-A FORWARD -i {{ wan }} -o {{ admin.iface }} -j ACCEPT
 
 # Robot Networks - Router and Server access ONLY
-{{- $teamInterfaces := .Cfg.EachTeamInterface -}}
-{{- range $i, $t := .Net.EachTeam -}}
-{{- $interface := (index $teamInterfaces $i) -}}
-{{- if $t.Present }}
-# {{ $t.DS.Colour }} {{ $t.DS.Position }} - Team {{ $t.Team }} (iface {{ $interface }})
--A INPUT -i {{ $interface }} -d {{ $t.Router }} -p icmp -j ACCEPT
--A INPUT -i {{ $interface }} -d {{ $.Net.Admin.Server }} -p udp --dport 1160 -j ACCEPT
--A INPUT -i {{ $interface }} -d {{ $.Net.Admin.Server }} -p icmp -j ACCEPT
-{{- else }}
-# {{ $t.DS.Colour }} {{ $t.DS.Position }} (iface {{ $interface }}) is unoccupied.
-{{- end -}}
-{{ end }}
+{{ #each stations }}
+{{ #if this.cfg.router }}
+# {{ this.station.alliance }} {{ this.station.station }} - Team #{{ this.team }} (iface {{ this.cfg.iface }})
+# Accept on both router and server address, as in a segmented network the DS sends requests to the team router
+-A INPUT -i {{ this.cfg.iface }} -d {{ ip this.cfg.router }} -p udp --dport 1160 -j ACCEPT
+-A INPUT -i {{ this.cfg.iface }} -d {{ ip this.cfg.router }} -p tcp --dport 1750 -j ACCEPT
+-A INPUT -i {{ this.cfg.iface }} -d {{ ip this.cfg.router }} -p icmp -j ACCEPT
+-A INPUT -i {{ this.cfg.iface }} -d {{ ip ../admin.server }} -p udp --dport 1160 -j ACCEPT
+-A INPUT -i {{ this.cfg.iface }} -d {{ ip ../admin.server }} -p tcp --dport 1750 -j ACCEPT
+-A INPUT -i {{ this.cfg.iface }} -d {{ ip ../admin.server }} -p icmp -j ACCEPT
+{{ else }}
+# {{ this.station.alliance }} {{ this.station.station }} (iface {{ this.cfg.iface }}) is unoccupied - all traffic denied.
+{{ /if }}
+{{ /each }}
 
 # Default deny
+-A INPUT -j LOG --log-prefix "dropped"
 -A INPUT -j DROP
 -A FORWARD -j DROP
 

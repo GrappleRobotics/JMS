@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 
 use ipnetwork::{IpNetwork, Ipv4Network};
+use tokio::try_join;
 
 use crate::arena::station::{Alliance, AllianceStationId};
 use crate::arena::AllianceStation;
@@ -10,6 +11,7 @@ use super::NetworkProvider;
 
 pub mod netlink;
 pub mod dhcp;
+pub mod firewall;
 
 const ADMIN_IP: &'static str = "10.0.100.5/24";
 const ADMIN_ROUTER: &'static str = "10.0.100.1/24";
@@ -99,8 +101,31 @@ impl OnboardNetwork {
       }
     }).collect();
 
-    // DHCP and iptables can be done at the same time
     dhcp::configure_dhcp(admin_cfg, &station_dhcps[..]).await?;
+    Ok(())
+  }
+
+  async fn configure_firewall(&self, stations: &[AllianceStation]) -> super::NetworkResult<()> {
+    let admin_cfg = firewall::FirewallConfig {
+      iface: self.admin_iface.clone(),
+      router: Some(self.v4_network(ADMIN_ROUTER)?),
+      server: Some(self.v4_network(ADMIN_IP)?)
+    };
+
+    let station_cfgs: Vec<firewall::TeamFirewallConfig> = stations.iter().map(|s| {
+      firewall::TeamFirewallConfig {
+        station: s.station,
+        team: s.team,
+        cfg: firewall::FirewallConfig {
+          iface: self.station_ifaces[&s.station].clone(),
+          router: s.team.map(|t| self.team_ip(t).unwrap()),
+          server: None
+        }
+      }
+    }).collect();
+
+    firewall::configure_firewall(self.wan_iface.clone(), admin_cfg, &station_cfgs[..]).await?;
+
     Ok(())
   }
 
@@ -121,7 +146,10 @@ impl OnboardNetwork {
 impl NetworkProvider for OnboardNetwork {
   async fn configure(&self, stations: &[AllianceStation], _force_reload: bool) -> super::NetworkResult<()> {
     self.configure_ip_addrs(stations).await?;
-    self.configure_dhcp(stations).await?;
+    let fut_dhcp = self.configure_dhcp(stations);
+    let fut_firewall = self.configure_firewall(stations);
+
+    try_join!(fut_dhcp, fut_firewall)?;
     Ok(())
   }
 }

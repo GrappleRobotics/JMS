@@ -26,20 +26,21 @@ pub struct TeamDHCPConfig {
   pub cfg: Option<DHCPConfig>
 }
 
-pub async fn configure_dhcp(cfg: DHCPConfig, stn_cfgs: &[TeamDHCPConfig]) -> NetworkResult<()> {
+pub async fn configure_dhcp(admin_cfg: DHCPConfig, stn_cfgs: &[TeamDHCPConfig]) -> NetworkResult<()> {
   log_expect!(danger_or_err());
   let mut file = File::create(DHCP_FILE)?;
 
   info!("Generating DHCP file...");
-  generate_dhcp_conf(&mut file, &cfg, stn_cfgs).await?;
+  generate_dhcp_conf(&mut file, &admin_cfg, stn_cfgs).await?;
 
   info!("Reloading DHCP service...");
   reload_dhcp_service().await?;
 
+  info!("DHCP Ready!");
   Ok(())
 }
 
-async fn generate_dhcp_conf(file: &mut File, cfg: &DHCPConfig, stn_cfgs: &[TeamDHCPConfig]) -> NetworkResult<()> {
+async fn generate_dhcp_conf(file: &mut File, admin_cfg: &DHCPConfig, stn_cfgs: &[TeamDHCPConfig]) -> NetworkResult<()> {
   log_expect!(danger_or_err());
 
   match ServiceConfigs::get("match.dhcp.conf") {
@@ -51,7 +52,7 @@ async fn generate_dhcp_conf(file: &mut File, cfg: &DHCPConfig, stn_cfgs: &[TeamD
       let result = hbars.render_template(
         template_str,
         &json!({
-          "admin": cfg,
+          "admin": admin_cfg,
           "stations": stn_cfgs
         })
       )?;
