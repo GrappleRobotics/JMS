@@ -33,25 +33,6 @@ use ui::websocket::Websockets;
 
 use crate::arena::matches::Match;
 
-// struct FakeNetwork {}
-// impl NetworkProvider for FakeNetwork {
-//   fn configure_admin(&mut self) -> network::NetworkResult<()> {
-//     info!("Configuring Admin");
-//     Ok(())
-//   }
-
-//   fn configure_alliances(
-//     &mut self,
-//     stations: &mut dyn Iterator<Item = &arena::AllianceStation>,
-//     force_reload: bool,
-//   ) -> network::NetworkResult<()> {
-//     let alls: Vec<&arena::AllianceStation> = stations.collect();
-//     info!("Configuring Alliances (Force? {}): {:?}", force_reload, alls);
-//     thread::sleep(Duration::from_millis(1000));
-//     Ok(())
-//   }
-// }
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
   dotenv().ok();
@@ -65,7 +46,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
   db::connection(); // Start connection
 
-  // let network = Box::new(FakeNetwork {});
   let network = Box::new(
     OnboardNetwork::new(
       "ens18",
