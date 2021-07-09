@@ -14,7 +14,7 @@ COMMIT
 -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Enable SSH on WAN
--A INPUT -p tcp -m state --state NEW --dport 22 -i {{ wan }}
+-A INPUT -p tcp -m state --state NEW --dport 22 -i {{ wan }} -j ACCEPT
 
 # ADMIN Network Rules
 #   Allow access to whole admin network (as multiple addresses are served by this host)

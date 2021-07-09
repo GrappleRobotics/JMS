@@ -1,9 +1,9 @@
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::arena::{
-  matches::Match, station::AllianceStationId, AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena,
-};
+use crate::{arena::{
+  matches::LoadedMatch, station::AllianceStationId, AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena,
+}, models};
 
 use super::{WebsocketError, WebsocketMessageHandler};
 
@@ -38,7 +38,7 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
       },
       "match" => match (msg.verb.as_str(), msg.data) {
         ("loadTest", None) => {
-          self.arena.lock().await.load_match(Match::new())?;
+          self.arena.lock().await.load_match(LoadedMatch::new(models::Match::new_test()))?;
           None
         }
         _ => Some(response_msg.invalid_verb_or_data()),
@@ -69,7 +69,8 @@ impl ArenaWebsocketHandler {
       "match": the_match.as_ref().map(|m| {
         json!({
           "state": m.current_state(),
-          "remaining_time": m.remaining_time()
+          "remaining_time": m.remaining_time(),
+          "meta": m.metadata()
         })
       })
     })))

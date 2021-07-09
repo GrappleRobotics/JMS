@@ -47,9 +47,19 @@ class App extends React.Component {
       <br />
 
       <Container>
+        <br />
         <Row>
           <Col>
-            <Button onClick={() => this.ws.send("arena", "match", "loadTest")}>Load Test Match</Button>
+            <h3> { this.state.status?.match?.meta?.name || <i>No Match Loaded</i> } </h3>
+          </Col>
+          <Col md="auto">
+            <Button
+              variant="warning"
+              onClick={() => this.ws.send("arena", "match", "loadTest")}
+              disabled={this.state.status?.state?.state !== "Idle"}
+            >
+              Load Test Match
+            </Button>
           </Col>
         </Row>
         <br />

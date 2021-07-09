@@ -2,6 +2,8 @@ use std::time::{Duration, Instant};
 
 use log::{info, warn};
 
+use crate::models;
+
 use super::exceptions::{MatchError, MatchResult};
 
 use serde::Serialize;
@@ -27,17 +29,19 @@ pub struct MatchConfig {
 }
 
 #[derive(Clone, Debug)]
-pub struct Match {
+pub struct LoadedMatch {
+  match_meta: models::Match,
   state: MatchPlayState,
   state_first: bool,
   state_start_time: Instant,
   remaining_time: Duration,
-  config: MatchConfig,
+  config: MatchConfig
 }
 
-impl Match {
-  pub fn new() -> Match {
-    Match {
+impl LoadedMatch {
+  pub fn new(m: models::Match) -> LoadedMatch {
+    LoadedMatch {
+      match_meta: m,
       state: MatchPlayState::Waiting,
       state_first: true,
       state_start_time: Instant::now(),
@@ -53,6 +57,10 @@ impl Match {
 
   pub fn current_state(&self) -> MatchPlayState {
     self.state
+  }
+
+  pub fn metadata(&self) -> &models::Match {
+    &self.match_meta
   }
 
   pub fn start(&mut self) -> MatchResult<()> {

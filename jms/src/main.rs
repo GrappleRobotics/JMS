@@ -31,7 +31,7 @@ use tokio::{sync::Mutex, try_join};
 use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
-use crate::arena::matches::Match;
+use crate::arena::matches::LoadedMatch;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -59,14 +59,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
   network.configure(&vec![], false).await.unwrap();
 
   let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
-  {
-    let mut a = arena.lock().await;
-    a.load_match(Match::new())?;
-    a.stations[1].team = Some(4788);
-    a.stations[2].team = Some(100);
-    a.stations[0].bypass = true;
-    a.update().await;
-  }
 
   // Arena gets its own thread to keep timing strict
   let a2 = arena.clone();

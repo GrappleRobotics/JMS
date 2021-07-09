@@ -13,7 +13,7 @@ export default class BufferedFormControl extends React.Component {
   // Make sure outside updates propagate here
   componentDidUpdate(prevProps) {
     if (prevProps.value !== this.props.value) {
-      this.setState({ value: this.props.value });
+      this.setState({ value: this.props.value || "" });    // Have to || "" otherwise the FormControl won't update
     }
   }
 

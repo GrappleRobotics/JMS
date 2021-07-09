@@ -13,17 +13,14 @@ use tokio::sync::Mutex;
 use super::{
   exceptions::{ArenaError, ArenaResult, StateTransitionError},
   matches::MatchPlayState,
-  station::{Alliance, AllianceStationId},
+  station::{AllianceStationId},
 };
 
-use crate::{
-  log_expect,
-  network::{NetworkProvider, NetworkResult},
-};
+use crate::{arena::station::Alliance, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
 
 use serde::{Deserialize, Serialize};
 
-use super::matches::Match;
+use super::matches::LoadedMatch;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Display, EnumAsInner, Serialize)]
 #[serde(tag = "state")]
@@ -135,7 +132,7 @@ pub struct Arena {
   state: BoundState,
   pending_state_change: Option<ArenaState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
-  pub current_match: Option<Match>,
+  pub current_match: Option<LoadedMatch>,
   pub stations: Vec<AllianceStation>,
 }
 
@@ -167,13 +164,16 @@ impl Arena {
     a
   }
 
-  pub fn load_match(&mut self, m: Match) -> ArenaResult<()> {
+  pub fn load_match(&mut self, m: LoadedMatch) -> ArenaResult<()> {
     match self.state.state {
       ArenaState::Idle => {
+        self.load_match_teams(m.metadata())?;
         self.current_match = Some(m);
         Ok(())
       }
+      // TODO: Ditch this, MatchCommit should automatically go to idle once scores are committed
       ArenaState::MatchCommit => {
+        self.load_match_teams(m.metadata())?;
         self.current_match = Some(m);
         self.prepare_state_change(ArenaState::Idle)?;
         Ok(())
@@ -183,6 +183,28 @@ impl Arena {
         s
       ))),
     }
+  }
+
+  fn load_match_teams(&mut self, m: &models::Match) -> ArenaResult<()> {
+    for stn in self.stations.iter_mut() {
+      let v = match stn.station.alliance {
+        Alliance::Blue => &m.blue_teams,
+        Alliance::Red => &m.red_teams,
+      };
+
+      let i = (stn.station.station - 1) as usize;
+      if let Some(&t) = v.get(i) {
+        stn.team = if t <= 0 { None } else { Some(t as u16) };
+      } else {
+        // Test matches are an exception - they start off blank
+        if m.match_type != MatchType::Test {
+          error!("{} does not have the correct amount of alliance members! Defaulting to None...", m.name());
+        }
+        stn.team = None;
+      }
+    }
+
+    Ok(())
   }
 
   pub fn station_for_team(&self, team: Option<u16>) -> Option<AllianceStation> {
