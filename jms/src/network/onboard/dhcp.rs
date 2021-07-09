@@ -1,10 +1,10 @@
 use core::fmt;
-use std::{fs::File, io::{Read, Write}, net::Ipv4Addr, time::Duration};
+use std::{fs::{File, OpenOptions}, io::{Read, Write}, net::Ipv4Addr, time::Duration};
 
 use dbus::nonblock::Proxy;
 use handlebars::Handlebars;
 use ipnetwork::Ipv4Network;
-use log::{error, info};
+use log::{error, info, warn};
 use serde_json::json;
 use serde::Serialize;
 
@@ -78,23 +78,24 @@ async fn reload_dhcp_service() -> NetworkResult<()> {
 
   // Reference: https://www.freedesktop.org/software/systemd/man/org.freedesktop.systemd1.html
   proxy.method_call("org.freedesktop.systemd1.Manager", "StopUnit", ("isc-dhcp-server.service", "replace")).await?;
-  check_dhcpd_conf_ok().await?;  
+  maybe_update_dhcpd_conf().await?;  
   proxy.method_call("org.freedesktop.systemd1.Manager", "ReloadOrRestartUnit", ("isc-dhcp-server.service", "replace")).await?;
 
   Ok(())
 }
 
-async fn check_dhcpd_conf_ok() -> NetworkResult<()> {
+async fn maybe_update_dhcpd_conf() -> NetworkResult<()> {
   let mut f = File::open(DHCP_MASTER_CONF_FILE)?;
   let mut content = String::new();
   f.read_to_string(&mut content)?;
   
   let include_str = format!("include \"{}\";", DHCP_FILE);
   if !content.contains(include_str.as_str()) {
-    error!("{} does not include the JMS DHCP config", DHCP_MASTER_CONF_FILE);
-    error!("Append the following line to update the DHCP configuration.");
-    error!("\t{}", include_str);
-    return Err(Box::new(DHCPError { msg: format!("{} does not include JMS DHCP config", DHCP_MASTER_CONF_FILE) }));
+    warn!("{} does not include the JMS DHCP config. Adding...", DHCP_MASTER_CONF_FILE);
+    let mut f = OpenOptions::new().append(true).open(DHCP_MASTER_CONF_FILE)?;
+    writeln!(f, "# Automatically added by JMS")?;
+    writeln!(f, "{}", include_str)?;
+    info!("{} updated!", DHCP_MASTER_CONF_FILE);
   }
 
   Ok(())
