@@ -5,6 +5,8 @@ mod udp_codec;
 pub use tcp_codec::*;
 pub use udp_codec::*;
 
+use crate::models;
+
 pub mod connector;
 
 #[derive(Debug, Clone)]
@@ -36,7 +38,20 @@ impl TryFrom<u8> for DSMode {
 #[derive(Debug)]
 pub enum TournamentLevel {
   Test = 0,
+  #[allow(dead_code)]
   Practice = 1,
   Qualification = 2,
   Playoff = 3,
+}
+
+impl From<models::MatchType> for TournamentLevel {
+  fn from(mt: models::MatchType) -> Self {
+    match mt {
+      models::MatchType::Test => TournamentLevel::Test,
+      models::MatchType::Qualification => TournamentLevel::Qualification,
+      models::MatchType::Quarterfinal | 
+        models::MatchType::Semifinal  | 
+        models::MatchType::Final => TournamentLevel::Playoff,
+    }
+  }
 }

@@ -14,6 +14,7 @@ use crate::arena::matches::MatchPlayState;
 use crate::arena::station::AllianceStationId;
 use crate::arena::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy, ArenaState, SharedArena};
 use crate::ds::{self, Fms2DsTCP, Fms2DsUDP};
+use crate::models;
 
 use super::{DSTCPCodec, DSUDPCodec, Ds2FmsTCPTags, Ds2FmsUDP, Fms2DsStationStatus, Fms2DsTCPTags};
 
@@ -242,17 +243,33 @@ impl DSConnection {
       .map(|dt| dt.as_secs_f32())
       .unwrap_or(0f32);
 
-    Fms2DsUDP {
+    let match_meta = arena.current_match.as_ref().map(|x| x.metadata());
+    
+    let mut pkt = Fms2DsUDP {
       estop: estop || astop,
       enabled: (!station.bypass) && !(estop || astop) && robots_enabled,
       mode,
       station: station.station,
-      tournament_level: ds::TournamentLevel::Qualification, // TODO:
-      match_number: 1,                                      // TODO:
-      play_number: 1,                                       // TODO:
+      tournament_level: ds::TournamentLevel::Test,
+      match_number: 1,
+      play_number: 1,
       time: Local::now(),
       remaining_seconds: f32::max(remaining_seconds, 0f32) as u16,
+    };
+
+    if let Some(m) = match_meta {
+      pkt.tournament_level = ds::TournamentLevel::from(m.match_type);
+      // We use the same encoding as cheesy-arena. For matches with set numbers, the match num is encoded as
+      // XYZ, where X = final bracket (Q=4, S=2, F=1), Y = set number, Z = match number
+      pkt.match_number = match m.match_type {
+        models::MatchType::Test | models::MatchType::Qualification => m.match_number as u16,
+        models::MatchType::Quarterfinal => (400 + 10*m.set_number + m.match_number) as u16,
+        models::MatchType::Semifinal => (200 + 10*m.set_number + m.match_number) as u16,
+        models::MatchType::Final => (100 + 10*m.set_number + m.match_number) as u16,
+      };
     }
+
+    pkt
   }
 
   async fn _decode_udp_update(&self, pkt: Ds2FmsUDP) {

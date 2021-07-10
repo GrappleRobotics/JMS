@@ -2,7 +2,7 @@ use diesel_derive_enum::DbEnum;
 use crate::schema::matches;
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
-#[derive(Debug, Display, DbEnum, PartialEq, Eq, Clone, Serialize)]
+#[derive(Debug, Display, DbEnum, PartialEq, Eq, Copy, Clone, Serialize)]
 #[PgType = "match_type"]
 #[DieselType = "Match_type"]
 pub enum MatchType {
