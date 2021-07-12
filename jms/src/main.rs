@@ -31,8 +31,6 @@ use tokio::{sync::Mutex, try_join};
 use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
-use crate::arena::matches::LoadedMatch;
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
   dotenv().ok();
