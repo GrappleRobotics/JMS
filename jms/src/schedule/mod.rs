@@ -12,8 +12,6 @@ pub struct ScheduleRounds(pub na::DMatrix<usize>);
 #[derive(Debug)]
 pub struct Schedule(pub na::DMatrix<usize>);
 
-
-
 pub struct ScheduleGenerator {
   num_teams: usize,
   num_rounds: usize,
@@ -86,9 +84,16 @@ impl ScheduleGenerator {
   pub fn schedule_team_balance_score(&self, schedule: &ScheduleRounds) -> Option<f64> {
     // Generate cooccurence of each team with each other
     let matches = self.rounds_into_matches(schedule, true);
+    let cooccurrence = self.cooccurrence_matrix(&matches);
+
+    // Calculate stddev of upper triangle (first part of the cooccurrence)
+    cooccurrence.map(|c| stddev(&upper_triangle(&c, 1)))
+  }
+
+  pub fn cooccurrence_matrix(&self, schedule: &Schedule) -> Option<na::DMatrix<usize>> {
     let mut cooccurrence: na::DMatrix<usize> = na::DMatrix::zeros(self.num_teams, self.num_teams);
 
-    for m in matches.0.column_iter() {
+    for m in schedule.0.column_iter() {
       for (i, &t1) in m.iter().enumerate() {
         for (j, &t2) in m.iter().enumerate() {
           if t1 != self.placeholder_team && t2 != self.placeholder_team {
@@ -103,8 +108,7 @@ impl ScheduleGenerator {
       }
     }
     
-    // Calculate stddev of upper triangle (first part of the cooccurrence)
-    Some(stddev(&upper_triangle(&cooccurrence, 1)))
+    Some(cooccurrence)
   }
 
   pub fn generate_incremental_team_balance_schedule(&self, schedule: &ScheduleRounds) -> ScheduleRounds {
@@ -118,16 +122,21 @@ impl ScheduleGenerator {
 
   pub fn schedule_station_balance_scores(&self, schedule: &Schedule) -> Option<f64> {
     // Each row is a station, each col is a team
+    let stations = self.station_matrix(schedule);
+    
+    // Get the stddevs of each team, and then average together
+    let stddevs = stations.column_iter().map(|ref x| stddev(x));
+    Some(stddevs.clone().sum::<f64>() / (stddevs.len() as f64))
+  }
+
+  pub fn station_matrix(&self, schedule: &Schedule) -> na::DMatrix<usize> {
     let mut stations: na::DMatrix<usize> = na::DMatrix::zeros(self.num_stations, self.num_teams);
     for c in schedule.0.column_iter() {
       for (stn_i, &team) in c.iter().enumerate() {
         stations[(stn_i, team)] += 1;
       }
     }
-
-    // Get the stddevs of each team, and then average together
-    let stddevs = schedule.0.row_iter().map(|ref x| stddev(&x.transpose()));
-    Some(stddevs.clone().sum::<f64>() / (stddevs.len() as f64))
+    stations
   }
 
   pub fn generate_incremental_station_balance_schedule(&self, schedule: &Schedule) -> Schedule {
@@ -159,7 +168,11 @@ impl ScheduleGenerator {
     info!("Team balance annealing complete, score={:.5} (in {:.2}s)", team_balance_score, (t3 - t2).as_secs_f32());
     debug!("{}", annealed_rounds.0);
 
-    let matches = self.rounds_into_matches(&annealed_rounds, false);
+    // Convert the rounds into matches, making sure that it's still a valid schedule
+    let mut matches = self.rounds_into_matches(&annealed_rounds, false);
+    while self.cooccurrence_matrix(&matches).is_none() {
+      matches = self.rounds_into_matches(&annealed_rounds, false);
+    }
 
     let t4 = time::Instant::now();
     let (annealed_matches, station_balance_score) = anneal_station_balance.anneal(
@@ -174,6 +187,12 @@ impl ScheduleGenerator {
 
     info!("Schedule generated in {:.2}s", (t5 - t0).as_secs_f32());
     debug!("{}", annealed_matches.0);
+
+    debug!("Cooccurrence matrix:");
+    debug!("{}", self.cooccurrence_matrix(&annealed_matches).unwrap());
+
+    debug!("Station matrix:");
+    debug!("{}", self.station_matrix(&annealed_matches));
 
     (annealed_matches, team_balance_score, station_balance_score)
   }
@@ -236,7 +255,10 @@ where
   na::DVector::from_vec(x)
 }
 
-fn stddev(mat: &na::DVector<usize>) -> f64 {
+fn stddev<S>(mat: &na::Matrix<usize, na::Dynamic, na::U1, S>) -> f64
+where
+  S: na::storage::Storage<usize, na::Dynamic, na::U1>
+{
   let floating = mat.map(|x| x as f64);
   let mean = floating.mean();
   let numer = floating.map(|x| (x - mean).powi(2)).sum();

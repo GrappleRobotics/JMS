@@ -7,7 +7,7 @@ fn main() {
   logging::configure(true);
 
   let gen = ScheduleGenerator::new(
-    13, 10, 6
+    16, 10, 6
   );
 
   let anneal_team_balance = Annealer::new(1.0, 0.0, 100_000);
@@ -15,5 +15,5 @@ fn main() {
 
   let (sched, tb, sb) = gen.generate(anneal_team_balance, anneal_station_balance);
   println!("TB: {}, SB: {}", tb, sb);
-  println!("{}", sched.0);
+  println!("{}", sched.0.transpose());
 }
