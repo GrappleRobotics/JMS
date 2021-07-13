@@ -54,19 +54,24 @@ impl ScheduleGenerator {
   }
 
   fn rounds_into_matches(&self, rounds: &ScheduleRounds, const_placeholder: bool) -> Schedule {
-    let mut flat = na::RowDVector::from_iterator(rounds.0.len(), rounds.0.iter().cloned());
-    let l = flat.len();
-
+    let iter = rounds.0.iter().map(|x| *x);
+    
     if const_placeholder {
-      flat = flat.insert_columns(l, self.num_overflow, self.placeholder_team);
+      let iter = iter.chain( (0..self.num_overflow).map(|_| self.placeholder_team) );
+      Schedule(na::DMatrix::from_iterator(self.num_stations, self.num_matches, iter))
     } else {
-      let shuffled = shuffle(&self.teams);
-      for i in 0..self.num_overflow {
-        flat = flat.insert_column(l + i, shuffled[i]);
-      }
-    }
+      // Generate placeholder teams for the final match, excluding teams that were already in the match
+      let mut rng = rand::thread_rng();
 
-    Schedule(na::DMatrix::from_iterator(self.num_stations, self.num_matches, flat.iter().cloned()))
+      let num_excluded = self.num_stations - self.num_overflow;
+      let excluded_teams = rounds.0.slice((self.num_teams - num_excluded, self.num_rounds - 1), (num_excluded, 1));
+
+      let team_options: Vec<usize> = self.teams.iter().filter(|&&x| !excluded_teams.iter().any(|&y| x == y)).map(|&x| x).collect();
+      let selections = team_options.choose_multiple(&mut rng, self.num_overflow).map(|x| *x);
+
+      let iter = iter.chain( selections );
+      Schedule(na::DMatrix::from_iterator(self.num_stations, self.num_matches, iter))
+    }
   }
 
   pub fn generate_simple_schedule(&self) -> ScheduleRounds {
@@ -158,31 +163,27 @@ impl ScheduleGenerator {
     debug!("{}", rounds.0);
 
     let t2 = time::Instant::now();
-    let (annealed_rounds, team_balance_score) = anneal_team_balance.anneal(
+    let (annealed_rounds, tb_initial_score, tb_score) = anneal_team_balance.anneal(
       rounds,
       |s| self.generate_incremental_team_balance_schedule(s),
       |s| self.schedule_team_balance_score(s)
     );
     let t3 = time::Instant::now();
 
-    info!("Team balance annealing complete, score={:.5} (in {:.2}s)", team_balance_score, (t3 - t2).as_secs_f32());
+    info!("Team balance annealing complete, score={:.4}->{:.4} (in {:.2}s)", tb_initial_score, tb_score, (t3 - t2).as_secs_f32());
     debug!("{}", annealed_rounds.0);
 
-    // Convert the rounds into matches, making sure that it's still a valid schedule
-    let mut matches = self.rounds_into_matches(&annealed_rounds, false);
-    while self.cooccurrence_matrix(&matches).is_none() {
-      matches = self.rounds_into_matches(&annealed_rounds, false);
-    }
+    let matches = self.rounds_into_matches(&annealed_rounds, false);
 
     let t4 = time::Instant::now();
-    let (annealed_matches, station_balance_score) = anneal_station_balance.anneal(
+    let (annealed_matches, sb_initial_score, sb_score) = anneal_station_balance.anneal(
       matches,
       |s| self.generate_incremental_station_balance_schedule(s),
       |s| self.schedule_station_balance_scores(s)
     );
     let t5 = time::Instant::now();
 
-    info!("Station balance annealing complete, score={:.5} (in {:.2}s)", station_balance_score, (t5 - t4).as_secs_f32());
+    info!("Station balance annealing complete, score={:.4}->{:.4} (in {:.2}s)", sb_initial_score, sb_score, (t5 - t4).as_secs_f32());
     debug!("{}", annealed_matches.0);
 
     info!("Schedule generated in {:.2}s", (t5 - t0).as_secs_f32());
@@ -194,7 +195,7 @@ impl ScheduleGenerator {
     debug!("Station matrix:");
     debug!("{}", self.station_matrix(&annealed_matches));
 
-    (annealed_matches, team_balance_score, station_balance_score)
+    (annealed_matches, tb_score, sb_score)
   }
 }
 
@@ -214,7 +215,7 @@ impl Annealer {
     }
   }
 
-  pub fn anneal<T, G, E>(&self, initial: T, generator: G, evaluator: E) -> (T, f64)
+  pub fn anneal<T, G, E>(&self, initial: T, generator: G, evaluator: E) -> (T, f64, f64)
   where
     G: Fn(&T) -> T,
     E: Fn(&T) -> Option<f64>
@@ -224,6 +225,7 @@ impl Annealer {
     let mut temperature = self.temp_start;
     let mut current = initial;
     let mut current_score = evaluator(&current).unwrap();
+    let initial_score = current_score;
 
     while temperature > self.temp_end {
       let next = generator(&current);
@@ -240,7 +242,7 @@ impl Annealer {
       temperature -= self.dt;
     }
 
-    (current, current_score)
+    (current, initial_score, current_score)
   }
 }
 
