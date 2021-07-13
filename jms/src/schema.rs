@@ -1,7 +1,4 @@
 table! {
-    use diesel::sql_types::*;
-    use crate::models::*;
-
     matches (id) {
         id -> Nullable<Integer>,
         match_type -> Text,
@@ -13,9 +10,6 @@ table! {
 }
 
 table! {
-    use diesel::sql_types::*;
-    use crate::models::*;
-
     teams (id) {
         id -> Nullable<Integer>,
         name -> Text,
