@@ -7,6 +7,9 @@ pub use team::*;
 mod matches;
 pub use matches::*;
 
+mod event_details;
+pub use event_details::*;
+
 #[derive(AsExpression, Debug, serde::Deserialize, serde::Serialize, FromSqlRow, Clone)]
 #[sql_type = "Text"]
 pub struct SQLJsonVector<T>(pub Vec<T>);

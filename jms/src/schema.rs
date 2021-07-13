@@ -1,6 +1,14 @@
 table! {
+    event_details (id) {
+        id -> Integer,
+        code -> Nullable<Text>,
+        event_name -> Nullable<Text>,
+    }
+}
+
+table! {
     matches (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         match_type -> Text,
         set_number -> Integer,
         match_number -> Integer,
@@ -11,8 +19,8 @@ table! {
 
 table! {
     teams (id) {
-        id -> Nullable<Integer>,
-        name -> Text,
+        id -> Integer,
+        name -> Nullable<Text>,
         affiliation -> Nullable<Text>,
         location -> Nullable<Text>,
         notes -> Nullable<Text>,
@@ -20,6 +28,7 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
+    event_details,
     matches,
     teams,
 );

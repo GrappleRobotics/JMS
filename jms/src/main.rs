@@ -31,6 +31,8 @@ use tokio::{sync::Mutex, try_join};
 use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
+use crate::ui::websocket::EventWebsocketHandler;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
   dotenv().ok();
@@ -74,6 +76,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
   let mut ws = Websockets::new();
   ws.register("arena", Box::new(ArenaWebsocketHandler { arena })).await;
+  ws.register("event", Box::new(EventWebsocketHandler {})).await;
   let ws_fut = ws.begin().map_err(|e| Box::new(e));
 
   try_join!(arena_fut, ds_fut, ws_fut)?;

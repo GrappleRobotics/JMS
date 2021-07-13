@@ -1,6 +1,8 @@
-mod handler;
+mod arena;
+mod event;
 
-pub use handler::*;
+pub use arena::ArenaWebsocketHandler;
+pub use event::EventWebsocketHandler;
 
 use futures::{lock::Mutex, SinkExt, StreamExt};
 use log::{error, info, warn};
@@ -171,6 +173,7 @@ pub enum WebsocketError {
   IO(std::io::Error),
   Arena(ArenaError),
   Other(String),
+  DBError(diesel::result::Error)
 }
 
 impl std::fmt::Display for WebsocketError {
@@ -181,6 +184,7 @@ impl std::fmt::Display for WebsocketError {
       WebsocketError::IO(ref e) => write!(f, "IO Error: {}", e),
       WebsocketError::Arena(ref e) => write!(f, "Arena Error: {}", e),
       WebsocketError::Other(ref s) => write!(f, "Error: {}", s),
+      WebsocketError::DBError(ref e) => write!(f, "DB Error: {}", e),
     }
   }
 }
@@ -197,6 +201,7 @@ impl error::Error for WebsocketError {
       WebsocketError::IO(ref e) => Some(e),
       WebsocketError::Arena(ref e) => Some(e),
       WebsocketError::Other(_) => None,
+      WebsocketError::DBError(ref e) => Some(e),
     }
   }
 }
@@ -222,5 +227,11 @@ impl From<std::io::Error> for WebsocketError {
 impl From<ArenaError> for WebsocketError {
   fn from(e: ArenaError) -> Self {
     WebsocketError::Arena(e)
+  }
+}
+
+impl From<diesel::result::Error> for WebsocketError {
+  fn from(e: diesel::result::Error) -> Self {
+    WebsocketError::DBError(e)
   }
 }
