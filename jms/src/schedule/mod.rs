@@ -12,6 +12,15 @@ pub struct ScheduleRounds(pub na::DMatrix<usize>);
 #[derive(Debug)]
 pub struct Schedule(pub na::DMatrix<usize>);
 
+impl Schedule {
+  pub fn contextualise(&self, teams: &[u16]) -> TeamSchedule {
+    TeamSchedule(self.0.map(|x| teams[x]))
+  }
+}
+
+#[derive(Debug)]
+pub struct TeamSchedule(pub na::DMatrix<u16>);
+
 pub struct ScheduleGenerator {
   num_teams: usize,
   num_rounds: usize,
