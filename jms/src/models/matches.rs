@@ -1,17 +1,9 @@
-use diesel_derive_enum::DbEnum;
-use crate::schema::matches;
+use crate::{schema::matches, sql_mapped_enum};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
-#[derive(Debug, Display, DbEnum, PartialEq, Eq, Copy, Clone, Serialize)]
-#[PgType = "match_type"]
-#[DieselType = "Match_type"]
-pub enum MatchType {
-  Test,
-  Qualification,
-  Quarterfinal,
-  Semifinal,
-  Final
-}
+use super::SQLJsonVector;
+
+sql_mapped_enum!(MatchType, Test, Qualification, Quarterfinal, Semifinal, Final);
 
 #[derive(Insertable, Queryable, Debug, Clone)]
 #[table_name = "matches"]
@@ -22,8 +14,8 @@ pub struct Match {
   pub match_number: i32,
   // Usually, these would be in a many-to-many join table, but we want to be able to make test matches
   // without committing to the database. It's not neat, but it's the most convenient option for our goals.
-  pub blue_teams: Vec<i32>,  // 0 if unoccupied
-  pub red_teams: Vec<i32>,
+  pub blue_teams: SQLJsonVector<i32>,  // 0 if unoccupied
+  pub red_teams: SQLJsonVector<i32>,
 }
 
 impl Match {
@@ -33,8 +25,8 @@ impl Match {
       match_type: MatchType::Test,
       set_number: 1,
       match_number: 1,
-      blue_teams: vec![],
-      red_teams: vec![],
+      blue_teams: SQLJsonVector(vec![]),
+      red_teams: SQLJsonVector(vec![]),
     }
   }
 

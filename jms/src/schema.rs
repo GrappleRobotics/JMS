@@ -3,12 +3,12 @@ table! {
     use crate::models::*;
 
     matches (id) {
-        id -> Int4,
-        match_type -> Match_type,
-        set_number -> Int4,
-        match_number -> Int4,
-        red_teams -> Array<Int4>,
-        blue_teams -> Array<Int4>,
+        id -> Nullable<Integer>,
+        match_type -> Text,
+        set_number -> Integer,
+        match_number -> Integer,
+        red_teams -> Text,
+        blue_teams -> Text,
     }
 }
 
@@ -17,11 +17,11 @@ table! {
     use crate::models::*;
 
     teams (id) {
-        id -> Int4,
-        name -> Varchar,
-        affiliation -> Nullable<Varchar>,
-        location -> Nullable<Varchar>,
-        notes -> Nullable<Varchar>,
+        id -> Nullable<Integer>,
+        name -> Text,
+        affiliation -> Nullable<Text>,
+        location -> Nullable<Text>,
+        notes -> Nullable<Text>,
     }
 }
 

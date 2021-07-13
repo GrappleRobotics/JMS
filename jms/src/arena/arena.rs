@@ -193,7 +193,7 @@ impl Arena {
       };
 
       let i = (stn.station.station - 1) as usize;
-      if let Some(&t) = v.get(i) {
+      if let Some(&t) = v.0.get(i) {
         stn.team = if t <= 0 { None } else { Some(t as u16) };
       } else {
         // Test matches are an exception - they start off blank
