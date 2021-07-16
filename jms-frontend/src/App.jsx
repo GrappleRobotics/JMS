@@ -1,11 +1,10 @@
 import React from 'react';
-import { Container, Row, Col, Button } from 'react-bootstrap';
-import Alliance from './components/alliance';
-import MatchFlow from './components/match_flow';
-import Navbar from './components/navbar';
-import JmsWebsocket from './support/ws';
+import { Route, Switch } from 'react-router-dom';
+import JmsWebsocket from 'support/ws';
+import Navbar from 'components/navbar';
+import MatchControl from 'match_control/MatchControl';
 
-class App extends React.Component {
+export default class App extends React.Component {
   constructor(props) {
     super(props);
 
@@ -29,6 +28,8 @@ class App extends React.Component {
 
     this.ws.connect();
 
+    window['ws'] = this.ws;
+
     this.updateInterval = setInterval(() => {
       if (this.state.connected)
         this.ws.send("arena", "status", "get");
@@ -46,54 +47,14 @@ class App extends React.Component {
 
       <br />
 
-      <Container>
-        <br />
-        <Row>
-          <Col>
-            <h3> { this.state.status?.match?.meta?.name || <i>No Match Loaded</i> } </h3>
-          </Col>
-          <Col md="auto">
-            <Button
-              variant="warning"
-              onClick={() => this.ws.send("arena", "match", "loadTest")}
-              disabled={this.state.status?.state?.state !== "Idle"}
-            >
-              Load Test Match
-            </Button>
-          </Col>
-        </Row>
-        <br />
-        <Row >
-          <Col>
-            <Row>
-              <Col>
-                <Alliance
-                  colour="Blue"
-                  state={this.state.status?.state}
-                  stations={this.state.status?.alliances?.filter(x => x.station.alliance === "Blue")}
-                  onStationUpdate={ (data) => this.ws.send("arena", "alliances", "update", data) }
-                />
-              </Col>
-              <Col>
-                <Alliance
-                  colour="Red"
-                  state={this.state.status?.state}
-                  stations={this.state.status?.alliances?.filter(x => x.station.alliance === "Red").reverse()}  // Red teams go 3-2-1 to order how they're seen from the scoring table
-                  onStationUpdate={ (data) => this.ws.send("arena", "alliances", "update", data) }
-                />
-              </Col>
-            </Row>
-            <br />
-            <MatchFlow
-              state={this.state.status?.state}
-              match={this.state.status?.match}
-              onSignal={(data) => this.ws.send("arena", "state", "signal", data)}
-            />
-          </Col>
-        </Row>
-      </Container>
+      <Switch>
+        <Route path="/">
+          <MatchControl
+            status={this.state.status}
+            ws={this.ws}
+          />
+        </Route>
+      </Switch>
     </div>
   }
 };
-
-export default App;

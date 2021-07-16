@@ -1,6 +1,6 @@
 import React from 'react';
-import { Row, Col, Button, FormControl } from 'react-bootstrap';
-import BufferedFormControl from './elements/buffered_control';
+import { Row, Col, Button } from 'react-bootstrap';
+import BufferedFormControl from 'components/elements/BufferedFormControl';
  
 class Indicator extends React.PureComponent {
   render() {
