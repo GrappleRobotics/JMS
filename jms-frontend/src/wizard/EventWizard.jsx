@@ -2,8 +2,8 @@ import { faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { Col, Container, Nav, Row, Tab } from "react-bootstrap";
-import ConfigureEvent from "./S1_ConfigureEvent";
-import ConfigureTeams from "./S2_ConfigureTeams";
+import ConfigureEvent from "./ConfigureEvent";
+import ConfigureTeams from "./ConfigureTeams";
 
 const EK_WELCOME = 'welcome';
 
@@ -11,9 +11,9 @@ function Welcome() {
   return <div>
     <h4>Welcome to the Event Wizard</h4>
     <br/>
-    <p> No data for this event has been loaded yet. Using the tabs on the left, load the event
-      details in the order listed to get your event up and running. </p>
-    <p> After you start to configure your event, JMS will highlight parts of the event wizard that require action. </p>
+    <p> Welcome to the Event Wizard. The Event Wizard goes through event configuration step-by-step to ensure your event runs appropriately. </p>
+    <p> Select from the tabs on the left to start configuring your event, starting with the event details. More options will become available as the event
+      progresses. </p>
     <p className="text-muted"> <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; <i> You can also use JMS without loading event data to run test matches only. </i> </p>
   </div>
 }
@@ -52,8 +52,14 @@ export default class EventWizard extends React.Component {
           <Col md={3} className="vr-right wizard-tabs">
             <Nav variant="pills" className="flex-column">
               <Nav.Item> <Nav.Link eventKey={EK_WELCOME}> &nbsp;Welcome! </Nav.Link> </Nav.Item>
+
+              <br /> <h6 className="text-muted">Pre-Event Config</h6>
               { navItemFor(event, ConfigureEvent) }
               { navItemFor(teams, ConfigureTeams) }
+
+              <br /> <h6 className="text-muted">Qualifications</h6>
+              <br /> <h6 className="text-muted">Playoffs</h6>
+              <br /> <h6 className="text-muted">Awards</h6>
             </Nav>
           </Col>
           <Col md>
