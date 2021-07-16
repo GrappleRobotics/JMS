@@ -8,12 +8,20 @@ export default class BufferedFormControl extends React.Component {
     this.state = {
       value: this.props.value
     }
+
+    this.controlRef = React.createRef();
   }
 
   // Make sure outside updates propagate here
   componentDidUpdate(prevProps) {
     if (prevProps.value !== this.props.value) {
       this.setState({ value: this.props.value || "" });    // Have to || "" otherwise the FormControl won't update
+    }
+  }
+
+  componentDidMount() {
+    if (this.props.autofocus) {
+      this.controlRef.current.focus();
     }
   }
 
@@ -24,10 +32,15 @@ export default class BufferedFormControl extends React.Component {
     return oldV !== newV;
   }
 
+  focusInput = () => {
+    this.controlRef.current.focus();
+  }
+
   render() {
     let { className, onUpdate, value, ...props } = this.props;
 
     return <FormControl
+      ref={this.controlRef}
       className={ (className || "") + " " + (this.valuesDiffer() ? "buffer-diff" : "buffer-same") }
       value={this.state.value}
       onChange={(v) => {

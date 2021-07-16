@@ -1,4 +1,4 @@
-use diesel::RunQueryDsl;
+use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
 use crate::{db, models};
 
@@ -34,10 +34,20 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
         ("insert", Some(data)) => {
           use crate::schema::teams::dsl::*;
           let team: models::Team = serde_json::from_value(data)?;
+          // TODO: Validate
           diesel::replace_into(teams)
             .values(&team)
             .execute(&db::connection())?;
           None
+        },
+        ("delete", Some(serde_json::Value::Number(team_id))) => {
+          use crate::schema::teams::dsl::*;
+          if let Some(n) = team_id.as_i64() {
+            diesel::delete(teams.filter(id.eq(n as i32))).execute(&db::connection())?;
+            None
+          } else {
+            Some(response_msg.invalid_verb_or_data())
+          }
         }
         _ => Some(response_msg.invalid_verb_or_data())
       },

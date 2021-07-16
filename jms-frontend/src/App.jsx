@@ -1,8 +1,10 @@
 import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
-import Navbar from 'components/navbar';
+import Navbar from 'Navbar';
 import MatchControl from 'match_control/MatchControl';
+import EventWizard from 'wizard/EventWizard';
+import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -10,12 +12,19 @@ export default class App extends React.Component {
 
     this.state = {
       connected: false,
-      status: null
     }
 
     this.ws = new JmsWebsocket();
-    this.ws.onMessage("arena", "status", "get", data => {
-      this.setState({ status: data });
+    this.ws.onMessage("*", "*", "*", (msg) => {
+      this.setState({
+        [msg.object]: {
+          ...this.state[msg.object],
+          [msg.noun]: {
+            ...this.state[msg.object]?.[msg.noun],
+            [msg.verb]: msg.data
+          }
+        }
+      });
     });
 
     this.ws.onConnectChange(connected => {
@@ -31,27 +40,37 @@ export default class App extends React.Component {
     window['ws'] = this.ws;
 
     this.updateInterval = setInterval(() => {
-      if (this.state.connected)
-        this.ws.send("arena", "status", "get");
+      this.ws.send("arena", "status", "get");
+      this.ws.send("event", "details", "get");
+      this.ws.send("event", "teams", "get");
     }, 500);
   }
 
   render() {
-    return <div>
+    let arena = this.state.arena?.status?.get;
+
+    return <div className="h-100">
       <Navbar
         connected={this.state.connected}
-        state={this.state.status?.state}
-        match={this.state.status?.match}
+        state={arena?.state}
+        match={arena?.match}
         onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
       />
 
       <br />
 
       <Switch>
-        <Route path="/">
-          <MatchControl
-            status={this.state.status}
+        <Route path={EVENT_WIZARD}>
+          <EventWizard
             ws={this.ws}
+            event={this.state.event?.details?.get}
+            teams={this.state.event?.teams?.get}
+          />
+        </Route>
+        <Route path={MATCH_CONTROL}>
+          <MatchControl
+            ws={this.ws}
+            status={arena}
           />
         </Route>
       </Switch>

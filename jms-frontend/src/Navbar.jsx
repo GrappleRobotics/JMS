@@ -2,6 +2,7 @@ import React from 'react';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import { Button } from 'react-bootstrap';
+import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
 
 export default class NavBar extends React.Component {
   decodeArenaState = () => {
@@ -75,9 +76,10 @@ export default class NavBar extends React.Component {
         { this.renderMatch() }
       </Navbar.Brand>
       <Navbar.Toggle />
-      <Navbar.Collapse>
-        <Nav className="mr-auto">
-          <Nav.Link>Home</Nav.Link>
+      <Navbar.Collapse className="justify-content-end">
+        <Nav>
+          <Nav.Link href={EVENT_WIZARD}>Wizard</Nav.Link>
+          <Nav.Link href={MATCH_CONTROL}>Match Control</Nav.Link>
         </Nav>
       </Navbar.Collapse>
     </Navbar>

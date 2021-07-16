@@ -4,6 +4,10 @@ $theme-colors: (
 
 @import "~bootstrap/scss/bootstrap";
 
+html, body, #root {
+  height: 100%;
+}
+
 $hazard-dark-primary: #735a00;
 $hazard-dark-secondary: #593e00;
 $hazard-red-dark-primary: #730000;
@@ -134,6 +138,15 @@ $hazard-red-dark-secondary: #590000;
   margin: 1px;
 }
 
+input[type=number] {
+  &::-webkit-inner-spin-button, &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+}
+
 input.team-num {
   font-size: 14px;
   background-color:rgba(255, 255, 255, 0.75);
@@ -143,14 +156,36 @@ input.team-num {
   text-align: right;
   color: #000;
 
-  &::-webkit-inner-spin-button, &::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    margin: 0;
-  }
-
   &.buffer-diff {
     background-color: rgb(255, 251, 0);
   }
+}
+
+.vr-right {
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.buffer-diff {
+  border: 2px solid orange !important;
+  &:focus {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px red;
+    outline: 0 none;
+  }
+}
+
+.wizard-attention {
+  &:not(.active) {
+    @extend .text-danger;
+  }
+  &.active {
+    @extend .bg-danger;
+  }
+}
+
+.w-15 {
+  width: 15%;
+}
+
+.wizard-tabs {
+  max-width: 250px;
 }
