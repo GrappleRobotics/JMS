@@ -18,6 +18,17 @@ table! {
 }
 
 table! {
+    schedule_blocks (id) {
+        id -> Integer,
+        name -> Text,
+        start_time -> Timestamp,
+        end_time -> Timestamp,
+        cycle_time -> BigInt,
+        quals -> Bool,
+    }
+}
+
+table! {
     teams (id) {
         id -> Integer,
         name -> Nullable<Text>,
@@ -30,5 +41,6 @@ table! {
 allow_tables_to_appear_in_same_query!(
     event_details,
     matches,
+    schedule_blocks,
     teams,
 );

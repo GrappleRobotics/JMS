@@ -1,7 +1,8 @@
 mod team;
 use std::fmt::Debug;
 
-use diesel::{sql_types::Text, types::{FromSql, ToSql}};
+use chrono::{Duration, NaiveDateTime};
+use diesel::{sql_types::{BigInt, Integer, Text}, types::{FromSql, ToSql}};
 pub use team::*;
 
 mod matches;
@@ -9,6 +10,11 @@ pub use matches::*;
 
 mod event_details;
 pub use event_details::*;
+
+mod schedule;
+pub use schedule::*;
+
+// SQL-mapped vector (for sqlite)
 
 #[derive(AsExpression, Debug, serde::Deserialize, serde::Serialize, FromSqlRow, Clone)]
 #[sql_type = "Text"]
@@ -18,7 +24,7 @@ impl<'a, T, DB> FromSql<Text, DB> for SQLJsonVector<T>
 where 
   DB: diesel::backend::Backend,
   T: serde::de::DeserializeOwned,
-  String: FromSql<T, DB>
+  String: FromSql<Text, DB>
 {
   fn from_sql(bytes: Option<&DB::RawValue>) -> diesel::deserialize::Result<Self> {
     let t = String::from_sql(bytes)?;
@@ -38,6 +44,8 @@ where
     String::to_sql(&s, out)
   }
 }
+
+// SQL Enums as text (for sqlite)
 
 #[macro_export]
 macro_rules! as_item {
@@ -77,5 +85,66 @@ macro_rules! sql_mapped_enum {
         Ok(Self::from_str(&t)?)
       }
     }
+  }
+}
+
+// SQL-mapped chrono types (for sqlite + serde)
+
+fn serialize_naivedatetime<S>(ndt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
+where
+  S: serde::Serializer
+{
+  serializer.serialize_str(&ndt.format("%F %T.%f").to_string())
+}
+
+fn deserialize_naivedatetime<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
+where
+  D: serde::Deserializer<'de>
+{
+  let s: String = serde::Deserialize::deserialize(deserializer)?;
+  NaiveDateTime::parse_from_str(&s, "%F %T.%f").map_err(serde::de::Error::custom)
+}
+
+#[derive(AsExpression, Debug, FromSqlRow, Clone)]
+#[sql_type = "BigInt"]
+pub struct SQLDuration(pub Duration);
+
+impl serde::Serialize for SQLDuration {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer
+  {
+    serializer.serialize_i64(self.0.num_milliseconds())
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for SQLDuration {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>
+  {
+    let ms: i64 = serde::Deserialize::deserialize(deserializer)?;
+    Ok(Self(Duration::milliseconds(ms)))
+  }
+}
+
+impl<'a, DB> FromSql<BigInt, DB> for SQLDuration
+where 
+  DB: diesel::backend::Backend,
+  i64: FromSql<BigInt, DB>
+{
+  fn from_sql(bytes: Option<&DB::RawValue>) -> diesel::deserialize::Result<Self> {
+    let t = Duration::milliseconds(i64::from_sql(bytes)?);
+    Ok(Self(t))
+  }
+}
+
+impl<DB> ToSql<BigInt, DB> for SQLDuration
+where
+  DB: diesel::backend::Backend,
+  i64: ToSql<BigInt, DB>
+{
+  fn to_sql<W: std::io::Write>(&self, out: &mut diesel::serialize::Output<W, DB>) -> diesel::serialize::Result {
+    i64::to_sql(&self.0.num_milliseconds(), out)
   }
 }

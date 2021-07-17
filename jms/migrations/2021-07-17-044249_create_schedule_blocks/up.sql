@@ -1,0 +1,8 @@
+CREATE TABLE schedule_blocks(
+  id INTEGER PRIMARY KEY NOT NULL,
+  name TEXT NOT NULL,
+  start_time DATETIME NOT NULL,
+  end_time DATETIME NOT NULL,
+  cycle_time BIGINT NOT NULL,
+  quals BOOLEAN NOT NULL DEFAULT 1
+)

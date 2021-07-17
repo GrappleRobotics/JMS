@@ -10,7 +10,7 @@ export default class ConfigureEvent extends React.Component {
   static tabName() { return "Configure Event"; }
 
   static needsAttention(event) {
-    return event?.code === null || event?.event_name === null;
+    return event?.event_name === null;
   }
 
   changeEventDetails = (changes) => {
@@ -29,7 +29,7 @@ export default class ConfigureEvent extends React.Component {
       <Form>
         <Row>
           <Col md={4}>
-            <Form.Label>Event Code</Form.Label>
+            <Form.Label>Event Code <span class="text-muted">(Optional)</span></Form.Label>
             <BufferedFormControl 
               type="text"
               placeholder="2021myevent"

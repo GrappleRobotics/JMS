@@ -9,6 +9,8 @@ export default class BufferedFormControl extends React.Component {
       value: this.props.value
     }
 
+    this.timer = null;
+
     this.controlRef = React.createRef();
   }
 
@@ -32,6 +34,14 @@ export default class BufferedFormControl extends React.Component {
     return oldV !== newV;
   }
 
+  changed = (v) => {
+    if (this.props.auto) {
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => this.props.onUpdate(this.state.value), this.props.autoMillis || 250);
+    }
+    this.setState({ value: v })
+  }
+
   focusInput = () => {
     this.controlRef.current.focus();
   }
@@ -43,9 +53,7 @@ export default class BufferedFormControl extends React.Component {
       ref={this.controlRef}
       className={ (className || "") + " " + (this.valuesDiffer() ? "buffer-diff" : "buffer-same") }
       value={this.state.value}
-      onChange={(v) => {
-        this.setState({ value: v.target.value });
-      }}
+      onChange={(v) => this.changed(v.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           onUpdate(this.state.value);

@@ -3,6 +3,7 @@ $theme-colors: (
 );
 
 @import "~bootstrap/scss/bootstrap";
+@import "~react-datetime/css/react-datetime.css";
 
 html, body, #root {
   height: 100%;

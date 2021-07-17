@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { Col, Container, Nav, Row, Tab } from "react-bootstrap";
 import ConfigureEvent from "./ConfigureEvent";
+import ConfigureSchedule from "./ConfigureSchedule";
 import ConfigureTeams from "./ConfigureTeams";
 
 const EK_WELCOME = 'welcome';
@@ -26,11 +27,11 @@ export default class EventWizard extends React.Component {
   }
 
   render() {
-    let {event, teams, ws} = this.props;
+    let {event, teams, schedule, ws} = this.props;
 
     let navItemFor = (data, cls) => {
       let disabled = cls.isDisabled?.(data) || false;
-      let attention = cls.needsAttention?.(data) || false;
+      let attention = !disabled && (cls.needsAttention?.(data) || false);
 
       return <Nav.Item>
         <Nav.Link className={ attention ? "wizard-attention" : "" } eventKey={cls.eventKey()} disabled={disabled}> 
@@ -45,7 +46,7 @@ export default class EventWizard extends React.Component {
     </Tab.Pane>
     
     return <Container fluid className="px-5">
-      <h2>Event Wizard</h2>
+      <h2>Event Wizard { event?.name ? ("- " + event.name) : "" }</h2>
       <hr />
       <Tab.Container defaultActiveKey={EK_WELCOME}>
         <Row>
@@ -58,6 +59,8 @@ export default class EventWizard extends React.Component {
               { navItemFor(teams, ConfigureTeams) }
 
               <br /> <h6 className="text-muted">Qualifications</h6>
+              { navItemFor({ teams, blocks: schedule?.blocks }, ConfigureSchedule) }
+
               <br /> <h6 className="text-muted">Playoffs</h6>
               <br /> <h6 className="text-muted">Awards</h6>
             </Nav>
@@ -68,6 +71,7 @@ export default class EventWizard extends React.Component {
               <Tab.Pane eventKey={EK_WELCOME}> <Welcome /> </Tab.Pane>
               { paneFor(<ConfigureEvent event={event} ws={ws} />) }
               { paneFor(<ConfigureTeams teams={teams} ws={ws} />) }
+              { paneFor(<ConfigureSchedule teams={teams} blocks={schedule?.blocks} ws={ws} />) }
               <br />
             </Tab.Content>
           </Col>

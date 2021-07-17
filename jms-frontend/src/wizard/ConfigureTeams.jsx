@@ -19,7 +19,7 @@ export default class ConfigureTeams extends React.Component {
   }
 
   static needsAttention(teams) {
-    return teams?.length === 0;
+    return teams?.length < 6;
   }
 
   constructor(props) {
@@ -134,7 +134,7 @@ export default class ConfigureTeams extends React.Component {
       <h4> Configure Teams </h4>
       <p className="text-muted"> 
         <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; 
-        After the Match Schedule is generated, this list can no longer be changed.
+        After the Match Schedule is generated, this list can no longer be changed. You need at least 6 teams to generate a schedule.
       </p>
       <Button onClick={ () => this.updateTBA(false) }> Update from TBA </Button> &nbsp;
       <Button variant="warning" onClick={ () => this.updateTBA(true) }> Update from TBA (override) </Button>
