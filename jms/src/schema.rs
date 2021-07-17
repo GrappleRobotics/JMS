@@ -15,6 +15,7 @@ table! {
         match_number -> Integer,
         red_teams -> Text,
         blue_teams -> Text,
+        played -> Bool,
     }
 }
 

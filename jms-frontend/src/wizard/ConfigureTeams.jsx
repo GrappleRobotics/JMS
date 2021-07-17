@@ -11,15 +11,20 @@ const TBA_AUTH_KEY = "19iOXH0VVxCvYQTlmIRpXyx2xoUQuZoWEPECGitvJcFxEY6itgqDP7A4aw
 
 export default class ConfigureTeams extends React.Component {
   static eventKey() { return "configure_teams"; }
-  static tabName(teams) { 
+  static tabName(d) {
+    let teams = d.teams;
     if (teams === undefined || teams === null || teams.length === 0)
       return "Configure Teams";
     else
       return "Configure Teams (" + teams.length + ")";
   }
 
-  static needsAttention(teams) {
-    return teams?.length < 6;
+  static needsAttention(d) {
+    return d.teams?.length < 6;
+  }
+
+  static isDisabled(d) {
+    return d.quals?.exists;
   }
 
   constructor(props) {

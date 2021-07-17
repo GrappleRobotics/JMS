@@ -31,6 +31,10 @@ export default class EventWizard extends React.Component {
     let {event, teams, schedule, quals, ws} = this.props;
     let blocks = schedule?.blocks;
 
+    let data = {
+      event, teams, blocks, quals
+    };
+
     let navItemFor = (data, cls) => {
       let disabled = cls.isDisabled?.(data) || false;
       let attention = !disabled && (cls.needsAttention?.(data) || false);
@@ -57,12 +61,12 @@ export default class EventWizard extends React.Component {
               <Nav.Item> <Nav.Link eventKey={EK_WELCOME}> &nbsp;Welcome! </Nav.Link> </Nav.Item>
 
               <br /> <h6 className="text-muted">Pre-Event Config</h6>
-              { navItemFor(event, ConfigureEvent) }
-              { navItemFor(teams, ConfigureTeams) }
+              { navItemFor(data, ConfigureEvent) }
+              { navItemFor(data, ConfigureTeams) }
 
               <br /> <h6 className="text-muted">Qualifications</h6>
-              { navItemFor({ teams, blocks }, ConfigureSchedule) }
-              { navItemFor({ teams, blocks, quals }, QualGenerator) }
+              { navItemFor(data, ConfigureSchedule) }
+              { navItemFor(data, QualGenerator) }
 
               <br /> <h6 className="text-muted">Playoffs</h6>
               <br /> <h6 className="text-muted">Awards</h6>
@@ -72,10 +76,10 @@ export default class EventWizard extends React.Component {
             <Tab.Content>
               <br />
               <Tab.Pane eventKey={EK_WELCOME}> <Welcome /> </Tab.Pane>
-              { paneFor(<ConfigureEvent event={event} ws={ws} />) }
-              { paneFor(<ConfigureTeams teams={teams} ws={ws} />) }
-              { paneFor(<ConfigureSchedule teams={teams} blocks={blocks} ws={ws} />) }
-              { paneFor(<QualGenerator teams={teams} blocks={blocks} quals={quals} ws={ws} />) }
+              { paneFor(<ConfigureEvent {...data} ws={ws} />) }
+              { paneFor(<ConfigureTeams {...data} ws={ws} />) }
+              { paneFor(<ConfigureSchedule {...data} ws={ws} />) }
+              { paneFor(<QualGenerator {...data} ws={ws} />) }
               <br />
             </Tab.Content>
           </Col>

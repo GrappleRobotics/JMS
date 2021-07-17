@@ -25,15 +25,10 @@ pub struct TeamSchedule(pub na::DMatrix<u16>);
 
 pub struct ScheduleGenerator {
   num_teams: usize,
-  num_rounds: usize,
   num_stations: usize,
-
   num_matches: usize,
-  num_overflow: usize,
 
   teams: na::DVector<usize>,
-
-  placeholder_team: usize
 }
 
 impl ScheduleGenerator {
@@ -49,12 +44,9 @@ impl ScheduleGenerator {
 
     Self {
       num_teams,
-      num_rounds: num_matches_per_team,
       num_stations,
       num_matches,
-      num_overflow: (num_matches * num_stations) - (num_matches_per_team * num_teams),
       teams,
-      placeholder_team: num_teams
     }
   }
 
@@ -101,13 +93,11 @@ impl ScheduleGenerator {
     for m in schedule.0.column_iter() {
       for (i, &t1) in m.iter().enumerate() {
         for (j, &t2) in m.iter().enumerate() {
-          if t1 != self.placeholder_team && t2 != self.placeholder_team {
-            if i != j && t1 == t2 {
-              // Team appears in the same match multiple times, therefore this schedule is not valid
-              return None
-            } else {
-              cooccurrence[(t1, t2)] += 1;
-            }
+          if i != j && t1 == t2 {
+            // Team appears in the same match multiple times, therefore this schedule is not valid
+            return None
+          } else {
+            cooccurrence[(t1, t2)] += 1;
           }
         }
       }

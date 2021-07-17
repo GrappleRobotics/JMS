@@ -17,6 +17,7 @@ pub struct Match {
   // without committing to the database. It's not neat, but it's the most convenient option for our goals.
   pub blue_teams: SQLJsonVector<i32>,  // 0 if unoccupied
   pub red_teams: SQLJsonVector<i32>,
+  pub played: bool
 }
 
 impl Match {
@@ -29,6 +30,7 @@ impl Match {
       match_number: 1,
       blue_teams: SQLJsonVector(vec![]),
       red_teams: SQLJsonVector(vec![]),
+      played: false
     }
   }
 
@@ -48,7 +50,7 @@ impl Serialize for Match {
   where
       S: Serializer,
 {
-    let mut state = serializer.serialize_struct("Match", 7)?;
+    let mut state = serializer.serialize_struct("Match", 8)?;
     state.serialize_field("type", &self.match_type)?;
     state.serialize_field("time", &self.start_time)?;
     state.serialize_field("name", &self.name())?;
@@ -56,6 +58,7 @@ impl Serialize for Match {
     state.serialize_field("match_number", &self.match_number)?;
     state.serialize_field("blue", &self.blue_teams)?;
     state.serialize_field("red", &self.red_teams)?;
+    state.serialize_field("played", &self.played)?;
     state.end()
   }
 }

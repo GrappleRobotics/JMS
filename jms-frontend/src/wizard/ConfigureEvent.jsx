@@ -9,8 +9,8 @@ export default class ConfigureEvent extends React.Component {
   static eventKey() { return "configure_event"; }
   static tabName() { return "Configure Event"; }
 
-  static needsAttention(event) {
-    return event?.event_name === null;
+  static needsAttention(d) {
+    return d.event?.event_name === null;
   }
 
   changeEventDetails = (changes) => {

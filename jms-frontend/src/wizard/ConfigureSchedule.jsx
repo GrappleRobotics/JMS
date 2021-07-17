@@ -11,9 +11,6 @@ import { confirm } from "react-bootstrap-confirmation";
 const ELEMENT_FORMAT = "YYYY-MM-D[T]HH:mm";
 
 class ScheduleBlock extends React.Component {
-  constructor(props) {
-    super(props);
-  }
 
   updateDate = (k, v) => {
     v = moment(v);
@@ -151,6 +148,10 @@ export default class ConfigureSchedule extends React.Component {
     return !!!d.blocks?.length;
   }
 
+  static isDisabled(d) {
+    return d.quals?.exists;
+  }
+
   // Map the block data from props into JS types.
   mapBlockProps = (block) => {
     let start_time = moment.unix(block.start_time);
@@ -241,10 +242,16 @@ export default class ConfigureSchedule extends React.Component {
       <div>
         <Button onClick={this.addBlock}> <FontAwesomeIcon icon={faPlus} /> &nbsp; Add Block </Button> &nbsp;
         <Button onClick={this.loadDefault} variant="info"> <FontAwesomeIcon icon={faDownload} /> &nbsp; Load 2-day Default </Button>
+
         <span className="mx-3 float-right">
           <strong>{ total_matches }</strong> matches
           <span className="text-muted mx-2">•</span>
           <strong>{ this.props.teams?.length > 6 ? matches_per_team : "--" }</strong> per team
+          <span className="text-muted">
+            &nbsp; <i>+ {
+              this.props.teams?.length > 6 ? ( (total_matches * 6) - (matches_per_team * this.props.teams?.length)) : "--"
+            } </i>
+          </span>
         </span>
       </div>
 

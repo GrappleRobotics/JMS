@@ -28,6 +28,11 @@ impl QualificationSchedule {
     &QUAL_SCHED
   }
 
+  pub fn locked(&self) -> bool {
+    use crate::schema::matches::dsl::*;
+    matches.filter(played.eq(true)).count().get_result::<i64>(&db::connection()).unwrap() > 0
+  }
+
   pub fn exists(&self) -> bool {
     use crate::schema::matches::dsl::*;
     matches.count().get_result::<i64>(&db::connection()).unwrap() > 0
@@ -48,12 +53,14 @@ impl QualificationSchedule {
   }
 
   pub async fn generate(&self) {
-    tokio::spawn(async move {
-      QualificationSchedule::instance().lock().await.generating = true;
-      let sched = generate_quals().await.unwrap();
-      commit_quals(&sched).await.unwrap();
-      QualificationSchedule::instance().lock().await.generating = false;
-    });
+    if !self.locked() { // TODO: Error if locked
+      tokio::spawn(async move {
+        QualificationSchedule::instance().lock().await.generating = true;
+        let sched = generate_quals().await.unwrap();
+        commit_quals(&sched).await.unwrap();
+        QualificationSchedule::instance().lock().await.generating = false;
+      });
+    }
   }
 }
 
@@ -62,10 +69,11 @@ impl serde::Serialize for QualificationSchedule {
   where
     S: serde::Serializer
   {
-    let mut state = serializer.serialize_struct("QualificationSchedule", 3)?;
+    let mut state = serializer.serialize_struct("QualificationSchedule", 4)?;
     state.serialize_field("running", &self.running())?;
     state.serialize_field("exists", &self.exists())?;
     state.serialize_field("matches", &self.matches())?;
+    state.serialize_field("locked", &self.locked())?;
     state.end()
   }
 }
@@ -80,19 +88,12 @@ async fn generate_quals() -> Result<TeamSchedule, Box<dyn std::error::Error>> {
 
   let generator = ScheduleGenerator::new(teams.len(), num_matches, 6);
 
-  let anneal_team_balance = Annealer::new(1.0, 0.0, 10_000);
-  let anneal_station_balance = Annealer::new(1.0, 0.0, 10_000);
+  let anneal_team_balance = Annealer::new(1.0, 0.0, 100_000);
+  let anneal_station_balance = Annealer::new(1.0, 0.0, 40_000);
 
   let (sched, _tb, _sb) = generator.generate(anneal_team_balance, anneal_station_balance);
   let team_sched = sched.contextualise(&teams.iter().map(|&x| x as u16).collect::<Vec<u16>>());
 
-  // for col in team_sched.0.column_iter() {
-  //   let match_teams = col.as_slice();
-  //   let blue = match_teams[0..(6/2)].to_vec();
-  //   let red = match_teams[(6/2)..6].to_vec();
-  // }
-
-  // Ok(())
   Ok(team_sched)
 }
 
@@ -116,7 +117,8 @@ async fn commit_quals(schedule: &TeamSchedule) -> Result<(), Box<dyn std::error:
         set_number.eq(0),
         match_number.eq((match_i + 1) as i32),
         blue_teams.eq(SQLJsonVector(blue)),
-        red_teams.eq(SQLJsonVector(red))
+        red_teams.eq(SQLJsonVector(red)),
+        played.eq(false)
       ));
       match_i += 1;
     }

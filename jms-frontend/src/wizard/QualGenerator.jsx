@@ -1,4 +1,4 @@
-import { faCircleNotch, faCog, faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCircleNotch, faCog, faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import moment from "moment";
 import React from "react";
@@ -32,8 +32,9 @@ export default class QualGenerator extends React.Component {
       <Button
         variant="danger"
         onClick={this.clearSchedule}
+        disabled={this.props.quals?.locked}
       >
-        Clear Qualification Schedule
+        { this.props.quals?.locked ? "Schedule Locked (Matches Played)" : "Clear Qualification Schedule" }
       </Button>
 
       <br /> <br />
@@ -41,17 +42,17 @@ export default class QualGenerator extends React.Component {
       <Table bordered striped size="sm">
         <thead>
           <tr>
-            <th> Match </th>
             <th> Time </th>
-            { [1,2,3].map(t => <th className="schedule-blue"> {t} </th>) }
-            { [1,2,3].map(t => <th className="schedule-red"> {t} </th>) }
+            <th> Match </th>
+            { [1,2,3].map(t => <th className="schedule-blue"> Blue {t} </th>) }
+            { [1,2,3].map(t => <th className="schedule-red"> Red {t} </th>) }
           </tr>
         </thead>
         <tbody>
           {
             this.props.quals?.matches?.map(match => <tr>
-              <td> { match.name } </td>
-              <td> { moment.unix(match.time).format("ddd HH:mm:ss") } </td>
+              <td> &nbsp; { moment.unix(match.time).format("ddd HH:mm:ss") } </td>
+              <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
               { match.blue.map(t => <td className="schedule-blue"> { t } </td>) }
               { match.red.map(t =>  <td className="schedule-red"> { t } </td>) }
             </tr>)
