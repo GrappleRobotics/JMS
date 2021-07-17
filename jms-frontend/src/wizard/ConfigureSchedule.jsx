@@ -147,10 +147,6 @@ export default class ConfigureSchedule extends React.Component {
   static eventKey() { return "configure_day_schedule"; }
   static tabName() { return "Configure Schedule"; }
 
-  static isDisabled(d) {
-    return (d.teams?.length || 0) < 6;
-  }
-
   static needsAttention(d) {
     return !!!d.blocks?.length;
   }
@@ -232,14 +228,14 @@ export default class ConfigureSchedule extends React.Component {
       last = thisBlock;
     });
 
+    let matches_per_team = Math.floor((total_matches * 6) / (this.props.teams?.length || 1));
+
     return <div>
       <h4>Configure Schedule</h4>
       <p className="text-muted">
         <FontAwesomeIcon icon={faInfoCircle} /> &nbsp;
-        In this step, the QUALIFICATION schedule is blocked out. Be sure to 
-        leave time for breaks, ceremonies, as well as the playoff schedule that will be
-        generated later. The playoffs are usually held in the 2nd half of the last day.
-        The qualification match schedule will be generated in the next step.
+        In this step, the schedule is blocked out. The schedule includes not only qualification matches, but also ceremonies, alliance selection, and 
+        playoff matches. To get started, load the 2-day default for a typical 2-day offseason event with a 13 minute gap between matches.
       </p>
       
       <div>
@@ -248,7 +244,7 @@ export default class ConfigureSchedule extends React.Component {
         <span className="mx-3 float-right">
           <strong>{ total_matches }</strong> matches
           <span className="text-muted mx-2">•</span>
-          <strong>{ Math.floor((total_matches * 6) / (this.props.teams?.length || 1)) }</strong> per team
+          <strong>{ this.props.teams?.length > 6 ? matches_per_team : "--" }</strong> per team
         </span>
       </div>
 

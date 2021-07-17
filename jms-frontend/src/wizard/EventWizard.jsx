@@ -5,6 +5,7 @@ import { Col, Container, Nav, Row, Tab } from "react-bootstrap";
 import ConfigureEvent from "./ConfigureEvent";
 import ConfigureSchedule from "./ConfigureSchedule";
 import ConfigureTeams from "./ConfigureTeams";
+import QualGenerator from "./QualGenerator";
 
 const EK_WELCOME = 'welcome';
 
@@ -27,7 +28,8 @@ export default class EventWizard extends React.Component {
   }
 
   render() {
-    let {event, teams, schedule, ws} = this.props;
+    let {event, teams, schedule, quals, ws} = this.props;
+    let blocks = schedule?.blocks;
 
     let navItemFor = (data, cls) => {
       let disabled = cls.isDisabled?.(data) || false;
@@ -59,7 +61,8 @@ export default class EventWizard extends React.Component {
               { navItemFor(teams, ConfigureTeams) }
 
               <br /> <h6 className="text-muted">Qualifications</h6>
-              { navItemFor({ teams, blocks: schedule?.blocks }, ConfigureSchedule) }
+              { navItemFor({ teams, blocks }, ConfigureSchedule) }
+              { navItemFor({ teams, blocks, quals }, QualGenerator) }
 
               <br /> <h6 className="text-muted">Playoffs</h6>
               <br /> <h6 className="text-muted">Awards</h6>
@@ -71,7 +74,8 @@ export default class EventWizard extends React.Component {
               <Tab.Pane eventKey={EK_WELCOME}> <Welcome /> </Tab.Pane>
               { paneFor(<ConfigureEvent event={event} ws={ws} />) }
               { paneFor(<ConfigureTeams teams={teams} ws={ws} />) }
-              { paneFor(<ConfigureSchedule teams={teams} blocks={schedule?.blocks} ws={ws} />) }
+              { paneFor(<ConfigureSchedule teams={teams} blocks={blocks} ws={ws} />) }
+              { paneFor(<QualGenerator teams={teams} blocks={blocks} quals={quals} ws={ws} />) }
               <br />
             </Tab.Content>
           </Col>

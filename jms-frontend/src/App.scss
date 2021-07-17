@@ -1,5 +1,7 @@
 $theme-colors: (
-  "warning": #ffbb00
+  "warning": #ffbb00,
+  "alliance-red": #f53e31,
+  "alliance-blue": #3152f5
 );
 
 @import "~bootstrap/scss/bootstrap";
@@ -189,4 +191,42 @@ input.team-num {
 
 .wizard-tabs {
   max-width: 250px;
+}
+
+.table-striped > tbody > tr:nth-child(odd) {
+  > td {
+    &.schedule-blue {
+      background-color: lighten(theme-color("alliance-blue"), 5%);
+      color: white;
+    }
+    &.schedule-red {
+      background-color: lighten(theme-color("alliance-red"), 5%);
+      color: white;
+    }
+  }
+}
+
+.table-striped > tbody > tr:nth-child(even) {
+  > td {
+    &.schedule-blue {
+      background-color: lighten(theme-color("alliance-blue"), 15%);
+      color: white;
+    }
+    &.schedule-red {
+      background-color: lighten(theme-color("alliance-red"), 15%);
+      color: white;
+    }
+  }
+
+}
+
+th {
+  &.schedule-blue {
+    background-color: darken(theme-color("alliance-blue"), 15%);
+    color: white;
+  }
+  &.schedule-red {
+    background-color: darken(theme-color("alliance-red"), 15%);
+    color: white;
+  }
 }

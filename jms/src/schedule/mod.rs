@@ -4,6 +4,8 @@ use log::{debug, info};
 use nalgebra as na;
 use rand::{Rng, prelude::SliceRandom};
 
+pub mod quals;
+
 // Cols = Rounds
 #[derive(Debug)]
 pub struct ScheduleRounds(pub na::DMatrix<usize>);

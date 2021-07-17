@@ -5,6 +5,7 @@ mod logging;
 mod network;
 mod ui;
 mod utils;
+mod schedule;
 
 mod models;
 mod schema;

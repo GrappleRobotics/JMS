@@ -1,7 +1,7 @@
 use crate::{schema::matches, sql_mapped_enum};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
-use super::SQLJsonVector;
+use super::{SQLDatetime, SQLJsonVector};
 
 sql_mapped_enum!(MatchType, Test, Qualification, Quarterfinal, Semifinal, Final);
 
@@ -9,6 +9,7 @@ sql_mapped_enum!(MatchType, Test, Qualification, Quarterfinal, Semifinal, Final)
 #[table_name = "matches"]
 pub struct Match {
   pub id: i32,
+  pub start_time: SQLDatetime,
   pub match_type: MatchType,
   pub set_number: i32,
   pub match_number: i32,
@@ -22,6 +23,7 @@ impl Match {
   pub fn new_test() -> Self {
     Match {
       id: -1,
+      start_time: SQLDatetime(chrono::Local::now().naive_utc()),
       match_type: MatchType::Test,
       set_number: 1,
       match_number: 1,
@@ -46,8 +48,9 @@ impl Serialize for Match {
   where
       S: Serializer,
 {
-    let mut state = serializer.serialize_struct("Match", 6)?;
+    let mut state = serializer.serialize_struct("Match", 7)?;
     state.serialize_field("type", &self.match_type)?;
+    state.serialize_field("time", &self.start_time)?;
     state.serialize_field("name", &self.name())?;
     state.serialize_field("set_number", &self.set_number)?;
     state.serialize_field("match_number", &self.match_number)?;

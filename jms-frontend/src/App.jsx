@@ -44,6 +44,7 @@ export default class App extends React.Component {
       this.ws.send("event", "details", "get");
       this.ws.send("event", "teams", "get");
       this.ws.send("event", "schedule", "blocks");
+      this.ws.send("event", "quals", "get");
     }, 500);
   }
 
@@ -67,6 +68,7 @@ export default class App extends React.Component {
             event={this.state.event?.details?.get}
             teams={this.state.event?.teams?.get}
             schedule={this.state.event?.schedule}
+            quals={this.state.event?.quals?.get}
           />
         </Route>
         <Route path={MATCH_CONTROL}>

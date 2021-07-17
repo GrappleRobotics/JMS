@@ -19,6 +19,18 @@ pub struct ScheduleBlock {
 }
 
 impl ScheduleBlock {
+  pub fn num_matches(&self) -> usize {
+    let duration = self.end_time.0 - self.start_time.0;
+    (duration.num_seconds() / self.cycle_time.0.num_seconds()) as usize
+  }
+
+  pub fn qual_blocks(conn: &db::ConnectionT) -> QueryResult<Vec<ScheduleBlock>> {
+    use crate::schema::schedule_blocks::dsl::*;
+    schedule_blocks.filter(quals.eq(true))
+                   .order_by(start_time.asc())
+                   .load::<ScheduleBlock>(conn)
+  }
+
   pub fn append_default(conn: &db::ConnectionT) -> QueryResult<()> {
     // TODO: Validate, can't do it if the schedule is locked in
     use crate::schema::schedule_blocks::dsl::*;

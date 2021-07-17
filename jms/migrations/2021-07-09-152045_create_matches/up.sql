@@ -2,6 +2,7 @@
 
 CREATE TABLE matches (
   id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  start_time BIGINT NOT NULL,
   match_type TEXT NOT NULL,
   set_number INTEGER NOT NULL,
   match_number INTEGER NOT NULL,

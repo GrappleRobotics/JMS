@@ -9,6 +9,7 @@ table! {
 table! {
     matches (id) {
         id -> Integer,
+        start_time -> BigInt,
         match_type -> Text,
         set_number -> Integer,
         match_number -> Integer,

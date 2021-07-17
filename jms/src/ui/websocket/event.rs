@@ -1,7 +1,6 @@
-use chrono::{Duration, Local, NaiveTime, TimeZone};
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, models::{self, SQLDuration, SQLDatetime, ScheduleBlock}};
+use crate::{db, models::{self, ScheduleBlock}, schedule::quals::QualificationSchedule};
 
 use super::WebsocketMessageHandler;
 
@@ -82,6 +81,24 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
         },
         ("load_default", None) => {
           ScheduleBlock::generate_default_2day(&db::connection())?;
+          None
+        },
+        _ => Some(response_msg.invalid_verb_or_data())
+      },
+      "quals" => match (msg.verb.as_str(), msg.data) {
+        ("get", None) => {
+          let qs = QualificationSchedule::instance().lock().await;
+          Some(response_msg.data(serde_json::to_value(&*qs)?))
+        },
+        ("generate", None) => {
+          let qs = QualificationSchedule::instance().lock().await;
+          if !qs.running() {
+            qs.generate().await;
+          }
+          None
+        },
+        ("delete", None) => {
+          QualificationSchedule::instance().lock().await.clear();
           None
         }
         _ => Some(response_msg.invalid_verb_or_data())
