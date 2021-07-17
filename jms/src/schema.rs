@@ -21,8 +21,8 @@ table! {
     schedule_blocks (id) {
         id -> Integer,
         name -> Text,
-        start_time -> Timestamp,
-        end_time -> Timestamp,
+        start_time -> BigInt,
+        end_time -> BigInt,
         cycle_time -> BigInt,
         quals -> Bool,
     }

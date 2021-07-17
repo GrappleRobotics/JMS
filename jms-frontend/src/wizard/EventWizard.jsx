@@ -46,7 +46,7 @@ export default class EventWizard extends React.Component {
     </Tab.Pane>
     
     return <Container fluid className="px-5">
-      <h2>Event Wizard { event?.name ? ("- " + event.name) : "" }</h2>
+      <h3>Event Wizard { event?.event_name ? ("- " + event.event_name) : "" }</h3>
       <hr />
       <Tab.Container defaultActiveKey={EK_WELCOME}>
         <Row>

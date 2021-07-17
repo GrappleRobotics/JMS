@@ -1,4 +1,4 @@
-import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCloudDownloadAlt, faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditableFormControl from "components/elements/EditableFormControl";
 import React from "react";
@@ -136,8 +136,14 @@ export default class ConfigureTeams extends React.Component {
         <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; 
         After the Match Schedule is generated, this list can no longer be changed. You need at least 6 teams to generate a schedule.
       </p>
-      <Button onClick={ () => this.updateTBA(false) }> Update from TBA </Button> &nbsp;
-      <Button variant="warning" onClick={ () => this.updateTBA(true) }> Update from TBA (override) </Button>
+      <Button onClick={ () => this.updateTBA(false) }> 
+        <FontAwesomeIcon icon={faCloudDownloadAlt} /> &nbsp;
+        Update from TBA 
+      </Button> &nbsp;
+      <Button variant="warning" onClick={ () => this.updateTBA(true) }>
+        <FontAwesomeIcon icon={faCloudDownloadAlt} /> &nbsp;
+        Update from TBA (override)
+      </Button>
       <br /> <br />
       <Table striped bordered hover size="sm">
         <thead>

@@ -1,7 +1,7 @@
 use chrono::{Duration, Local, NaiveTime, TimeZone};
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, models::{self, SQLDuration}};
+use crate::{db, models::{self, SQLDuration, SQLDatetime, ScheduleBlock}};
 
 use super::WebsocketMessageHandler;
 
@@ -55,39 +55,12 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       "schedule" => match (msg.verb.as_str(), msg.data) {
         ("blocks", None) => {
           use crate::schema::schedule_blocks::dsl::*;
-          let sbs = schedule_blocks.load::<models::ScheduleBlock>(&db::connection())?;
+          let sbs = schedule_blocks.order_by(start_time.asc()).load::<models::ScheduleBlock>(&db::connection())?;
           Some(response_msg.data(serde_json::to_value(sbs)?))
         },
         ("new_block", None) => {
           // TODO: Validate, can't be done if the schedule is locked
-          use crate::schema::schedule_blocks::dsl::*;
-          let mut start = Local::today().and_hms(9, 00, 00);
-
-          match schedule_blocks.order(id.desc()).first::<models::ScheduleBlock>(&db::connection()) {
-            Ok(sb) => {
-              let end = Local.from_local_datetime(&sb.end_time).unwrap();
-              let new_start = end + Duration::hours(1);
-              let new_end = new_start + Duration::hours(3);
-
-              if new_end.time() >= NaiveTime::from_hms(17, 00, 00) {
-                // Automatically move to tomorrow
-                start = (end + Duration::days(1)).date().and_hms(9, 00, 00);
-              } else {
-                start = new_start;
-              }
-            },
-            Err(diesel::NotFound) => (),
-            Err(e) => return Err(e.into()),
-          }
-
-          diesel::insert_into(schedule_blocks)
-            .values((
-              name.eq("Unnamed Block"),
-              start_time.eq(start.naive_local()),
-              end_time.eq((start + Duration::hours(3)).naive_local()),
-              cycle_time.eq(SQLDuration(Duration::minutes(13)))
-            ))
-            .execute(&db::connection())?;
+          ScheduleBlock::append_default(&db::connection())?;
           None
         },
         ("delete_block", Some(serde_json::Value::Number(block_id))) => {
@@ -105,6 +78,10 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           diesel::replace_into(schedule_blocks)
             .values(&block)
             .execute(&db::connection())?;
+          None
+        },
+        ("load_default", None) => {
+          ScheduleBlock::generate_default_2day(&db::connection())?;
           None
         }
         _ => Some(response_msg.invalid_verb_or_data())

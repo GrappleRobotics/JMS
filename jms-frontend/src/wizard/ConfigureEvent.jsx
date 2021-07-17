@@ -29,7 +29,7 @@ export default class ConfigureEvent extends React.Component {
       <Form>
         <Row>
           <Col md={4}>
-            <Form.Label>Event Code <span class="text-muted">(Optional)</span></Form.Label>
+            <Form.Label>Event Code <span className="text-muted">(Optional)</span></Form.Label>
             <BufferedFormControl 
               type="text"
               placeholder="2021myevent"
