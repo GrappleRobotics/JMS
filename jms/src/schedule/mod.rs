@@ -37,10 +37,12 @@ pub struct ScheduleGenerator {
 impl ScheduleGenerator {
   pub fn new(
     num_teams: usize,
-    num_matches_per_team: usize,
+    // num_matches_per_team: usize,
+    num_matches: usize,
     num_stations: usize
   ) -> Self {
-    let num_matches = ((num_teams * num_matches_per_team) as f64 / (num_stations as f64)).ceil() as usize;
+    // let num_matches = ((num_teams * num_matches_per_team) as f64 / (num_stations as f64)).ceil() as usize;
+    let num_matches_per_team = (num_matches * num_stations) / (num_teams);
     let teams = na::DVector::from_iterator(num_teams, (0..num_teams).into_iter());
 
     Self {
@@ -54,6 +56,7 @@ impl ScheduleGenerator {
     }
   }
 
+  // TODO: Make this correct
   fn generate_unchecked_simple_schedule(&self) -> ScheduleRounds {
     let mut schedule = ScheduleRounds(na::DMatrix::zeros(self.num_teams, self.num_rounds));
     for i in 0..self.num_rounds {
@@ -69,16 +72,26 @@ impl ScheduleGenerator {
       let iter = iter.chain( (0..self.num_overflow).map(|_| self.placeholder_team) );
       Schedule(na::DMatrix::from_iterator(self.num_stations, self.num_matches, iter))
     } else {
-      // Generate placeholder teams for the final match, excluding teams that were already in the match
+      // Generate placeholder teams for the final matches, excluding teams that were already in the match
       let mut rng = rand::thread_rng();
 
-      let num_excluded = self.num_stations - self.num_overflow;
+      let num_excluded = self.num_stations - (self.num_overflow % self.num_stations);
       let excluded_teams = rounds.0.slice((self.num_teams - num_excluded, self.num_rounds - 1), (num_excluded, 1));
+      
+      let num_overflow_matches = (self.num_overflow / self.num_stations) + usize::from(self.num_overflow % self.num_stations != 0);
+      let iiters = (0..num_overflow_matches).flat_map(|i| {
+        // Excluded teams from the first match only
+        let team_options: Vec<usize> = match i {
+          0 => self.teams.iter().filter(|&&x| !excluded_teams.iter().any(|&y| x == y)).map(|&x| x).collect(),
+          _ => self.teams.iter().map(|&x| x).collect()
+        };
+        
+        let choose = if i == 0 { self.num_overflow % self.num_stations } else { self.num_stations };
+        info!("{}", choose);
+        team_options.choose_multiple(&mut rng, choose).map(|&x| x).collect::<Vec<usize>>()
+      });
 
-      let team_options: Vec<usize> = self.teams.iter().filter(|&&x| !excluded_teams.iter().any(|&y| x == y)).map(|&x| x).collect();
-      let selections = team_options.choose_multiple(&mut rng, self.num_overflow).map(|x| *x);
-
-      let iter = iter.chain( selections );
+      let iter = iter.chain( iiters );
       Schedule(na::DMatrix::from_iterator(self.num_stations, self.num_matches, iter))
     }
   }
