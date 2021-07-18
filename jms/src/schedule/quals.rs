@@ -1,13 +1,11 @@
-use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, connection::SimpleConnection};
-use log::info;
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde::ser::SerializeStruct;
 use tokio::sync::Mutex;
 
-use crate::{db, models::{self, Match, SQLDatetime, SQLJsonVector, ScheduleBlock}};
+use crate::{db, models::{self, Match, MatchGenerationRecord, SQLDatetime, SQLJsonVector, ScheduleBlock}};
 
-use super::{Annealer, ScheduleGenerator, TeamSchedule};
+use super::{Annealer, GenerationResult, ScheduleGenerator, TeamSchedule};
 
 lazy_static! {
   static ref QUAL_SCHED: Mutex<QualificationSchedule> = Mutex::new(QualificationSchedule::new());
@@ -47,17 +45,28 @@ impl QualificationSchedule {
     matches.filter(match_type.eq(models::MatchType::Qualification)).load::<Match>(&db::connection()).unwrap()
   }
 
+  pub fn generation_record(&self) -> Option<MatchGenerationRecord> {
+    use crate::schema::match_generation_records::dsl::*;
+    match_generation_records.first::<MatchGenerationRecord>(&db::connection()).ok()
+  }
+
   pub fn clear(&self) {
-    use crate::schema::matches::dsl::*;
-    diesel::delete(matches).execute(&db::connection()).unwrap();
+    {
+      use crate::schema::matches::dsl::*;
+      diesel::delete(matches).execute(&db::connection()).unwrap();
+    }
+    {
+      use crate::schema::match_generation_records::dsl::*;
+      diesel::delete(match_generation_records).execute(&db::connection()).unwrap();
+    }
   }
 
   pub async fn generate(&self) {
     if !self.locked() { // TODO: Error if locked
       tokio::spawn(async move {
         QualificationSchedule::instance().lock().await.generating = true;
-        let sched = generate_quals().await.unwrap();
-        commit_quals(&sched).await.unwrap();
+        let (result, sched) = generate_quals().await.unwrap();
+        commit_quals(&sched, &result).await.unwrap();
         QualificationSchedule::instance().lock().await.generating = false;
       });
     }
@@ -69,16 +78,17 @@ impl serde::Serialize for QualificationSchedule {
   where
     S: serde::Serializer
   {
-    let mut state = serializer.serialize_struct("QualificationSchedule", 4)?;
+    let mut state = serializer.serialize_struct("QualificationSchedule", 5)?;
     state.serialize_field("running", &self.running())?;
     state.serialize_field("exists", &self.exists())?;
     state.serialize_field("matches", &self.matches())?;
     state.serialize_field("locked", &self.locked())?;
+    state.serialize_field("generation_record", &self.generation_record())?;
     state.end()
   }
 }
 
-async fn generate_quals() -> Result<TeamSchedule, Box<dyn std::error::Error>> {
+async fn generate_quals() -> Result<(GenerationResult, TeamSchedule), Box<dyn std::error::Error>> {
   let teams = {
     use crate::schema::teams::dsl::*;
     teams.select(id).get_results::<i32>(&db::connection())?
@@ -88,16 +98,31 @@ async fn generate_quals() -> Result<TeamSchedule, Box<dyn std::error::Error>> {
 
   let generator = ScheduleGenerator::new(teams.len(), num_matches, 6);
 
-  let anneal_team_balance = Annealer::new(1.0, 0.0, 100_000);
-  let anneal_station_balance = Annealer::new(1.0, 0.0, 40_000);
+  let anneal_team_balance = Annealer::new(1.0, 0.0, 200_000);
+  let anneal_station_balance = Annealer::new(1.0, 0.0, 100_000);
 
-  let (sched, _tb, _sb) = generator.generate(anneal_team_balance, anneal_station_balance);
-  let team_sched = sched.contextualise(&teams.iter().map(|&x| x as u16).collect::<Vec<u16>>());
+  let generation_result = generator.generate(anneal_team_balance, anneal_station_balance);
+  let team_sched = generation_result.schedule.contextualise(&teams.iter().map(|&x| x as u16).collect::<Vec<u16>>());
 
-  Ok(team_sched)
+  Ok((generation_result, team_sched))
 }
 
-async fn commit_quals(schedule: &TeamSchedule) -> Result<(), Box<dyn std::error::Error>> {
+async fn commit_quals(schedule: &TeamSchedule, gen_result: &GenerationResult) -> Result<(), Box<dyn std::error::Error>> {
+  {
+    // Update the MatchGenerationRecord
+    use crate::schema::match_generation_records::dsl::*;
+
+    diesel::replace_into(match_generation_records)
+      .values(MatchGenerationRecord {
+        id: 1,
+        team_balance: gen_result.team_balance_score,
+        station_balance: gen_result.station_balance_score,
+        cooccurrence: SQLJsonVector(gen_result.cooccurrence.column_iter().map(|col| col.iter().cloned().collect::<Vec<usize>>() ).collect()),
+        station_dist: SQLJsonVector(gen_result.station_dist.column_iter().map(|col| col.iter().cloned().collect::<Vec<usize>>() ).collect())
+      })
+      .execute(&db::connection())?;
+  }
+  
   use crate::schema::matches::dsl::*;
   let blocks = ScheduleBlock::qual_blocks(&db::connection())?;
 

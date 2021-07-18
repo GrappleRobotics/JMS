@@ -1,4 +1,4 @@
-use crate::{schema::matches, sql_mapped_enum};
+use crate::{schema::matches, schema::match_generation_records, sql_mapped_enum};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
 use super::{SQLDatetime, SQLJsonVector};
@@ -61,4 +61,13 @@ impl Serialize for Match {
     state.serialize_field("played", &self.played)?;
     state.end()
   }
+}
+
+#[derive(Insertable, Queryable, Debug, Clone, serde::Serialize)]
+pub struct MatchGenerationRecord {
+  pub id: i32,
+  pub team_balance: f64,
+  pub station_balance: f64,
+  pub cooccurrence: SQLJsonVector<Vec<usize>>,
+  pub station_dist: SQLJsonVector<Vec<usize>>,
 }

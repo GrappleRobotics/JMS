@@ -7,6 +7,16 @@ table! {
 }
 
 table! {
+    match_generation_records (id) {
+        id -> Integer,
+        team_balance -> Double,
+        station_balance -> Double,
+        cooccurrence -> Text,
+        station_dist -> Text,
+    }
+}
+
+table! {
     matches (id) {
         id -> Integer,
         start_time -> BigInt,
@@ -42,6 +52,7 @@ table! {
 
 allow_tables_to_appear_in_same_query!(
     event_details,
+    match_generation_records,
     matches,
     schedule_blocks,
     teams,

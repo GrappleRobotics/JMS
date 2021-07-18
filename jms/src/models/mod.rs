@@ -2,7 +2,7 @@ mod team;
 use std::fmt::Debug;
 
 use chrono::{DateTime, Duration, NaiveDateTime};
-use diesel::{sql_types::{BigInt, Integer, Text}, types::{FromSql, ToSql}};
+use diesel::{sql_types::{BigInt, Text}, types::{FromSql, ToSql}};
 pub use team::*;
 
 mod matches;

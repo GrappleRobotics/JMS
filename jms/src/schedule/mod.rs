@@ -31,6 +31,14 @@ pub struct ScheduleGenerator {
   teams: na::DVector<usize>,
 }
 
+pub struct GenerationResult {
+  pub schedule: Schedule,
+  pub team_balance_score: f64,
+  pub station_balance_score: f64,
+  pub cooccurrence: na::DMatrix<usize>,
+  pub station_dist: na::DMatrix<usize>
+}
+
 impl ScheduleGenerator {
   pub fn new(
     num_teams: usize,
@@ -38,8 +46,6 @@ impl ScheduleGenerator {
     num_matches: usize,
     num_stations: usize
   ) -> Self {
-    // let num_matches = ((num_teams * num_matches_per_team) as f64 / (num_stations as f64)).ceil() as usize;
-    let num_matches_per_team = (num_matches * num_stations) / (num_teams);
     let teams = na::DVector::from_iterator(num_teams, (0..num_teams).into_iter());
 
     Self {
@@ -145,7 +151,7 @@ impl ScheduleGenerator {
     Schedule(sched)
   }
 
-  pub fn generate(&self, anneal_team_balance: Annealer, anneal_station_balance: Annealer) -> (Schedule, f64, f64) {
+  pub fn generate(&self, anneal_team_balance: Annealer, anneal_station_balance: Annealer) -> GenerationResult {
     let t0 = time::Instant::now();
 
     let seed = self.generate_simple_schedule();
@@ -182,13 +188,22 @@ impl ScheduleGenerator {
     info!("Schedule generated in {:.2}s", (t5 - t0).as_secs_f32());
     debug!("{}", annealed_2.0);
 
+    let cooc = self.cooccurrence_matrix(&annealed_2).unwrap();
+    let sm = self.station_matrix(&annealed_2);
+
     debug!("Cooccurrence matrix:");
-    debug!("{}", self.cooccurrence_matrix(&annealed_2).unwrap());
+    debug!("{}", cooc);
 
     debug!("Station matrix:");
-    debug!("{}", self.station_matrix(&annealed_2));
+    debug!("{}", sm);
 
-    (annealed_2, tb_score, sb_score)
+    GenerationResult {
+      schedule: annealed_2,
+      team_balance_score: tb_score,
+      station_balance_score: sb_score,
+      cooccurrence: cooc,
+      station_dist: sm
+    }
   }
 }
 
