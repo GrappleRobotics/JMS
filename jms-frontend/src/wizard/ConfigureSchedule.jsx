@@ -57,7 +57,7 @@ class ScheduleBlock extends React.Component {
                     autofocus
                     size="sm"
                     value={block.name}
-                    onUpdate={v => this.props.update("name", v)}
+                    onUpdate={v => this.props.update({ name: v })}
                   />
 
                   {
