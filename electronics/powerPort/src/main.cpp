@@ -12,6 +12,8 @@ int main() {
 	// OLED oled(D14, D15);
 	BeamBreak beamBreak(A0);
 
+	std::cout << "test" << std::endl;
+
 	DigitalIn userButton(USER_BUTTON);
 	// AnalogIn beam(A0);
 
@@ -30,7 +32,7 @@ int main() {
 		// printf("Value: %d\n", beam.read_u16());
 		// oled.print(goalCount);
 
-		// std::cout << "State: " << (int)beamBreak.getStates().first << std::endl;
+		std::cout << "State: " << (int)beamBreak.getStates().first << std::endl;
 
 		// ThisThread::sleep_for(200ms);
 
