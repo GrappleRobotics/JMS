@@ -11,8 +11,18 @@ html, body, #root {
   height: 100%;
 }
 
-.app-container {
-  margin: 80px 0px;
+.wrapper {
+  min-height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-viewport {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: scroll;
 }
 
 $hazard-dark-primary: #735a00;
@@ -262,4 +272,9 @@ th {
     background-color: darken(theme-color("alliance-red"), 15%);
     color: white;
   }
+}
+
+.timekeeper-behind {
+  font-weight: bold;
+  color: #faa;
 }

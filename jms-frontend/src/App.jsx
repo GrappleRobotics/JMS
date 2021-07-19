@@ -5,7 +5,8 @@ import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
 import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
 import TopNavbar from 'TopNavbar';
-import { Navbar } from 'react-bootstrap';
+import { Col, Navbar, Row } from 'react-bootstrap';
+import BottomNavbar from 'BottomNavbar';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -52,34 +53,49 @@ export default class App extends React.Component {
   render() {
     let arena = this.state.arena?.status?.get;
 
-    return <div className="h-100">
-      <TopNavbar
-        connected={this.state.connected}
-        state={arena?.state}
-        match={arena?.match}
-        onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
-      />
+    return <div className="wrapper">
+      <Row>
+        <Col>
+          <TopNavbar
+            connected={this.state.connected}
+            state={arena?.state}
+            match={arena?.match}
+            onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
+          />
+        </Col>
+      </Row>
+      <Row className="app-viewport">
+        <Col>
+          <Switch>
+            <Route path={EVENT_WIZARD}>
+              <EventWizard
+                ws={this.ws}
+                event={this.state.event?.details?.get}
+                teams={this.state.event?.teams?.get}
+                schedule={this.state.event?.schedule}
+                quals={this.state.event?.quals?.get}
+              />
+            </Route>
+            <Route path={MATCH_CONTROL}>
+              <MatchControl
+                ws={this.ws}
+                status={arena}
+                matches={this.state.event?.quals?.get?.matches}
+              />
+            </Route>
+          </Switch>
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          <BottomNavbar
+            arena={arena}
+            matches={this.state.event?.quals?.get?.matches}
+            event={this.state.event?.details?.get}
+          />
+        </Col>
+      </Row>
 
-      <div className="app-container">
-        <Switch>
-          <Route path={EVENT_WIZARD}>
-            <EventWizard
-              ws={this.ws}
-              event={this.state.event?.details?.get}
-              teams={this.state.event?.teams?.get}
-              schedule={this.state.event?.schedule}
-              quals={this.state.event?.quals?.get}
-            />
-          </Route>
-          <Route path={MATCH_CONTROL}>
-            <MatchControl
-              ws={this.ws}
-              status={arena}
-              matches={this.state.event?.quals?.get?.matches}
-            />
-          </Route>
-        </Switch>
-      </div>
     </div>
   }
 };

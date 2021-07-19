@@ -46,22 +46,9 @@ export default class TopNavbar extends React.Component {
     }
   };
 
-  renderMatch = () => {
-    let match = this.props.match;
-    if (match) {
-      if (match.meta.type == "Test") {
-        return <i>Test Match</i>;
-      } else {
-        return match.meta.name;
-      }
-    } else {
-      return <i>No Match Loaded</i>;
-    }
-  }
-
   render() {
     const [arenaState, navbarColour] = this.decodeArenaState();
-    return <Navbar bg={navbarColour} variant="dark" fixed="top">
+    return <Navbar bg={navbarColour} variant="dark">
       <Button variant="hazard-red-dark" disabled={!this.props.connected || this.props.state?.state == "Estop"} onClick={this.props.onEstop}>
         E-STOP
       </Button>
@@ -71,9 +58,6 @@ export default class TopNavbar extends React.Component {
       </Navbar.Brand>
       <Navbar.Brand>
         { arenaState }
-      </Navbar.Brand>
-      <Navbar.Brand>
-        { this.renderMatch() }
       </Navbar.Brand>
       <Navbar.Toggle />
       <Navbar.Collapse className="justify-content-end">
