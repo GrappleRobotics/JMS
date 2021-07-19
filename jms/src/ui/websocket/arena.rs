@@ -1,9 +1,10 @@
+use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::{arena::{
   matches::LoadedMatch, station::AllianceStationId, AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena,
-}, models};
+}, db, models};
 
 use super::{WebsocketError, WebsocketMessageHandler};
 
@@ -40,6 +41,16 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
         ("loadTest", None) => {
           self.arena.lock().await.load_match(LoadedMatch::new(models::Match::new_test()))?;
           None
+        },
+        ("load", Some(serde_json::Value::Number(match_id))) => {
+          use crate::schema::matches::dsl::*;
+          if let Some(n) = match_id.as_i64() {
+            let match_meta = matches.filter(id.eq(n as i32)).first::<models::Match>(&db::connection())?;
+            self.arena.lock().await.load_match(LoadedMatch::new(match_meta))?;
+            None
+          } else {
+            Some(response_msg.invalid_verb_or_data())
+          }
         }
         _ => Some(response_msg.invalid_verb_or_data()),
       },

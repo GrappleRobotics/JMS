@@ -50,7 +50,8 @@ impl Serialize for Match {
   where
       S: Serializer,
 {
-    let mut state = serializer.serialize_struct("Match", 8)?;
+    let mut state = serializer.serialize_struct("Match", 9)?;
+    state.serialize_field("id", &self.id)?;
     state.serialize_field("type", &self.match_type)?;
     state.serialize_field("time", &self.start_time)?;
     state.serialize_field("name", &self.name())?;

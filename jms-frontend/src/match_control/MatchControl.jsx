@@ -2,10 +2,11 @@ import Alliance from "./Alliance";
 import MatchFlow from "./MatchFlow";
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
+import MatchScheduleView from "./MatchScheduleView";
 
 export default class MatchControl extends React.Component {
   render() {
-    let { status, ws } = this.props;
+    let { status, matches, ws } = this.props;
 
     return <Container>
       <Row>
@@ -48,6 +49,16 @@ export default class MatchControl extends React.Component {
             state={status?.state}
             match={status?.match}
             onSignal={(data) => ws.send("arena", "state", "signal", data)}
+          />
+        </Col>
+      </Row>
+      <br />
+      <Row>
+        <Col>
+          <MatchScheduleView
+            arena={status}
+            matches={matches}
+            onLoad={(match) => ws.send("arena", "match", "load", match.id)}
           />
         </Col>
       </Row>

@@ -11,6 +11,10 @@ html, body, #root {
   height: 100%;
 }
 
+.app-container {
+  margin: 80px 0px;
+}
+
 $hazard-dark-primary: #735a00;
 $hazard-dark-secondary: #593e00;
 $hazard-red-dark-primary: #730000;
@@ -194,30 +198,59 @@ input.team-num {
 }
 
 .table-striped > tbody > tr:nth-child(odd) {
-  > td {
-    &.schedule-blue {
-      background-color: lighten(theme-color("alliance-blue"), 5%);
-      color: white;
+  &:not(.played) {
+    > td {
+      &.schedule-blue {
+        background-color: lighten(theme-color("alliance-blue"), 5%);
+        color: white;
+      }
+      &.schedule-red {
+        background-color: lighten(theme-color("alliance-red"), 5%);
+        color: white;
+      }
     }
-    &.schedule-red {
-      background-color: lighten(theme-color("alliance-red"), 5%);
-      color: white;
+  }
+
+  &.played {
+    > td {
+      background-color: #bbb;
+      font-style: italic;
     }
   }
 }
 
 .table-striped > tbody > tr:nth-child(even) {
-  > td {
-    &.schedule-blue {
-      background-color: lighten(theme-color("alliance-blue"), 15%);
-      color: white;
-    }
-    &.schedule-red {
-      background-color: lighten(theme-color("alliance-red"), 15%);
-      color: white;
+  &:not(.played) {
+    > td {
+      &.schedule-blue {
+        background-color: lighten(theme-color("alliance-blue"), 15%);
+        color: white;
+      }
+      &.schedule-red {
+        background-color: lighten(theme-color("alliance-red"), 15%);
+        color: white;
+      }
     }
   }
 
+  &.played {
+    > td {
+      background-color: #aaa;
+      font-style: italic;
+    }
+  }
+}
+
+tr {
+  &.next-match {
+    background-color: #ff8 !important;
+    font-weight: bold;
+  }
+
+  &.loaded-match {
+    background-color: #0ff !important;
+    font-weight: bold;
+  }
 }
 
 th {

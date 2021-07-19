@@ -4,7 +4,7 @@ import Nav from 'react-bootstrap/Nav';
 import { Button } from 'react-bootstrap';
 import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
 
-export default class NavBar extends React.Component {
+export default class TopNavbar extends React.Component {
   decodeArenaState = () => {
     let connected = this.props.connected;
     let state = this.props.state;
@@ -61,7 +61,7 @@ export default class NavBar extends React.Component {
 
   render() {
     const [arenaState, navbarColour] = this.decodeArenaState();
-    return <Navbar bg={navbarColour} variant="dark">
+    return <Navbar bg={navbarColour} variant="dark" fixed="top">
       <Button variant="hazard-red-dark" disabled={!this.props.connected || this.props.state?.state == "Estop"} onClick={this.props.onEstop}>
         E-STOP
       </Button>

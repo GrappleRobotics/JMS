@@ -1,10 +1,11 @@
 import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
-import Navbar from 'Navbar';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
 import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
+import TopNavbar from 'TopNavbar';
+import { Navbar } from 'react-bootstrap';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -52,32 +53,33 @@ export default class App extends React.Component {
     let arena = this.state.arena?.status?.get;
 
     return <div className="h-100">
-      <Navbar
+      <TopNavbar
         connected={this.state.connected}
         state={arena?.state}
         match={arena?.match}
         onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
       />
 
-      <br />
-
-      <Switch>
-        <Route path={EVENT_WIZARD}>
-          <EventWizard
-            ws={this.ws}
-            event={this.state.event?.details?.get}
-            teams={this.state.event?.teams?.get}
-            schedule={this.state.event?.schedule}
-            quals={this.state.event?.quals?.get}
-          />
-        </Route>
-        <Route path={MATCH_CONTROL}>
-          <MatchControl
-            ws={this.ws}
-            status={arena}
-          />
-        </Route>
-      </Switch>
+      <div className="app-container">
+        <Switch>
+          <Route path={EVENT_WIZARD}>
+            <EventWizard
+              ws={this.ws}
+              event={this.state.event?.details?.get}
+              teams={this.state.event?.teams?.get}
+              schedule={this.state.event?.schedule}
+              quals={this.state.event?.quals?.get}
+            />
+          </Route>
+          <Route path={MATCH_CONTROL}>
+            <MatchControl
+              ws={this.ws}
+              status={arena}
+              matches={this.state.event?.quals?.get?.matches}
+            />
+          </Route>
+        </Switch>
+      </div>
     </div>
   }
 };

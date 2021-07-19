@@ -6,6 +6,7 @@ use std::{
   },
 };
 
+use diesel::RunQueryDsl;
 use enum_as_inner::EnumAsInner;
 use log::{error, info};
 use tokio::sync::Mutex;
@@ -16,7 +17,7 @@ use super::{
   station::{AllianceStationId},
 };
 
-use crate::{arena::station::Alliance, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
+use crate::{arena::station::Alliance, db, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
 
 use serde::{Deserialize, Serialize};
 
@@ -121,6 +122,15 @@ impl AllianceStation {
     };
   }
 
+  pub fn reset(&mut self) {
+    self.team = None;
+    self.bypass = false;
+    self.estop = false;
+    self.astop = false;
+    self.ds_report = None;
+    self.occupancy = AllianceStationOccupancy::Vacant;
+  }
+
   pub fn can_arm_match(&self) -> bool {
     self.bypass || self.estop || (self.occupancy == AllianceStationOccupancy::Occupied)
   }
@@ -141,7 +151,6 @@ pub type SharedArena = Arc<Mutex<Arena>>;
 impl Arena {
   pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send + Sync>>) -> Arena {
     let mut a = Arena {
-      // network: Arc::new(Mutex::new(network)),
       network: network.map(|x| Arc::new(Mutex::new(x))),
       state: BoundState {
         first: true,
@@ -169,13 +178,6 @@ impl Arena {
       ArenaState::Idle => {
         self.load_match_teams(m.metadata())?;
         self.current_match = Some(m);
-        Ok(())
-      }
-      // TODO: Ditch this, MatchCommit should automatically go to idle once scores are committed
-      ArenaState::MatchCommit => {
-        self.load_match_teams(m.metadata())?;
-        self.current_match = Some(m);
-        self.prepare_state_change(ArenaState::Idle)?;
         Ok(())
       }
       ref s => Err(ArenaError::CannotLoadMatchError(format!(
@@ -241,7 +243,12 @@ impl Arena {
     let signal = self.current_signal().await;
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
-        if let Some(ArenaSignal::Prestart { force }) = signal {
+        if first {
+          self.current_match = None;
+          for stn in self.stations.iter_mut() {
+            stn.reset();
+          }
+        } else if let Some(ArenaSignal::Prestart { force }) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false, force })?;
         }
       }
@@ -313,7 +320,16 @@ impl Arena {
           self.prepare_state_change(ArenaState::MatchCommit)?;
         }
       }
-      (ArenaState::MatchCommit, _) => (),
+      (ArenaState::MatchCommit, _) => {
+        if first {
+          use crate::schema::matches::dsl::*;
+          let mut m = self.current_match.as_mut().unwrap().metadata().clone();
+          m.played = true;
+
+          diesel::replace_into(matches).values(&m).execute(&db::connection())?;
+          self.prepare_state_change(ArenaState::Idle)?;
+        }
+      },
       (state, _) => Err(ArenaError::UnimplementedStateError(state))?,
     };
     Ok(())

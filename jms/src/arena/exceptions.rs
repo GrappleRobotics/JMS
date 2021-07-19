@@ -32,6 +32,7 @@ pub enum ArenaError {
   UnimplementedStateError(ArenaState),
   NetworkError(NetworkError),
   MatchError(MatchError),
+  DBError(diesel::result::Error),
   CannotLoadMatchError(String),
 }
 
@@ -42,6 +43,7 @@ impl std::fmt::Display for ArenaError {
       ArenaError::UnimplementedStateError(ref s) => write!(f, "Unimplemented State: {}", s),
       ArenaError::NetworkError(ref e) => write!(f, "Network Error: {}", e),
       ArenaError::MatchError(ref e) => write!(f, "Match Error: {}", e),
+      ArenaError::DBError(ref e) => write!(f, "DB Error: {}", e),
       ArenaError::CannotLoadMatchError(ref s) => write!(f, "Could not load match: {}", s),
     }
   }
@@ -52,6 +54,7 @@ impl error::Error for ArenaError {
     match *self {
       ArenaError::NetworkError(ref e) => Some(e.as_ref()),
       ArenaError::MatchError(ref e) => Some(e),
+      ArenaError::DBError(ref e) => Some(e),
       _ => None,
     }
   }
@@ -66,6 +69,12 @@ impl From<NetworkError> for ArenaError {
 impl From<MatchError> for ArenaError {
   fn from(err: MatchError) -> ArenaError {
     ArenaError::MatchError(err)
+  }
+}
+
+impl From<diesel::result::Error> for ArenaError {
+  fn from(err: diesel::result::Error) -> ArenaError {
+    ArenaError::DBError(err)
   }
 }
 
