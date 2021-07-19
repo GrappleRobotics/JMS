@@ -1,21 +1,24 @@
-use std::{convert::TryInto, fmt::Display};
 use serde::{Deserialize, Serialize};
+use std::{convert::TryInto, fmt::Display};
 
-#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub enum Alliance {
   Blue,
   Red,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct AllianceStationId {
   pub alliance: Alliance,
-  pub station: u32
+  pub station: u32,
 }
 
 impl AllianceStationId {
   pub fn blue1() -> AllianceStationId {
-    AllianceStationId { alliance: Alliance::Blue, station: 1 }
+    AllianceStationId {
+      alliance: Alliance::Blue,
+      station: 1,
+    }
   }
 }
 
@@ -31,8 +34,8 @@ impl Into<u8> for AllianceStationId {
     // station ID. Thus, these are not unique.
     let stn: u8 = ((self.station - 1) % 3).try_into().unwrap();
     match self.alliance {
-      Alliance::Red => { stn },
-      Alliance::Blue => { stn + 3 }
+      Alliance::Red => stn,
+      Alliance::Blue => stn + 3,
     }
   }
 }

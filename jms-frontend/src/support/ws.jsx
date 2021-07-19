@@ -1,5 +1,5 @@
 export default class JmsWebsocket {
-  constructor(url="ws://localhost:9000", timeout=250) {
+  constructor(url="ws://" + window.location.hostname + ":9000", timeout=250) {
     this.url = url;
     this.timeout = timeout;
     this.callbacks = [];

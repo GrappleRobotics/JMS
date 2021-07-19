@@ -4,10 +4,6 @@ import Nav from 'react-bootstrap/Nav';
 import { Button } from 'react-bootstrap';
 
 export default class NavBar extends React.Component {
-  // constructor(props) {
-  //   super(props);
-  // }
-
   decodeArenaState = () => {
     let connected = this.props.connected;
     let state = this.props.state;
@@ -17,6 +13,8 @@ export default class NavBar extends React.Component {
       return ["DISCONNECTED", "danger"];
     
     switch (state.state) {
+      case "Idle":
+        return ["Idle", match ? "dark" : "secondary"];
       case "Prestart":
         return state.ready ? ["Prestarted", "success"] : ["Prestarting...", "warning"];
       case "MatchArmed":
@@ -47,6 +45,19 @@ export default class NavBar extends React.Component {
     }
   };
 
+  renderMatch = () => {
+    let match = this.props.match;
+    if (match) {
+      if (match.meta.type == "Test") {
+        return <i>Test Match</i>;
+      } else {
+        return match.meta.name;
+      }
+    } else {
+      return <i>No Match Loaded</i>;
+    }
+  }
+
   render() {
     const [arenaState, navbarColour] = this.decodeArenaState();
     return <Navbar bg={navbarColour} variant="dark">
@@ -59,6 +70,9 @@ export default class NavBar extends React.Component {
       </Navbar.Brand>
       <Navbar.Brand>
         { arenaState }
+      </Navbar.Brand>
+      <Navbar.Brand>
+        { this.renderMatch() }
       </Navbar.Brand>
       <Navbar.Toggle />
       <Navbar.Collapse>

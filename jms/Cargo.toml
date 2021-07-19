@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["Jaci Brunning <jaci.brunning@gmail.com>"]
 edition = "2018"
 
+[[bin]]
+name = 'main2'
+path = './src/main2.rs'
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -23,7 +27,8 @@ scopeguard = "1.1.0"
 regex = "1.4.6"
 tokio-modbus = { version = "0.4.0", default-features = false, features = ["tcp", "server"] }
 diesel_migrations = "1.4.0"
-diesel = { version = "1.4.4", features = ["postgres", "r2d2"] }
+diesel = { version = "1.4.4", features = ["sqlite", "r2d2"] }
+diesel-derive-enum = { version = "1", features = ["sqlite"] }
 dotenv = "0.15.0"
 rand = "0.8.3"
 strum = "0.11.0"
@@ -35,3 +40,11 @@ bitvec = "0.22.3"
 tokio-tungstenite = "0.14.0"
 serde = { version = "1.0.126", features = ["derive"]}
 serde_json = "1.0.64"
+async-trait = "0.1.50"
+rust-embed="5.9.0"
+handlebars = "4.1.0"
+dbus = "0.9.3"
+dbus-tokio = "0.7.3"
+tempfile = "3.2.0"
+sysctl = "0.4.1"
+nalgebra = "0.27.1"
