@@ -2,10 +2,13 @@ use std::time::{Duration, Instant};
 
 use log::{info, warn};
 
-use super::exceptions::{MatchError, MatchResult};
-use crate::{context};
+use crate::models;
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Display)]
+use super::exceptions::{MatchError, MatchResult};
+
+use serde::Serialize;
+
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Display, Serialize)]
 pub enum MatchPlayState {
   Waiting,
   Warmup,
@@ -26,19 +29,23 @@ pub struct MatchConfig {
 }
 
 #[derive(Clone, Debug)]
-pub struct Match {
+pub struct LoadedMatch {
+  match_meta: models::Match,
   state: MatchPlayState,
   state_first: bool,
   state_start_time: Instant,
-  config: MatchConfig,
+  remaining_time: Duration,
+  config: MatchConfig
 }
 
-impl Match {
-  pub fn new() -> Match {
-    Match {
+impl LoadedMatch {
+  pub fn new(m: models::Match) -> LoadedMatch {
+    LoadedMatch {
+      match_meta: m,
       state: MatchPlayState::Waiting,
       state_first: true,
       state_start_time: Instant::now(),
+      remaining_time: Duration::from_secs(0),
       config: MatchConfig {
         warmup_cooldown_time: Duration::from_secs(3),
         auto_time: Duration::from_secs(4),
@@ -50,6 +57,10 @@ impl Match {
 
   pub fn current_state(&self) -> MatchPlayState {
     self.state
+  }
+
+  pub fn metadata(&self) -> &models::Match {
+    &self.match_meta
   }
 
   pub fn start(&mut self) -> MatchResult<()> {
@@ -70,54 +81,64 @@ impl Match {
   }
 
   // TODO: Implement a self-timing guard for update functions, generating an error if we miss our timing.
+  // TODO: Or, async with timeout?
   pub fn update(&mut self) {
     let first = self.state_first;
     self.state_first = false;
     let elapsed = self.elapsed();
 
-    context!(&format!("Match::Update ({:?})", self.state), {
-      match self.state {
-        MatchPlayState::Waiting => (),
-        MatchPlayState::Warmup => {
-          if elapsed >= self.config.warmup_cooldown_time {
-            self.do_change_state(MatchPlayState::Auto);
-          }
-        }
-        MatchPlayState::Auto => {
-          if elapsed >= self.config.auto_time {
-            self.do_change_state(MatchPlayState::Pause);
-          }
-        }
-        MatchPlayState::Pause => {
-          if elapsed >= self.config.pause_time {
-            self.do_change_state(MatchPlayState::Teleop);
-          }
-        }
-        MatchPlayState::Teleop => {
-          if elapsed >= self.config.teleop_time {
-            self.do_change_state(MatchPlayState::Cooldown);
-          }
-        }
-        MatchPlayState::Cooldown => {
-          if elapsed >= self.config.warmup_cooldown_time {
-            self.do_change_state(MatchPlayState::Complete);
-          }
-        }
-        MatchPlayState::Complete => {}
-        MatchPlayState::Fault => {
-          if first {
-            warn!("Match fault");
-          }
+    match self.state {
+      MatchPlayState::Waiting => (),
+      MatchPlayState::Warmup => {
+        self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Auto);
         }
       }
-    });
+      MatchPlayState::Auto => {
+        self.remaining_time = self.config.auto_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Pause);
+        }
+      }
+      MatchPlayState::Pause => {
+        self.remaining_time = self.config.pause_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Teleop);
+        }
+      }
+      MatchPlayState::Teleop => {
+        self.remaining_time = self.config.teleop_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Cooldown);
+        }
+      }
+      MatchPlayState::Cooldown => {
+        self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
+        if self.remaining_time == Duration::ZERO {
+          self.do_change_state(MatchPlayState::Complete);
+        }
+      }
+      MatchPlayState::Complete => {}
+      MatchPlayState::Fault => {
+        if first {
+          warn!("Match fault");
+        }
+      }
+    }
+  }
+
+  pub fn remaining_time(&self) -> Duration {
+    self.remaining_time
   }
 
   fn do_change_state(&mut self, state: MatchPlayState) {
-    info!("Transitioning {:?} -> {:?}...", self.state, state);
-    self.state = state;
-    self.state_start_time = Instant::now();
-    self.state_first = true;
+    if state != self.state {
+      info!("Transitioning {:?} -> {:?}...", self.state, state);
+      self.state = state;
+      self.state_start_time = Instant::now();
+      self.state_first = true;
+    }
   }
 
   fn elapsed(&self) -> Duration {

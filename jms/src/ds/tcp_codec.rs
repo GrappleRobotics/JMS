@@ -1,15 +1,13 @@
-use std::{error::Error, str::Utf8Error};
-
 use bitvec::prelude::*;
 use bytes::{Buf, BufMut, Bytes};
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{arena::station::AllianceStationId, utils::bufutil::utf8_str_with_len};
 
 #[derive(Debug)]
 pub struct Ds2FmsTCP {
-  pub tags: Vec<Ds2FmsTCPTags>
+  pub tags: Vec<Ds2FmsTCPTags>,
 }
 
 #[derive(Debug, Display)]
@@ -21,13 +19,13 @@ pub enum Ds2FmsTCPTags {
   LogData(DSLogData),
   Ping,
   ErrorData(Vec<TimestampedMessage>),
-  Unknown(u8, usize)
+  Unknown(u8, usize),
 }
 
 #[derive(Debug)]
 pub struct TimestampedMessage {
   timestamp: DateTime<Utc>,
-  message: String
+  message: String,
 }
 
 // This is based off dslog
@@ -52,37 +50,37 @@ pub struct DSLogData {
   pub can_usage: f64,
   pub wifi_db: f64,
   pub bandwidth: f64,
-  pub pdp: Bytes
+  pub pdp: Bytes,
 }
 
 #[derive(Debug)]
 pub struct Fms2DsTCP {
-  pub tags: Vec<Fms2DsTCPTags>
+  pub tags: Vec<Fms2DsTCPTags>,
 }
 
 #[derive(Debug)]
 pub enum Fms2DsTCPTags {
+  #[allow(dead_code)]
   EventCode(String),
   StationInfo(AllianceStationId, Fms2DsStationStatus),
-  GameData(String)
+  #[allow(dead_code)]
+  GameData(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Fms2DsStationStatus {
   Good = 0,
   Bad = 1,
-  Waiting = 2
+  Waiting = 2,
 }
 
 pub struct DSTCPCodec {
-  decode_frame_len: u16
+  decode_frame_len: u16,
 }
 
 impl DSTCPCodec {
   pub fn new() -> DSTCPCodec {
-    DSTCPCodec{
-      decode_frame_len: 0
-    }
+    DSTCPCodec { decode_frame_len: 0 }
   }
 }
 
@@ -93,7 +91,7 @@ impl Decoder for DSTCPCodec {
   // Frames come in as:
   // Size, ID, Tags...
   // Each TCP packet can have multiple frames (multiple tag classes), but each frame's
-  // ID is the same for all following tags. The tag list may have multiple tags of the 
+  // ID is the same for all following tags. The tag list may have multiple tags of the
   // same type, such as in big LogData chunks.
   // For an example, the first packet the DS sends is the Team Number.
   // The second packet is a ping (0x1d), the DS Version, one LogData, and an ErrorData.
@@ -125,7 +123,7 @@ impl Decoder for DSTCPCodec {
           0x00 => {
             // WPILib Version
             Some(Ds2FmsTCPTags::WPILibVersion(utf8_str_with_len(&mut buf, size)?))
-          },
+          }
           0x01 => {
             // RIO Version
             Some(Ds2FmsTCPTags::RIOVersion(utf8_str_with_len(&mut buf, size)?))
@@ -133,11 +131,11 @@ impl Decoder for DSTCPCodec {
           0x02 => {
             // DS Version
             Some(Ds2FmsTCPTags::DSVersion(utf8_str_with_len(&mut buf, size)?))
-          },
+          }
           0x16 => {
             // Log Data
             let mut dat: DSLogData = Default::default();
-            dat.rtt = (buf.get_u8() as f64) / 2.0;    // TODO: Is this /2 or /15
+            dat.rtt = (buf.get_u8() as f64) / 2.0; // TODO: Is this /2 or /15
             dat.lost_percent = (buf.get_u8() as f64) * 4.0;
 
             {
@@ -147,7 +145,7 @@ impl Decoder for DSTCPCodec {
             }
 
             dat.rio_cpu = (buf.get_u8() as f64) / 2.0;
-            
+
             {
               let status = !buf.get_u8();
               let bv = status.view_bits::<Msb0>();
@@ -167,40 +165,42 @@ impl Decoder for DSTCPCodec {
 
             // Unknown
             buf.get_u8();
-            
+
             // PDP - TODO
             dat.pdp = buf.copy_to_bytes(24);
 
             Some(Ds2FmsTCPTags::LogData(dat))
-          },
+          }
           0x17 => {
             // Error / events data
             let count = buf.get_u32();
-            let msgs: Result<Vec<TimestampedMessage>, Self::Error> = (0..count).map(|_| {
-              let secs_since_1904 = buf.get_u64() as i64;
-              /* Offset to the unix epoch */
-              let datetime = NaiveDateTime::from_timestamp(secs_since_1904 - 2_082_844_800, 0);
+            let msgs: Result<Vec<TimestampedMessage>, Self::Error> = (0..count)
+              .map(|_| {
+                let secs_since_1904 = buf.get_u64() as i64;
+                /* Offset to the unix epoch */
+                let datetime = NaiveDateTime::from_timestamp(secs_since_1904 - 2_082_844_800, 0);
 
-              buf.get_u64();    // Unknown bytes
-              let msg_len = buf.get_u32();
+                buf.get_u64(); // Unknown bytes
+                let msg_len = buf.get_u32();
 
-              Ok(TimestampedMessage {
-                timestamp: DateTime::<Utc>::from_utc(datetime, Utc),
-                message: utf8_str_with_len(&mut buf, msg_len as usize)?
+                Ok(TimestampedMessage {
+                  timestamp: DateTime::<Utc>::from_utc(datetime, Utc),
+                  message: utf8_str_with_len(&mut buf, msg_len as usize)?,
+                })
               })
-            }).collect();
+              .collect();
 
             Some(Ds2FmsTCPTags::ErrorData(msgs?))
-          },
+          }
           0x18 => {
             // Team Number
             Some(Ds2FmsTCPTags::TeamNumber(buf.get_u16()))
-          },
+          }
           0x1c => Some(Ds2FmsTCPTags::Ping),
           0x1d => {
-            buf.get_u8();     // Don't know why but this has an extra '0' almost always
+            buf.get_u8(); // Don't know why but this has an extra '0' almost always
             Some(Ds2FmsTCPTags::Ping)
-          },
+          }
           unknown => {
             tags_ok = false;
             Some(Ds2FmsTCPTags::Unknown(unknown, buf.remaining()))
@@ -230,12 +230,12 @@ impl Encoder<Fms2DsTCP> for DSTCPCodec {
           writer.put_u8(0x14);
           writer.put_u8(code.len() as u8);
           writer.extend_from_slice(code.as_bytes());
-        },
+        }
         Fms2DsTCPTags::StationInfo(stn, status) => {
           writer.put_u8(0x19);
           writer.put_u8(stn.into());
           writer.put_u8(status as u8);
-        },
+        }
         Fms2DsTCPTags::GameData(data) => {
           writer.put_u8(0x1c);
           writer.put_u8(data.len() as u8);

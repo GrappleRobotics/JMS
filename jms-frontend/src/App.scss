@@ -1,0 +1,156 @@
+$theme-colors: (
+  "warning": #ffbb00
+);
+
+@import "~bootstrap/scss/bootstrap";
+
+$hazard-dark-primary: #735a00;
+$hazard-dark-secondary: #593e00;
+$hazard-red-dark-primary: #730000;
+$hazard-red-dark-secondary: #590000;
+
+@mixin scroll-gradient-horizontal($time) {
+  background-size: 400% 100%;
+  animation: scroll-gradient $time linear infinite;
+}
+
+@mixin hazard-btn-dark {
+  color: #fff;
+  &:hover {
+    color: #fff;
+    &:enabled {
+      @include scroll-gradient-horizontal(60s);
+    }
+  }
+}
+
+.bg-hazard-dark {
+  background: repeating-linear-gradient(
+    45deg,
+    $hazard-dark-primary,
+    $hazard-dark-primary 10px,
+    $hazard-dark-secondary 10px,
+    $hazard-dark-secondary 20px
+  );
+  color: #fff;
+}
+
+.bg-hazard-dark-active {
+  @extend .bg-hazard-dark;
+  @include scroll-gradient-horizontal(150s);
+}
+
+.btn-hazard-dark {
+  @extend .bg-hazard-dark;
+  @include hazard-btn-dark;
+  border-color: $hazard-dark-secondary;
+}
+
+.btn-hazard-dark-active {
+  @extend .btn-hazard-dark;
+  @include scroll-gradient-horizontal(10s);
+}
+
+.bg-hazard-red-dark {
+  background: repeating-linear-gradient(
+    45deg, 
+    $hazard-red-dark-primary, 
+    $hazard-red-dark-primary 10px, 
+    $hazard-red-dark-secondary 10px, 
+    $hazard-red-dark-secondary 20px
+  );
+  color: #fff;
+}
+
+.bg-hazard-red-dark-active {
+  @extend .bg-hazard-red-dark;
+  @include scroll-gradient-horizontal(150s);
+}
+
+.btn-hazard-red-dark {
+  @extend .bg-hazard-red-dark;
+  @include hazard-btn-dark;
+  border-color: $hazard-red-dark-secondary;
+}
+
+.btn-hazard-red-dark-active {
+  @extend .btn-hazard-red-dark;
+  @include scroll-gradient-horizontal(10s);
+}
+
+@keyframes scroll-gradient {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.alliance {
+  border-radius: 10px;
+}
+
+@mixin alliance-row {
+  border-radius: 5px;
+  padding: 5px 0;
+  margin: 5px 0;
+}
+
+.alliance-header {
+  @include alliance-row;
+  background-color: rgba(255, 255, 255, 0.25);
+  font-weight: bold;
+}
+
+.alliance-station {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: rgba(255, 255, 255, 0.5);
+  @include alliance-row;
+  &.bypassed {
+    background-color: rgba(0, 0, 0, 0.25);
+  }
+}
+
+.alliance-blue {
+  @extend .alliance;
+  background-color: rgba(0, 98, 255, 0.75);
+}
+
+.alliance-red {
+  @extend .alliance;
+  background-color: rgba(255, 0, 0, 0.75)
+}
+
+.indicator-small {
+  width: 25px;
+  height: 25px;
+  opacity: 100% !important;
+  border: 1px solid black !important;
+  padding: 2px 4px !important;
+  margin: 1px;
+}
+
+input.team-num {
+  font-size: 14px;
+  background-color:rgba(255, 255, 255, 0.75);
+  padding: 5px;
+  height: 30px;
+  min-width: 45px;
+  text-align: right;
+  color: #000;
+
+  &::-webkit-inner-spin-button, &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+
+  &.buffer-diff {
+    background-color: rgb(255, 251, 0);
+  }
+}
