@@ -34,7 +34,7 @@ int PowerPort::_lower_bb_function() {
 	)
 }
 
-int PowerPort::init(int argc, char const *argv[], int userButton) {
+int PowerPort::init(int argc, char const *argv[], int &userButton) {
 	Handle(
 		_innerCounter = 0;
 		_outerCounter = 0;
@@ -48,7 +48,7 @@ int PowerPort::init(int argc, char const *argv[], int userButton) {
 	)
 }
 
-int PowerPort::update(int argc, char const *argv[], int userButton) {
+int PowerPort::update(int argc, char const *argv[], int &userButton) {
 	Handle(
 		if (userButton != 1) {
 			/**
@@ -58,7 +58,8 @@ int PowerPort::update(int argc, char const *argv[], int userButton) {
 			_outer_bb_function();
 			_lower_bb_function();
 			// std::cout << "Functions run" << std::endl;
-		} else { 
+		} else {
+			std::cout << "Init called" << std::endl;
 			init(argc, argv, userButton);
 		}
 	)
