@@ -1,4 +1,3 @@
-// #include <mbed.h>
 // #include <EthernetInterface.h>
 // #include <FlashIAP.h>
 // #include <thread>

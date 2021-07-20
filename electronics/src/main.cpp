@@ -1,27 +1,28 @@
-#include <mbed.h>
+#include <mbed.h> // bruh, never include this twice... everything just dies
 
 #include <iostream>
-// #include "config.h"
+#include "Handles.h"
+#include "Config.h"
 
+
+#ifdef MODE
 
 /**
- * System headers
+ * RAM/BAM Controllers
  */
+#if defined(RAM) || defined(BAM)
+#include "Elements/PowerPort/PowerPort.h"
+HandleController(PowerPort)
+#endif
 
+#if defined(SGM)
+HandleController(ShieldGen)
+#endif
 
-int main() {
-	std::cout << "Program Start" << std::endl;
-	// PowerPort pp;
-	return 0;
-}
-// #ifdef MODE
-// /**
-//  * Element headers
-//  */
-// #if defined(RAM) || defined(BAM)
-// // #include "Elements/PowerPort/Powerport.h"
-// #endif
+#if defined(STM)
+HandleController(ScoringTable)
+#endif
 
-// #else
-// #error MODE NOT DEFINED [RAM, BAM, STM, SGM]
-// #endif
+#else
+#error MODE NOT DEFINED [RAM, BAM, STM, SGM]
+#endif
