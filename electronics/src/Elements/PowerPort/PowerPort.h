@@ -5,6 +5,7 @@
 #include "Config.h"
 #include <PinNames.h>
 #include <iostream>
+#include <thread>
 
 #include "libs/Sensors/BeamBreak.h"
 #include "libs/Controller.h"
@@ -26,13 +27,17 @@ class PowerPort : public Controller {
 	}
 
 	// Main controlled functions
-	int init(int argc, char const *argv[]) override;
-	int update(int argc, char const *argv[]) override;
+	int init(int argc, char const *argv[], int userButton) override;
+	int update(int argc, char const *argv[], int userButton) override;
 
  private:
 	BeamBreak _inner_bb{ INNER_BB_PORT }; // Beam breaks for power ports
 	BeamBreak _outer_bb{ OUTER_BB_PORT };
-	BeamBreak _LOWER_bb{ LOWER_BB_PORT };
+	BeamBreak _lower_bb{ LOWER_BB_PORT };
+
+	int _inner_bb_function();
+	int _outer_bb_function();
+	int _lower_bb_function();
 
 	int _innerCounter = 0, _outerCounter = 0, _lowerCounter = 0;
 };
