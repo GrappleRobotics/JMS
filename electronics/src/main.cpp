@@ -1,38 +1,27 @@
-#include "config.h"
+#include <mbed.h>
 
-#ifdef RAM
-#define MODE 1
-#endif
-
-#ifdef BAM
-#define MODE 0
-#endif
-
-#ifdef SGM
-#define MODE 2
-#endif
-
-#ifdef STM
-#define MODE 3
-#endif
+#include <iostream>
+// #include "config.h"
 
 
 /**
  * System headers
  */
-#include <mbed.h>
 
-
-
-#ifdef MODE
-/**
- * Element headers
- */
-#include 
 
 int main() {
+	std::cout << "Program Start" << std::endl;
+	// PowerPort pp;
 	return 0;
 }
-#else
-#error MODE NOT DEFINED [RAM, BAM, STM, SGM]
-#endif
+// #ifdef MODE
+// /**
+//  * Element headers
+//  */
+// #if defined(RAM) || defined(BAM)
+// // #include "Elements/PowerPort/Powerport.h"
+// #endif
+
+// #else
+// #error MODE NOT DEFINED [RAM, BAM, STM, SGM]
+// #endif
