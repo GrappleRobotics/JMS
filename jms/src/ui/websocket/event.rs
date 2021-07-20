@@ -1,6 +1,6 @@
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, models::{self, ScheduleBlock}, schedule::quals::QualificationSchedule};
+use crate::{db, models::{self, ScheduleBlock}};
 
 use super::{JsonMessage, WebsocketMessageHandler};
 
@@ -33,11 +33,6 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       use crate::schema::schedule_blocks::dsl::*;
       let sbs = schedule_blocks.order_by(start_time.asc()).load::<models::ScheduleBlock>(&db::connection())?;
       response.push(msg.noun("schedule").to_data(&sbs)?)
-    }
-    {
-      // Matches
-      let qs = QualificationSchedule::instance().lock().await;
-      response.push(msg.noun("quals").to_data(&*qs)?)
     }
     Ok(response)
   }
@@ -100,21 +95,9 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
         },
         _ => Err(response_msg.invalid_verb_or_data())?
       },
-      "quals" => match (msg.verb.as_str(), msg.data) {
-        ("generate", None) => {
-          let qs = QualificationSchedule::instance().lock().await;
-          if !qs.running() {
-            qs.generate().await;
-          }
-        },
-        ("delete", None) => {
-          QualificationSchedule::instance().lock().await.clear();
-        }
-        _ => Err(response_msg.invalid_verb_or_data())?
-      }
       _ => Err(response_msg.unknown_noun())?
     };
 
-    return Ok(response);
+    Ok(response)
   }
 }

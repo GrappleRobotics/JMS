@@ -145,11 +145,11 @@ export default class ConfigureSchedule extends React.Component {
   static tabName() { return "Configure Schedule"; }
 
   static needsAttention(d) {
-    return !!!d.blocks?.length;
+    return !!!d.schedule?.length;
   }
 
   static isDisabled(d) {
-    return d.quals?.exists;
+    return !!d.matches?.quals?.record;
   }
 
   // Map the block data from props into JS types.
@@ -183,7 +183,7 @@ export default class ConfigureSchedule extends React.Component {
   }
 
   loadDefault = async () => {
-    if ((this.props.blocks?.length || 0) > 0) {
+    if ((this.props.schedule?.length || 0) > 0) {
       let result = await confirm("Are you sure? This will override the current schedule layout. This action cannot be undone.", {
         title: "Load 2-day Schedule Defaults",
         okButtonStyle: "success"
@@ -201,7 +201,7 @@ export default class ConfigureSchedule extends React.Component {
     let last = null;
     let blockarr = [];
 
-    this.props.blocks?.forEach((b) => {
+    this.props.schedule?.forEach((b) => {
       let thisBlock = this.mapBlockProps(b);
       total_matches += thisBlock.num_matches;
 

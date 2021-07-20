@@ -25,11 +25,8 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
   async fn update(&mut self) -> super::Result<Vec<JsonMessage>> {
     let arena = self.arena.lock().await;
     let msg = JsonMessage::update("arena", "");
-    let mut response = vec![];
 
-    response.push(msg.to_data(&*arena)?);
-
-    Ok(response)
+    Ok(vec![ msg.to_data(&*arena)? ])
   }
 
   async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Vec<JsonMessage>> {

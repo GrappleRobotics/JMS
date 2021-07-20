@@ -5,7 +5,8 @@ use super::{SQLDatetime, SQLJsonVector};
 
 sql_mapped_enum!(MatchType, Test, Qualification, Quarterfinal, Semifinal, Final);
 
-#[derive(Insertable, Queryable, Debug, Clone)]
+#[derive(Identifiable, Insertable, Queryable, Associations, Debug, Clone)]
+#[belongs_to(MatchGenerationRecord, foreign_key="match_type")]
 #[table_name = "matches"]
 pub struct Match {
   pub id: i32,
@@ -17,7 +18,8 @@ pub struct Match {
   // without committing to the database. It's not neat, but it's the most convenient option for our goals.
   pub blue_teams: SQLJsonVector<i32>,  // 0 if unoccupied
   pub red_teams: SQLJsonVector<i32>,
-  pub played: bool
+  pub played: bool,
+  // pub match_generation_record_id: Option<i32>,
 }
 
 impl Match {
@@ -50,7 +52,7 @@ impl Serialize for Match {
   where
       S: Serializer,
 {
-    let mut state = serializer.serialize_struct("Match", 9)?;
+    let mut state = serializer.serialize_struct("Match", 10)?;
     state.serialize_field("id", &self.id)?;
     state.serialize_field("type", &self.match_type)?;
     state.serialize_field("time", &self.start_time)?;
@@ -64,11 +66,13 @@ impl Serialize for Match {
   }
 }
 
-#[derive(Insertable, Queryable, Debug, Clone, serde::Serialize)]
+#[derive(Identifiable, Insertable, Queryable, Debug, Clone, serde::Serialize)]
+#[primary_key(match_type)]
 pub struct MatchGenerationRecord {
-  pub id: i32,
-  pub team_balance: f64,
-  pub station_balance: f64,
-  pub cooccurrence: SQLJsonVector<Vec<usize>>,
-  pub station_dist: SQLJsonVector<Vec<usize>>,
+  // pub id: i32,
+  pub match_type: MatchType,
+  pub team_balance: Option<f64>,
+  pub station_balance: Option<f64>,
+  pub cooccurrence: Option<SQLJsonVector<Vec<usize>>>,
+  pub station_dist: Option<SQLJsonVector<Vec<usize>>>,
 }

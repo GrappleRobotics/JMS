@@ -11,12 +11,12 @@ export default class MatchScheduleView extends React.Component {
   }
 
   isLoaded = (match) => {
-    return this.props.arena?.match?.meta?.id === match.id;
+    return this.props.arena?.match?.match?.id === match.id;
   }
 
   // Only show this as the next match if there isn't a currently loaded match
   isNextMatch = (match) => {
-    let currentMatch = this.props.arena?.match?.meta;
+    let currentMatch = this.props.arena?.match?.match;
     if (currentMatch === undefined || currentMatch === null || currentMatch.type == "Test" || currentMatch.played)
       return !match.played && (match.id === this.nextMatch?.id);
     return false;

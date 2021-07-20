@@ -28,11 +28,10 @@ export default class EventWizard extends React.Component {
   }
 
   render() {
-    let {event, teams, schedule, quals, ws} = this.props;
-    let blocks = schedule?.blocks;
+    let {event, teams, schedule, matches, ws} = this.props;
 
     let data = {
-      event, teams, blocks, quals
+      event, teams, schedule, matches
     };
 
     let navItemFor = (data, cls) => {

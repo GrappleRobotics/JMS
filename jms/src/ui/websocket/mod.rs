@@ -1,8 +1,10 @@
 mod arena;
 mod event;
+mod matches;
 
 pub use arena::ArenaWebsocketHandler;
 pub use event::EventWebsocketHandler;
+pub use matches::MatchWebsocketHandler;
 
 use futures::{lock::Mutex, SinkExt, StreamExt};
 use log::{debug, error, info, warn};

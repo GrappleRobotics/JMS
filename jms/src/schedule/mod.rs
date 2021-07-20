@@ -4,7 +4,7 @@ use log::{debug, info};
 use nalgebra as na;
 use rand::{Rng, prelude::SliceRandom};
 
-pub mod quals;
+pub mod worker;
 
 // Cols = Rounds
 #[derive(Debug)]

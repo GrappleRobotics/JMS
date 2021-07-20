@@ -7,12 +7,12 @@ table! {
 }
 
 table! {
-    match_generation_records (id) {
-        id -> Integer,
-        team_balance -> Double,
-        station_balance -> Double,
-        cooccurrence -> Text,
-        station_dist -> Text,
+    match_generation_records (match_type) {
+        match_type -> Text,
+        team_balance -> Nullable<Double>,
+        station_balance -> Nullable<Double>,
+        cooccurrence -> Nullable<Text>,
+        station_dist -> Nullable<Text>,
     }
 }
 

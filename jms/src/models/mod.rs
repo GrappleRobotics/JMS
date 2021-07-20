@@ -57,7 +57,7 @@ macro_rules! as_item {
 macro_rules! sql_mapped_enum {
   ($name:ident, $($variants:tt)+) => {
     crate::as_item! {
-      #[derive(Debug, strum_macros::EnumString, strum_macros::ToString, AsExpression, FromSqlRow, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+      #[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, AsExpression, FromSqlRow, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
       #[sql_type = "diesel::sql_types::Text"]
       pub enum $name {
         $($variants)*

@@ -10,11 +10,11 @@ export default class QualGenerator extends React.Component {
   static tabName() { return "Generate Qual Matches" }
 
   static isDisabled(d) {
-    return ( d.teams?.length || 0 ) < 6 || (d.blocks?.filter(x => x.quals)?.length || 0) < 1;
+    return ( d.teams?.length || 0 ) < 6 || (d.schedule?.filter(x => x.quals)?.length || 0) < 1;
   }
 
   static needsAttention(d) {
-    return !!!d.quals?.matches?.length;
+    return !!!d.matches?.quals?.record;
   }
 
   clearSchedule = async () => {
@@ -24,21 +24,22 @@ export default class QualGenerator extends React.Component {
     });
 
     if (result)
-      this.props.ws.send("event", "quals", "delete");
+      this.props.ws.send("matches", "quals", "clear");
   }
 
   renderStatsForNerds = () => {
-    let gen_record = this.props.quals?.generation_record;
+    let record = this.props.matches?.quals?.record;
+
     return <div>
       <Row>
         <Col>
           <strong> Station Balance </strong>
-          <br /> { Math.round(gen_record.station_balance * 1000) / 1000 }
+          <br /> { Math.round(record.station_balance * 1000) / 1000 }
           <br /> <small className="text-muted">Smaller = Better</small> 
         </Col>
         <Col>
           <strong> Team Balance </strong>
-          <br /> { Math.round(gen_record.team_balance * 1000) / 1000 }
+          <br /> { Math.round(record.team_balance * 1000) / 1000 }
           <br /> <small className="text-muted">Smaller = Better</small> 
         </Col>
       </Row>
@@ -49,7 +50,7 @@ export default class QualGenerator extends React.Component {
           <Table size="sm">
             <tbody>
               {
-                gen_record.station_dist.map(r => <tr>
+                record.station_dist.map(r => <tr>
                   { r.map(c => <td> {c} </td>) }
                 </tr>)
               }
@@ -62,7 +63,7 @@ export default class QualGenerator extends React.Component {
           <Table size="sm">
             <tbody>
               {
-                gen_record.cooccurrence.map(r => <tr>
+                record.cooccurrence.map(r => <tr>
                   { r.map(c => <td> {c} </td>) }
                 </tr>)
               }
@@ -74,11 +75,12 @@ export default class QualGenerator extends React.Component {
   }
 
   renderSchedule = () => {
+    let matches = this.props.matches?.quals?.matches;
     return <div>
       <Button
         variant="danger"
         onClick={this.clearSchedule}
-        disabled={this.props.quals?.locked}
+        disabled={matches?.find(x => x.played)}
       >
         { this.props.quals?.locked ? "Schedule Locked (Matches Played)" : "Clear Qualification Schedule" }
       </Button>
@@ -111,7 +113,7 @@ export default class QualGenerator extends React.Component {
         </thead>
         <tbody>
           {
-            this.props.quals?.matches?.map(match => <tr>
+            matches?.map(match => <tr>
               <td> &nbsp; { moment.unix(match.time).format("ddd HH:mm:ss") } </td>
               <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
               { match.blue.map(t => <td className="schedule-blue"> { t } </td>) }
@@ -124,14 +126,15 @@ export default class QualGenerator extends React.Component {
   }
 
   renderNoSchedule = () => {
+    let running = this.props.matches?.quals?.running;
     return <div>
       <Button 
         size="lg"
         variant="success" 
-        onClick={ () => this.props.ws.send("event", "quals", "generate") }
-        disabled={this.props.quals?.running}
+        onClick={ () => this.props.ws.send("matches", "quals", "generate") }
+        disabled={running}
       >
-        <FontAwesomeIcon icon={this.props.quals?.running ? faCircleNotch : faCog} spin={this.props.quals?.running} />
+        <FontAwesomeIcon icon={running ? faCircleNotch : faCog} spin={running} />
         &nbsp;
         Generate Matches
       </Button>
@@ -146,12 +149,12 @@ export default class QualGenerator extends React.Component {
         In this step, the QUALIFICATION match schedule is generated. This will take a while. 
         <br />
         <FontAwesomeIcon icon={faExclamationTriangle} /> &nbsp;
-        <strong>Teams and Schedule Blocks cannot be changed after the qualifications schedule is generated.</strong>
+        <strong>Teams and Schedule cannot be changed after the qualifications schedule is generated.</strong>
       </p>
 
       <div>
         {
-          this.props.quals?.exists ? this.renderSchedule() : this.renderNoSchedule()
+          this.props.matches?.quals?.record ? this.renderSchedule() : this.renderNoSchedule()
         }
       </div>
     </div>

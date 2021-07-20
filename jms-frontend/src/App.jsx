@@ -45,7 +45,7 @@ export default class App extends React.Component {
   }
 
   render() {
-    let { arena, event } = this.state;
+    let { arena, event, matches } = this.state;
 
     return <div className="wrapper">
       <Row>
@@ -67,14 +67,14 @@ export default class App extends React.Component {
                 event={event?.details}
                 teams={event?.teams}
                 schedule={event?.schedule}
-                quals={event?.quals}
+                matches={matches}
               />
             </Route>
             <Route path={MATCH_CONTROL}>
               <MatchControl
                 ws={this.ws}
                 arena={arena}
-                matches={event?.quals?.matches}
+                matches={matches?.quals?.matches}   // TODO: Add tabs for quals / not quals
               />
             </Route>
           </Switch>
@@ -84,7 +84,7 @@ export default class App extends React.Component {
         <Col>
           <BottomNavbar
             arena={arena}
-            matches={event?.quals?.matches}
+            matches={matches?.quals?.matches} // TODO:
             event={event?.details}
           />
         </Col>

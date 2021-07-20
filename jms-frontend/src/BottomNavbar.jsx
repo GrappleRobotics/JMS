@@ -7,7 +7,7 @@ export default class BottomNavbar extends React.Component {
   getScheduleTimings = () => {
     let format = d => d.format("d[d] h[h] m[m]", { trim: "both" });
 
-    let nextMatch = this.props.matches?.find(m => !m.played && m.id != this.props.arena?.match?.meta?.id);
+    let nextMatch = this.props.matches?.find(m => !m.played && m.id != this.props.arena?.match?.match?.id);
 
     if (nextMatch === undefined || nextMatch === null)
       return <React.Fragment />;

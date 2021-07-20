@@ -27,12 +27,17 @@ use ds::connector::DSConnectionService;
 use futures::TryFutureExt;
 use network::onboard::OnboardNetwork;
 use network::NetworkProvider;
+use schedule::worker::QualsMatchGenerator;
 use tokio::{sync::Mutex, try_join};
 
 use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
+use crate::schedule::worker::MatchGenerationWorker;
 use crate::ui::websocket::EventWebsocketHandler;
+use crate::ui::websocket::MatchWebsocketHandler;
+
+// static QUALS_GEN: QualsMatchGenerator = QualsMatchGenerator::new();
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -78,6 +83,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
   let mut ws = Websockets::new(Duration::from_millis(500));
   ws.register("arena", Box::new(ArenaWebsocketHandler::new(arena))).await;
   ws.register("event", Box::new(EventWebsocketHandler::new())).await;
+  ws.register("matches", Box::new(MatchWebsocketHandler::new())).await;
   let ws_fut = ws.begin().map_err(|e| Box::new(e));
 
   try_join!(arena_fut, ds_fut, ws_fut)?;

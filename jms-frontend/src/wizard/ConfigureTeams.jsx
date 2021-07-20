@@ -24,7 +24,7 @@ export default class ConfigureTeams extends React.Component {
   }
 
   static isDisabled(d) {
-    return d.quals?.exists;
+    return !!d.matches?.quals?.record;
   }
 
   constructor(props) {
