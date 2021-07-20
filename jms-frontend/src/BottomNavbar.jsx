@@ -32,7 +32,7 @@ export default class BottomNavbar extends React.Component {
     return <Navbar bg="dark" variant="dark" className="flex">
       <Col>
         <Navbar.Brand>
-          { arena?.match?.meta?.name || <i> No Match Loaded </i> }
+          { arena?.match?.match?.name || <i> No Match Loaded </i> }
         </Navbar.Brand>
       </Col>
       <Col className="text-center">

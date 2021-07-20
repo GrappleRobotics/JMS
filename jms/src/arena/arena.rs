@@ -51,9 +51,13 @@ enum StateData {
   MatchCommit,
 }
 
+#[derive(Serialize)]
+#[serde(transparent)]
 struct BoundState {
+  #[serde(skip)]
   first: bool, // First run?
   state: ArenaState,
+  #[serde(skip)]
   data: StateData,
 }
 
@@ -136,12 +140,17 @@ impl AllianceStation {
   }
 }
 
+#[derive(Serialize)]
 pub struct Arena {
   // network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
+  #[serde(skip)]
   network: Option<Arc<Mutex<Box<dyn NetworkProvider + Send + Sync>>>>,
   state: BoundState,
+  #[serde(skip)]
   pending_state_change: Option<ArenaState>,
+  #[serde(skip)]
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
+  #[serde(rename = "match")]
   pub current_match: Option<LoadedMatch>,
   pub stations: Vec<AllianceStation>,
 }

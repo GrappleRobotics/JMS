@@ -28,13 +28,18 @@ pub struct MatchConfig {
   teleop_time: Duration,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct LoadedMatch {
+  #[serde(rename = "match")]
   match_meta: models::Match,
   state: MatchPlayState,
-  state_first: bool,
-  state_start_time: Instant,
   remaining_time: Duration,
+
+  #[serde(skip)]
+  state_first: bool,
+  #[serde(skip)]
+  state_start_time: Instant,
+  #[serde(skip)]
   config: MatchConfig
 }
 

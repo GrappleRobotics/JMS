@@ -7,6 +7,7 @@ import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
+import { nullIfEmpty } from 'support/strings';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -17,16 +18,17 @@ export default class App extends React.Component {
     }
 
     this.ws = new JmsWebsocket();
-    this.ws.onMessage("*", "*", "*", (msg) => {
-      this.setState({
-        [msg.object]: {
-          ...this.state[msg.object],
-          [msg.noun]: {
-            ...this.state[msg.object]?.[msg.noun],
-            [msg.verb]: msg.data
+    this.ws.onMessage("*", "*", "__update__", msg => {
+      if (!!nullIfEmpty(msg.noun)) {
+        this.setState({
+          [msg.object]: {
+            ...this.state[msg.object],
+            [msg.noun]: msg.data
           }
-        }
-      });
+        });
+      } else {
+        this.setState({ [msg.object]: msg.data });
+      }
     });
 
     this.ws.onConnectChange(connected => {
@@ -40,18 +42,10 @@ export default class App extends React.Component {
     this.ws.connect();
 
     window['ws'] = this.ws;
-
-    this.updateInterval = setInterval(() => {
-      this.ws.send("arena", "status", "get");
-      this.ws.send("event", "details", "get");
-      this.ws.send("event", "teams", "get");
-      this.ws.send("event", "schedule", "blocks");
-      this.ws.send("event", "quals", "get");
-    }, 500);
   }
 
   render() {
-    let arena = this.state.arena?.status?.get;
+    let { arena, event } = this.state;
 
     return <div className="wrapper">
       <Row>
@@ -70,17 +64,17 @@ export default class App extends React.Component {
             <Route path={EVENT_WIZARD}>
               <EventWizard
                 ws={this.ws}
-                event={this.state.event?.details?.get}
-                teams={this.state.event?.teams?.get}
-                schedule={this.state.event?.schedule}
-                quals={this.state.event?.quals?.get}
+                event={event?.details}
+                teams={event?.teams}
+                schedule={event?.schedule}
+                quals={event?.quals}
               />
             </Route>
             <Route path={MATCH_CONTROL}>
               <MatchControl
                 ws={this.ws}
-                status={arena}
-                matches={this.state.event?.quals?.get?.matches}
+                arena={arena}
+                matches={event?.quals?.matches}
               />
             </Route>
           </Switch>
@@ -90,8 +84,8 @@ export default class App extends React.Component {
         <Col>
           <BottomNavbar
             arena={arena}
-            matches={this.state.event?.quals?.get?.matches}
-            event={this.state.event?.details?.get}
+            matches={event?.quals?.matches}
+            event={event?.details}
           />
         </Col>
       </Row>
