@@ -21,6 +21,7 @@ class BeamBreak {
 	}
 
 	~BeamBreak() {
+		_beamBreak = NULL;
 		delete _beamBreak;
 	}
 

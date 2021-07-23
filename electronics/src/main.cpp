@@ -16,10 +16,16 @@
 HandleController(RAM_BAM)
 #endif
 
+/**
+ * SGM Controllers
+ */
 #if defined(SGM)
 HandleController(SGM)
 #endif
 
+/**
+ * STM Controllers
+ */
 #if defined(STM)
 HandleController(STM)
 #endif
