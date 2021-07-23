@@ -36,7 +36,7 @@ class ScheduleBlock extends React.Component {
   }
 
   render() {
-    let { block } = this.props;
+    let { block, disabled } = this.props;
     let { duration, start_time, end_time, cycle_time, num_matches, quals } = block;
 
     return <Accordion defaultActiveKey={null}>
@@ -55,6 +55,7 @@ class ScheduleBlock extends React.Component {
                 <Col md={5}>
                   <EditableFormControl
                     autofocus
+                    disabled={disabled}
                     size="sm"
                     value={block.name}
                     onUpdate={v => this.props.update({ name: v })}
@@ -77,9 +78,12 @@ class ScheduleBlock extends React.Component {
                         <span className="text-muted mx-2">•</span>
                       </span> : <React.Fragment />
                   }
-                  <a onClick={e => { e.stopPropagation(); this.props.delete() }} className="text-danger mx-2">
-                    <FontAwesomeIcon icon={faTimes} />
-                  </a>
+                  {
+                    disabled ? <React.Fragment /> : 
+                      <a onClick={e => { e.stopPropagation(); this.props.delete() }} className="text-danger mx-2">
+                        <FontAwesomeIcon icon={faTimes} />
+                      </a>
+                  }
                 </Col>
               </Row>
             </Accordion.Toggle>
@@ -94,6 +98,7 @@ class ScheduleBlock extends React.Component {
                       type="datetime-local"
                       value={ start_time.format(ELEMENT_FORMAT) }
                       onUpdate={ v => this.updateDate("start_time", v) }
+                      disabled={disabled}
                     />
                   </Col>
                   <Col>
@@ -104,13 +109,14 @@ class ScheduleBlock extends React.Component {
                       type="datetime-local"
                       value={ end_time.format(ELEMENT_FORMAT) }
                       onUpdate={ v => this.updateDate("end_time", v) }
+                      disabled={disabled}
                     />
                   </Col>
                   <Col>
                     <Form.Label>Cycle Time</Form.Label>
                     <BufferedFormControl
                       auto
-                      disabled={!quals}
+                      disabled={disabled || !quals}
                       type="time"
                       value={ cycle_time.format("HH:mm:ss", { trim: false }) }
                       step={1000}
@@ -127,6 +133,7 @@ class ScheduleBlock extends React.Component {
                       checked={quals}
                       onChange={ v => this.props.update({ quals: v.target.checked }) }
                       label="Qualification Matches"
+                      disabled={disabled}
                     />
                   </Col>
                 </Row>
@@ -148,8 +155,12 @@ export default class ConfigureSchedule extends React.Component {
     return !!!d.schedule?.length;
   }
 
-  static isDisabled(d) {
-    return !!d.matches?.quals?.record;
+  editable = () => {
+    let quals = this.props.matches?.quals;
+    if (quals) {
+      return !quals.record && !quals.running;
+    }
+    return true;
   }
 
   // Map the block data from props into JS types.
@@ -223,7 +234,7 @@ export default class ConfigureSchedule extends React.Component {
       }
 
       blockarr.push(<div className="my-3">
-        <ScheduleBlock block={thisBlock} update={(dict) => this.update(b, dict)} delete={() => this.deleteBlock(b)} />
+        <ScheduleBlock disabled={!this.editable()} block={thisBlock} update={(dict) => this.update(b, dict)} delete={() => this.deleteBlock(b)} />
       </div>);
 
       last = thisBlock;
@@ -240,8 +251,8 @@ export default class ConfigureSchedule extends React.Component {
       </p>
       
       <div>
-        <Button onClick={this.addBlock}> <FontAwesomeIcon icon={faPlus} /> &nbsp; Add Block </Button> &nbsp;
-        <Button onClick={this.loadDefault} variant="info"> <FontAwesomeIcon icon={faDownload} /> &nbsp; Load 2-day Default </Button>
+        <Button disabled={!this.editable()} onClick={this.addBlock}> <FontAwesomeIcon icon={faPlus} /> &nbsp; Add Block </Button> &nbsp;
+        <Button disabled={!this.editable()} onClick={this.loadDefault} variant="info"> <FontAwesomeIcon icon={faDownload} /> &nbsp; Load 2-day Default </Button>
 
         <span className="mx-3 float-right">
           <strong>{ total_matches }</strong> matches

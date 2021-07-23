@@ -23,13 +23,23 @@ export default class ConfigureTeams extends React.Component {
     return d.teams?.length < 6;
   }
 
-  static isDisabled(d) {
-    return !!d.matches?.quals?.record;
-  }
+  // static isDisabled(d) {
+  //   return !!d.matches?.quals?.record;
+  // }
 
   constructor(props) {
     super(props);
     this.state = { newTeam: {} };
+  }
+
+  // Team names and data can still be edited, but new teams cannot be added and teams cannot
+  // be removed.
+  editable() {
+    let quals = this.props.matches?.quals;
+    if (quals) {
+      return !quals.record && !quals.running;
+    }
+    return true;
   }
 
   updateNewTeam = (k, v) => {
@@ -71,6 +81,7 @@ export default class ConfigureTeams extends React.Component {
       onChange={ e => this.updateNewTeam(id, nullIfEmpty(e.target.value)) }
       onKeyDown={this.newTeamOnKeyDown}
       placeholder={name}
+      disabled={!this.editable()}
       {...otherProps}
     />
   }
@@ -198,7 +209,11 @@ export default class ConfigureTeams extends React.Component {
                 />
               </td>
               <td>
-                <a className="text-danger" onClick={() => this.delete(t)}> <FontAwesomeIcon icon={faTimes} /> </a>
+                {
+                  this.editable() ?
+                    <a className="text-danger" onClick={() => this.delete(t)}> <FontAwesomeIcon icon={faTimes} /> </a>
+                    : <React.Fragment />
+                }
               </td>
             </tr>)
           }
