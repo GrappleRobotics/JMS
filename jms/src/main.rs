@@ -27,13 +27,11 @@ use ds::connector::DSConnectionService;
 use futures::TryFutureExt;
 use network::onboard::OnboardNetwork;
 use network::NetworkProvider;
-use schedule::worker::QualsMatchGenerator;
 use tokio::{sync::Mutex, try_join};
 
 use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
-use crate::schedule::worker::MatchGenerationWorker;
 use crate::ui::websocket::EventWebsocketHandler;
 use crate::ui::websocket::MatchWebsocketHandler;
 

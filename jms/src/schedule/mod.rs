@@ -5,6 +5,7 @@ use nalgebra as na;
 use rand::{Rng, prelude::SliceRandom};
 
 pub mod worker;
+pub mod quals;
 
 // Cols = Rounds
 #[derive(Debug)]

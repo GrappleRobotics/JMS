@@ -1,4 +1,4 @@
-use crate::{schedule::worker::{MatchGenerationWorker, QualsMatchGenerator}, ui::websocket::JsonMessage};
+use crate::{schedule::{quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
 
 use super::WebsocketMessageHandler;
 pub struct MatchWebsocketHandler {
