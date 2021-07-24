@@ -9,14 +9,16 @@ use crate::{db, models::{self, MatchGenerationRecord, SQLDatetime, SQLJsonVector
 use super::{Annealer, GenerationResult, ScheduleGenerator, TeamSchedule};
 
 pub struct MatchGenerationWorker<T>
-  where T: MatchGenerator + Send + Sync + 'static
+  where T: MatchGenerator + Send + Sync + 'static,
+       <T as MatchGenerator>::ParamType: Send
 {
   running: Arc<AtomicBool>,
   generator: T
 }
 
 impl<T> MatchGenerationWorker<T>
-  where T: MatchGenerator + Send + Sync + Clone
+  where T: MatchGenerator + Send + Sync + Clone,
+       <T as MatchGenerator>::ParamType: Send
 {
   pub fn new(gen: T) -> Self {
     Self {
@@ -35,9 +37,6 @@ impl<T> MatchGenerationWorker<T>
 
   pub fn record(&self) -> Option<MatchGenerationRecord> {
     use crate::schema::match_generation_records::dsl::*;
-    // match_generation_records.filter(match_type.eq(self.match_type()))
-    //   .first::<MatchGenerationRecord>(&db::connection())
-    //   .ok()
     match_generation_records.find(self.match_type()).first::<MatchGenerationRecord>(&db::connection()).ok()
   }
 
@@ -65,14 +64,14 @@ impl<T> MatchGenerationWorker<T>
     }
   }
 
-  pub async fn generate(&self) {
+  pub async fn generate(&self, params: T::ParamType) {
     if !self.locked() {
       let running = self.running.clone();
       let gen = self.generator.clone();
       tokio::spawn(async move {
         // *running.get_mut() = true;
         running.swap(true, Ordering::Relaxed);
-        match gen.generate().await {
+        match gen.generate(params).await {
           Ok(_) => (),
           Err(e) => error!("Match Generation Error: {}", e),
         }
@@ -84,7 +83,8 @@ impl<T> MatchGenerationWorker<T>
 }
 
 impl<T> Serialize for MatchGenerationWorker<T>
-  where T: MatchGenerator + Send + Sync + Clone + 'static
+  where T: MatchGenerator + Send + Sync + Clone + 'static,
+       <T as MatchGenerator>::ParamType: Send
 {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
@@ -100,24 +100,24 @@ impl<T> Serialize for MatchGenerationWorker<T>
 
 #[async_trait::async_trait]
 pub trait MatchGenerator {
+  type ParamType;
+
   fn match_type(&self) -> models::MatchType;
-  async fn generate(&self) -> Result<(), Box<dyn Error>>;
+  async fn generate(&self, params: Self::ParamType) -> Result<(), Box<dyn Error>>;
 }
 
 #[derive(Clone)]
-pub struct QualsMatchGenerator {
-  team_balance_anneal: Annealer,
-  station_balance_anneal: Annealer
+pub struct QualsMatchGenerator;
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct QualsMatchGeneratorParams {
+  pub team_anneal_steps: usize,
+  pub station_anneal_steps: usize
 }
 
 impl QualsMatchGenerator {
   pub fn new() -> Self {
-    Self {
-      // team_balance_anneal: Annealer::new(1.0, 0.0, 200_000),
-      // station_balance_anneal: Annealer::new(1.0, 0.0, 100_000)
-      team_balance_anneal: Annealer::new(1.0, 0.0, 2_000),
-      station_balance_anneal: Annealer::new(1.0, 0.0, 1_000)
-    }
+    Self { }
   }
 
   async fn commit_generation_record(&self, result: &GenerationResult) -> Result<(), Box<dyn Error>> {
@@ -173,11 +173,16 @@ impl QualsMatchGenerator {
 
 #[async_trait::async_trait]
 impl MatchGenerator for QualsMatchGenerator {
+  type ParamType = QualsMatchGeneratorParams;
+
   fn match_type(&self) -> models::MatchType {
     models::MatchType::Qualification
   }
 
-  async fn generate(&self) -> Result<(), Box<dyn Error>> {
+  async fn generate(&self, params: QualsMatchGeneratorParams) -> Result<(), Box<dyn Error>> {
+    let station_balance_anneal = Annealer::new(1.0, 0.0, params.station_anneal_steps);
+    let team_balance_anneal = Annealer::new(1.0, 0.0, params.team_anneal_steps);
+
     let teams = {
       use crate::schema::teams::dsl::*;
       teams.select(id).get_results::<i32>(&db::connection())?
@@ -188,7 +193,7 @@ impl MatchGenerator for QualsMatchGenerator {
 
     let generator = ScheduleGenerator::new(teams.len(), num_matches, 6);
 
-    let generation_result = generator.generate(self.team_balance_anneal, self.station_balance_anneal);
+    let generation_result = generator.generate(team_balance_anneal, station_balance_anneal);
     let team_sched = generation_result.schedule.contextualise(&teams.iter().map(|&x| x as u16).collect::<Vec<u16>>());
 
     // Commit
@@ -198,3 +203,4 @@ impl MatchGenerator for QualsMatchGenerator {
     Ok(())
   }
 }
+

@@ -17,6 +17,17 @@ export default class QualGenerator extends React.Component {
     return !!!d.matches?.quals?.record;
   }
 
+  constructor (props) {
+    super(props);
+
+    this.state = {
+      gen_config: {
+        team_anneal_steps: 100_000,
+        station_anneal_steps: 50_000
+      }
+    };
+  }
+
   clearSchedule = async () => {
     let result = await confirm("Are you sure? This will clear the entire Qualification schedule", {
       title: "Clear Qualification Schedule?",
@@ -128,10 +139,43 @@ export default class QualGenerator extends React.Component {
   renderNoSchedule = () => {
     let running = this.props.matches?.quals?.running;
     return <div>
+      <Accordion>
+        <Card>
+          <Accordion.Toggle as={Card.Header} eventKey="0">
+            Advanced Configuration
+          </Accordion.Toggle>
+          <Accordion.Collapse eventKey="0">
+            <Card.Body>
+              <Row>
+                <Col>
+                  <Form.Label> Team Balance Annealer Steps </Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={this.state.gen_config.team_anneal_steps}
+                    onChange={e => this.setState({ gen_config: { ...this.state.gen_config, team_anneal_steps: parseInt(e.target.value) } })}
+                  />
+                  <Form.Text> { this.state.gen_config.team_anneal_steps.toLocaleString() } </Form.Text>
+                </Col>
+                <Col>
+                  <Form.Label> Station Balance Annealer Steps </Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={this.state.gen_config.station_anneal_steps}
+                    onChange={e => this.setState({ gen_config: { ...this.state.gen_config, station_anneal_steps: parseInt(e.target.value) } })}
+                  />
+                  <Form.Text> { this.state.gen_config.station_anneal_steps.toLocaleString() } </Form.Text>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Accordion.Collapse>
+        </Card>
+      </Accordion>
+
+      <br />
       <Button 
         size="lg"
         variant="success" 
-        onClick={ () => this.props.ws.send("matches", "quals", "generate") }
+        onClick={ () => this.props.ws.send("matches", "quals", "generate", this.state.gen_config) }
         disabled={running}
       >
         <FontAwesomeIcon icon={running ? faCircleNotch : faCog} spin={running} />

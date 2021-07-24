@@ -33,8 +33,9 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
         ("clear", None) => {
           self.quals.delete();
         },
-        ("generate", None) => {
-          self.quals.generate().await;
+        ("generate", Some(data)) => {
+          let params = serde_json::from_value(data)?;
+          self.quals.generate(params).await;
         },
         _ => Err(response_msg.invalid_verb_or_data())?
       },
