@@ -1,21 +1,21 @@
 use chrono::{Duration, Local, NaiveTime, TimeZone};
 use diesel::{QueryDsl, QueryResult, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, schema::schedule_blocks};
+use crate::{db, schema::schedule_blocks, sql_mapped_enum};
 
 use super::{SQLDuration, SQLDatetime};
+
+sql_mapped_enum!(ScheduleBlockType, General, Qualification, Playoff);
 
 #[derive(Insertable, Queryable, Debug, Clone, AsChangeset, serde::Serialize, serde::Deserialize)]
 #[changeset_options(treat_none_as_null="true")]
 pub struct ScheduleBlock {
   pub id: i32,
+  pub block_type: ScheduleBlockType,
   pub name: String,
-  // #[serde(deserialize_with = "super::deserialize_naivedatetime", serialize_with = "super::serialize_naivedatetime")]
   pub start_time: SQLDatetime,
-  // #[serde(deserialize_with = "super::deserialize_naivedatetime", serialize_with = "super::serialize_naivedatetime")]
   pub end_time: SQLDatetime,
-  pub cycle_time: SQLDuration,
-  pub quals: bool
+  pub cycle_time: SQLDuration
 }
 
 impl ScheduleBlock {
@@ -26,7 +26,7 @@ impl ScheduleBlock {
 
   pub fn qual_blocks(conn: &db::ConnectionT) -> QueryResult<Vec<ScheduleBlock>> {
     use crate::schema::schedule_blocks::dsl::*;
-    schedule_blocks.filter(quals.eq(true))
+    schedule_blocks.filter(block_type.eq(ScheduleBlockType::Qualification))
                    .order_by(start_time.asc())
                    .load::<ScheduleBlock>(conn)
   }
@@ -55,6 +55,7 @@ impl ScheduleBlock {
 
     diesel::insert_into(schedule_blocks)
       .values((
+        block_type.eq(ScheduleBlockType::General),
         start_time.eq(SQLDatetime(start.naive_utc())),
         end_time.eq(SQLDatetime((start + Duration::hours(3)).naive_utc())),
         cycle_time.eq(SQLDuration(Duration::minutes(13)))
@@ -78,58 +79,58 @@ impl ScheduleBlock {
         // Day 1
         (
           name.eq("Opening Ceremony"),
+          block_type.eq(ScheduleBlockType::General),
           start_time.eq(SQLDatetime::from(day1.and_hms(08, 30, 00))),
           end_time.eq(SQLDatetime::from(day1.and_hms(09, 00, 00))),
-          quals.eq(false)
         ),
         (
           name.eq("Field Tests & Practice"), 
+          block_type.eq(ScheduleBlockType::General),
           start_time.eq(SQLDatetime::from(day1.and_hms(09, 00, 00))),
           end_time.eq(SQLDatetime::from(day1.and_hms(12, 00, 00))),
-          quals.eq(false)
         ),
         (
           name.eq("Qualifications"),
+          block_type.eq(ScheduleBlockType::Qualification),
           start_time.eq(SQLDatetime::from(day1.and_hms(13, 00, 00))),
           end_time.eq(SQLDatetime::from(day1.and_hms(17, 00, 00))),
-          quals.eq(true)
         ),
         (
           name.eq("Awards & Closing Ceremony"),
+          block_type.eq(ScheduleBlockType::General),
           start_time.eq(SQLDatetime::from(day1.and_hms(17, 30, 00))),
           end_time.eq(SQLDatetime::from(day1.and_hms(18, 00, 00))),
-          quals.eq(false)
         ),
         // Day 2
         (
           name.eq("Opening Ceremony"),
+          block_type.eq(ScheduleBlockType::General),
           start_time.eq(SQLDatetime::from(day2.and_hms(08, 30, 00))),
           end_time.eq(SQLDatetime::from(day2.and_hms(09, 00, 00))),
-          quals.eq(false)
         ),
         (
           name.eq("Qualifications (cont.)"), 
+          block_type.eq(ScheduleBlockType::Qualification),
           start_time.eq(SQLDatetime::from(day2.and_hms(09, 00, 00))),
           end_time.eq(SQLDatetime::from(day2.and_hms(12, 00, 00))),
-          quals.eq(true)
         ),
         (
           name.eq("Alliance Selection"),
+          block_type.eq(ScheduleBlockType::General),
           start_time.eq(SQLDatetime::from(day2.and_hms(12, 00, 00))),
           end_time.eq(SQLDatetime::from(day2.and_hms(12, 30, 00))),
-          quals.eq(false)
         ),
         (
           name.eq("Playoffs"),
+          block_type.eq(ScheduleBlockType::Playoff),
           start_time.eq(SQLDatetime::from(day2.and_hms(13, 30, 00))),
           end_time.eq(SQLDatetime::from(day2.and_hms(17, 00, 00))),
-          quals.eq(false)
         ),
         (
           name.eq("Awards & Closing Ceremony"),
+          block_type.eq(ScheduleBlockType::General),
           start_time.eq(SQLDatetime::from(day2.and_hms(17, 30, 00))),
           end_time.eq(SQLDatetime::from(day2.and_hms(18, 00, 00))),
-          quals.eq(false)
         )
       ])
       .execute(conn)?;

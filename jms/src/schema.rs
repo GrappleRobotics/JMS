@@ -32,11 +32,11 @@ table! {
 table! {
     schedule_blocks (id) {
         id -> Integer,
+        block_type -> Text,
         name -> Text,
         start_time -> BigInt,
         end_time -> BigInt,
         cycle_time -> BigInt,
-        quals -> Bool,
     }
 }
 

@@ -5,10 +5,13 @@ import EditableFormControl from "components/elements/EditableFormControl";
 import moment from "moment";
 import "moment-duration-format";
 import React from "react";
-import { Accordion, Button, Card, Col, Form, Row } from "react-bootstrap";
+import { Accordion, Button, Card, Col, Form, Row, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { confirm } from "react-bootstrap-confirmation";
 
 const ELEMENT_FORMAT = "YYYY-MM-D[T]HH:mm";
+
+const BLOCK_TYPES = [ "General", "Qualification", "Playoff" ];
+const MATCH_BLOCK_TYPES = [ "Qualification", "Playoff" ];
 
 class ScheduleBlock extends React.Component {
 
@@ -37,7 +40,9 @@ class ScheduleBlock extends React.Component {
 
   render() {
     let { block, disabled } = this.props;
-    let { duration, start_time, end_time, cycle_time, num_matches, quals } = block;
+    let { duration, start_time, end_time, cycle_time, num_matches, block_type } = block;
+
+    let is_match_block = MATCH_BLOCK_TYPES.includes(block_type);
 
     return <Accordion defaultActiveKey={null}>
       <Row>
@@ -49,7 +54,7 @@ class ScheduleBlock extends React.Component {
           </small>
         </Col>
         <Col md="11">
-          <Card border={ quals ? "primary" : "secondary" }>
+          <Card border={ is_match_block ? "primary" : "secondary" }>
             <Accordion.Toggle as={Card.Header} eventKey="0">
               <Row>
                 <Col md={5}>
@@ -62,7 +67,7 @@ class ScheduleBlock extends React.Component {
                   />
 
                   {
-                    quals ? <i className="text-muted"> (Quals) </i> : <React.Fragment />
+                    is_match_block ? <i className="text-muted"> ({block_type}) </i> : <React.Fragment />
                   }
                 </Col>
                 <Col md={3} className="text-center">
@@ -72,7 +77,7 @@ class ScheduleBlock extends React.Component {
                 </Col>
                 <Col md={4} className="text-right">
                   {
-                    quals ? 
+                    is_match_block ? 
                       <span>
                         { num_matches } Matches
                         <span className="text-muted mx-2">•</span>
@@ -89,6 +94,20 @@ class ScheduleBlock extends React.Component {
             </Accordion.Toggle>
             <Accordion.Collapse eventKey="0">
               <Card.Body>
+                <Row className="mb-3">
+                  <Col>
+                    <ToggleButtonGroup
+                      name="block_type"
+                      type="radio"
+                      value={block_type}
+                      onChange={ v => this.props.update({ block_type: v }) }
+                    >
+                      {
+                        BLOCK_TYPES.map(bt => <ToggleButton variant="outline-dark" value={bt}> {bt} </ToggleButton>)
+                      }
+                    </ToggleButtonGroup>
+                  </Col>
+                </Row>
                 <Row>
                   <Col>
                     <Form.Label>Start Time</Form.Label>
@@ -116,7 +135,7 @@ class ScheduleBlock extends React.Component {
                     <Form.Label>Cycle Time</Form.Label>
                     <BufferedFormControl
                       auto
-                      disabled={disabled || !quals}
+                      disabled={disabled || !is_match_block}
                       type="time"
                       value={ cycle_time.format("HH:mm:ss", { trim: false }) }
                       step={1000}
@@ -125,16 +144,6 @@ class ScheduleBlock extends React.Component {
                     <Form.Text className="text-muted">
                       { num_matches } matches
                     </Form.Text>
-                  </Col>
-                </Row>
-                <Row>
-                  <Col>
-                    <Form.Check
-                      checked={quals}
-                      onChange={ v => this.props.update({ quals: v.target.checked }) }
-                      label="Qualification Matches"
-                      disabled={disabled}
-                    />
                   </Col>
                 </Row>
               </Card.Body>
@@ -174,7 +183,7 @@ export default class ConfigureSchedule extends React.Component {
       ...block,
       start_time, end_time, cycle_time,
       duration,
-      num_matches: block.quals ? Math.floor(duration.asSeconds() / cycle_time.asSeconds()) : 0
+      num_matches: Math.floor(duration.asSeconds() / cycle_time.asSeconds())
     };
   }
 
@@ -214,7 +223,8 @@ export default class ConfigureSchedule extends React.Component {
 
     this.props.schedule?.forEach((b) => {
       let thisBlock = this.mapBlockProps(b);
-      total_matches += thisBlock.num_matches;
+      if (thisBlock.block_type == "Qualification")
+        total_matches += thisBlock.num_matches;
 
       if (last === null || (last.end_time.date() != thisBlock.start_time.date())) {
         blockarr.push(<div className="text-center mt-4 h5">
@@ -255,6 +265,7 @@ export default class ConfigureSchedule extends React.Component {
         <Button disabled={!this.editable()} onClick={this.loadDefault} variant="info"> <FontAwesomeIcon icon={faDownload} /> &nbsp; Load 2-day Default </Button>
 
         <span className="mx-3 float-right">
+          <i className="text-muted">Quals</i> &nbsp;
           <strong>{ total_matches }</strong> matches
           <span className="text-muted mx-2">•</span>
           <strong>{ this.props.teams?.length > 6 ? matches_per_team : "--" }</strong> per team

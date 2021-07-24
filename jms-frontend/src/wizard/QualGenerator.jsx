@@ -10,7 +10,7 @@ export default class QualGenerator extends React.Component {
   static tabName() { return "Generate Qual Matches" }
 
   static isDisabled(d) {
-    return ( d.teams?.length || 0 ) < 6 || (d.schedule?.filter(x => x.quals)?.length || 0) < 1;
+    return ( d.teams?.length || 0 ) < 6 || (d.schedule?.filter(x => x.block_type == "Qualification")?.length || 0) < 1;
   }
 
   static needsAttention(d) {
