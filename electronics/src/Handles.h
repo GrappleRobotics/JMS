@@ -47,7 +47,6 @@ static unsigned int interruptFlag = 1;
 #define HandleInterrupt_NO_RETURN_ON_SUCCESS(x, intCode) INTERRUPT_HANDLER(Handle_NO_RETURN_ON_SUCCESS, x, intCode)
 
 
-
 /**
  * Generic Handle for code
  * Does not return 0 or 1 regardless of catch
@@ -66,12 +65,14 @@ static unsigned int interruptFlag = 1;
 #define LoopHandle(x, y) while (x) { Handle_NO_RETURN_ON_SUCCESS(y) }
 #define LoopHandleInterrupt(x, y, intCode) while(x) { INTERRUPT_HANDLER(Handle_NO_RETURN_ON_SUCCESS, y, intCode) }
 
+
 /**
  * Handle element (init or update) with integer return
  * Elements must all have a returner
  */
 #define HandleElement(x) int elementValue = x; if (elementValue != 0) { std::cout << "Element Error"; return elementValue != 0 ? 1 : 0; }
 #define HandleElementInterrupt(x, intCode) INTERRUPT_HANDLER(HandleElement, x, intCode)
+
 
 /**
  * Handler for main controllers,

@@ -4,6 +4,7 @@
 #include <mbed.h>
 #include <rtos.h>
 #include <iostream>
+#include <vector>
 
 /**
  * Main class for button,
@@ -25,12 +26,23 @@ class Button {
 	/**
 	 * updates button state in seperate thread.
 	 */
-	void update() {}
+	void update() {
+		// @TODO: check logic
+		// @TODO: if triggered logic
+	}
 
 	/**
 	 * Gets current state of button
 	 */
 	bool isTriggered() {}
+
+	/**
+	 * if trigger do logic (threaded)
+	 */
+	template<typename Logic>
+	void ifTriggered(Logic triggerLogic) {
+		function.push_back(triggerLogic);
+	}
 
 	/**
 	 * Returns if the button has ever been triggered
@@ -50,6 +62,7 @@ class Button {
  private:
 	DigitalIn *_button;
 	Thread _buttonChecker_t;
+	std::vector<void (*)(void)> function;
 };
 
 #endif
