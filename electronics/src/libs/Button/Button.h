@@ -13,13 +13,11 @@ class Button {
  public:
 	Button(PinName digitalPin) {
 		_button = new DigitalIn(digitalPin);
-		_buttonChecker_t.start(update);
 	}
 
 	Button(PinName digitalPin, int &linkInterrupt);
 	
 	~Button() {
-
 		_button = NULL;
 		delete _button;
 	}
