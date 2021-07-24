@@ -1,7 +1,7 @@
 #ifndef HANDLES_H
 #define HANDLES_H
 
-unsigned int interruptFlag = 1;
+static unsigned int interruptFlag = 1;
 
 /**
  * Handlers:
@@ -70,7 +70,8 @@ unsigned int interruptFlag = 1;
  * Handle element (init or update) with integer return
  * Elements must all have a returner
  */
-#define HandleElement(x) int elementValue = x(); if (elementValue != 0) { std::cout << "Element Error"; return elementValue != 0 ? 1 : 0; }
+#define HandleElement(x) int elementValue = x; if (elementValue != 0) { std::cout << "Element Error"; return elementValue != 0 ? 1 : 0; }
+#define HandleElementInterrupt(x, intCode) INTERRUPT_HANDLER(HandleElement, x, intCode)
 
 /**
  * Handler for main controllers,
