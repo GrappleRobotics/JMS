@@ -1,13 +1,20 @@
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Tab } from "bootstrap";
 import moment from "moment";
 import { EVENT_WIZARD } from "paths";
 import React from "react";
-import { Button, Table } from "react-bootstrap";
+import { Button, Table, Tabs } from "react-bootstrap";
 
 export default class MatchScheduleView extends React.Component {
   componentDidUpdate() {
-    this.nextMatch = this.props.matches?.find(m => !m.played);
+    this.nextMatch = this.allMatches().find(m => !m.played);
+  }
+
+  allMatches = () => {
+    if (!this.props.matches)
+      return [];
+    return Object.values(this.props.matches).flatMap(x => x.matches || []);
   }
 
   isLoaded = (match) => {
@@ -45,7 +52,7 @@ export default class MatchScheduleView extends React.Component {
       return format(moment.duration(a.diff(b))) + " ago";
   }
 
-  renderSchedule = () => {
+  renderSchedule = (matches) => {
     return <Table bordered striped size="sm">
       <thead>
         <tr>
@@ -58,7 +65,7 @@ export default class MatchScheduleView extends React.Component {
       </thead>
       <tbody>
         {
-          this.props.matches?.map(match => <tr className={ this.rowClass(match) }>
+          matches.map(match => <tr className={ this.rowClass(match) }>
             <td> 
               { moment.unix(match.time).format("dddd HH:mm:ss") }
               &nbsp;
@@ -92,14 +99,25 @@ export default class MatchScheduleView extends React.Component {
     </Table>
   }
 
-  render() {
-    return (this.props.matches?.length || 0) ? this.renderSchedule() : <div className="text-center">
+  renderTab(matches) {
+    return (matches?.length || 0) ? this.renderSchedule(matches) : <div className="text-center my-3">
       <h4 className="text-danger"> 
         <FontAwesomeIcon icon={faExclamationTriangle} /> 
-        &nbsp; There are no matches in the schedule! &nbsp;
+          &nbsp; There are no matches in the schedule! &nbsp;
         <FontAwesomeIcon icon={faExclamationTriangle} /> 
       </h4>
       <p> To generate a schedule, go to the <a href={EVENT_WIZARD}>Event Wizard</a>  </p>
     </div>
+  }
+
+  render() {
+    return <Tabs defaultActiveKey={ this.props.matches?.playoffs?.matches ? "playoffs" : "quals" } id="match-type-tabs">
+      <Tab eventKey="quals" title="Qualifications">
+        { this.renderTab(this.props.matches?.quals?.matches) }
+      </Tab>
+      <Tab eventKey="playoffs" title="Playoffs">
+        { this.renderTab(this.props.matches?.playoffs?.matches) }
+      </Tab>
+    </Tabs>
   }
 }

@@ -72,7 +72,7 @@ export default class App extends React.Component {
               <MatchControl
                 ws={this.ws}
                 arena={arena}
-                matches={matches?.quals?.matches}   // TODO: Add tabs for quals / not quals
+                matches={matches}
               />
             </Route>
           </Switch>
@@ -82,7 +82,7 @@ export default class App extends React.Component {
         <Col>
           <BottomNavbar
             arena={arena}
-            matches={matches?.quals?.matches} // TODO:
+            matches={matches}
             event={event?.details}
           />
         </Col>
