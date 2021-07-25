@@ -17,7 +17,7 @@ use super::{
   station::{AllianceStationId},
 };
 
-use crate::{arena::station::Alliance, db, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
+use crate::{arena::station::Alliance, db, ds::DSMode, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
 
 use serde::{Deserialize, Serialize};
 
@@ -82,16 +82,35 @@ pub enum ArenaSignal {
 //   Any,       // Anyone (Idle only - awards etc)
 // }
 
-#[derive(Debug, Clone, Copy, Default, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct AllianceStationDSReport {
   pub robot_ping: bool,
   pub rio_ping: bool,
   pub radio_ping: bool,
   pub battery: f64,
 
+  pub estop: bool,
+  pub mode: Option<DSMode>,
+
   pub pkts_sent: u16,
   pub pkts_lost: u16,
   pub rtt: u8,
+}
+
+impl Default for AllianceStationDSReport {
+  fn default() -> Self {
+    Self {
+      robot_ping: false,
+      rio_ping: false,
+      radio_ping: false,
+      battery: 0.0f64,
+      estop: false,
+      mode: None,
+      pkts_sent: 0,
+      pkts_lost: 0,
+      rtt: 0
+    }
+  }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]

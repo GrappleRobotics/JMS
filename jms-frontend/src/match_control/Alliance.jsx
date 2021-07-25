@@ -23,6 +23,23 @@ class AllianceStation extends React.Component {
         return <Indicator variant="warning"> M </Indicator>;
     }
   }
+
+  renderModeIndicator = (report) => {
+    if (report.estop) {
+      return <Indicator variant="danger"> E </Indicator>;
+    } else {
+      switch (report.mode) {
+        case "Auto":
+          return <Indicator variant="warning"> A </Indicator>;
+        case "Teleop":
+          return <Indicator variant="info"> T </Indicator>;
+        case "Test":
+          return <Indicator variant="success"> ~ </Indicator>;
+        default:
+          return <Indicator variant="dark"> </Indicator>;
+      }
+    }
+  }
   
   render() {
     let s = this.props.station;
@@ -36,6 +53,8 @@ class AllianceStation extends React.Component {
       cname.push("bg-hazard-red-dark-active");
     if (s.bypass)
       cname.push("bypassed");
+
+    let report = s.ds_report;
 
     return <Row className={cname.join(" ")} {...this.props}>
       <Col sm="1">
@@ -69,26 +88,33 @@ class AllianceStation extends React.Component {
       </Col>
       <Col sm="2">
         {
-          s.ds_report ?
+          report ?
             <Indicator variant={s.ds_report.robot_ping ? "success" : "danger"} /> :
             <Indicator variant="dark" />
         }
 
         {
-          s.ds_report ? 
+          report ? 
             <Indicator variant={s.ds_report.rio_ping ? "success" : "danger"} /> : 
             <Indicator variant="dark" />
         }
       </Col>
-      &nbsp;
-      <Col>
-        {
-          (s.ds_report?.battery?.toFixed(1) || "--.-").padStart(4, "\u00A0") + " V"
-        }
+      <Col sm={3}>
+        <small>
+          {
+            (report?.battery?.toFixed(1) || "--.-").padStart(4, "\u00A0") + " V"
+          }
+          <span className="text-muted">
+            &nbsp;/&nbsp;
+          </span>
+          {
+            (report?.rtt?.toString() || "-").padStart(3, "\u00A0")
+          }
+        </small>
       </Col>
       <Col>
         {
-          (s.ds_report?.rtt?.toString() || "-").padStart(3, "\u00A0")
+          report ? this.renderModeIndicator(report) : <Indicator variant="dark" />
         }
       </Col>
     </Row>
@@ -106,9 +132,8 @@ export default class Alliance extends React.Component {
             <Col sm="2"> Team </Col>
             <Col sm="1"> DS   </Col>
             <Col sm="2"> ROBOT </Col>
-            &nbsp;
-            <Col> Battery </Col>
-            <Col> RTT </Col>
+            <Col sm="3"> Batt / RTT </Col>
+            <Col> Mode </Col>
           </Row>
           {
             this.props.stations?.map(s => 
