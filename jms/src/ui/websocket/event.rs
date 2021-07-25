@@ -111,6 +111,13 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
         },
         ("clear", None) => {
           PlayoffAlliance::clear(&db::connection())?;
+        },
+        ("update", Some(data)) => {
+          use crate::schema::playoff_alliances::dsl::*;
+          let alliance: models::PlayoffAlliance = serde_json::from_value(data)?;
+          diesel::replace_into(playoff_alliances)
+            .values(&alliance)
+            .execute(&db::connection())?;
         }
         _ => Err(response_msg.invalid_verb_or_data())?
       }

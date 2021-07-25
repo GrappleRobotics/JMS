@@ -7,6 +7,7 @@ $theme-colors: (
 @import "~bootstrap/scss/bootstrap";
 @import "~react-datetime/css/react-datetime.css";
 @import "~react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
+@import "~react-bootstrap-typeahead/css/Typeahead.css";
 
 html, body, #root {
   height: 100%;

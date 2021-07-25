@@ -1,10 +1,12 @@
-import { faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faInfoCircle, faUnlock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import React from "react";
 import { Button, Col, Form, Row, Table, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import RangeSlider from "react-bootstrap-range-slider";
 import { confirm } from "react-bootstrap-confirmation";
+import Buffered from "components/elements/Buffered";
+import { Typeahead } from "react-bootstrap-typeahead";
 
 export default class ConfigureAlliances extends React.Component {
   static eventKey() { return "configure_alliances"; }
@@ -123,44 +125,90 @@ export default class ConfigureAlliances extends React.Component {
       this.props.ws.send("event", "alliances", "clear");
   }
 
-  renderAlliances = () => {
-    let disabled = this.props.alliances.every(x => x.ready);
-    return <div>
-      <Button
-        variant="danger"
-        disabled={ this.props.alliances.some(x => x.ready) }
-        onClick={this.clearAlliances}
-      >
-        Reset Alliances
-      </Button>
+  updateAlliancePick = (alliance, idx, value) => {
+    let team = value.length > 0 ? parseInt(value[0].id) : null;
+    alliance.teams[idx] = team;
+    this.props.ws.send("event", "alliances", "update", alliance);
+  }
 
-      <Table striped bordered hover>
-        <thead>
-          <tr>
-            <th> Alliance </th>
-            <th> Captain </th>
-            <th> Pick 1 </th>
-            <th> Pick 2 </th>
-            <th> Backup </th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            this.props.alliances.map(alliance => <tr>
-              <td> {alliance.id} </td>
+  setAllianceReady = (alliance, ready) => {
+    this.props.ws.send("event", "alliances", "update", {
+      ...alliance,
+      ready
+    });
+  }
+
+  renderAlliances = () => {
+    let chosen_teams = this.props.alliances.flatMap(alliance => alliance.teams).filter(x => !!x);
+
+    let teams_with_strings = this.props.teams?.map(team => {
+      return { ...team, id: team.id.toString(), disabled: chosen_teams.includes(team.id) }
+    });
+
+    return <div>
+      <Row className="my-3">
+        <Col>
+          <Button
+            variant="danger"
+            disabled={ this.props.alliances.some(x => x.ready) }
+            onClick={this.clearAlliances}
+          >
+            Reset Alliances
+          </Button>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col>
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th> Alliance </th>
+                <th> Captain </th>
+                <th> Pick 1 </th>
+                <th> Pick 2 </th>
+                <th> Backup </th>
+                <th> Action </th>
+              </tr>
+            </thead>
+            <tbody>
               {
-                [0, 1, 2, 3].map(i => <td>
-                  <BufferedFormControl
-                    type="number"
-                    value={alliance.teams[i]}
-                    placeholder="----"
-                  />
-                </td>)
+                this.props.alliances.map(alliance => {
+                  let canReady = alliance.teams.slice(0, 3).every(x => x !== null && x !== undefined);
+                  return <tr>
+                    <td> {alliance.id} </td>
+                    {
+                      [0, 1, 2, 3].map(i => {
+                        let selected_team = teams_with_strings?.find(t => parseInt(t.id) === alliance.teams[i]);
+
+                        return <td>
+                          <Typeahead
+                            disabled={alliance.ready}
+                            id={"alliance-" + alliance.id + "-pick-" + i}
+                            labelKey="id"
+                            placeholder="----"
+                            options={teams_with_strings}
+                            highlightOnlyResult={true}
+                            selected={ selected_team ? [ selected_team ] : [] }
+                            onChange={ t => this.updateAlliancePick(alliance, i, t) }
+                          />
+                        </td>
+                      })
+                    }
+                    <td>
+                      {
+                        alliance.ready ?
+                          <Button size="sm" variant="outline-danger" onClick={ () => this.setAllianceReady(alliance, false) }> <FontAwesomeIcon icon={faUnlock} /> </Button> :
+                          <Button size="sm" disabled={!canReady} variant={ canReady ? "success" : "secondary" } onClick={ () => this.setAllianceReady(alliance, true) }> <FontAwesomeIcon icon={faCheck} /> </Button>
+                      }
+                    </td>
+                  </tr>
+                })
               }
-            </tr>)
-          }
-        </tbody>
-      </Table>
+            </tbody>
+          </Table>
+        </Col>
+      </Row>
     </div>
   }
 

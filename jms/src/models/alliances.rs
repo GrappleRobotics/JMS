@@ -7,7 +7,7 @@ use super::SQLJsonVector;
 #[derive(Insertable, Queryable, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PlayoffAlliance {
   pub id: i32,
-  pub teams: SQLJsonVector<usize>,
+  pub teams: SQLJsonVector<Option<usize>>,
   pub ready: bool
 }
 
@@ -26,7 +26,7 @@ impl PlayoffAlliance {
     for i in 1..=n {
       alliance_vec.push((
         id.eq(i as i32),
-        teams.eq(SQLJsonVector(vec![] as Vec<usize>)),
+        teams.eq(SQLJsonVector(vec![None, None, None, None] as Vec<Option<usize>>)),
         ready.eq(false)
       ));
     }
