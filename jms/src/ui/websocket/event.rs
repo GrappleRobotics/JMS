@@ -1,6 +1,6 @@
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, models::{self, ScheduleBlock}};
+use crate::{db, models::{self, PlayoffAlliance, ScheduleBlock}};
 
 use super::{JsonMessage, WebsocketMessageHandler};
 
@@ -33,6 +33,12 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       use crate::schema::schedule_blocks::dsl::*;
       let sbs = schedule_blocks.order_by(start_time.asc()).load::<models::ScheduleBlock>(&db::connection())?;
       response.push(msg.noun("schedule").to_data(&sbs)?)
+    }
+    {
+      // Alliances
+      use crate::schema::playoff_alliances::dsl::*;
+      let als = playoff_alliances.load::<models::PlayoffAlliance>(&db::connection())?;
+      response.push(msg.noun("alliances").to_data(&als)?)
     }
     Ok(response)
   }
@@ -95,6 +101,19 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
         },
         _ => Err(response_msg.invalid_verb_or_data())?
       },
+      "alliances" => match(msg.verb.as_str(), msg.data) {
+        ("create", Some(serde_json::Value::Number(n))) => {
+          if let Some(n) = n.as_u64() {
+            PlayoffAlliance::create_all(n as usize, &db::connection())?;
+          } else {
+            Err(response_msg.invalid_verb_or_data())?
+          }
+        },
+        ("clear", None) => {
+          PlayoffAlliance::clear(&db::connection())?;
+        }
+        _ => Err(response_msg.invalid_verb_or_data())?
+      }
       _ => Err(response_msg.unknown_noun())?
     };
 

@@ -131,16 +131,39 @@ class ScheduleBlock extends React.Component {
                       disabled={disabled}
                     />
                   </Col>
-                  <Col>
+                  <Col md={3}>
                     <Form.Label>Cycle Time</Form.Label>
-                    <BufferedFormControl
-                      auto
-                      disabled={disabled || !is_match_block}
-                      type="time"
-                      value={ cycle_time.format("HH:mm:ss", { trim: false }) }
-                      step={1000}
-                      onUpdate={ v => this.updateTime("cycle_time", v) }
-                    />
+                    <Row>
+                      <Col>
+                        <BufferedFormControl
+                          auto
+                          disabled={disabled || !is_match_block}
+                          type="number"
+                          min={0}
+                          max={59}
+                          value={ cycle_time.minutes() }
+                          onUpdate={ v => this.updateTime("cycle_time", "00:" + (v || 0) + ":" + cycle_time.seconds()) }
+                        />
+                      </Col>
+                      <Col className="text-muted">
+                        Minutes
+                      </Col>
+                      <Col>
+                        <BufferedFormControl
+                          auto
+                          disabled={disabled || !is_match_block}
+                          type="number"
+                          min={0}
+                          max={59}
+                          value={ cycle_time.seconds() }
+                          onUpdate={ v => this.updateTime("cycle_time", "00:" + cycle_time.minutes() + ":" + (v || 0)) }
+                        />
+                      </Col>
+                      <Col className="text-muted">
+                        Seconds
+                      </Col>
+                    </Row>
+
                     <Form.Text className="text-muted">
                       { num_matches } matches
                     </Form.Text>

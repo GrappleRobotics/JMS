@@ -9553,6 +9553,14 @@ react-bootstrap-confirmation@^1.0.4:
   dependencies:
     react-confirm "^0.1.18"
 
+react-bootstrap-range-slider@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/react-bootstrap-range-slider/-/react-bootstrap-range-slider-3.0.2.tgz#e5c52e8296a57711d2baeefad4b7fa2c9e06a3f4"
+  integrity sha512-Fk/dbIcu/wKcDF7CdIuPUxPAc9u2JBpVJ96wgAiGkTwYxZgAB37XzoMkLgAX8RfdRkkYS12WntCXMkdyDGsHFg==
+  dependencies:
+    classnames "^2.3.1"
+    prop-types "^15.7.2"
+
 react-bootstrap@^1.6.1:
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/react-bootstrap/-/react-bootstrap-1.6.1.tgz#c5493c028ede885826b72eb31e66f6f0a52ab007"

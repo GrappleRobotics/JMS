@@ -64,9 +64,7 @@ export default class App extends React.Component {
             <Route path={EVENT_WIZARD}>
               <EventWizard
                 ws={this.ws}
-                event={event?.details}
-                teams={event?.teams}
-                schedule={event?.schedule}
+                event={event}
                 matches={matches}
               />
             </Route>

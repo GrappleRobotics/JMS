@@ -10,12 +10,12 @@ export default class ConfigureEvent extends React.Component {
   static tabName() { return "Configure Event"; }
 
   static needsAttention(d) {
-    return d.event?.event_name === null;
+    return d.details?.event_name === null;
   }
 
   changeEventDetails = (changes) => {
     let newDetails = {
-      ...this.props.event,
+      ...this.props.details,
       ...changes
     };
     this.props.ws.send("event", "details", "update", newDetails);
@@ -33,7 +33,7 @@ export default class ConfigureEvent extends React.Component {
             <BufferedFormControl 
               type="text"
               placeholder="2021myevent"
-              value={this.props.event?.code}
+              value={this.props.details?.code}
               onUpdate={v => this.changeEventDetails({ code: nullIfEmpty(v) })}
             />
             <Form.Text className="text-muted">
@@ -45,7 +45,7 @@ export default class ConfigureEvent extends React.Component {
             <BufferedFormControl
               type="text"
               placeholder="My Really Groovy Robotics Event"
-              value={this.props.event?.event_name}
+              value={this.props.details?.event_name}
               onUpdate={v => this.changeEventDetails({ event_name: nullIfEmpty(v) })}
             />
           </Col>

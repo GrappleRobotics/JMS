@@ -30,6 +30,14 @@ table! {
 }
 
 table! {
+    playoff_alliances (id) {
+        id -> Integer,
+        teams -> Text,
+        ready -> Bool,
+    }
+}
+
+table! {
     schedule_blocks (id) {
         id -> Integer,
         block_type -> Text,
@@ -54,6 +62,7 @@ allow_tables_to_appear_in_same_query!(
     event_details,
     match_generation_records,
     matches,
+    playoff_alliances,
     schedule_blocks,
     teams,
 );

@@ -14,6 +14,9 @@ pub use event_details::*;
 mod schedule;
 pub use schedule::*;
 
+pub mod alliances;
+pub use alliances::*;
+
 // SQL-mapped vector (for sqlite)
 
 #[derive(AsExpression, Debug, serde::Deserialize, serde::Serialize, FromSqlRow, Clone)]

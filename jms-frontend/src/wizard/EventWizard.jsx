@@ -2,6 +2,7 @@ import { faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { Col, Container, Nav, Row, Tab } from "react-bootstrap";
+import ConfigureAlliances from "./ConfigureAlliances";
 import ConfigureEvent from "./ConfigureEvent";
 import ConfigureSchedule from "./ConfigureSchedule";
 import ConfigureTeams from "./ConfigureTeams";
@@ -28,10 +29,11 @@ export default class EventWizard extends React.Component {
   }
 
   render() {
-    let {event, teams, schedule, matches, ws} = this.props;
+    let { event, matches, ws } = this.props;
+    let { details, teams, schedule, alliances } = event || {};
 
     let data = {
-      event, teams, schedule, matches
+      details, teams, schedule, matches, alliances
     };
 
     let navItemFor = (data, cls) => {
@@ -62,12 +64,13 @@ export default class EventWizard extends React.Component {
               <br /> <h6 className="text-muted">Pre-Event Config</h6>
               { navItemFor(data, ConfigureEvent) }
               { navItemFor(data, ConfigureTeams) }
+              { navItemFor(data, ConfigureSchedule) }
 
               <br /> <h6 className="text-muted">Qualifications</h6>
-              { navItemFor(data, ConfigureSchedule) }
               { navItemFor(data, QualGenerator) }
 
               <br /> <h6 className="text-muted">Playoffs</h6>
+              { navItemFor(data, ConfigureAlliances) }
               <br /> <h6 className="text-muted">Awards</h6>
             </Nav>
           </Col>
@@ -79,6 +82,7 @@ export default class EventWizard extends React.Component {
               { paneFor(<ConfigureTeams {...data} ws={ws} />) }
               { paneFor(<ConfigureSchedule {...data} ws={ws} />) }
               { paneFor(<QualGenerator {...data} ws={ws} />) }
+              { paneFor(<ConfigureAlliances {...data} ws={ws} />) }
               <br />
             </Tab.Content>
           </Col>
