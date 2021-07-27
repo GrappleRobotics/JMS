@@ -21,9 +21,9 @@ pub use alliances::*;
 
 #[derive(AsExpression, Debug, serde::Deserialize, serde::Serialize, FromSqlRow, Clone)]
 #[sql_type = "Text"]
-pub struct SQLJsonVector<T>(pub Vec<T>);
+pub struct SQLJson<T>(pub T);
 
-impl<'a, T, DB> FromSql<Text, DB> for SQLJsonVector<T>
+impl<'a, T, DB> FromSql<Text, DB> for SQLJson<T>
 where 
   DB: diesel::backend::Backend,
   T: serde::de::DeserializeOwned,
@@ -31,12 +31,12 @@ where
 {
   fn from_sql(bytes: Option<&DB::RawValue>) -> diesel::deserialize::Result<Self> {
     let t = String::from_sql(bytes)?;
-    let t: Vec<T> = serde_json::from_str(&t)?;
+    let t: T = serde_json::from_str(&t)?;
     Ok(Self(t))
   }
 }
 
-impl<T, DB> ToSql<Text, DB> for SQLJsonVector<T>
+impl<T, DB> ToSql<Text, DB> for SQLJson<T>
 where
   DB: diesel::backend::Backend,
   T: serde::Serialize + std::fmt::Debug,
@@ -47,6 +47,13 @@ where
     String::to_sql(&s, out)
   }
 }
+
+pub type SQLJsonVector<T> = SQLJson<Vec<T>>;
+
+// #[derive(AsExpression, Debug, serde::Deserialize, serde::Serialize, FromSqlRow, Clone)]
+// #[sql_type = "Text"]
+// pub struct SQLJsonVector<T>(pub Vec<T>);
+
 
 // SQL Enums as text (for sqlite)
 

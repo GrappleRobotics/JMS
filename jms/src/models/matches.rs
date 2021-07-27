@@ -1,4 +1,4 @@
-use crate::{schema::matches, schema::match_generation_records, sql_mapped_enum};
+use crate::{models::SQLJson, schema::match_generation_records, schema::matches, sql_mapped_enum};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
 use super::{SQLDatetime, SQLJsonVector};
@@ -30,8 +30,8 @@ impl Match {
       match_type: MatchType::Test,
       set_number: 1,
       match_number: 1,
-      blue_teams: SQLJsonVector(vec![]),
-      red_teams: SQLJsonVector(vec![]),
+      blue_teams: SQLJson(vec![]),
+      red_teams: SQLJson(vec![]),
       played: false
     }
   }
@@ -69,10 +69,16 @@ impl Serialize for Match {
 #[derive(Identifiable, Insertable, Queryable, Debug, Clone, serde::Serialize)]
 #[primary_key(match_type)]
 pub struct MatchGenerationRecord {
-  // pub id: i32,
   pub match_type: MatchType,
-  pub team_balance: Option<f64>,
-  pub station_balance: Option<f64>,
-  pub cooccurrence: Option<SQLJsonVector<Vec<usize>>>,
-  pub station_dist: Option<SQLJsonVector<Vec<usize>>>,
+  pub data: Option<SQLJson<MatchGenerationRecordData>>
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub enum MatchGenerationRecordData {
+  Qualification {
+    team_balance: f64,
+    station_balance: f64,
+    cooccurrence: SQLJsonVector<Vec<usize>>,
+    station_dist: SQLJsonVector<Vec<usize>>,
+  }
 }

@@ -39,7 +39,7 @@ export default class QualGenerator extends React.Component {
   }
 
   renderStatsForNerds = () => {
-    let record = this.props.matches?.quals?.record;
+    let record = this.props.matches?.quals?.record?.data?.Qualification;
 
     return <div>
       <Row>

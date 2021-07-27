@@ -224,10 +224,6 @@ impl Annealer {
     }
   }
 
-  pub fn set_steps(&mut self, steps: usize) {
-    self.dt = (self.temp_start - self.temp_end) / (steps as f64);
-  }
-
   pub fn anneal<T, G, E>(&self, initial: T, generator: G, evaluator: E) -> (T, f64, f64)
   where
     G: Fn(&T) -> T,

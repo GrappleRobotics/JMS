@@ -2,7 +2,7 @@ use std::error::Error;
 
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
-use crate::{db, models::{self, MatchGenerationRecord, SQLDatetime, SQLJsonVector, ScheduleBlock}};
+use crate::{db, models::{self, MatchGenerationRecord, MatchGenerationRecordData, SQLDatetime, SQLJson, ScheduleBlock}};
 
 use super::{Annealer, GenerationResult, ScheduleGenerator, TeamSchedule, worker::MatchGenerator};
 
@@ -26,10 +26,12 @@ impl QualsMatchGenerator {
     diesel::replace_into(match_generation_records)
       .values(MatchGenerationRecord {
         match_type: models::MatchType::Qualification,
-        team_balance: Some(result.team_balance_score),
-        station_balance: Some(result.station_balance_score),
-        cooccurrence: Some(SQLJsonVector(result.cooccurrence.column_iter().map(|col| col.iter().cloned().collect::<Vec<usize>>() ).collect())),
-        station_dist: Some(SQLJsonVector(result.station_dist.column_iter().map(|col| col.iter().cloned().collect::<Vec<usize>>() ).collect()))
+        data: Some(SQLJson(MatchGenerationRecordData::Qualification {
+          team_balance: result.team_balance_score,
+          station_balance: result.station_balance_score,
+          cooccurrence: SQLJson(result.cooccurrence.column_iter().map(|col| col.iter().cloned().collect::<Vec<usize>>() ).collect()),
+          station_dist: SQLJson(result.station_dist.column_iter().map(|col| col.iter().cloned().collect::<Vec<usize>>() ).collect())
+        }))
       })
       .execute(&db::connection())?;
 
@@ -56,8 +58,8 @@ impl QualsMatchGenerator {
           match_type.eq(models::MatchType::Qualification),
           set_number.eq(0),
           match_number.eq((match_i + 1) as i32),
-          blue_teams.eq(SQLJsonVector(blue)),
-          red_teams.eq(SQLJsonVector(red)),
+          blue_teams.eq(SQLJson(blue)),
+          red_teams.eq(SQLJson(red)),
           played.eq(false)
         ));
         match_i += 1;

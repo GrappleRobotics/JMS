@@ -1,6 +1,6 @@
 use diesel::{QueryResult, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, schema::playoff_alliances};
+use crate::{db, models::SQLJson, schema::playoff_alliances};
 
 use super::SQLJsonVector;
 
@@ -26,7 +26,7 @@ impl PlayoffAlliance {
     for i in 1..=n {
       alliance_vec.push((
         id.eq(i as i32),
-        teams.eq(SQLJsonVector(vec![None, None, None, None] as Vec<Option<usize>>)),
+        teams.eq(SQLJson(vec![None, None, None, None] as Vec<Option<usize>>)),
         ready.eq(false)
       ));
     }

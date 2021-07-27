@@ -9,10 +9,7 @@ table! {
 table! {
     match_generation_records (match_type) {
         match_type -> Text,
-        team_balance -> Nullable<Double>,
-        station_balance -> Nullable<Double>,
-        cooccurrence -> Nullable<Text>,
-        station_dist -> Nullable<Text>,
+        data -> Nullable<Text>,
     }
 }
 
