@@ -3,11 +3,13 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
+import { EVENT_WIZARD, MATCH_CONTROL, SCORING } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
 import { nullIfEmpty } from 'support/strings';
+import Home from 'Home';
+import { ScoringRouter } from 'scoring/Scoring';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -68,12 +70,18 @@ export default class App extends React.Component {
                 matches={matches}
               />
             </Route>
+            <Route path={SCORING}>
+              <ScoringRouter arena={arena} />
+            </Route>
             <Route path={MATCH_CONTROL}>
               <MatchControl
                 ws={this.ws}
                 arena={arena}
                 matches={matches}
               />
+            </Route>
+            <Route path="/">
+              <Home />
             </Route>
           </Switch>
         </Col>

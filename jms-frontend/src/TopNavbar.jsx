@@ -3,7 +3,7 @@ import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import { Button } from 'react-bootstrap';
 import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
-import { faMagic } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faMagic } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default class TopNavbar extends React.Component {
@@ -64,11 +64,10 @@ export default class TopNavbar extends React.Component {
       <Navbar.Toggle />
       <Navbar.Collapse className="justify-content-end">
         <Nav>
-          <Nav.Link href={EVENT_WIZARD}>
-            <FontAwesomeIcon icon={faMagic} /> &nbsp;
-            Wizard
+          <Nav.Link href="/">
+            <FontAwesomeIcon icon={faHome} /> &nbsp;
+            Home
           </Nav.Link>
-          <Nav.Link href={MATCH_CONTROL}>Match Control</Nav.Link>
         </Nav>
       </Navbar.Collapse>
     </Navbar>

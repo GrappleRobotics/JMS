@@ -103,7 +103,7 @@ class ScheduleBlock extends React.Component {
                       onChange={ v => this.props.update({ block_type: v }) }
                     >
                       {
-                        BLOCK_TYPES.map(bt => <ToggleButton disabled={disabled} variant={ bt == block_type ? "dark" : "outline-dark" } value={bt}> {bt} </ToggleButton>)
+                        BLOCK_TYPES.map(bt => <ToggleButton disabled={disabled} variant={ bt == block_type ? "primary" : "outline-light" } value={bt}> {bt} </ToggleButton>)
                       }
                     </ToggleButtonGroup>
                   </Col>

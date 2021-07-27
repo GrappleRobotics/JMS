@@ -1,5 +1,8 @@
+@import "~bootswatch/dist/darkly/variables";
+
 $theme-colors: (
-  "warning": #ffbb00,
+  "primary": #007bff,
+  "success": #28a745,
   "alliance-red": #f53e31,
   "alliance-blue": #3152f5
 );
@@ -8,6 +11,11 @@ $theme-colors: (
 @import "~react-datetime/css/react-datetime.css";
 @import "~react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
 @import "~react-bootstrap-typeahead/css/Typeahead.css";
+@import "~bootswatch/dist/darkly/bootswatch";
+
+.nav-link.disabled {
+  color: $gray-600;
+}
 
 html, body, #root {
   height: 100%;
@@ -131,7 +139,7 @@ $hazard-red-dark-secondary: #590000;
 
 .alliance-station {
   font-family: 'Courier New', Courier, monospace;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.281);
   @include alliance-row;
   &.bypassed {
     background-color: rgba(0, 0, 0, 0.25);
@@ -255,12 +263,12 @@ input.team-num {
 
 tr {
   &.next-match {
-    background-color: #ff8 !important;
+    background-color: rgb(122, 84, 0) !important;
     font-weight: bold;
   }
 
   &.loaded-match {
-    background-color: #0ff !important;
+    background-color: rgb(0, 85, 85) !important;
     font-weight: bold;
   }
 }
