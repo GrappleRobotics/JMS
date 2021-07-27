@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use log::{info, warn};
 
-use crate::{models, scoring::scores::{MatchScore, ScoreUpdate}};
+use crate::{models, scoring::scores::MatchScore};
 
 use super::exceptions::{MatchError, MatchResult};
 

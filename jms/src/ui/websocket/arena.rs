@@ -2,7 +2,7 @@ use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{arena::{AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{Alliance, AllianceStationId}}, db, models, scoring::scores::{ScoreUpdate, ScoreUpdateData}};
+use crate::{arena::{AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{Alliance, AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
 
 use super::{JsonMessage, WebsocketError, WebsocketMessageHandler};
 

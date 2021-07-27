@@ -86,7 +86,7 @@ export class Scoring extends React.Component {
                         <FontAwesomeIcon icon={faPlus} />
                       </Button>
                     </Col>
-                    <Col> <h4 className="text-center"> { live.power_cells[mode.toLowerCase()][goal.toLowerCase()] } </h4> </Col>
+                    <Col md={2} className="p-0"> <h5 className="text-center"> { live.power_cells[mode.toLowerCase()][goal.toLowerCase()] } </h5> </Col>
                     <Col>
                       <Button variant="outline-danger" onClick={ () => this.updateScore("PowerCell", { auto: mode == "Auto", [goal.toLowerCase()]: -1 }) }>
                         <FontAwesomeIcon icon={faMinus} />

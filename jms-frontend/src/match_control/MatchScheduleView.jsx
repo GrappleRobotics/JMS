@@ -1,4 +1,4 @@
-import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Tab } from "bootstrap";
 import moment from "moment";
@@ -76,7 +76,13 @@ export default class MatchScheduleView extends React.Component {
                 </small>
               }
             </td>
-            <td> { match.name } </td>
+            <td> 
+              &nbsp; { 
+                match.played ? 
+                  <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> 
+                  : "" 
+              } &nbsp; { match.name }
+            </td>
             { match.blue.map(t => <td className="schedule-blue"> { t } </td>) }
             { match.red.map(t =>  <td className="schedule-red"> { t } </td>) }
             <td>

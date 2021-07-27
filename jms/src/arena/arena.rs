@@ -221,6 +221,8 @@ impl Arena {
         Alliance::Blue => &m.blue_teams,
         Alliance::Red => &m.red_teams,
       };
+      
+      stn.reset();
 
       let i = (stn.station.station - 1) as usize;
       if let Some(&t) = v.0.get(i) {

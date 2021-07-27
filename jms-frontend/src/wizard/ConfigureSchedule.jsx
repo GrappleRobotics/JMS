@@ -104,6 +104,7 @@ class ScheduleBlock extends React.Component {
                       values={BLOCK_TYPES}
                       outline
                       variant="light"
+                      disabled={disabled}
                     />
                   </Col>
                 </Row>
