@@ -90,7 +90,6 @@ impl serde::Serialize for MatchScore {
 
 // For updating from the frontend. 
 #[derive(Debug, Clone, serde::Deserialize)]
-#[serde(tag = "field")]
 pub enum ScoreUpdate {
   Initiation { station: usize, crossed: bool },
   PowerCell {

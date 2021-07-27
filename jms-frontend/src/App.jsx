@@ -71,7 +71,10 @@ export default class App extends React.Component {
               />
             </Route>
             <Route path={SCORING}>
-              <ScoringRouter arena={arena} />
+              <ScoringRouter
+                ws={this.ws}
+                arena={arena}
+              />
             </Route>
             <Route path={MATCH_CONTROL}>
               <MatchControl

@@ -233,7 +233,7 @@ input.team-num {
 
   &.played {
     > td {
-      background-color: #bbb;
+      background-color: rgb(70, 70, 70);
       font-style: italic;
     }
   }
@@ -287,4 +287,48 @@ th {
 .timekeeper-behind {
   font-weight: bold;
   color: #faa;
+}
+
+.bool-toggle {
+  > .btn {
+    &.false {
+      &.active {
+        @extend .btn-danger;
+      }
+      &:not(.active) {
+        @extend .btn-outline-danger;
+      }
+    }
+    &.true {
+      &.active {
+        @extend .btn-success;
+      }
+      &:not(.active) {
+        @extend .btn-outline-success;
+      }
+    }
+  }
+}
+
+.scorer-card {
+  @each $alliance in blue, red {
+    $tc: theme-color("alliance-#{$alliance}");
+    &[data-alliance=#{$alliance}] {
+      > .card-header {
+        background-color: desaturate(darken($tc, 15%), 25%);
+      }
+      > .card-body {
+        background-color: desaturate(darken($tc, 40%), 40%);
+      }
+    }
+  }
+
+  .card-body {
+    .row {
+      margin-bottom: 25px;
+      &:last-child {
+        margin-bottom: 0px;
+      }
+    }
+  }
 }

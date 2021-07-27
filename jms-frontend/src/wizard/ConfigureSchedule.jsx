@@ -2,6 +2,7 @@ import { faCloudSun, faDownload, faHourglassHalf, faInfoCircle, faPlus, faTimes 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import EditableFormControl from "components/elements/EditableFormControl";
+import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import moment from "moment";
 import "moment-duration-format";
 import React from "react";
@@ -96,16 +97,14 @@ class ScheduleBlock extends React.Component {
               <Card.Body>
                 <Row className="mb-3">
                   <Col>
-                    <ToggleButtonGroup
+                    <EnumToggleGroup
                       name="block_type"
-                      type="radio"
                       value={block_type}
                       onChange={ v => this.props.update({ block_type: v }) }
-                    >
-                      {
-                        BLOCK_TYPES.map(bt => <ToggleButton disabled={disabled} variant={ bt == block_type ? "primary" : "outline-light" } value={bt}> {bt} </ToggleButton>)
-                      }
-                    </ToggleButtonGroup>
+                      values={BLOCK_TYPES}
+                      outline
+                      variant="light"
+                    />
                   </Col>
                 </Row>
                 <Row>
