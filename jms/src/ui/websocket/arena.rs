@@ -2,9 +2,7 @@ use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{arena::{
-  matches::LoadedMatch, station::AllianceStationId, AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena,
-}, db, models};
+use crate::{arena::{AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{Alliance, AllianceStationId}}, db, models, scoring::scores::{ScoreUpdate, ScoreUpdateData}};
 
 use super::{JsonMessage, WebsocketError, WebsocketMessageHandler};
 
@@ -60,7 +58,20 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
           } else {
             Err(response_msg.invalid_verb_or_data())?
           }
-        }
+        },
+        ("scoreUpdate", Some(data)) => {
+          let update: ScoreUpdateData = serde_json::from_value(data)?;
+          match self.arena.lock().await.current_match.as_mut() {
+            Some(m) => {
+              match update.alliance {
+                Alliance::Blue => m.score.blue.update(update.update),
+                Alliance::Red => m.score.red.update(update.update),
+              }
+            },
+            None => Err(WebsocketError::Other("No Match!".to_owned()))?
+          }
+          // self.arena.lock().await.current_match
+        },
         _ => Err(response_msg.invalid_verb_or_data())?,
       },
       _ => Err(response_msg.unknown_noun())?,

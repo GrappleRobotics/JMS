@@ -30,8 +30,8 @@ impl Match {
       match_type: MatchType::Test,
       set_number: 1,
       match_number: 1,
-      blue_teams: SQLJson(vec![]),
-      red_teams: SQLJson(vec![]),
+      blue_teams: SQLJson(vec![0, 0, 0]),
+      red_teams: SQLJson(vec![0, 0, 0]),
       played: false
     }
   }

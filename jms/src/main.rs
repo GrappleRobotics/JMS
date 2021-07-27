@@ -6,6 +6,7 @@ mod network;
 mod ui;
 mod utils;
 mod schedule;
+mod scoring;
 
 mod models;
 mod schema;
@@ -34,8 +35,6 @@ use ui::websocket::Websockets;
 
 use crate::ui::websocket::EventWebsocketHandler;
 use crate::ui::websocket::MatchWebsocketHandler;
-
-// static QUALS_GEN: QualsMatchGenerator = QualsMatchGenerator::new();
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

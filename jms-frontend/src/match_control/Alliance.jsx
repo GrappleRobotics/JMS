@@ -122,10 +122,26 @@ class AllianceStation extends React.Component {
 }
 
 export default class Alliance extends React.Component {
+  renderScore = (score) => {
+    let score_components = [
+      <Col>
+        <h4> { Object.values(score.derived.total_score).reduce((a, b) => a + b) } </h4>
+      </Col>
+    ]
+    return <React.Fragment>
+      { this.props.flipped ? score_components.reverse() : score_components }
+    </React.Fragment>
+  }
+
   render() {
     return <div className={"p-3 alliance-" + this.props.colour.toLowerCase()}>
       <Row>
         <Col>
+          <Row className={"alliance-score px-4 " + (this.props.flipped ? "text-left" : "text-right")}>
+            {
+              this.props.score ? this.renderScore(this.props.score) : <React.Fragment />
+            }
+          </Row>
           <Row className="alliance-header">
             <Col sm="1"> # </Col>
             <Col sm="1">   </Col>

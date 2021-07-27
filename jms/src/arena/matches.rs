@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use log::{info, warn};
 
-use crate::models;
+use crate::{models, scoring::scores::{MatchScore, ScoreUpdate}};
 
 use super::exceptions::{MatchError, MatchResult};
 
@@ -34,6 +34,7 @@ pub struct LoadedMatch {
   match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
+  pub score: MatchScore,
 
   #[serde(skip)]
   state_first: bool,
@@ -46,8 +47,9 @@ pub struct LoadedMatch {
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
-      match_meta: m,
       state: MatchPlayState::Waiting,
+      score: MatchScore::new( m.red_teams.0.len(), m.blue_teams.0.len() ),
+      match_meta: m,
       state_first: true,
       state_start_time: Instant::now(),
       remaining_time: Duration::from_secs(0),
