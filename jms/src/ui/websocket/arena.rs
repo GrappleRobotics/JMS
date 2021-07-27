@@ -109,7 +109,11 @@ impl ArenaWebsocketHandler {
             stn.occupancy = AllianceStationOccupancy::Vacant;
             stn.ds_report = None;
           }
-          ("team", Value::Number(x)) if idle => stn.team = Some(x.as_u64().unwrap_or(0) as u16),
+          ("team", Value::Number(x)) if idle => {
+            stn.occupancy = AllianceStationOccupancy::Vacant;
+            stn.ds_report = None;
+            stn.team = Some(x.as_u64().unwrap_or(0) as u16);
+          },
           _ => {
             return Err(WebsocketError::Other(format!(
               "Unknown data key or format (or state): key={} value={:?}",
