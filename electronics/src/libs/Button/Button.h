@@ -14,55 +14,88 @@ class Button {
  public:
 	Button(PinName digitalPin) {
 		_button = new DigitalIn(digitalPin);
+		_passthrough = false;
 	}
 
-	Button(PinName digitalPin, int &linkInterrupt);
+	Button(int *passthroughState) : _buttonState(passthroughState) {
+		_button = nullptr;
+		_passthrough = true;
+	}
 	
 	~Button() {
-		_button = NULL;
+		_button = nullptr;
+		_buttonState = nullptr;
 		delete _button;
+		delete _buttonState;
 	}
 
 	/**
 	 * updates button state in seperate thread.
 	 */
 	void update() {
-		// @TODO: check logic
-		// @TODO: if triggered logic
+		if (_passthrough) { // passthrough check
+			if (_buttonState) {
+				_triggered = true;
+				_currentlyTriggered = true;
+			} else {
+				_currentlyTriggered = false;
+			}
+		} else { // local check
+			if (_button) {
+				_triggered = true;
+				_currentlyTriggered = true;
+			} else {
+				_currentlyTriggered = false;
+			}
+		}
 	}
 
 	/**
 	 * Gets current state of button
 	 */
-	bool isTriggered() {}
-
-	/**
-	 * if trigger do logic (threaded)
-	 */
-	template<typename Logic>
-	void ifTriggered(Logic triggerLogic) {
-		function.push_back(triggerLogic);
+	bool isTriggered() {
+		update();
+		return _currentlyTriggered;
 	}
 
 	/**
 	 * Returns if the button has ever been triggered
 	 */
-	bool triggered() {}
+	bool triggered() {
+		update();
+		return _triggered;
+	}
 
-	/**
-	 * return true if button is pushed
-	 */
-	bool poll() {}
-
-
-	/**
-	 * Set button to state
-	 */
-	void setButton(int state) {}
  private:
-	DigitalIn *_button;
-	Thread _buttonChecker_t;
-	std::vector<void (*)(void)> function;
+	DigitalIn *_button; // used if regular button
+	int *_buttonState; // used if passthrough button
+
+	bool _passthrough = false;
+	bool _triggered = false; // has button ever been triggered
+	bool _currentlyTriggered = false;
+};
+
+/**
+ * Main class for interrupt button,
+ * Stores button current state and trigger events
+ * also interrupt with function event
+ */
+class ButtonInterrupt : public Button {
+ public:
+	ButtonInterrupt(PinName interruptPin, Callback<void()> bindFunction, int startingState = 0) : Button(_interruptButtonState) {
+		_interruptButton = new InterruptIn(interruptPin);
+		*_interruptButtonState = *_interruptButton;
+		_interruptButton->fall(bindFunction);
+	}
+
+	~ButtonInterrupt() {
+		_interruptButton = nullptr;
+		delete _interruptButton;
+	}
+
+ private:
+	int *_interruptButtonState = 0;
+	InterruptIn *_interruptButton;
 };
 
 #endif

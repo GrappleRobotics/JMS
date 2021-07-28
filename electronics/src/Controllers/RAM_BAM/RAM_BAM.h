@@ -28,7 +28,6 @@ class RAM_BAM : public Controller {
 
 	// Main controlled functions
 	int start(int argc, char const *argv[], int &userButton) override;
-	void eStop(int station);
 };
 
 #endif // RAM_BAM_H

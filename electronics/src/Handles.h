@@ -28,7 +28,8 @@ static unsigned int interruptFlag = 1;
 			break; \
 		default: \
 			handle(x) \
-	}
+			break; \
+	} \
 
 /**
  * Generic Handle for code
@@ -36,6 +37,7 @@ static unsigned int interruptFlag = 1;
  * Returns 1 depending on error catch
  */
 #define Handle(x) try {x return 0;} catch (const std::exception& e) {std::cout << e.what() << '\n';return 1;}
+#define HandleWithInterrupt(x) INTERRUPT_HANDLER(Handle, x,)
 #define HandleInterrupt(x, intCode) INTERRUPT_HANDLER(Handle, x, intCode)
 
 
@@ -44,6 +46,7 @@ static unsigned int interruptFlag = 1;
  * Returns 1 depending on error catch
  */
 #define Handle_NO_RETURN_ON_SUCCESS(x) try {x} catch (const std::exception& e) {std::cout << e.what() << '\n';return 1;}
+#define HandleWithInterrupt_NO_RETURN_ON_SUCCESS(x) INTERRUPT_HANDLER(Handle_NO_RETURN_ON_SUCCESS, x,)
 #define HandleInterrupt_NO_RETURN_ON_SUCCESS(x, intCode) INTERRUPT_HANDLER(Handle_NO_RETURN_ON_SUCCESS, x, intCode)
 
 
@@ -52,6 +55,7 @@ static unsigned int interruptFlag = 1;
  * Does not return 0 or 1 regardless of catch
  */
 #define Handle_NO_RETURN(x) try {x} catch (const std::exception& e) {std::cout << e.what() << '\n';}
+#define HandleWithInterrupt_NO_RETURN(x) INTERRUPT_HANDLE(Handle_NO_RETURN, x,)
 #define HandleInterrupt_NO_RETURN(x, intCode) INTERRUPT_HANDLE(Handle_NO_RETURN, x, intCode)
 
 
@@ -63,6 +67,7 @@ static unsigned int interruptFlag = 1;
  * y being code to execute in loop
  */
 #define LoopHandle(x, y) while (x) { Handle_NO_RETURN_ON_SUCCESS(y) }
+#define LoopHandleWithInterrupt(x, y) while(x) { INTERRUPT_HANDLER(Handle_NO_RETURN_ON_SUCCESS, y,) }
 #define LoopHandleInterrupt(x, y, intCode) while(x) { INTERRUPT_HANDLER(Handle_NO_RETURN_ON_SUCCESS, y, intCode) }
 
 
@@ -71,6 +76,7 @@ static unsigned int interruptFlag = 1;
  * Elements must all have a returner
  */
 #define HandleElement(x) int elementValue = x; if (elementValue != 0) { std::cout << "Element Error"; return elementValue != 0 ? 1 : 0; }
+#define HandleElementWithInterrupt(x) INTERRUPT_HANDLER(HandleElement, x,)
 #define HandleElementInterrupt(x, intCode) INTERRUPT_HANDLER(HandleElement, x, intCode)
 
 
@@ -84,6 +90,9 @@ static unsigned int interruptFlag = 1;
 		bool running = false; \
 		void userButtonUpdate() { while (running) {userButtonInt = userButton; } } \
 		int main(int argc, char const *argv[]) { \
+		if (interruptFlag == 0) { \
+			INTERRUPT_HANDLED; \
+		} \
 		try { \
 			std::cout << "Program Start" << std::endl; \
 			running = true; \

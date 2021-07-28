@@ -42,20 +42,30 @@
 #define IP "10.0.100.4"
 global int DISPLAY_SDA_PORT = 14;
 global int DISPLAY_SCL_PORT = 15;
+
 global PinName INNER_BB_PORT = A0;
 global PinName OUTER_BB_PORT = A1;
 global PinName LOWER_BB_PORT = A2;
 global PinName OUTER_LED_PORT = D7;
+
+global PinName E_STOP1 = D16;
+global PinName E_STOP2 = D17;
+global PinName E_STOP3 = D18;
 #endif
 
 #ifdef BAM
 #define IP "10.0.100.5"
 global int DISPLAY_SDA_PORT = 14;
+
 global int DISPLAY_SCL_PORT = 15;
 global PinName INNER_BB_PORT = A0;
 global PinName OUTER_BB_PORT = A1;
 global PinName LOWER_BB_PORT = A2;
 global PinName OUTER_LED_PORT = D7;
+
+global PinName E_STOP1 = D16;
+global PinName E_STOP2 = D17;
+global PinName E_STOP3 = D18;
 #endif
 
 
