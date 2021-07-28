@@ -8,5 +8,7 @@ CREATE TABLE matches (
   match_number INTEGER NOT NULL,
   red_teams TEXT NOT NULL,  -- JSON Array
   blue_teams TEXT NOT NULL,  -- JSON Array
-  played BOOLEAN NOT NULL
+  played BOOLEAN NOT NULL,
+  score TEXT,
+  winner TEXT
 );

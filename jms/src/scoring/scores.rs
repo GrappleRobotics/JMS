@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use serde::ser::SerializeStruct;
 
 use crate::{arena::station::Alliance, utils::saturating_offset};
@@ -13,6 +15,14 @@ use crate::{arena::station::Alliance, utils::saturating_offset};
 pub struct ModeScore<T> {
   pub auto: T,
   pub teleop: T
+}
+
+impl<T> ModeScore<T>
+  where T: Add + Copy
+{
+  pub fn total(&self) -> T::Output {
+    self.auto + self.teleop
+  }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
@@ -51,7 +61,8 @@ pub struct DerivedScore {
   pub total_bonus_rp: usize
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(into="MatchScoreSnapshot", from="MatchScoreSnapshot")]
 pub struct MatchScore {
   pub red: LiveScore,
   pub blue: LiveScore
@@ -66,27 +77,60 @@ impl MatchScore {
   }
 }
 
-// Special serialize to auto-derive the scores for JSON transport
-impl serde::Serialize for MatchScore {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::Serializer
-  {
-    #[derive(serde::Serialize)]
-    struct PairedScore {
-      live: LiveScore,
-      derived: DerivedScore
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SnapshotScore {
+  pub live: LiveScore,
+  pub derived: DerivedScore
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MatchScoreSnapshot {
+  pub red: SnapshotScore,
+  pub blue: SnapshotScore
+}
+
+impl Into<MatchScoreSnapshot> for MatchScore {
+  fn into(self) -> MatchScoreSnapshot {
+    let derive_red = self.red.derive();
+    let derive_blue = self.blue.derive();
+    
+    MatchScoreSnapshot {
+      red: SnapshotScore { live: self.red, derived: derive_red },
+      blue: SnapshotScore { live: self.blue, derived: derive_blue }
     }
-
-    let red = PairedScore { live: self.red.clone(), derived: self.red.derive() };
-    let blue = PairedScore { live: self.blue.clone(), derived: self.blue.derive() };
-
-    let mut state = serializer.serialize_struct("MatchScore", 2)?;
-    state.serialize_field("red", &red)?;
-    state.serialize_field("blue", &blue)?;
-    state.end()
   }
 }
+
+impl From<MatchScoreSnapshot> for MatchScore {
+  fn from(snapshot: MatchScoreSnapshot) -> Self {
+    Self {
+      red: snapshot.red.live,
+      blue: snapshot.blue.live
+    }
+  }
+}
+
+// // Special serialize to auto-derive the scores for JSON transport
+// impl serde::Serialize for MatchScore {
+//   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//   where
+//     S: serde::Serializer
+//   {
+//     #[derive(serde::Serialize)]
+//     struct PairedScore {
+//       live: LiveScore,
+//       derived: DerivedScore
+//     }
+
+//     let red = PairedScore { live: self.red.clone(), derived: self.red.derive() };
+//     let blue = PairedScore { live: self.blue.clone(), derived: self.blue.derive() };
+
+//     let mut state = serializer.serialize_struct("MatchScore", 2)?;
+//     state.serialize_field("red", &red)?;
+//     state.serialize_field("blue", &blue)?;
+//     state.end()
+//   }
+// }
 
 // For updating from the frontend. 
 #[derive(Debug, Clone, serde::Deserialize)]

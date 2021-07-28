@@ -23,6 +23,8 @@ table! {
         red_teams -> Text,
         blue_teams -> Text,
         played -> Bool,
+        score -> Nullable<Text>,
+        winner -> Nullable<Text>,
     }
 }
 

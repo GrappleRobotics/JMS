@@ -271,6 +271,15 @@ tr {
     background-color: rgb(0, 85, 85) !important;
     font-weight: bold;
   }
+
+  @each $alliance in blue, red {
+    &[data-winner=#{$alliance}] {
+      > td.schedule-#{$alliance} {
+        font-weight: bold;
+        text-decoration: underline;
+      }
+    }
+  }
 }
 
 th {

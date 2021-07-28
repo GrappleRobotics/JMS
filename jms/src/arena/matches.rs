@@ -1,10 +1,11 @@
 use std::time::{Duration, Instant};
 
+use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{models, scoring::scores::MatchScore};
+use crate::{db, models::{self, SQLJson}, scoring::scores::MatchScore};
 
-use super::exceptions::{MatchError, MatchResult};
+use super::{exceptions::{MatchError, MatchResult}, station::Alliance};
 
 use serde::Serialize;
 
@@ -80,6 +81,37 @@ impl LoadedMatch {
         to: MatchPlayState::Waiting,
         why: "Match not ready!".to_owned(),
       })
+    }
+  }
+
+  pub async fn commit_score(&mut self) -> MatchResult<()> {
+    if self.match_meta.match_type != models::MatchType::Test {
+      if self.state == MatchPlayState::Complete {
+        let red = self.score.red.derive();
+        let blue = self.score.blue.derive();
+
+        let mut winner = None;
+        if blue.total_score.total() > red.total_score.total() {
+          winner = Some(SQLJson(Alliance::Blue));
+        } else if red.total_score.total() > blue.total_score.total() {
+          winner = Some(SQLJson(Alliance::Blue));
+        }
+
+        self.match_meta.played = true;
+        self.match_meta.winner = winner;
+        self.match_meta.score = Some(SQLJson(self.score.clone()));
+
+        {
+          use crate::schema::matches::dsl::*;
+          diesel::replace_into(matches).values(&self.match_meta).execute(&db::connection()).unwrap();
+        }
+
+        Ok(())
+      } else {
+        Err(MatchError::WrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
+      }
+    } else {
+      Ok(())
     }
   }
 

@@ -65,7 +65,7 @@ export default class MatchScheduleView extends React.Component {
       </thead>
       <tbody>
         {
-          matches.map(match => <tr className={ this.rowClass(match) }>
+          matches.map(match => <tr className={ this.rowClass(match) } data-winner={ match.winner?.toLowerCase() }>
             <td> 
               { moment.unix(match.time).format("dddd HH:mm:ss") }
               &nbsp;

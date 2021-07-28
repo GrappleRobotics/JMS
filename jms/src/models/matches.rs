@@ -1,11 +1,11 @@
-use crate::{models::SQLJson, schema::match_generation_records, schema::matches, sql_mapped_enum};
+use crate::{arena::station::Alliance, models::SQLJson, schema::match_generation_records, schema::matches, scoring::scores::MatchScore, sql_mapped_enum};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
 use super::{SQLDatetime, SQLJsonVector};
 
 sql_mapped_enum!(MatchType, Test, Qualification, Quarterfinal, Semifinal, Final);
 
-#[derive(Identifiable, Insertable, Queryable, Associations, Debug, Clone)]
+#[derive(Identifiable, Insertable, Queryable, Associations, AsChangeset, Debug, Clone)]
 #[belongs_to(MatchGenerationRecord, foreign_key="match_type")]
 #[table_name = "matches"]
 pub struct Match {
@@ -19,7 +19,8 @@ pub struct Match {
   pub blue_teams: SQLJsonVector<i32>,  // 0 if unoccupied
   pub red_teams: SQLJsonVector<i32>,
   pub played: bool,
-  // pub match_generation_record_id: Option<i32>,
+  pub score: Option<SQLJson<MatchScore>>,
+  pub winner: Option<SQLJson<Alliance>>   // Will be None if tie, but means nothing if the match isn't played yet
 }
 
 impl Match {
@@ -32,7 +33,9 @@ impl Match {
       match_number: 1,
       blue_teams: SQLJson(vec![0, 0, 0]),
       red_teams: SQLJson(vec![0, 0, 0]),
-      played: false
+      played: false,
+      score: None,
+      winner: None
     }
   }
 
@@ -52,7 +55,7 @@ impl Serialize for Match {
   where
       S: Serializer,
 {
-    let mut state = serializer.serialize_struct("Match", 10)?;
+    let mut state = serializer.serialize_struct("Match", 11)?;
     state.serialize_field("id", &self.id)?;
     state.serialize_field("type", &self.match_type)?;
     state.serialize_field("time", &self.start_time)?;
@@ -62,6 +65,8 @@ impl Serialize for Match {
     state.serialize_field("blue", &self.blue_teams)?;
     state.serialize_field("red", &self.red_teams)?;
     state.serialize_field("played", &self.played)?;
+    state.serialize_field("score", &self.score)?;
+    state.serialize_field("winner", &self.winner)?;
     state.end()
   }
 }

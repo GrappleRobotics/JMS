@@ -352,11 +352,7 @@ impl Arena {
       }
       (ArenaState::MatchCommit, _) => {
         if first {
-          use crate::schema::matches::dsl::*;
-          let mut m = self.current_match.as_mut().unwrap().metadata().clone();
-          m.played = true;
-
-          diesel::replace_into(matches).values(&m).execute(&db::connection())?;
+          self.current_match.as_mut().unwrap().commit_score().await?;
           self.prepare_state_change(ArenaState::Idle)?;
         }
       },

@@ -86,6 +86,7 @@ pub enum MatchError {
     to: MatchPlayState,
     why: String,
   },
+  WrongState { state: MatchPlayState, why: String }
 }
 
 impl std::fmt::Display for MatchError {
@@ -97,7 +98,10 @@ impl std::fmt::Display for MatchError {
         ref why,
       } => {
         write!(f, "Illegal State Change: {:?} -> {:?} ({})", from, to, why)
-      }
+      },
+      MatchError::WrongState { ref state, ref why } => {
+        write!(f, "Wrong State: {:?} ({})", state, why)
+      },
     }
   }
 }
