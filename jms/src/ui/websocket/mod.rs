@@ -93,6 +93,12 @@ pub trait WebsocketMessageHandler {
   async fn handle(&mut self, msg: JsonMessage) -> Result<Vec<JsonMessage>>;
 }
 
+#[derive(Hash, PartialEq, Eq)]
+pub struct TopicSubscription {
+  pub object: String,
+  pub noun: String
+}
+
 pub struct Websockets {
   loop_duration: Duration,
   handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
@@ -179,6 +185,7 @@ async fn connection_handler(
   handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
 ) -> Result<()> {
   let mut ws = accept_async(stream).await?;
+  let mut subscriptions = HashMap::<TopicSubscription, ()>::new();
 
   debug!("Websocket Connected");
 
@@ -189,7 +196,11 @@ async fn connection_handler(
           Ok(msg) => match msg {
             tungstenite::Message::Text(msg_str) => {
               let m: JsonMessage = serde_json::from_str(&msg_str)?;
-              process_incoming(&mut ws, m, &handlers, &broadcast_tx).await?;
+              if m.verb == "__subscribe__" {
+                subscriptions.insert(TopicSubscription { object: m.object, noun: m.noun }, ());
+              } else {
+                process_incoming(&mut ws, m, &handlers, &broadcast_tx).await?;
+              }
             },
             _ => ()
           },
@@ -201,8 +212,16 @@ async fn connection_handler(
         }
       },
       recvd = broadcast_rx.recv() => match recvd {
-        Ok(msg) => {
-          ws.send(tungstenite::Message::Text(serde_json::to_string(&msg)?)).await?;
+        Ok(msgs) => {
+          let msgs_filtered: Vec<&JsonMessage> = msgs.iter().filter(|m| {
+            let ts_specific = TopicSubscription { object: m.object.clone(), noun: m.noun.clone() };
+            let ts_generic = TopicSubscription { object: m.object.clone(), noun: "*".to_owned() };
+            subscriptions.contains_key(&ts_specific) || subscriptions.contains_key(&ts_generic)
+          }).collect();
+
+          if msgs_filtered.len() > 0 {
+            ws.send(tungstenite::Message::Text(serde_json::to_string(&msgs_filtered)?)).await?;
+          }
         },
         Err(e) => error!("WS Broadcast Recv Error: {}", e),
       }

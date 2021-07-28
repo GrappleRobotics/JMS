@@ -7,6 +7,12 @@ import { faHome, faMagic } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default class TopNavbar extends React.Component {
+  constructor(props) {
+    super(props);
+
+    props.ws.subscribe("arena", "state");
+  }
+
   decodeArenaState = () => {
     let connected = this.props.connected;
     let state = this.props.state;

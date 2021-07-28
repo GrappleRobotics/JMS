@@ -4,16 +4,19 @@ import { Col, Navbar } from "react-bootstrap";
 
 export default class BottomNavbar extends React.Component {
 
-  allMatches = () => {
-    if (!this.props.matches)
-      return [];
-    return Object.values(this.props.matches).flatMap(x => x.matches || []);
+  constructor(props) {
+    super(props);
+
+    props.ws.subscribe("arena", "match");
+    props.ws.subscribe("matches", "next");
+    props.ws.subscribe("event", "details");
   }
 
   getScheduleTimings = () => {
     let format = d => d.format("d[d] h[h] m[m]", { trim: "both" });
 
-    let nextMatch = this.allMatches().find(m => !m.played && m.id != this.props.arena?.match?.match?.id);
+    // let nextMatch = this.allMatches().find(m => !m.played && m.id != this.props.arena?.match?.match?.id);
+    let nextMatch = this.props.next_match;
 
     if (nextMatch === undefined || nextMatch === null)
       return <React.Fragment />;

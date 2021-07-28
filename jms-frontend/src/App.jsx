@@ -60,6 +60,7 @@ export default class App extends React.Component {
         navbar ? <Row className="navbar-padding">
           <Col>
             <TopNavbar
+              ws={this.ws}
               connected={this.state.connected}
               state={arena?.state}
               match={arena?.match}
@@ -77,8 +78,9 @@ export default class App extends React.Component {
         navbar ? <Row className="navbar-padding">
           <Col>
             <BottomNavbar
+              ws={this.ws}
               arena={arena}
-              matches={matches}
+              next_match={matches?.next}
               event={event?.details}
             />
           </Col>
@@ -120,9 +122,10 @@ export default class App extends React.Component {
       <Route path={RANKINGS}>
         <this.wrapView fullscreen>
           <Rankings
+            ws={this.ws}
             rankings={event?.rankings}
             details={event?.details}
-            matches={matches}
+            next_match={matches?.next}
           />
         </this.wrapView>
       </Route>

@@ -7,6 +7,13 @@ import { Button, Card, Col, Container, Row, ToggleButton, ToggleButtonGroup } fr
 import { Link, Route, Switch, useRouteMatch } from "react-router-dom";
 
 export class Scoring extends React.Component {
+  constructor(props) {
+    super(props);
+
+    props.ws.subscribe("arena", "match");
+    props.ws.subscribe("arena", "stations");
+  }
+
   updateScore(field, data) {
     this.props.ws.send("arena", "match", "scoreUpdate", {
       alliance: this.props.alliance,
@@ -123,7 +130,7 @@ export class Scoring extends React.Component {
   render() {
     return <Container fluid>
       {
-        this.props.arena?.match?.score ? this.renderScore() : this.renderNoScore()
+        (this.props.arena?.match?.score && this.props.arena?.stations ) ? this.renderScore() : this.renderNoScore()
       }
     </Container>
   }

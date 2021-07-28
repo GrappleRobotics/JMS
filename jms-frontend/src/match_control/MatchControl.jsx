@@ -5,6 +5,13 @@ import { Button, Col, Container, Row } from "react-bootstrap";
 import MatchScheduleView from "./MatchScheduleView";
 
 export default class MatchControl extends React.Component {
+  constructor(props) {
+    super(props);
+
+    props.ws.subscribe("arena", "*");
+    props.ws.subscribe("matches", "*");
+  }
+
   render() {
     let { arena, matches, ws } = this.props;
 

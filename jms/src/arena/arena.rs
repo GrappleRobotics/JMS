@@ -6,7 +6,6 @@ use std::{
   },
 };
 
-use diesel::RunQueryDsl;
 use enum_as_inner::EnumAsInner;
 use log::{error, info};
 use tokio::sync::Mutex;
@@ -53,7 +52,7 @@ enum StateData {
 
 #[derive(Serialize)]
 #[serde(transparent)]
-struct BoundState {
+pub struct BoundState {
   #[serde(skip)]
   first: bool, // First run?
   state: ArenaState,
@@ -164,7 +163,7 @@ pub struct Arena {
   // network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
   #[serde(skip)]
   network: Option<Arc<Mutex<Box<dyn NetworkProvider + Send + Sync>>>>,
-  state: BoundState,
+  pub state: BoundState,
   #[serde(skip)]
   pending_state_change: Option<ArenaState>,
   #[serde(skip)]

@@ -26,6 +26,9 @@ export default class EventWizard extends React.Component {
     super(props);
 
     this.state = {};
+
+    props.ws.subscribe("event", "*");
+    props.ws.subscribe("matches", "*");
   }
 
   render() {

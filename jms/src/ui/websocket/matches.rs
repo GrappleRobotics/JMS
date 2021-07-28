@@ -1,4 +1,6 @@
-use crate::{schedule::{quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+
+use crate::{db, models, schedule::{quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
 
 use super::WebsocketMessageHandler;
 pub struct MatchWebsocketHandler {
@@ -21,6 +23,12 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
     {
       // Quals
       response.push(msg.noun("quals").to_data(&self.quals)?);
+    }
+    {
+      // Next Match
+      use crate::schema::matches::dsl::*;
+      let next_match = matches.filter(played.eq(false)).first::<models::Match>(&db::connection())?;
+      response.push(msg.noun("next").to_data(&next_match)?);
     }
     Ok(response)
   }

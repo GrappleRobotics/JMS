@@ -7,11 +7,14 @@ const SCROLL_TIME = 20000;
 const SCROLL_RESET_TIME = 2500;
 
 export default class Rankings extends React.PureComponent {
-
   constructor(props) {
     super(props);
 
     this.scrollDown();
+    
+    props.ws.subscribe("event", "rankings");
+    props.ws.subscribe("event", "details");
+    props.ws.subscribe("matches", "next");
   }
 
   scrollDown = () => {
@@ -29,12 +32,6 @@ export default class Rankings extends React.PureComponent {
       });
       setTimeout(() => this.scrollDown(), SCROLL_RESET_TIME);
     }, SCROLL_TIME + SCROLL_RESET_TIME);
-  }
-
-  allMatches = () => {
-    if (!this.props.matches)
-      return [];
-    return Object.values(this.props.matches).flatMap(x => x.matches || []);
   }
 
   renderRankings = () => {
@@ -68,7 +65,7 @@ export default class Rankings extends React.PureComponent {
   }
 
   render() {
-    let next_match = this.allMatches().find(m => !m.played);
+    let next_match = this.props.next_match;
     return <Container className="wrapper">
       <Row className="my-4">
         <Col>
