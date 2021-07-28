@@ -50,7 +50,7 @@ export default class TopNavbar extends React.Component {
 
   render() {
     const [arenaState, navbarColour] = this.decodeArenaState();
-    return <Navbar bg={navbarColour} variant="dark">
+    return <Navbar bg={navbarColour} variant="dark" fixed="top">
       <Button variant="hazard-red-dark" disabled={!this.props.connected || this.props.state?.state == "Estop"} onClick={this.props.onEstop}>
         E-STOP
       </Button>

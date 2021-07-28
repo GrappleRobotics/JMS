@@ -57,7 +57,7 @@ export default class App extends React.Component {
 
     return <div className="wrapper">
       {
-        navbar ? <Row>
+        navbar ? <Row className="navbar-padding">
           <Col>
             <TopNavbar
               connected={this.state.connected}
@@ -74,7 +74,7 @@ export default class App extends React.Component {
         </Col>
       </Row>
       {
-        navbar ? <Row>
+        navbar ? <Row className="navbar-padding">
           <Col>
             <BottomNavbar
               arena={arena}

@@ -35,7 +35,7 @@ export default class BottomNavbar extends React.Component {
 
   render() {
     let { arena, event } = this.props;
-    return <Navbar bg="dark" variant="dark" className="flex">
+    return <Navbar bg="dark" variant="dark" className="flex" fixed="bottom">
       <Col>
         <Navbar.Brand>
           { arena?.match?.match?.name || <i> No Match Loaded </i> }
