@@ -16,7 +16,7 @@ use super::{
   station::{AllianceStationId},
 };
 
-use crate::{arena::station::Alliance, db, ds::DSMode, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
+use crate::{arena::station::Alliance, ds::DSMode, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
 
 use serde::{Deserialize, Serialize};
 

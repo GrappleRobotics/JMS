@@ -42,10 +42,11 @@ class AllianceStation extends React.Component {
   }
   
   render() {
+    let match_loaded = this.props.match_loaded;
     let s = this.props.station;
     let cname = ["alliance-station"];
-    let can_bypass = this.props.state?.state === "Prestart" || this.props.state?.state === "Idle";
-    let can_change_team = this.props.state?.state === "Idle";
+    let can_bypass = match_loaded && (this.props.state?.state === "Prestart" || this.props.state?.state === "Idle");
+    let can_change_team = match_loaded && this.props.state?.state === "Idle";
 
     if (s.astop)
       cname.push("bg-hazard-dark-active");
@@ -155,6 +156,7 @@ export default class Alliance extends React.Component {
             this.props.stations?.map(s => 
               <AllianceStation
                 key={s.station.station}
+                match_loaded={this.props.match_loaded}
                 station={s}
                 state={this.props.state}
                 onUpdate={(data) => this.props.onStationUpdate({ station: s.station, update: data })}

@@ -37,6 +37,7 @@ export default class MatchControl extends React.Component {
             <Col>
               <Alliance
                 colour="Blue"
+                match_loaded={ !!arena?.match }
                 state={arena?.state}
                 score={arena?.match?.score?.blue}
                 stations={arena?.stations?.filter(x => x.station.alliance === "Blue")}
@@ -47,6 +48,7 @@ export default class MatchControl extends React.Component {
               <Alliance
                 colour="Red"
                 flipped
+                match_loaded={ !!arena?.match }
                 state={arena?.state}
                 score={arena?.match?.score?.red}
                 stations={arena?.stations?.filter(x => x.station.alliance === "Red").reverse()}  // Red teams go 3-2-1 to order how they're seen from the scoring table
