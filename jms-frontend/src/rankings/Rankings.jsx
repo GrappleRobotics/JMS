@@ -1,8 +1,35 @@
 import moment from "moment";
 import React from "react";
-import { Container, Table } from "react-bootstrap";
+import { Col, Container, Row, Table } from "react-bootstrap";
+import { animateScroll as scroll, scroller, Element } from "react-scroll";
+
+const SCROLL_TIME = 20000;
+const SCROLL_RESET_TIME = 2500;
 
 export default class Rankings extends React.PureComponent {
+
+  constructor(props) {
+    super(props);
+
+    this.scrollDown();
+  }
+
+  scrollDown = () => {
+    scroller.scrollTo("bottom", {
+      containerId: "rankings-container",
+      duration: SCROLL_TIME,
+      delay: 0,
+      smooth: 'linear'
+    });
+
+    setTimeout(() => {
+      scroller.scrollTo("top", {
+        containerId: "rankings-container",
+        delay: 0
+      });
+      setTimeout(() => this.scrollDown(), SCROLL_RESET_TIME);
+    }, SCROLL_TIME + SCROLL_RESET_TIME);
+  }
 
   allMatches = () => {
     if (!this.props.matches)
@@ -42,18 +69,26 @@ export default class Rankings extends React.PureComponent {
 
   render() {
     let next_match = this.allMatches().find(m => !m.played);
-    return <Container className="my-4">
-      <h2> Team Standings - { this.props.details?.event_name || "Unnamed Event" } </h2>
-      {
-        next_match ? <h4 className="text-muted"> 
-          Next Match: { next_match.name } &nbsp; ({ moment.unix(next_match.time).calendar() })
-        </h4> : <React.Fragment />
-      }
-      
-      <br />
-      {
-        this.props.rankings?.length ? this.renderRankings() : <h4> No Rankings Available - waiting for matches to begin... </h4>
-      }
+    return <Container className="wrapper">
+      <Row className="my-4">
+        <Col>
+          <h2> Team Standings - { this.props.details?.event_name || "Unnamed Event" } </h2>
+          {
+            next_match ? <h4 className="text-muted"> 
+              Next Match: { next_match.name } &nbsp; ({ moment.unix(next_match.time).calendar() })
+            </h4> : <React.Fragment />
+          }
+        </Col>
+      </Row>
+      <Row id="rankings-container" className="app-viewport">
+        <Col>
+            <Element name="top" />
+            {
+              this.props.rankings?.length ? this.renderRankings() : <h4> No Rankings Available - waiting for matches to begin... </h4>
+            }
+            <Element name="bottom" />
+        </Col>
+      </Row>
     </Container>
   }
 

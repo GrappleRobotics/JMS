@@ -34,8 +34,21 @@ html, body, #root {
   padding: 20px;
   overflow-y: scroll;
 
+  &.fullscreen {
+    overflow: hidden;
+  }
+
   &[data-connected=false] {
     background-color: darken(theme-color("danger"), 40%);
+  }
+
+  ::-webkit-scrollbar {
+    width: 2px;  /* Remove scrollbar space */
+    background: transparent;  /* Optional: just make scrollbar invisible */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: gray("500");
   }
 }
 
@@ -346,12 +359,22 @@ th {
   }
 }
 
+#rankings-container {
+  padding: 0;
+}
+
 .rankings {
+  border-collapse: separate;
+
   thead > tr {
-    background-color: gray("100");
-    font-size: 20px;
-    color: gray("900");
-    text-align: center;
+    th {
+      text-align: center;
+      color: gray("900");
+      font-size: 20px;
+      background-color: gray("100");
+      position: sticky;
+      top: 1px;
+    }
   }
   tbody > tr {
     td {

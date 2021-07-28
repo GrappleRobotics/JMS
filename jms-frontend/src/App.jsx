@@ -52,7 +52,7 @@ export default class App extends React.Component {
   }
 
   wrapView = (props) => {
-    let { navbar, children } = props;
+    let { navbar, children, fullscreen } = props;
     let { arena, event, matches } = this.state;
 
     return <div className="wrapper">
@@ -68,7 +68,7 @@ export default class App extends React.Component {
           </Col>
         </Row> : this.renderNoNavbar()
       }
-      <Row className="app-viewport" data-connected={this.state.connected}>
+      <Row className={"app-viewport " + (fullscreen ? "fullscreen" : "")} data-connected={this.state.connected}>
         <Col>
           { children }
         </Col>
@@ -118,7 +118,7 @@ export default class App extends React.Component {
         </this.wrapView>
       </Route>
       <Route path={RANKINGS}>
-        <this.wrapView>
+        <this.wrapView fullscreen>
           <Rankings
             rankings={event?.rankings}
             details={event?.details}
