@@ -45,6 +45,8 @@ pub struct LoadedMatch {
   config: MatchConfig
 }
 
+// TODO: Update match metadata whenever the Arena team list changes (arena is able to swap teams out)
+
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
@@ -94,7 +96,7 @@ impl LoadedMatch {
         if blue.total_score.total() > red.total_score.total() {
           winner = Some(SQLJson(Alliance::Blue));
         } else if red.total_score.total() > blue.total_score.total() {
-          winner = Some(SQLJson(Alliance::Blue));
+          winner = Some(SQLJson(Alliance::Red));
         }
 
         self.match_meta.played = true;
@@ -104,6 +106,16 @@ impl LoadedMatch {
         {
           use crate::schema::matches::dsl::*;
           diesel::replace_into(matches).values(&self.match_meta).execute(&db::connection()).unwrap();
+        }
+
+        {
+          let conn = db::connection();
+          for &team in &self.match_meta.blue_teams.0 {
+            models::TeamRanking::get(team, &conn)?.update( &blue, &red, &conn )?;
+          }
+          for &team in &self.match_meta.red_teams.0 {
+            models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
+          }
         }
 
         Ok(())

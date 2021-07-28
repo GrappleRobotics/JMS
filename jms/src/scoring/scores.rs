@@ -1,7 +1,5 @@
 use std::ops::Add;
 
-use serde::ser::SerializeStruct;
-
 use crate::{arena::station::Alliance, utils::saturating_offset};
 
 // NOTE: WARP 2021 has some rule modifications.
@@ -109,28 +107,6 @@ impl From<MatchScoreSnapshot> for MatchScore {
     }
   }
 }
-
-// // Special serialize to auto-derive the scores for JSON transport
-// impl serde::Serialize for MatchScore {
-//   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//   where
-//     S: serde::Serializer
-//   {
-//     #[derive(serde::Serialize)]
-//     struct PairedScore {
-//       live: LiveScore,
-//       derived: DerivedScore
-//     }
-
-//     let red = PairedScore { live: self.red.clone(), derived: self.red.derive() };
-//     let blue = PairedScore { live: self.blue.clone(), derived: self.blue.derive() };
-
-//     let mut state = serializer.serialize_struct("MatchScore", 2)?;
-//     state.serialize_field("red", &red)?;
-//     state.serialize_field("blue", &blue)?;
-//     state.end()
-//   }
-// }
 
 // For updating from the frontend. 
 #[derive(Debug, Clone, serde::Deserialize)]

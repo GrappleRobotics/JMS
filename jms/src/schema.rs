@@ -48,6 +48,20 @@ table! {
 }
 
 table! {
+    team_rankings (team) {
+        team -> Integer,
+        rp -> Integer,
+        auto_points -> Integer,
+        endgame_points -> Integer,
+        teleop_points -> Integer,
+        win -> Integer,
+        loss -> Integer,
+        tie -> Integer,
+        played -> Integer,
+    }
+}
+
+table! {
     teams (id) {
         id -> Integer,
         name -> Nullable<Text>,
@@ -63,5 +77,6 @@ allow_tables_to_appear_in_same_query!(
     matches,
     playoff_alliances,
     schedule_blocks,
+    team_rankings,
     teams,
 );

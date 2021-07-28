@@ -40,6 +40,12 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       let als = playoff_alliances.load::<models::PlayoffAlliance>(&db::connection())?;
       response.push(msg.noun("alliances").to_data(&als)?)
     }
+    {
+      // Rankings
+      use crate::schema::team_rankings::dsl::*;
+      let rs = team_rankings.load::<models::TeamRanking>(&db::connection())?;
+      response.push(msg.noun("rankings").to_data(&rs)?)
+    }
     Ok(response)
   }
 

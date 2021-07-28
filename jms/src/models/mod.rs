@@ -14,8 +14,11 @@ pub use event_details::*;
 mod schedule;
 pub use schedule::*;
 
-pub mod alliances;
+mod alliances;
 pub use alliances::*;
+
+mod rankings;
+pub use rankings::*;
 
 // SQL-mapped vector (for sqlite)
 

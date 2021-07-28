@@ -86,7 +86,8 @@ pub enum MatchError {
     to: MatchPlayState,
     why: String,
   },
-  WrongState { state: MatchPlayState, why: String }
+  WrongState { state: MatchPlayState, why: String },
+  DBError(diesel::result::Error)
 }
 
 impl std::fmt::Display for MatchError {
@@ -102,12 +103,22 @@ impl std::fmt::Display for MatchError {
       MatchError::WrongState { ref state, ref why } => {
         write!(f, "Wrong State: {:?} ({})", state, why)
       },
+      MatchError::DBError(ref e) => write!(f, "DB Error: {}", e),
     }
   }
 }
 
 impl error::Error for MatchError {
   fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-    None
+    match *self {
+      MatchError::DBError(ref e) => Some(e),
+      _ => None
+    }
+  }
+}
+
+impl From<diesel::result::Error> for MatchError {
+  fn from(e: diesel::result::Error) -> Self {
+    Self::DBError(e)
   }
 }
