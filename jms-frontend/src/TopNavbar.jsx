@@ -2,8 +2,11 @@ import React from 'react';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import { Button } from 'react-bootstrap';
+import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
+import { faHome, faMagic } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
-export default class NavBar extends React.Component {
+export default class TopNavbar extends React.Component {
   decodeArenaState = () => {
     let connected = this.props.connected;
     let state = this.props.state;
@@ -14,7 +17,7 @@ export default class NavBar extends React.Component {
     
     switch (state.state) {
       case "Idle":
-        return ["Idle", match ? "dark" : "secondary"];
+        return ["Idle", "dark"];
       case "Prestart":
         return state.ready ? ["Prestarted", "success"] : ["Prestarting...", "warning"];
       case "MatchArmed":
@@ -45,19 +48,6 @@ export default class NavBar extends React.Component {
     }
   };
 
-  renderMatch = () => {
-    let match = this.props.match;
-    if (match) {
-      if (match.meta.type == "Test") {
-        return <i>Test Match</i>;
-      } else {
-        return match.meta.name;
-      }
-    } else {
-      return <i>No Match Loaded</i>;
-    }
-  }
-
   render() {
     const [arenaState, navbarColour] = this.decodeArenaState();
     return <Navbar bg={navbarColour} variant="dark">
@@ -71,13 +61,13 @@ export default class NavBar extends React.Component {
       <Navbar.Brand>
         { arenaState }
       </Navbar.Brand>
-      <Navbar.Brand>
-        { this.renderMatch() }
-      </Navbar.Brand>
       <Navbar.Toggle />
-      <Navbar.Collapse>
-        <Nav className="mr-auto">
-          <Nav.Link>Home</Nav.Link>
+      <Navbar.Collapse className="justify-content-end">
+        <Nav>
+          <Nav.Link href="/">
+            <FontAwesomeIcon icon={faHome} /> &nbsp;
+            Home
+          </Nav.Link>
         </Nav>
       </Navbar.Collapse>
     </Navbar>

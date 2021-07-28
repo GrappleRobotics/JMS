@@ -5,6 +5,8 @@ mod logging;
 mod network;
 mod ui;
 mod utils;
+mod schedule;
+mod scoring;
 
 mod models;
 mod schema;
@@ -32,6 +34,7 @@ use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
 use crate::ui::websocket::EventWebsocketHandler;
+use crate::ui::websocket::MatchWebsocketHandler;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -74,9 +77,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
   let mut ds_service = DSConnectionService::new(arena.clone()).await;
   let ds_fut = ds_service.run();
 
-  let mut ws = Websockets::new();
-  ws.register("arena", Box::new(ArenaWebsocketHandler { arena })).await;
-  ws.register("event", Box::new(EventWebsocketHandler {})).await;
+  let mut ws = Websockets::new(Duration::from_millis(500));
+  ws.register("arena", Box::new(ArenaWebsocketHandler::new(arena))).await;
+  ws.register("event", Box::new(EventWebsocketHandler::new())).await;
+  ws.register("matches", Box::new(MatchWebsocketHandler::new())).await;
   let ws_fut = ws.begin().map_err(|e| Box::new(e));
 
   try_join!(arena_fut, ds_fut, ws_fut)?;

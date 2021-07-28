@@ -4,6 +4,9 @@ use log::{debug, info};
 use nalgebra as na;
 use rand::{Rng, prelude::SliceRandom};
 
+pub mod worker;
+pub mod quals;
+
 // Cols = Rounds
 #[derive(Debug)]
 pub struct ScheduleRounds(pub na::DMatrix<usize>);
@@ -23,82 +26,69 @@ pub struct TeamSchedule(pub na::DMatrix<u16>);
 
 pub struct ScheduleGenerator {
   num_teams: usize,
-  num_rounds: usize,
   num_stations: usize,
-
   num_matches: usize,
-  num_overflow: usize,
 
   teams: na::DVector<usize>,
+}
 
-  placeholder_team: usize
+pub struct GenerationResult {
+  pub schedule: Schedule,
+  pub team_balance_score: f64,
+  pub station_balance_score: f64,
+  pub cooccurrence: na::DMatrix<usize>,
+  pub station_dist: na::DMatrix<usize>
 }
 
 impl ScheduleGenerator {
   pub fn new(
     num_teams: usize,
-    num_matches_per_team: usize,
+    // num_matches_per_team: usize,
+    num_matches: usize,
     num_stations: usize
   ) -> Self {
-    let num_matches = ((num_teams * num_matches_per_team) as f64 / (num_stations as f64)).ceil() as usize;
     let teams = na::DVector::from_iterator(num_teams, (0..num_teams).into_iter());
 
     Self {
       num_teams,
-      num_rounds: num_matches_per_team,
       num_stations,
       num_matches,
-      num_overflow: (num_matches * num_stations) - (num_matches_per_team * num_teams),
       teams,
-      placeholder_team: num_teams
     }
   }
 
-  fn generate_unchecked_simple_schedule(&self) -> ScheduleRounds {
-    let mut schedule = ScheduleRounds(na::DMatrix::zeros(self.num_teams, self.num_rounds));
-    for i in 0..self.num_rounds {
-      schedule.0.set_column(i, &shuffle(&self.teams));
-    }
-    schedule
-  }
+  fn generate_simple_schedule(&self) -> Schedule {
+    let mut schedule = na::DMatrix::zeros(self.num_stations, self.num_matches);
 
-  fn rounds_into_matches(&self, rounds: &ScheduleRounds, const_placeholder: bool) -> Schedule {
-    let iter = rounds.0.iter().map(|x| *x);
-    
-    if const_placeholder {
-      let iter = iter.chain( (0..self.num_overflow).map(|_| self.placeholder_team) );
-      Schedule(na::DMatrix::from_iterator(self.num_stations, self.num_matches, iter))
-    } else {
-      // Generate placeholder teams for the final match, excluding teams that were already in the match
-      let mut rng = rand::thread_rng();
+    let mut teams: Vec<usize> = shuffle(&self.teams).iter().map(|&x| x).collect();
 
-      let num_excluded = self.num_stations - self.num_overflow;
-      let excluded_teams = rounds.0.slice((self.num_teams - num_excluded, self.num_rounds - 1), (num_excluded, 1));
+    for m in 0..self.num_matches {
+      let mut match_picked = vec![];
+      for s in 0..self.num_stations {
+        if teams.len() == 0 {
+          teams = shuffle(&self.teams).iter().map(|&x| x).collect();
+        }
 
-      let team_options: Vec<usize> = self.teams.iter().filter(|&&x| !excluded_teams.iter().any(|&y| x == y)).map(|&x| x).collect();
-      let selections = team_options.choose_multiple(&mut rng, self.num_overflow).map(|x| *x);
+        // Get the first team in the shuffled teams that isn't already in this match 
+        // (for when rounds split in the middle of a match)
+        let pos = teams.iter().position(|&x| !match_picked.iter().any(|&y| x == y)).unwrap();
+        let picked = teams.remove(pos);
+        match_picked.push(picked);
 
-      let iter = iter.chain( selections );
-      Schedule(na::DMatrix::from_iterator(self.num_stations, self.num_matches, iter))
-    }
-  }
-
-  pub fn generate_simple_schedule(&self) -> ScheduleRounds {
-    // Keep generating until we get a valid schedule (all teams only play a maximum of once each match - no repeats)
-    loop {
-      let sched = self.generate_unchecked_simple_schedule();
-
-      match self.schedule_team_balance_score(&sched) {
-        Some(_) => return sched,
-        None => (),
+        schedule[(s, m)] = picked;
       }
     }
+
+    Schedule(schedule)
   }
 
-  pub fn schedule_team_balance_score(&self, schedule: &ScheduleRounds) -> Option<f64> {
+  // fn matches_into_rounds(&self, matches: &Schedule) -> ScheduleRounds {
+  //   ScheduleRounds(na::DMatrix::from_iterator(self.num_teams, self.num_rounds, matches.0.iter().cloned()))
+  // }
+
+  pub fn schedule_team_balance_score(&self, schedule: &Schedule) -> Option<f64> {
     // Generate cooccurence of each team with each other
-    let matches = self.rounds_into_matches(schedule, true);
-    let cooccurrence = self.cooccurrence_matrix(&matches);
+    let cooccurrence = self.cooccurrence_matrix(&schedule);
 
     // Calculate stddev of upper triangle (first part of the cooccurrence)
     cooccurrence.map(|c| stddev(&upper_triangle(&c, 1)))
@@ -110,13 +100,11 @@ impl ScheduleGenerator {
     for m in schedule.0.column_iter() {
       for (i, &t1) in m.iter().enumerate() {
         for (j, &t2) in m.iter().enumerate() {
-          if t1 != self.placeholder_team && t2 != self.placeholder_team {
-            if i != j && t1 == t2 {
-              // Team appears in the same match multiple times, therefore this schedule is not valid
-              return None
-            } else {
-              cooccurrence[(t1, t2)] += 1;
-            }
+          if i != j && t1 == t2 {
+            // Team appears in the same match multiple times, therefore this schedule is not valid
+            return None
+          } else {
+            cooccurrence[(t1, t2)] += 1;
           }
         }
       }
@@ -125,14 +113,16 @@ impl ScheduleGenerator {
     Some(cooccurrence)
   }
 
-  pub fn generate_incremental_team_balance_schedule(&self, schedule: &ScheduleRounds) -> ScheduleRounds {
-    let mut rng = rand::thread_rng();
+  // TODO: Make this shuffle properly
+  // TODO: Need to select a round and make sure matchups are still valid
+  // pub fn generate_incremental_team_balance_schedule(&self, schedule: &Schedule) -> Schedule {
+  //   let mut rng = rand::thread_rng();
 
-    let mut sched = schedule.0.clone();
-    let col = rng.gen_range(0..sched.ncols());
-    sched.set_column(col, &shuffle(&sched.column(col)));
-    ScheduleRounds(sched)
-  }
+  //   let mut sched = schedule.0.clone();
+  //   let col = rng.gen_range(0..sched.ncols());
+  //   sched.set_column(col, &shuffle(&sched.column(col)));
+  //   ScheduleRounds(sched)
+  // }
 
   pub fn schedule_station_balance_scores(&self, schedule: &Schedule) -> Option<f64> {
     // Each row is a station, each col is a team
@@ -162,49 +152,59 @@ impl ScheduleGenerator {
     Schedule(sched)
   }
 
-  pub fn generate(&self, anneal_team_balance: Annealer, anneal_station_balance: Annealer) -> (Schedule, f64, f64) {
+  pub fn generate(&self, anneal_team_balance: Annealer, anneal_station_balance: Annealer) -> GenerationResult {
     let t0 = time::Instant::now();
 
-    let rounds = self.generate_simple_schedule();
+    let seed = self.generate_simple_schedule();
     let t1 = time::Instant::now();
 
     info!("Seed schedule generated (in {:.2}s)", (t1 - t0).as_secs_f32());
-    debug!("{}", rounds.0);
+    debug!("{}", seed.0);
 
     let t2 = time::Instant::now();
-    let (annealed_rounds, tb_initial_score, tb_score) = anneal_team_balance.anneal(
-      rounds,
-      |s| self.generate_incremental_team_balance_schedule(s),
+    let (annealed_1, tb_initial_score, tb_score) = anneal_team_balance.anneal(
+      seed,
+      // |s| self.generate_incremental_team_balance_schedule(s),
+      |_| self.generate_simple_schedule(),
       |s| self.schedule_team_balance_score(s)
     );
     let t3 = time::Instant::now();
 
     info!("Team balance annealing complete, score={:.4}->{:.4} (in {:.2}s)", tb_initial_score, tb_score, (t3 - t2).as_secs_f32());
-    debug!("{}", annealed_rounds.0);
+    debug!("{}", annealed_1.0);
 
-    let matches = self.rounds_into_matches(&annealed_rounds, false);
+    // let matches = self.rounds_into_matches(&annealed_1, false);
 
     let t4 = time::Instant::now();
-    let (annealed_matches, sb_initial_score, sb_score) = anneal_station_balance.anneal(
-      matches,
+    let (annealed_2, sb_initial_score, sb_score) = anneal_station_balance.anneal(
+      annealed_1,
       |s| self.generate_incremental_station_balance_schedule(s),
       |s| self.schedule_station_balance_scores(s)
     );
     let t5 = time::Instant::now();
 
     info!("Station balance annealing complete, score={:.4}->{:.4} (in {:.2}s)", sb_initial_score, sb_score, (t5 - t4).as_secs_f32());
-    debug!("{}", annealed_matches.0);
+    debug!("{}", annealed_2.0);
 
     info!("Schedule generated in {:.2}s", (t5 - t0).as_secs_f32());
-    debug!("{}", annealed_matches.0);
+    debug!("{}", annealed_2.0);
+
+    let cooc = self.cooccurrence_matrix(&annealed_2).unwrap();
+    let sm = self.station_matrix(&annealed_2);
 
     debug!("Cooccurrence matrix:");
-    debug!("{}", self.cooccurrence_matrix(&annealed_matches).unwrap());
+    debug!("{}", cooc);
 
     debug!("Station matrix:");
-    debug!("{}", self.station_matrix(&annealed_matches));
+    debug!("{}", sm);
 
-    (annealed_matches, tb_score, sb_score)
+    GenerationResult {
+      schedule: annealed_2,
+      team_balance_score: tb_score,
+      station_balance_score: sb_score,
+      cooccurrence: cooc,
+      station_dist: sm
+    }
   }
 }
 

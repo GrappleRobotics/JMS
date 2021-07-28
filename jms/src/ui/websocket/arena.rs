@@ -1,54 +1,83 @@
+use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 
-use crate::{arena::{
-  matches::LoadedMatch, station::AllianceStationId, AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena,
-}, models};
+use crate::{arena::{AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{Alliance, AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
 
-use super::{WebsocketError, WebsocketMessageHandler};
+use super::{JsonMessage, WebsocketError, WebsocketMessageHandler};
 
 pub struct ArenaWebsocketHandler {
   pub arena: SharedArena,
 }
 
+impl ArenaWebsocketHandler {
+  pub fn new(arena: SharedArena) -> Self {
+    ArenaWebsocketHandler {
+      arena
+    }
+  }
+}
+
 #[async_trait::async_trait]
 impl WebsocketMessageHandler for ArenaWebsocketHandler {
-  async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Option<super::JsonMessage>> {
+  async fn update(&mut self) -> super::Result<Vec<JsonMessage>> {
+    let arena = self.arena.lock().await;
+    let msg = JsonMessage::update("arena", "");
+
+    Ok(vec![ msg.to_data(&*arena)? ])
+  }
+
+  async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Vec<JsonMessage>> {
     let response_msg = msg.response();
 
-    Ok(match msg.noun.as_str() {
+    let response = vec![];
+
+    match msg.noun.as_str() {
       "state" => match (msg.verb.as_str(), msg.data) {
         ("signal", Some(data)) => {
           let sig: ArenaSignal = serde_json::from_value(data)?;
           self.arena.lock().await.signal(sig).await;
-          None
         }
-        ("current", None) => {
-          let current = self.arena.lock().await.current_state();
-          Some(response_msg.data(serde_json::to_value(current)?))
-        }
-        _ => Some(response_msg.invalid_verb_or_data()),
+        _ => Err(response_msg.invalid_verb_or_data())?,
       },
       "alliances" => match (msg.verb.as_str(), msg.data) {
         ("update", Some(data)) => {
           self.alliance_update(serde_json::from_value(data)?).await?;
-          None
         }
-        _ => Some(response_msg.invalid_verb_or_data()),
+        _ => Err(response_msg.invalid_verb_or_data())?,
       },
       "match" => match (msg.verb.as_str(), msg.data) {
         ("loadTest", None) => {
           self.arena.lock().await.load_match(LoadedMatch::new(models::Match::new_test()))?;
-          None
-        }
-        _ => Some(response_msg.invalid_verb_or_data()),
+        },
+        ("load", Some(serde_json::Value::Number(match_id))) => {
+          use crate::schema::matches::dsl::*;
+          if let Some(n) = match_id.as_i64() {
+            let match_meta = matches.filter(id.eq(n as i32)).first::<models::Match>(&db::connection())?;
+            self.arena.lock().await.load_match(LoadedMatch::new(match_meta))?;
+          } else {
+            Err(response_msg.invalid_verb_or_data())?
+          }
+        },
+        ("scoreUpdate", Some(data)) => {
+          let update: ScoreUpdateData = serde_json::from_value(data)?;
+          match self.arena.lock().await.current_match.as_mut() {
+            Some(m) => {
+              match update.alliance {
+                Alliance::Blue => m.score.blue.update(update.update),
+                Alliance::Red => m.score.red.update(update.update),
+              }
+            },
+            None => Err(WebsocketError::Other("No Match!".to_owned()))?
+          }
+          // self.arena.lock().await.current_match
+        },
+        _ => Err(response_msg.invalid_verb_or_data())?,
       },
-      "status" => match (msg.verb.as_str(), msg.data) {
-        ("get", None) => self.status().await?.map(|x| response_msg.data(x)),
-        _ => Some(response_msg.invalid_verb_or_data()),
-      },
-      _ => Some(response_msg.unknown_noun()),
-    })
+      _ => Err(response_msg.unknown_noun())?,
+    };
+
+    return Ok(response);
   }
 }
 
@@ -59,23 +88,6 @@ struct AllianceStationUpdate {
 }
 
 impl ArenaWebsocketHandler {
-  async fn status(&self) -> super::Result<Option<Value>> {
-    let arena = self.arena.lock().await;
-    let ref the_match = arena.current_match; // match is a reserved word in rust :)
-
-    Ok(Some(json!({
-      "state": arena.current_state(),
-      "alliances": arena.stations,
-      "match": the_match.as_ref().map(|m| {
-        json!({
-          "state": m.current_state(),
-          "remaining_time": m.remaining_time(),
-          "meta": m.metadata()
-        })
-      })
-    })))
-  }
-
   async fn alliance_update(&self, data: AllianceStationUpdate) -> super::Result<()> {
     let mut arena = self.arena.lock().await;
 
@@ -97,7 +109,11 @@ impl ArenaWebsocketHandler {
             stn.occupancy = AllianceStationOccupancy::Vacant;
             stn.ds_report = None;
           }
-          ("team", Value::Number(x)) if idle => stn.team = Some(x.as_u64().unwrap_or(0) as u16),
+          ("team", Value::Number(x)) if idle => {
+            stn.occupancy = AllianceStationOccupancy::Vacant;
+            stn.ds_report = None;
+            stn.team = Some(x.as_u64().unwrap_or(0) as u16);
+          },
           _ => {
             return Err(WebsocketError::Other(format!(
               "Unknown data key or format (or state): key={} value={:?}",

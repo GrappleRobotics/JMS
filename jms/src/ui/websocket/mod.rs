@@ -1,27 +1,20 @@
 mod arena;
 mod event;
+mod matches;
 
 pub use arena::ArenaWebsocketHandler;
 pub use event::EventWebsocketHandler;
+pub use matches::MatchWebsocketHandler;
 
 use futures::{lock::Mutex, SinkExt, StreamExt};
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, error, sync::Arc};
-use tokio::net::{TcpListener, TcpStream};
-use tokio_tungstenite::{accept_async, tungstenite};
+use std::{collections::HashMap, error, sync::Arc, time::Duration};
+use tokio::{net::{TcpListener, TcpStream}, sync::broadcast};
+use tokio_tungstenite::{WebSocketStream, accept_async, tungstenite};
 
-use crate::{arena::exceptions::ArenaError};
-
-#[async_trait::async_trait]
-pub trait WebsocketMessageHandler {
-  async fn handle(&mut self, msg: JsonMessage) -> Result<Option<JsonMessage>>;
-}
-
-pub struct Websockets {
-  handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
-}
+use crate::arena::exceptions::ArenaError;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JsonMessage {
@@ -44,6 +37,10 @@ impl JsonMessage {
     }
   }
 
+  pub fn update(object: &str, noun: &str) -> JsonMessage {
+    JsonMessage::new(object, noun, "__update__")
+  }
+
   pub fn response(&self) -> JsonMessage {
     let mut n = self.clone();
     n.data = None;
@@ -51,11 +48,11 @@ impl JsonMessage {
     n
   }
 
-  // pub fn noun(&self, noun: &str) -> JsonMessage {
-  //   let mut n = self.clone();
-  //   n.noun = noun.to_owned();
-  //   n
-  // }
+  pub fn noun(&self, noun: &str) -> JsonMessage {
+    let mut n = self.clone();
+    n.noun = noun.to_owned();
+    n
+  }
 
   // pub fn verb(&self, verb: &str) -> JsonMessage {
   //   let mut n = self.clone();
@@ -69,101 +66,187 @@ impl JsonMessage {
     n
   }
 
+  pub fn to_data<T>(&self, data: &T) -> Result<JsonMessage>
+    where T: serde::Serialize 
+  {
+    Ok(self.data(serde_json::to_value(data)?))
+  }
+
   pub fn error(&self, msg: &str) -> JsonMessage {
     let mut n = self.clone();
     n.error = Some(msg.to_owned());
     n
   }
 
-  pub fn unknown_object(&self) -> JsonMessage {
-    self.error("Unknown object")
+  pub fn unknown_noun(&self) -> WebsocketError {
+    WebsocketError::Other("Unknown noun".to_owned())
   }
 
-  pub fn unknown_noun(&self) -> JsonMessage {
-    self.error("Unknown noun")
-  }
-
-  pub fn invalid_verb_or_data(&self) -> JsonMessage {
-    self.error("Invalid verb/data")
+  pub fn invalid_verb_or_data(&self) -> WebsocketError {
+    WebsocketError::Other("Invalid verb/data".to_owned())
   }
 }
 
+#[async_trait::async_trait]
+pub trait WebsocketMessageHandler {
+  async fn update(&mut self) -> Result<Vec<JsonMessage>>;
+  async fn handle(&mut self, msg: JsonMessage) -> Result<Vec<JsonMessage>>;
+}
+
+pub struct Websockets {
+  loop_duration: Duration,
+  handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
+  broadcast: broadcast::Sender<Vec<JsonMessage>>,
+}
+
 impl Websockets {
-  pub fn new() -> Self {
+  pub fn new(loop_duration: Duration) -> Self {
+    let (tx, _) = broadcast::channel(16);
+
     Websockets {
+      loop_duration,
       handlers: Arc::new(Mutex::new(HashMap::new())),
+      broadcast: tx
     }
   }
 
   pub async fn register(&mut self, object_key: &'static str, handler: Box<dyn WebsocketMessageHandler + Send>) {
-    self.handlers.lock().await.insert(object_key.to_owned(), handler);
+    let h = handler;
+    self.handlers.lock().await.insert(object_key.to_owned(), h);
   }
 
   pub async fn begin(&self) -> Result<()> {
+    let mut update_interval = tokio::time::interval(self.loop_duration);
     let listener = TcpListener::bind("0.0.0.0:9000").await?;
     info!("WebSocket started...");
 
-    while let Ok((stream, _addr)) = listener.accept().await {
-      let h = self.handlers.clone();
-      tokio::spawn(async move {
-        if let Err(e) = Self::connection_handler(stream, h).await {
-          match e {
-            WebsocketError::Tungstenite(ref e) => match e {
-              tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8 => (),
-              err => error!("Tungstenite Error: {}", err),
-            },
-            err => error!("Error: {}", err),
-          }
-        }
-      });
-    }
-
-    Ok(())
-  }
-
-  // Can't be a self method as tokio::spawn may outlive the object itself, unless we constrain to be 'static lifetime
-  async fn connection_handler(
-    stream: TcpStream,
-    handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
-  ) -> Result<()> {
-    let mut ws = accept_async(stream).await?;
-
-    while let Some(msg) = ws.next().await {
-      let msg = msg?;
-      match msg {
-        tungstenite::Message::Text(msg_str) => {
-          let m: JsonMessage = serde_json::from_str(&msg_str)?;
-          let mut hs = handlers.lock().await;
-
-          match hs.get_mut(&m.object) {
-            Some(h) => {
-              let response = h.handle(m.clone()).await;
-              match response {
-                Ok(Some(ref r)) => {
-                  let response_msg = serde_json::to_string(r)?;
-                  ws.send(tungstenite::Message::Text(response_msg)).await?;
-                }
-                Ok(None) => (),
-                Err(e) => {
-                  error!("WS Error: {}", e);
-                  let response_msg = serde_json::to_string(&m.response().error(&e.to_string()))?;
-                  ws.send(tungstenite::Message::Text(response_msg)).await?;
+    loop {
+      tokio::select! {
+        conn_result = listener.accept() => match conn_result {
+          Ok((stream, _addr)) => {
+            let h = self.handlers.clone();
+            let tx = self.broadcast.clone();
+            let rx = self.broadcast.subscribe();
+      
+            tokio::spawn(async move {
+              if let Err(e) = connection_handler(stream, tx, rx, h).await {
+                match e {
+                  WebsocketError::Tungstenite(ref e) => match e {
+                    tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8 => (),
+                    err => error!("Tungstenite Error: {}", err),
+                  },
+                  err => error!("Error: {}", err),
                 }
               }
-            }
-            None => {
-              warn!("No WS handler for object {}", m.object);
-              let response = serde_json::to_string(&JsonMessage::new(&m.object, &m.noun, &m.verb).unknown_object())?;
-              ws.send(tungstenite::Message::Text(response)).await?;
-            }
+            });
+          },
+          Err(e) => Err(e)?,
+        },
+
+        _ = update_interval.tick() => {
+          for (_, handler) in self.handlers.lock().await.iter_mut() {
+            do_broadcast_update(handler, &self.broadcast).await?;
           }
         }
-        _ => (),
       }
     }
-
-    Ok(())
   }
+}
+
+async fn do_broadcast_update(
+  handler: &mut Box<dyn WebsocketMessageHandler + Send>,
+  broadcast: &broadcast::Sender<Vec<JsonMessage>>
+) -> Result<()> {
+  match handler.update().await {
+    Ok(msgs) => {
+      if msgs.len() > 0 && broadcast.receiver_count() > 0 {
+        match broadcast.send(msgs) {
+          Ok(_) => (),
+          Err(e) => error!("Error in broadcast: {}", e),
+        }
+      }
+    },
+    Err(e) => error!("Error in handler tick: {}", e)
+  }
+  Ok(())
+}
+
+// Can't be a self method as tokio::spawn may outlive the object itself, unless we constrain to be 'static lifetime
+async fn connection_handler(
+  stream: TcpStream,
+  broadcast_tx: broadcast::Sender<Vec<JsonMessage>>,
+  mut broadcast_rx: broadcast::Receiver<Vec<JsonMessage>>,
+  handlers: Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
+) -> Result<()> {
+  let mut ws = accept_async(stream).await?;
+
+  debug!("Websocket Connected");
+
+  loop {
+    tokio::select! {
+      recvd = ws.next() => match recvd {
+        Some(recvd) => match recvd {
+          Ok(msg) => match msg {
+            tungstenite::Message::Text(msg_str) => {
+              let m: JsonMessage = serde_json::from_str(&msg_str)?;
+              process_incoming(&mut ws, m, &handlers, &broadcast_tx).await?;
+            },
+            _ => ()
+          },
+          Err(e) => Err(e)?,
+        },
+        None => {
+          debug!("Websocket Disconnected");
+          return Ok(());
+        }
+      },
+      recvd = broadcast_rx.recv() => match recvd {
+        Ok(msg) => {
+          ws.send(tungstenite::Message::Text(serde_json::to_string(&msg)?)).await?;
+        },
+        Err(e) => error!("WS Broadcast Recv Error: {}", e),
+      }
+    }
+  }
+}
+
+async fn process_incoming(
+  ws: &mut WebSocketStream<TcpStream>,
+  msg: JsonMessage,
+  handlers: &Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
+  broadcast: &broadcast::Sender<Vec<JsonMessage>>
+) -> Result<()> {
+  let mut hs = handlers.lock().await;
+
+  match hs.get_mut(&msg.object) {
+    Some(h) => {
+      let response = h.handle(msg.clone()).await;
+      match response {
+        Ok(msgs) => if msgs.len() > 0 {
+          let response_msg = serde_json::to_string(&msgs)?;
+          ws.send(tungstenite::Message::Text(response_msg)).await?;
+        }
+        Err(e) => {
+          error!("WS Error: {}", e);
+          
+          let err = msg.response().error(&e.to_string());
+          let response_msg = serde_json::to_string(&vec![err])?;
+          ws.send(tungstenite::Message::Text(response_msg)).await?;
+        }
+      }
+      // Send out another broadcast for this object, as WS messages coming
+      // from the browser usually mutate the object
+      do_broadcast_update(h, broadcast).await?;
+    }
+    None => {
+      warn!("No WS handler for object {}", msg.object);
+      let err = JsonMessage::new(&msg.object, &msg.noun, &msg.verb).error("Unknown Object");
+      let response = serde_json::to_string(&vec![err])?;
+      ws.send(tungstenite::Message::Text(response)).await?;
+    }
+  }
+
+  Ok(())
 }
 
 #[derive(Debug)]

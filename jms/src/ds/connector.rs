@@ -108,7 +108,7 @@ impl DSConnection {
             }
 
             // Check timeout
-            if self.last_packet_time.elapsed() > Duration::from_millis(1000) {
+            if self.last_packet_time.elapsed() > Duration::from_millis(2000) {
               self.state = DSConnectionState::Disconnected(DSDisconnectionReason::Timeout);
               break;
             }
@@ -117,21 +117,11 @@ impl DSConnection {
 
         // TCP Update
         _ = tcp_timer.tick() => {
-          // TODO: Can't TCP Update here
           // The DS buffers all TCP messages, so if we send TCP messages more often than the DS sends
           // them, the DS thinks it's still connected even if we close the socket.
           // Nice one, NI.
 
           let status = self._get_station_status().await;
-
-          // if let Some(team) = self.team {
-          //   let mut tags = vec![];
-          //   // TODO: Event Code (once implemented)
-          //   // TODO: Game Data (once implemented)
-          //   tags.push(self._construct_station_tag(status));
-
-          //   self.framed_tcp.send(Fms2DsTCP{ tags }).await.unwrap(); // TODO: Handle error
-          // }
 
           // Update arena record of station status
           {
@@ -284,6 +274,9 @@ impl DSConnection {
         report.radio_ping = pkt.radio;
         report.rio_ping = pkt.rio;
         report.battery = pkt.battery;
+
+        report.estop = pkt.estop;
+        report.mode = if pkt.enabled { Some(pkt.mode) } else { None };
 
         for tag in pkt.tags {
           match tag {

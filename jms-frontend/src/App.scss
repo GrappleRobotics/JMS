@@ -1,8 +1,43 @@
+@import "~bootswatch/dist/darkly/variables";
+
 $theme-colors: (
-  "warning": #ffbb00
+  "primary": #007bff,
+  "success": #28a745,
+  "alliance-red": #f53e31,
+  "alliance-blue": #3152f5
 );
 
 @import "~bootstrap/scss/bootstrap";
+@import "~react-datetime/css/react-datetime.css";
+@import "~react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
+@import "~react-bootstrap-typeahead/css/Typeahead.css";
+@import "~bootswatch/dist/darkly/bootswatch";
+
+.nav-link.disabled {
+  color: $gray-600;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+.wrapper {
+  min-height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-viewport {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: scroll;
+
+  &[data-connected=false] {
+    background-color: darken(theme-color("danger"), 40%);
+  }
+}
 
 $hazard-dark-primary: #735a00;
 $hazard-dark-secondary: #593e00;
@@ -108,7 +143,7 @@ $hazard-red-dark-secondary: #590000;
 
 .alliance-station {
   font-family: 'Courier New', Courier, monospace;
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.281);
   @include alliance-row;
   &.bypassed {
     background-color: rgba(0, 0, 0, 0.25);
@@ -122,7 +157,7 @@ $hazard-red-dark-secondary: #590000;
 
 .alliance-red {
   @extend .alliance;
-  background-color: rgba(255, 0, 0, 0.75)
+  background-color: rgba(255, 30, 30, 0.75)
 }
 
 .indicator-small {
@@ -134,6 +169,15 @@ $hazard-red-dark-secondary: #590000;
   margin: 1px;
 }
 
+input[type=number] {
+  &::-webkit-inner-spin-button, &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+}
+
 input.team-num {
   font-size: 14px;
   background-color:rgba(255, 255, 255, 0.75);
@@ -143,14 +187,194 @@ input.team-num {
   text-align: right;
   color: #000;
 
-  &::-webkit-inner-spin-button, &::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    margin: 0;
-  }
-
   &.buffer-diff {
     background-color: rgb(255, 251, 0);
+  }
+}
+
+.vr-right {
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.buffer-diff {
+  border: 2px solid orange !important;
+  &:focus {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px red;
+    outline: 0 none;
+  }
+}
+
+.wizard-attention {
+  &:not(.active) {
+    @extend .text-danger;
+  }
+  &.active {
+    @extend .bg-danger;
+  }
+}
+
+.w-15 {
+  width: 15%;
+}
+
+.wizard-tabs {
+  max-width: 250px;
+}
+
+.table-striped > tbody > tr:nth-child(odd) {
+  &:not(.played) {
+    > td {
+      &.schedule-blue {
+        background-color: lighten(theme-color("alliance-blue"), 5%);
+        color: white;
+      }
+      &.schedule-red {
+        background-color: lighten(theme-color("alliance-red"), 5%);
+        color: white;
+      }
+    }
+  }
+
+  &.played {
+    > td {
+      background-color: rgb(70, 70, 70);
+      font-style: italic;
+    }
+  }
+}
+
+.table-striped > tbody > tr:nth-child(even) {
+  &:not(.played) {
+    > td {
+      &.schedule-blue {
+        background-color: lighten(theme-color("alliance-blue"), 15%);
+        color: white;
+      }
+      &.schedule-red {
+        background-color: lighten(theme-color("alliance-red"), 15%);
+        color: white;
+      }
+    }
+  }
+
+  &.played {
+    > td {
+      background-color: rgb(82, 82, 82);
+      font-style: italic;
+    }
+  }
+}
+
+tr {
+  &.next-match {
+    background-color: rgb(122, 84, 0) !important;
+    font-weight: bold;
+  }
+
+  &.loaded-match {
+    background-color: rgb(0, 85, 85) !important;
+    font-weight: bold;
+  }
+
+  @each $alliance in blue, red {
+    &[data-winner=#{$alliance}] {
+      > td.schedule-#{$alliance} {
+        font-weight: bold;
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+th {
+  &.schedule-blue {
+    background-color: darken(theme-color("alliance-blue"), 15%);
+    color: white;
+  }
+  &.schedule-red {
+    background-color: darken(theme-color("alliance-red"), 15%);
+    color: white;
+  }
+}
+
+.timekeeper-behind {
+  font-weight: bold;
+  color: #faa;
+}
+
+.bool-toggle {
+  > .btn {
+    &.false {
+      &.active {
+        @extend .btn-danger;
+      }
+      &:not(.active) {
+        @extend .btn-outline-danger;
+      }
+    }
+    &.true {
+      &.active {
+        @extend .btn-success;
+      }
+      &:not(.active) {
+        @extend .btn-outline-success;
+      }
+    }
+  }
+}
+
+.scorer-card {
+  @each $alliance in blue, red {
+    $tc: theme-color("alliance-#{$alliance}");
+    &[data-alliance=#{$alliance}] {
+      > .card-header {
+        background-color: desaturate(darken($tc, 15%), 25%);
+      }
+      > .card-body {
+        background-color: desaturate(darken($tc, 40%), 40%);
+      }
+    }
+  }
+
+  .card-body {
+    .row {
+      margin-bottom: 25px;
+      &:last-child {
+        margin-bottom: 0px;
+      }
+    }
+  }
+}
+
+.rankings {
+  thead > tr {
+    background-color: gray("100");
+    font-size: 20px;
+    color: gray("900");
+    text-align: center;
+  }
+  tbody > tr {
+    td {
+      font-weight: bold;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    &:nth-child(even) {
+      background-color: gray("800");
+    }
+    &:nth-child(odd) {
+      background-color: gray("700");
+    }
+
+    &[data-rank="1"] {
+      background-color: #9c8501;
+    }
+    &[data-rank="2"] {
+      background-color: gray("600");
+    }
+    &[data-rank="3"] {
+      background-color: #865320;
+    }
   }
 }

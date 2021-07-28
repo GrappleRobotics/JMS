@@ -45,17 +45,23 @@ export default class JmsWebsocket {
     };
 
     ws.onmessage = msg => {
-      let message = JSON.parse(msg.data);
+      let messages = JSON.parse(msg.data);
 
-      if (message.error !== null) {
-        console.error("WS Error: ", message);
-        this.errorCallbacks.forEach(cb => cb(message));
-      } else {
-        this.callbacks.forEach(cbobj => {
-          if (cbobj.o === message.object && cbobj.n === message.noun && cbobj.v === message.verb)
-            cbobj.c(message.data)
-        });
-      }
+      messages.forEach(message => {
+        if (message.error !== null) {
+          console.error("WS Error: ", message);
+          this.errorCallbacks.forEach(cb => cb(message));
+        } else {
+          this.callbacks.forEach(cbobj => {
+            let obj_ok = (cbobj.o === "*") || (cbobj.o === message.object);
+            let noun_ok = (cbobj.n === "*") || (cbobj.n === message.noun);
+            let verb_ok = (cbobj.v === "*") || (cbobj.v === message.verb);
+  
+            if (obj_ok && noun_ok && verb_ok)
+              cbobj.c(message)
+          });
+        }
+      });
     };
   }
 
