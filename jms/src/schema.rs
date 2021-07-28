@@ -54,6 +54,7 @@ table! {
         auto_points -> Integer,
         endgame_points -> Integer,
         teleop_points -> Integer,
+        random_num -> Integer,
         win -> Integer,
         loss -> Integer,
         tie -> Integer,

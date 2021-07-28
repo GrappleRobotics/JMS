@@ -1,6 +1,6 @@
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, models::{self, PlayoffAlliance, ScheduleBlock}};
+use crate::{db, models::{self, PlayoffAlliance, ScheduleBlock, TeamRanking}};
 
 use super::{JsonMessage, WebsocketMessageHandler};
 
@@ -42,8 +42,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
     }
     {
       // Rankings
-      use crate::schema::team_rankings::dsl::*;
-      let rs = team_rankings.load::<models::TeamRanking>(&db::connection())?;
+      let rs = TeamRanking::get_sorted(&db::connection())?;
       response.push(msg.noun("rankings").to_data(&rs)?)
     }
     Ok(response)

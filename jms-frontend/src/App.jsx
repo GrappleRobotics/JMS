@@ -3,13 +3,14 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { EVENT_WIZARD, MATCH_CONTROL, SCORING } from 'paths';
+import { EVENT_WIZARD, MATCH_CONTROL, RANKINGS, SCORING } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
 import { nullIfEmpty } from 'support/strings';
 import Home from 'Home';
 import { ScoringRouter } from 'scoring/Scoring';
+import Rankings from 'rankings/Rankings';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -46,59 +47,90 @@ export default class App extends React.Component {
     window['ws'] = this.ws;
   }
 
-  render() {
+  renderNoNavbar = () => {
+    return this.state.connected ? <React.Fragment /> : <Navbar bg="danger" variant="dark"> <Navbar.Brand className="ml-5"> DISCONNECTED </Navbar.Brand> </Navbar>
+  }
+
+  wrapView = (props) => {
+    let { navbar, children } = props;
     let { arena, event, matches } = this.state;
 
     return <div className="wrapper">
-      <Row>
+      {
+        navbar ? <Row>
+          <Col>
+            <TopNavbar
+              connected={this.state.connected}
+              state={arena?.state}
+              match={arena?.match}
+              onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
+            />
+          </Col>
+        </Row> : this.renderNoNavbar()
+      }
+      <Row className="app-viewport" data-connected={this.state.connected}>
         <Col>
-          <TopNavbar
-            connected={this.state.connected}
-            state={arena?.state}
-            match={arena?.match}
-            onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
+          { children }
+        </Col>
+      </Row>
+      {
+        navbar ? <Row>
+          <Col>
+            <BottomNavbar
+              arena={arena}
+              matches={matches}
+              event={event?.details}
+            />
+          </Col>
+        </Row> : <React.Fragment />
+      }
+    </div>
+  }
+
+  render() {
+    let { arena, event, matches } = this.state;
+
+    return <Switch>
+      <Route path={EVENT_WIZARD}>
+        <this.wrapView navbar>
+          <EventWizard
+            ws={this.ws}
+            event={event}
+            matches={matches}
           />
-        </Col>
-      </Row>
-      <Row className="app-viewport">
-        <Col>
-          <Switch>
-            <Route path={EVENT_WIZARD}>
-              <EventWizard
-                ws={this.ws}
-                event={event}
-                matches={matches}
-              />
-            </Route>
-            <Route path={SCORING}>
-              <ScoringRouter
-                ws={this.ws}
-                arena={arena}
-              />
-            </Route>
-            <Route path={MATCH_CONTROL}>
-              <MatchControl
-                ws={this.ws}
-                arena={arena}
-                matches={matches}
-              />
-            </Route>
-            <Route path="/">
-              <Home />
-            </Route>
-          </Switch>
-        </Col>
-      </Row>
-      <Row>
-        <Col>
-          <BottomNavbar
+        </this.wrapView>
+      </Route>
+      <Route path={SCORING}>
+        <this.wrapView navbar>
+          <ScoringRouter
+            ws={this.ws}
+            arena={arena}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={MATCH_CONTROL}>
+        <this.wrapView navbar>
+          <MatchControl
+            ws={this.ws}
             arena={arena}
             matches={matches}
-            event={event?.details}
           />
-        </Col>
-      </Row>
-
-    </div>
+        </this.wrapView>
+      </Route>
+      <Route path={RANKINGS}>
+        <this.wrapView>
+          <Rankings
+            rankings={event?.rankings}
+            details={event?.details}
+            matches={matches}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path="/">
+        <this.wrapView navbar>
+          <Home />
+        </this.wrapView>
+      </Route>
+    </Switch>
   }
 };

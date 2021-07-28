@@ -7,6 +7,7 @@ CREATE TABLE team_rankings (
   auto_points INTEGER NOT NULL DEFAULT 0,
   endgame_points INTEGER NOT NULL DEFAULT 0,
   teleop_points INTEGER NOT NULL DEFAULT 0,
+  random_num INTEGER NOT NULL DEFAULT 0,
   
   win INTEGER NOT NULL DEFAULT 0,
   loss INTEGER NOT NULL DEFAULT 0,
