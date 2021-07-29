@@ -85,31 +85,26 @@ static unsigned int interruptFlag = 1;
  * (insert interrupt code)
  */
 #define HandleController(Controller) \
-		DigitalIn userButton(USER_BUTTON); \
-		int userButtonInt = userButton; \
-		bool running = false; \
-		void userButtonUpdate() { while (running) {userButtonInt = userButton; } } \
-		int main(int argc, char const *argv[]) { \
+	/* DigitalIn userButton(USER_BUTTON);*/ \
+	int userButtonInt = 0; \
+	bool running = false; \
+	/*void userButtonUpdate() { while (running) {userButtonInt = userButton; } }*/ \
+	int main(int argc, char const *argv[]) { \
 		if (interruptFlag == 0) { \
 			INTERRUPT_HANDLED; \
 		} \
-		try { \
-			std::cout << "Program Start" << std::endl; \
-			running = true; \
-			Thread userButtonUpdate_t; \
-			userButtonUpdate_t.start(userButtonUpdate); \
-			Controller controller; \
-			int programValue = controller.start(argc, argv, userButtonInt); \
-			if (programValue != 0) { \
-				std::cout << "Program Start Error: " << programValue << std::endl; \
-			} \
-			std::cout << "Program Exit: " << programValue << std::endl; \
-			running = false; \
-			userButtonUpdate_t.join(); \
-			return programValue != 0 ? 1 : 0; \
-		} catch(const std::exception& e) { \
-			std::cerr << e.what() << '\n'; \
-			return 1; \
+		std::cout << "Program Start" << std::endl; \
+		running = true; \
+		/*Thread userButtonUpdate_t;*/ \
+		/*userButtonUpdate_t.start(userButtonUpdate);*/ \
+		Controller controller; \
+		int programValue = controller.start(argc, argv, userButtonInt); \
+		if (programValue != 0) { \
+			std::cout << "Program Start Error: " << programValue << std::endl; \
 		} \
+		std::cout << "Program Exit: " << programValue << std::endl; \
+		running = false; \
+		/*userButtonUpdate_t.join();*/ \
+		return programValue != 0 ? 1 : 0; \
 	}
 #endif

@@ -20,6 +20,7 @@ class Button {
 	Button(int *passthroughState) : _buttonState(passthroughState) {
 		_button = nullptr;
 		_passthrough = true;
+		printf("Passthrough button created\n");
 	}
 	
 	~Button() {
@@ -80,12 +81,15 @@ class Button {
  * Stores button current state and trigger events
  * also interrupt with function event
  */
-class ButtonInterrupt : public Button {
+class ButtonInterrupt {
  public:
-	ButtonInterrupt(PinName interruptPin, Callback<void()> bindFunction, int startingState = 0) : Button(_interruptButtonState) {
+	ButtonInterrupt(PinName interruptPin, Callback<void()> bindFunction, int startingState = 0) {
 		_interruptButton = new InterruptIn(interruptPin);
-		*_interruptButtonState = *_interruptButton;
-		_interruptButton->fall(bindFunction);
+		printf("Created new interrupt in\n");
+		// *_interruptButtonState = *_interruptButton;
+		// printf("Button satte is not button interrupt\n");
+		_interruptButton->rise(bindFunction);
+		printf("Button interrupt created\n");
 	}
 
 	~ButtonInterrupt() {

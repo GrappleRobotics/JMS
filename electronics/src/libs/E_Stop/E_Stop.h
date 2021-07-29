@@ -27,11 +27,13 @@ enum class E_StopType {
 class E_Stop : public ButtonInterrupt {
  public:
 	E_Stop(PinName buttonPin, E_StopType type) : ButtonInterrupt(buttonPin, callback(this, &E_Stop::sendStop)) {
+		printf("E Stop created\n");
 		this->_type = type;
 	}
 
 	void sendStop() {
 		// @TODO
+		printf("E Stop triggered");
 	}
 
  private:
