@@ -9,7 +9,7 @@ import React from "react";
 import { Accordion, Button, Card, Col, Form, Row, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { confirm } from "react-bootstrap-confirmation";
 
-const ELEMENT_FORMAT = "YYYY-MM-D[T]HH:mm";
+const ELEMENT_FORMAT = "YYYY-MM-DD[T]HH:mm";
 
 const BLOCK_TYPES = [ "General", "Qualification", "Playoff" ];
 const MATCH_BLOCK_TYPES = [ "Qualification", "Playoff" ];
