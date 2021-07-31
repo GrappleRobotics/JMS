@@ -232,6 +232,6 @@ impl LiveScore {
   }
 
   fn total_bonus_rp(&self) -> usize {
-    self.shield_gen_stage() as usize + self.stage3_rp() as usize
+    self.shield_gen_rp() as usize + self.stage3_rp() as usize
   }
 }

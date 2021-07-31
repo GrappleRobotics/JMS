@@ -60,6 +60,8 @@ impl TeamRanking {
     self.teleop_points += us_score.total_score.teleop as i32;
     self.endgame_points += us_score.endgame_points as i32;
 
+    self.played += 1;
+
     self.commit(conn)
   }
 
@@ -78,6 +80,18 @@ impl TeamRanking {
   }
 }
 
+fn cmp_f64(a: f64, b: f64) -> std::cmp::Ordering {
+  if (a - b).abs() <= 1e-10 {
+    std::cmp::Ordering::Equal
+  } else {
+    b.partial_cmp(&a).unwrap_or(std::cmp::Ordering::Equal)
+  }
+}
+
+fn avg(x: i32, n: i32) -> f64 {
+  (x as f64) / (n as f64)
+}
+
 impl PartialOrd for TeamRanking {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
     Some(self.cmp(other))
@@ -85,28 +99,21 @@ impl PartialOrd for TeamRanking {
 }
 
 impl Ord for TeamRanking {
-  // Game Manual Table 11-2
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     if self == other {
       return std::cmp::Ordering::Equal;
     }
-
-    if self.rp == other.rp {
-      if self.auto_points == other.auto_points {
-        if self.endgame_points == other.endgame_points {
-          if self.teleop_points == other.teleop_points {
-            if self.random_num == other.random_num {
-              return self.team.cmp(&other.team).reverse();
-            }
-            return self.random_num.cmp(&other.random_num).reverse();
-          }
-          return self.teleop_points.cmp(&other.teleop_points).reverse();
-        }
-        return self.endgame_points.cmp(&other.endgame_points).reverse();
-      }
-      return self.auto_points.cmp(&other.auto_points).reverse();
-    }
-    return self.rp.cmp(&other.rp).reverse();
+    
+    let n_self = self.played;
+    let n_other = other.played;
+    
+    // Game Manual Table 11-2
+    cmp_f64(avg(self.rp, n_self), avg(other.rp, n_other))
+      .then(cmp_f64(avg(self.auto_points, n_self), avg(other.auto_points, n_other)))
+      .then(cmp_f64(avg(self.endgame_points, n_self), avg(other.endgame_points, n_other)))
+      .then(cmp_f64(avg(self.teleop_points, n_self), avg(other.teleop_points, n_other)))
+      .then(cmp_f64(self.random_num as f64, other.random_num as f64))
+      .then(cmp_f64(self.team as f64, other.team as f64))
   }
 }
 

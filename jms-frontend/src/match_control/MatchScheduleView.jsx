@@ -7,16 +7,6 @@ import React from "react";
 import { Button, Table, Tabs } from "react-bootstrap";
 
 export default class MatchScheduleView extends React.Component {
-  componentDidUpdate() {
-    this.nextMatch = this.allMatches().find(m => !m.played);
-  }
-
-  allMatches = () => {
-    if (!this.props.matches)
-      return [];
-    return Object.values(this.props.matches).flatMap(x => x.matches || []);
-  }
-
   isLoaded = (match) => {
     return this.props.arena?.match?.match?.id === match.id;
   }
@@ -25,7 +15,7 @@ export default class MatchScheduleView extends React.Component {
   isNextMatch = (match) => {
     let currentMatch = this.props.arena?.match?.match;
     if (currentMatch === undefined || currentMatch === null || currentMatch.type == "Test" || currentMatch.played)
-      return !match.played && (match.id === this.nextMatch?.id);
+      return !match.played && (match.id === this.props.matches?.next?.id);
     return false;
   }
 

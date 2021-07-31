@@ -41,6 +41,7 @@ export default class Rankings extends React.PureComponent {
         <tr>
           <th> Rank </th>
           <th> Team </th>
+          <th> Played </th>
           <th> RP </th>
           <th> Auto </th>
           <th> Teleop </th>
@@ -53,6 +54,7 @@ export default class Rankings extends React.PureComponent {
           rankings.map((r, i) => <tr data-rank={i + 1}>
             <td> {i + 1} </td>
             <td> { r.team } </td>
+            <td> { r.played } </td>
             <td> { r.rp } </td>
             <td> { r.auto_points } </td>
             <td> { r.teleop_points } </td>
