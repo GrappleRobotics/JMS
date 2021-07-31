@@ -1,4 +1,4 @@
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 
 use crate::{db, models, schedule::{quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
 
@@ -27,7 +27,7 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
     {
       // Next Match
       use crate::schema::matches::dsl::*;
-      let next_match = matches.filter(played.eq(false)).first::<models::Match>(&db::connection())?;
+      let next_match = matches.filter(played.eq(false)).first::<models::Match>(&db::connection()).optional()?;
       response.push(msg.noun("next").to_data(&next_match)?);
     }
     Ok(response)

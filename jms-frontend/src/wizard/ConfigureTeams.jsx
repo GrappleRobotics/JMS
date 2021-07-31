@@ -2,9 +2,10 @@ import { faCloudDownloadAlt, faInfoCircle, faTimes } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditableFormControl from "components/elements/EditableFormControl";
 import React from "react";
-import { Button, FormControl, Table } from "react-bootstrap";
+import { Accordion, Button, Card, FormControl, Table } from "react-bootstrap";
 import { nullIfEmpty } from "support/strings";
 import { confirm } from "react-bootstrap-confirmation";
+import { Importer, ImporterField } from "react-csv-importer";
 
 // This is a well-known public key I've created. It may be cancelled at any time.
 const TBA_AUTH_KEY = "19iOXH0VVxCvYQTlmIRpXyx2xoUQuZoWEPECGitvJcFxEY6itgqDP7A4awVL2CJn";
@@ -72,6 +73,19 @@ export default class ConfigureTeams extends React.Component {
     }
   }
 
+  importCSV = async (rows) => {
+    rows.forEach(team => {
+      if (!!nullIfEmpty(team.id)) {
+        this.props.ws.send("event", "teams", "insert", {
+          id: parseInt(team.id),
+          name: nullIfEmpty(team.name),
+          affiliation: nullIfEmpty(team.affiliation),
+          location: nullIfEmpty(team.location)
+        });
+      }
+    });
+  }
+
   newTeamField = (p) => {
     let {id, name, ...otherProps} = p;
     return <FormControl
@@ -130,13 +144,13 @@ export default class ConfigureTeams extends React.Component {
           let name = msg.nickname;
           let affiliation = msg.school_name;
           let location = [msg.city, msg.state_prov, msg.country].filter(x => x !== null && x !== undefined).join(", ");
-          
+
           if (name !== "Off-Season Demo Team") {
             let nt = {
               ...t,
-              name: override ? name : (t.name || name),
-              affiliation: override ? affiliation : (t.affiliation || affiliation),
-              location: override ? location : (t.location || location)
+              name: nullIfEmpty(override ? (name || t.name) : (t.name || name)),
+              affiliation: nullIfEmpty(override ? (affiliation || t.affiliation) : (t.affiliation || affiliation)),
+              location: nullIfEmpty(override ? (location || t.location) : (t.location || location))
             };
 
             this.props.ws.send("event", "teams", "insert", nt);
@@ -152,6 +166,32 @@ export default class ConfigureTeams extends React.Component {
         <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; 
         After the Match Schedule is generated, this list can no longer be changed. You need at least 6 teams to generate a schedule.
       </p>
+
+      <Accordion>
+        <Card>
+          <Accordion.Toggle as={Card.Header} eventKey="0">
+            Import Data
+          </Accordion.Toggle>
+          <Accordion.Collapse eventKey="0">
+            <Card.Body>
+              {
+                !this.editable() ? <p> Teams are LOCKED... </p> :
+                  <Importer
+                    restartable={true}
+                    processChunk={this.importCSV}
+                  >
+                    <ImporterField name="id" label="Team Number" />
+                    <ImporterField name="name" label="Team Name" optional />
+                    <ImporterField name="affiliation" label="Team Affiliation (School)" optional />
+                    <ImporterField name="location" label="Team Location" optional />
+                  </Importer>
+              }
+            </Card.Body>
+          </Accordion.Collapse>
+        </Card>
+      </Accordion>
+
+      <br />
       <Button onClick={ () => this.updateTBA(false) }> 
         <FontAwesomeIcon icon={faCloudDownloadAlt} /> &nbsp;
         Update from TBA 

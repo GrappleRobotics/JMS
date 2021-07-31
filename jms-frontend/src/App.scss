@@ -11,7 +11,17 @@ $theme-colors: (
 @import "~react-datetime/css/react-datetime.css";
 @import "~react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
 @import "~react-bootstrap-typeahead/css/Typeahead.css";
+@import "~react-csv-importer/dist/index.css";
 @import "~bootswatch/dist/darkly/bootswatch";
+
+.CSVImporter_Importer {
+  color: gray("700");
+}
+
+.CSVImporter_FileSelector {
+  background-color: gray("700");
+  color: gray("400");
+}
 
 .nav-link.disabled {
   color: $gray-600;
