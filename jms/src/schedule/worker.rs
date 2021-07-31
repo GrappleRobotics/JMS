@@ -44,13 +44,6 @@ impl<T> MatchGenerationWorker<T>
     }).unwrap_or(vec![])
   }
 
-  pub fn locked(&self) -> bool {
-    self.record().map(|record| {
-      use crate::schema::matches::dsl::*;
-      models::Match::belonging_to(&record).filter(played.eq(false)).count().get_result::<i64>(&db::connection()).unwrap() > 0
-    }).unwrap_or(false)
-  }
-
   pub fn delete(&self) {
     {
       use crate::schema::match_generation_records::dsl::*;
@@ -63,20 +56,19 @@ impl<T> MatchGenerationWorker<T>
   }
 
   pub async fn generate(&self, params: T::ParamType) {
-    if !self.locked() {
-      let running = self.running.clone();
-      let gen = self.generator.clone();
-      tokio::spawn(async move {
-        // *running.get_mut() = true;
-        running.swap(true, Ordering::Relaxed);
-        match gen.generate(params).await {
-          Ok(_) => (),
-          Err(e) => error!("Match Generation Error: {}", e),
-        }
-        // *running.get_mut() = false;
-        running.swap(false, Ordering::Relaxed);
-      });
-    }
+    let running = self.running.clone();
+    let gen = self.generator.clone();
+    let record = self.record();
+    tokio::spawn(async move {
+      // *running.get_mut() = true;
+      running.swap(true, Ordering::Relaxed);
+      match gen.generate(params, record).await {
+        Ok(_) => (),
+        Err(e) => error!("Match Generation Error: {}", e),
+      }
+      // *running.get_mut() = false;
+      running.swap(false, Ordering::Relaxed);
+    });
   }
 }
 
@@ -101,5 +93,5 @@ pub trait MatchGenerator {
   type ParamType;
 
   fn match_type(&self) -> models::MatchType;
-  async fn generate(&self, params: Self::ParamType) -> Result<(), Box<dyn Error>>;
+  async fn generate(&self, params: Self::ParamType, record: Option<MatchGenerationRecord>) -> Result<(), Box<dyn Error>>;
 }

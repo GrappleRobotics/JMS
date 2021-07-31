@@ -1,16 +1,18 @@
 use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 
-use crate::{db, models, schedule::{quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
+use crate::{db, models, schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
 
 use super::WebsocketMessageHandler;
 pub struct MatchWebsocketHandler {
-  quals: MatchGenerationWorker<QualsMatchGenerator>
+  quals: MatchGenerationWorker<QualsMatchGenerator>,
+  playoffs: MatchGenerationWorker<PlayoffMatchGenerator>
 }
 
 impl MatchWebsocketHandler {
   pub fn new() -> Self {
     MatchWebsocketHandler {
-      quals: MatchGenerationWorker::new(QualsMatchGenerator::new())
+      quals: MatchGenerationWorker::new(QualsMatchGenerator::new()),
+      playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new())
     }
   }
 }
@@ -23,6 +25,10 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
     {
       // Quals
       response.push(msg.noun("quals").to_data(&self.quals)?);
+    }
+    {
+      // Playoffs
+      response.push(msg.noun("playoffs").to_data(&self.playoffs)?);
     }
     {
       // Next Match
@@ -47,6 +53,13 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
         },
         _ => Err(response_msg.invalid_verb_or_data())?
       },
+      "playoffs" => match(msg.verb.as_str(), msg.data) {
+        ("generate", Some(data)) => {
+          let params = serde_json::from_value(data)?;
+          self.playoffs.generate(params).await;
+        },
+        _ => Err(response_msg.invalid_verb_or_data())?
+      }
       _ => Err(response_msg.invalid_verb_or_data())?
     }
     Ok(vec![])

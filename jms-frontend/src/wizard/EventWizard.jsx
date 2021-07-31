@@ -6,6 +6,7 @@ import ConfigureAlliances from "./ConfigureAlliances";
 import ConfigureEvent from "./ConfigureEvent";
 import ConfigureSchedule from "./ConfigureSchedule";
 import ConfigureTeams from "./ConfigureTeams";
+import PlayoffGenerator from "./PlayoffGenerator";
 import QualGenerator from "./QualGenerator";
 
 const EK_WELCOME = 'welcome';
@@ -74,6 +75,7 @@ export default class EventWizard extends React.Component {
 
               <br /> <h6 className="text-muted">Playoffs</h6>
               { navItemFor(data, ConfigureAlliances) }
+              { navItemFor(data, PlayoffGenerator) }
               <br /> <h6 className="text-muted">Awards</h6>
             </Nav>
           </Col>
@@ -86,6 +88,7 @@ export default class EventWizard extends React.Component {
               { paneFor(<ConfigureSchedule {...data} ws={ws} />) }
               { paneFor(<QualGenerator {...data} ws={ws} />) }
               { paneFor(<ConfigureAlliances {...data} ws={ws} />) }
+              { paneFor(<PlayoffGenerator {...data} ws={ws} />) }
               <br />
             </Tab.Content>
           </Col>

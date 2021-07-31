@@ -1,11 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{convert::TryInto, fmt::Display};
-
-#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash)]
-pub enum Alliance {
-  Blue,
-  Red,
-}
+use crate::models::Alliance;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct AllianceStationId {
@@ -24,7 +19,7 @@ impl AllianceStationId {
 
 impl Display for AllianceStationId {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{} {}", self.alliance, self.station)
+    write!(f, "{} {}", self.alliance.to_string(), self.station)
   }
 }
 

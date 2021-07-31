@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::{arena::station::Alliance, utils::saturating_offset};
+use crate::{models::Alliance, utils::saturating_offset};
 
 // NOTE: WARP 2021 has some rule modifications.
 // - The Control Panel is not included in our tournament

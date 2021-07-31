@@ -16,7 +16,7 @@ use super::{
   station::{AllianceStationId},
 };
 
-use crate::{arena::station::Alliance, ds::DSMode, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
+use crate::{ds::DSMode, log_expect, models::{self, Alliance, MatchType}, network::{NetworkProvider, NetworkResult}};
 
 use serde::{Deserialize, Serialize};
 
@@ -225,7 +225,7 @@ impl Arena {
 
       let i = (stn.station.station - 1) as usize;
       if let Some(&t) = v.0.get(i) {
-        stn.team = if t <= 0 { None } else { Some(t as u16) };
+        stn.team = t.map(|team| team as u16);
       } else {
         // Test matches are an exception - they start off blank
         if m.match_type != MatchType::Test {

@@ -4,7 +4,7 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
 use crate::{db, models::{self, MatchGenerationRecord, MatchGenerationRecordData, SQLDatetime, SQLJson, ScheduleBlock}};
 
-use super::{Annealer, GenerationResult, ScheduleGenerator, TeamSchedule, worker::MatchGenerator};
+use super::{randomiser::{Annealer, GenerationResult, ScheduleGenerator, TeamSchedule}, worker::MatchGenerator};
 
 #[derive(Clone)]
 pub struct QualsMatchGenerator;
@@ -81,7 +81,7 @@ impl MatchGenerator for QualsMatchGenerator {
     models::MatchType::Qualification
   }
 
-  async fn generate(&self, params: QualsMatchGeneratorParams) -> Result<(), Box<dyn Error>> {
+  async fn generate(&self, params: QualsMatchGeneratorParams, _: Option<MatchGenerationRecord>) -> Result<(), Box<dyn Error>> {
     let station_balance_anneal = Annealer::new(1.0, 0.0, params.station_anneal_steps);
     let team_balance_anneal = Annealer::new(1.0, 0.0, params.team_anneal_steps);
 

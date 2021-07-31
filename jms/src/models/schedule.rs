@@ -31,6 +31,13 @@ impl ScheduleBlock {
                    .load::<ScheduleBlock>(conn)
   }
 
+  pub fn playoff_blocks(conn: &db::ConnectionT) -> QueryResult<Vec<ScheduleBlock>> {
+    use crate::schema::schedule_blocks::dsl::*;
+    schedule_blocks.filter(block_type.eq(ScheduleBlockType::Playoff))
+                   .order_by(start_time.asc())
+                   .load::<ScheduleBlock>(conn)
+  }
+
   pub fn append_default(conn: &db::ConnectionT) -> QueryResult<()> {
     // TODO: Validate, can't do it if the schedule is locked in
     use crate::schema::schedule_blocks::dsl::*;

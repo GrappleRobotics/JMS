@@ -25,6 +25,9 @@ table! {
         played -> Bool,
         score -> Nullable<Text>,
         winner -> Nullable<Text>,
+        match_subtype -> Nullable<Text>,
+        red_alliance -> Nullable<Integer>,
+        blue_alliance -> Nullable<Integer>,
     }
 }
 

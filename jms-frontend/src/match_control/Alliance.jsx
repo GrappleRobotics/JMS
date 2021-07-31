@@ -135,6 +135,7 @@ export default class Alliance extends React.Component {
         <h4> { Object.values(score.derived.total_score).reduce((a, b) => a + b) } </h4>
       </Col>
     ]
+
     return <React.Fragment>
       { this.props.flipped ? score_components.reverse() : score_components }
     </React.Fragment>

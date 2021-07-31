@@ -3,9 +3,9 @@ use std::time::{Duration, Instant};
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{db, models::{self, SQLJson}, scoring::scores::MatchScore};
+use crate::{db, models::{self, Alliance, SQLJson}, scoring::scores::MatchScore};
 
-use super::{exceptions::{MatchError, MatchResult}, station::Alliance};
+use super::exceptions::{MatchError, MatchResult};
 
 use serde::Serialize;
 
@@ -94,9 +94,9 @@ impl LoadedMatch {
 
         let mut winner = None;
         if blue.total_score.total() > red.total_score.total() {
-          winner = Some(SQLJson(Alliance::Blue));
+          winner = Some(Alliance::Blue);
         } else if red.total_score.total() > blue.total_score.total() {
-          winner = Some(SQLJson(Alliance::Red));
+          winner = Some(Alliance::Red);
         }
 
         self.match_meta.played = true;
@@ -108,13 +108,17 @@ impl LoadedMatch {
           diesel::replace_into(matches).values(&self.match_meta).execute(&db::connection()).unwrap();
         }
 
-        {
+        if self.match_meta.match_type == models::MatchType::Qualification {
           let conn = db::connection();
           for &team in &self.match_meta.blue_teams.0 {
-            models::TeamRanking::get(team, &conn)?.update( &blue, &red, &conn )?;
+            if let Some(team) = team {
+              models::TeamRanking::get(team, &conn)?.update( &blue, &red, &conn )?;
+            }
           }
           for &team in &self.match_meta.red_teams.0 {
-            models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
+            if let Some(team) = team {
+              models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
+            }
           }
         }
 

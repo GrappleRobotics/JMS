@@ -43,13 +43,14 @@ export default class MatchScheduleView extends React.Component {
   }
 
   renderSchedule = (matches) => {
+    let max_teams = matches.flatMap(x => [x.blue.length, x.red.length]).reduce((a, b) => Math.max(a, b));
     return <Table bordered striped size="sm">
       <thead>
         <tr>
           <th> Time </th>
           <th> Match </th>
-          <th colSpan={3}> Blue </th>
-          <th colSpan={3}> Red </th>
+          <th colSpan={max_teams}> Blue </th>
+          <th colSpan={max_teams}> Red </th>
           <th>Action</th>
         </tr>
       </thead>
@@ -73,8 +74,8 @@ export default class MatchScheduleView extends React.Component {
                   : "" 
               } &nbsp; { match.name }
             </td>
-            { match.blue.map(t => <td className="schedule-blue"> { t } </td>) }
-            { match.red.map(t =>  <td className="schedule-red"> { t } </td>) }
+            { Array.from({...match.blue, length: max_teams}).map(t => <td className="schedule-blue"> { t } </td>) }
+            { Array.from({...match.red, length: max_teams}).map(t =>  <td className="schedule-red"> { t } </td>) }
             <td>
               {
                 match.played ? "Played..." : <React.Fragment>

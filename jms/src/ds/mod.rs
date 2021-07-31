@@ -49,9 +49,7 @@ impl From<models::MatchType> for TournamentLevel {
     match mt {
       models::MatchType::Test => TournamentLevel::Test,
       models::MatchType::Qualification => TournamentLevel::Qualification,
-      models::MatchType::Quarterfinal | 
-        models::MatchType::Semifinal  | 
-        models::MatchType::Final => TournamentLevel::Playoff,
+      models::MatchType::Playoff => TournamentLevel::Playoff,
     }
   }
 }

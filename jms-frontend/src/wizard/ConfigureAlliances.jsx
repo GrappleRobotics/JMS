@@ -143,6 +143,8 @@ export default class ConfigureAlliances extends React.Component {
       return { id: r.team.toString(), rank: i + 1, disabled: chosen_teams.includes(r.team) }
     });
 
+    let editable = !!!this.props.matches?.playoffs?.record;
+
     return <div>
       <Row className="my-3">
         <Col>
@@ -213,7 +215,7 @@ export default class ConfigureAlliances extends React.Component {
                     <td>
                       {
                         alliance.ready ?
-                          <Button size="sm" variant="outline-danger" onClick={ () => this.setAllianceReady(alliance, false) }> <FontAwesomeIcon icon={faUnlock} /> </Button> :
+                          <Button disabled={!editable} size="sm" variant="outline-danger" onClick={ () => this.setAllianceReady(alliance, false) }> <FontAwesomeIcon icon={faUnlock} /> </Button> :
                           <Button size="sm" disabled={!canReady} variant={ canReady ? "success" : "secondary" } onClick={ () => this.setAllianceReady(alliance, true) }> <FontAwesomeIcon icon={faCheck} /> </Button>
                       }
                     </td>

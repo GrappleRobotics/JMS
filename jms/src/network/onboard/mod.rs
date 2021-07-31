@@ -4,8 +4,9 @@ use std::net::Ipv4Addr;
 use ipnetwork::Ipv4Network;
 use tokio::try_join;
 
-use crate::arena::station::{Alliance, AllianceStationId};
+use crate::arena::station::AllianceStationId;
 use crate::arena::AllianceStation;
+use crate::models::Alliance;
 
 use super::NetworkProvider;
 

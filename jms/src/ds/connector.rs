@@ -253,10 +253,12 @@ impl DSConnection {
         // We use the same encoding as cheesy-arena. For matches with set numbers, the match num is encoded as
         // XYZ, where X = final bracket (Q=4, S=2, F=1), Y = set number, Z = match number
         pkt.match_number = match m.match_type {
-          models::MatchType::Test | models::MatchType::Qualification => m.match_number as u16,
-          models::MatchType::Quarterfinal => (400 + 10*m.set_number + m.match_number) as u16,
-          models::MatchType::Semifinal => (200 + 10*m.set_number + m.match_number) as u16,
-          models::MatchType::Final => (100 + 10*m.set_number + m.match_number) as u16,
+          models::MatchType::Playoff => match m.match_subtype.unwrap() {
+            models::MatchSubtype::Quarterfinal => (400 + 10*m.set_number + m.match_number) as u16,
+            models::MatchSubtype::Semifinal => (200 + 10*m.set_number + m.match_number) as u16,
+            models::MatchSubtype::Final => (100 + 10*m.set_number + m.match_number) as u16,
+          }
+          _ => m.match_number as u16,
         };
       }
 
