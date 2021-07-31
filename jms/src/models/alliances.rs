@@ -39,4 +39,63 @@ impl PlayoffAlliance {
 
     Ok(())
   }
+
+  pub fn promote(conn: &db::ConnectionT) -> QueryResult<()> {
+    use crate::schema::playoff_alliances::dsl::*;
+    let alliances = playoff_alliances.load::<PlayoffAlliance>(conn)?;
+    let chosen: Vec<usize> = alliances.iter().flat_map(|a| a.teams.0.iter().filter_map(|x| *x)).collect();
+
+    let rankings = TeamRanking::get_sorted(conn)?;
+    let mut rankings_it = rankings.iter().filter(|&r| !chosen.contains(&(r.team as usize)));
+
+    let mut shuffle = false;
+
+    for i in 0..alliances.len() {
+      let mut this_alliance = alliances[i].clone();
+      if this_alliance.teams.0[0] == None {
+        shuffle = true;
+      }
+      
+      if shuffle {
+        match alliances.get(i + 1) {
+          Some(a) => this_alliance.teams.0[0] = a.teams.0[0],
+          None => this_alliance.teams.0[0] = rankings_it.next().map(|r| r.team as usize)
+        }
+
+        diesel::replace_into(playoff_alliances)
+          .values(&this_alliance)
+          .execute(conn)?;
+      }
+    }
+
+    // let mut shuffle = 0;
+
+    // for i in 0..alliances.len() {
+    //   let mut this_alliance = alliances[i].clone();
+    //   if this_alliance.teams.0[0] == None || shuffle > 0 {
+    //     let mut next_team = alliances.get(i + shuffle).and_then(|a| a.teams.0[0]);
+    //     while next_team == None {
+    //       shuffle += 1;
+    //       match alliances.get(i + shuffle) {
+    //         Some(a) => {
+    //           next_team = a.teams.0[0];
+    //         },
+    //         None => {
+    //           next_team = rankings_it.next().map(|r| r.team as usize);
+    //           if next_team == None {
+    //             break;
+    //           }
+    //         },
+    //       }
+    //     }
+
+    //     this_alliance.teams.0[0] = next_team;
+    //     diesel::replace_into(playoff_alliances)
+    //       .values(&this_alliance)
+    //       .execute(conn)?;
+    //   }
+    // }
+
+    Ok(())
+  }
 }

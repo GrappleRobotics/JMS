@@ -99,6 +99,7 @@ export default class App extends React.Component {
             ws={this.ws}
             event={event}
             matches={matches}
+            rankings={event?.rankings}
           />
         </this.wrapView>
       </Route>

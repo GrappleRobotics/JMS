@@ -123,7 +123,10 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           diesel::replace_into(playoff_alliances)
             .values(&alliance)
             .execute(&db::connection())?;
-        }
+        },
+        ("promote", None) => {
+          PlayoffAlliance::promote(&db::connection())?;
+        },
         _ => Err(response_msg.invalid_verb_or_data())?
       }
       _ => Err(response_msg.unknown_noun())?

@@ -6,7 +6,7 @@ import { Button, Col, Form, Row, Table, ToggleButton, ToggleButtonGroup } from "
 import RangeSlider from "react-bootstrap-range-slider";
 import { confirm } from "react-bootstrap-confirmation";
 import Buffered from "components/elements/Buffered";
-import { Typeahead } from "react-bootstrap-typeahead";
+import { Menu, MenuItem, Typeahead, TypeaheadMenu } from "react-bootstrap-typeahead";
 
 export default class ConfigureAlliances extends React.Component {
   static eventKey() { return "configure_alliances"; }
@@ -113,8 +113,6 @@ export default class ConfigureAlliances extends React.Component {
     </div>
   }
 
-  // TODO: All of this. Need to also start keeping track of team wins/losses/RP
-
   clearAlliances = async () => {
     let result = await confirm("Are you sure? This will clear all alliances.", {
       title: "Clear Alliances?",
@@ -141,8 +139,8 @@ export default class ConfigureAlliances extends React.Component {
   renderAlliances = () => {
     let chosen_teams = this.props.alliances.flatMap(alliance => alliance.teams).filter(x => !!x);
 
-    let teams_with_strings = this.props.teams?.map(team => {
-      return { ...team, id: team.id.toString(), disabled: chosen_teams.includes(team.id) }
+    let teams_with_strings = this.props.rankings?.map((r, i) => {
+      return { id: r.team.toString(), rank: i + 1, disabled: chosen_teams.includes(r.team) }
     });
 
     return <div>
@@ -154,6 +152,14 @@ export default class ConfigureAlliances extends React.Component {
             onClick={this.clearAlliances}
           >
             Reset Alliances
+          </Button>
+          &nbsp;
+          <Button
+            variant="primary"
+            disabled={ !this.props.alliances.some(x => x.teams[0] == null) }
+            onClick={() => this.props.ws.send("event", "alliances", "promote")}
+          >
+            Promote Captains
           </Button>
         </Col>
       </Row>
@@ -191,6 +197,15 @@ export default class ConfigureAlliances extends React.Component {
                             highlightOnlyResult={true}
                             selected={ selected_team ? [ selected_team ] : [] }
                             onChange={ t => this.updateAlliancePick(alliance, i, t) }
+                            renderMenu={(results, menuProps) => <Menu {...menuProps}>
+                              { 
+                                results.filter(r => !r.disabled).map((result, idx) => 
+                                  <MenuItem option={result} position={idx}> 
+                                    <span className="text-muted">{ result.rank }:</span> &nbsp;
+                                    { result.id }
+                                  </MenuItem>)
+                              }
+                            </Menu>}
                           />
                         </td>
                       })
