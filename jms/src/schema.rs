@@ -7,13 +7,61 @@ table! {
 }
 
 table! {
+    match_generation_records (match_type) {
+        match_type -> Text,
+        data -> Nullable<Text>,
+    }
+}
+
+table! {
     matches (id) {
         id -> Integer,
+        start_time -> BigInt,
         match_type -> Text,
         set_number -> Integer,
         match_number -> Integer,
-        red_teams -> Text,
         blue_teams -> Text,
+        red_teams -> Text,
+        played -> Bool,
+        score -> Nullable<Text>,
+        winner -> Nullable<Text>,
+        match_subtype -> Nullable<Text>,
+        red_alliance -> Nullable<Integer>,
+        blue_alliance -> Nullable<Integer>,
+    }
+}
+
+table! {
+    playoff_alliances (id) {
+        id -> Integer,
+        teams -> Text,
+        ready -> Bool,
+    }
+}
+
+table! {
+    schedule_blocks (id) {
+        id -> Integer,
+        block_type -> Text,
+        name -> Text,
+        start_time -> BigInt,
+        end_time -> BigInt,
+        cycle_time -> BigInt,
+    }
+}
+
+table! {
+    team_rankings (team) {
+        team -> Integer,
+        rp -> Integer,
+        auto_points -> Integer,
+        endgame_points -> Integer,
+        teleop_points -> Integer,
+        random_num -> Integer,
+        win -> Integer,
+        loss -> Integer,
+        tie -> Integer,
+        played -> Integer,
     }
 }
 
@@ -29,6 +77,10 @@ table! {
 
 allow_tables_to_appear_in_same_query!(
     event_details,
+    match_generation_records,
     matches,
+    playoff_alliances,
+    schedule_blocks,
+    team_rankings,
     teams,
 );

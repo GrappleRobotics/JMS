@@ -16,6 +16,8 @@ export default class JmsWebsocket {
     this.onMessage = this.onMessage.bind(this);
     this.onConnectChange = this.onConnectChange.bind(this);
     this.onError = this.onError.bind(this);
+
+    this.subscriptions = [];
   }
 
   connect() {
@@ -27,6 +29,7 @@ export default class JmsWebsocket {
       console.log("WS Connected");
       setTimeout(() => {
         this.connectCallbacks.forEach(cb => cb(true));
+        this.subscriptions.forEach(s => ws.send(JSON.stringify({ object: s.obj, noun: s.noun, verb: "__subscribe__" })));
       }, 100);
       that.ws = ws;
       clearTimeout(timer);
@@ -45,15 +48,23 @@ export default class JmsWebsocket {
     };
 
     ws.onmessage = msg => {
-      let message = JSON.parse(msg.data);
+      if (msg.data !== "ping") {
+        let messages = JSON.parse(msg.data);
 
-      if (message.error !== null) {
-        console.error("WS Error: ", message);
-        this.errorCallbacks.forEach(cb => cb(message));
-      } else {
-        this.callbacks.forEach(cbobj => {
-          if (cbobj.o === message.object && cbobj.n === message.noun && cbobj.v === message.verb)
-            cbobj.c(message.data)
+        messages.forEach(message => {
+          if (message.error !== null) {
+            console.error("WS Error: ", message);
+            this.errorCallbacks.forEach(cb => cb(message));
+          } else {
+            this.callbacks.forEach(cbobj => {
+              let obj_ok = (cbobj.o === "*") || (cbobj.o === message.object);
+              let noun_ok = (cbobj.n === "*") || (cbobj.n === message.noun);
+              let verb_ok = (cbobj.v === "*") || (cbobj.v === message.verb);
+    
+              if (obj_ok && noun_ok && verb_ok)
+                cbobj.c(message)
+            });
+          }
         });
       }
     };
@@ -80,6 +91,18 @@ export default class JmsWebsocket {
       this.ws.send(JSON.stringify(msg));
     } else {
       console.log("Can't send message, WS dead :X", noun, verb, data);
+    }
+  }
+
+  subscribe(obj, noun) {
+    let s = { obj: obj, noun: noun };
+    if (!this.subscriptions.some(el => el.obj === s.obj && el.noun === s.noun)) {
+      this.subscriptions.push(s);
+      if (this.alive()) {
+        this.ws.send(JSON.stringify({ object: obj, noun: noun, verb: "__subscribe__" }));
+      }
+    } else {
+      console.log("Already subscribed: " + JSON.stringify(s));
     }
   }
 
