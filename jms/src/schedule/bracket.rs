@@ -34,6 +34,7 @@ pub fn bracket_update(alliances: &Vec<PlayoffAlliance>, existing_matches: &Optio
   update_bracket_recursive(MatchSubtype::Final, 1, alliances, &matches)
 }
 
+// Some facets borrowed from Cheesy-Arena
 fn update_bracket_recursive(bracket: MatchSubtype, set: usize, alliances: &Vec<PlayoffAlliance>, existing: &Vec<Match>) -> GenerationUpdate {
   let sets = n_sets(bracket);
 
