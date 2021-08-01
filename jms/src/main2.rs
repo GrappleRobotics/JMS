@@ -1,87 +1,19 @@
-mod arena;
-mod db;
+use schedule::{Annealer, ScheduleGenerator};
+
+mod schedule;
 mod logging;
-mod network;
-mod utils;
 
-mod models;
-mod schema;
+fn main() {
+  logging::configure(true);
 
-#[macro_use]
-extern crate diesel_migrations;
-#[macro_use]
-extern crate diesel;
-extern crate strum;
-#[macro_use]
-extern crate strum_macros;
+  let gen = ScheduleGenerator::new(
+    16, 10, 6
+  );
 
-use std::{thread, time::Duration};
+  let anneal_team_balance = Annealer::new(1.0, 0.0, 100_000);
+  let anneal_station_balance = Annealer::new(1.0, 0.0, 100_000);
 
-use clap::{App, Arg};
-use dotenv::dotenv;
-use log::info;
-use network::NetworkProvider;
-
-use crate::arena::{matches::Match, ArenaSignal, ArenaState};
-
-struct FakeNetwork {}
-impl NetworkProvider for FakeNetwork {
-  fn configure_admin(&mut self) -> network::NetworkResult<()> {
-    info!("Configuring Admin");
-    Ok(())
-  }
-
-  fn configure_alliances(
-    &mut self,
-    stations: &mut dyn Iterator<Item = &arena::AllianceStation>,
-    force_reload: bool,
-  ) -> network::NetworkResult<()> {
-    let alls: Vec<&arena::AllianceStation> = stations.collect();
-    info!("Configuring Alliances (Force? {}): {:?}", force_reload, alls);
-    thread::sleep(Duration::from_millis(1000));
-    Ok(())
-  }
-}
-
-#[tokio::main]
-async fn main() {
-  dotenv().ok();
-
-  let matches = App::new("JMS")
-    .about("An Alternative Field-Management-System for FRC Offseason Events.")
-    .arg(Arg::with_name("debug").short("d").help("Enable debug logging."))
-    .get_matches();
-
-  logging::configure(matches.is_present("debug"));
-
-  db::connection(); // Start connection
-
-  let network = Box::new(FakeNetwork {});
-
-  let mut arena = arena::Arena::new(3, Some(network));
-  arena.load_match(Match::new());
-  arena.update();
-  assert_eq!(arena.current_state(), ArenaState::Idle);
-  arena.signal(ArenaSignal::Prestart(false));
-  arena.update();
-  assert_eq!(arena.current_state(), ArenaState::Prestart(false, false));
-  let mut s = "".to_owned();
-  while let ArenaState::Prestart(false, _) = arena.current_state() {
-    arena.update();
-    s = s + ".";
-    thread::sleep(Duration::from_millis(10));
-  }
-  assert_eq!(arena.current_state(), ArenaState::Prestart(true, false));
-  arena.update();
-  arena.signal(ArenaSignal::MatchArm);
-  arena.update();
-  assert_eq!(arena.current_state(), ArenaState::MatchArmed);
-  arena.signal(ArenaSignal::MatchPlay);
-  arena.update();
-  assert_eq!(arena.current_state(), ArenaState::MatchPlay);
-  while let ArenaState::MatchPlay = arena.current_state() {
-    arena.update();
-    thread::sleep(Duration::from_millis(10));
-  }
-  assert_eq!(arena.current_state(), ArenaState::MatchComplete);
+  let (sched, tb, sb) = gen.generate(anneal_team_balance, anneal_station_balance);
+  println!("TB: {}, SB: {}", tb, sb);
+  println!("{}", sched.0.transpose());
 }

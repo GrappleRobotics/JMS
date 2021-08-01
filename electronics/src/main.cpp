@@ -1,64 +1,36 @@
-#include <mbed.h>
-#include <EthernetInterface.h>
-#include <FlashIAP.h>
+#include <mbed.h> // bruh, never include this twice... everything just dies
+#include <rtos.h>
 
-DigitalOut led(PB_0);
+#include <iostream>
+#include "Handles.h"
+#include "Config.h"
 
-int main() {
-  char buf[256];
+#ifdef MODE
 
-  EthernetInterface eth;
-  eth.connect();
+/**
+ * RAM/BAM Controllers
+ */
+#if defined(RAM) || defined(BAM)
+#include "Controllers/RAM_BAM/RAM_BAM.h"
+#include "Elements/PowerPort/PowerPort.h"
+HandleController(RAM_BAM_Controller)
+#endif
 
-  SocketAddress a;
-  eth.get_ip_address(&a);
-  printf("Server IP Address is: %s\n", a.get_ip_address());
+/**
+ * SGM Controllers
+ */
+#if defined(SGM)
+HandleController(SGM_Controller)
+#endif
 
-  TCPSocket srv, *client;
-  srv.open(&eth);
-  
-  srv.bind(9999);
-  
-  srv.listen(1);
+/**
+ * STM Controllers
+ */
+#if defined(STM)
+#include "Controllers/STM/STM.h"
+HandleController(STM_Controller)
+#endif
 
-  while (1) {
-    client = srv.accept();
-    while (client != nullptr && client->recv(buf, 256) > 0) {
-      led = (atoi(buf) != 0);
-    }
-    ThisThread::sleep_for(50ms);
-  }
-}
-
-// int main() {
-//   // Note: https://www.st.com/resource/en/reference_manual/dm00314099-stm32h742-stm32h743-753-and-stm32h750-value-line-advanced-arm-based-32-bit-mcus-stmicroelectronics.pdf
-//   // We use Sector 7 of Bank 2 - 0x081E 0000 + 128K
-
-//   const uint32_t CFG_REGION = 0x081E0000;
-
-//   FlashIAP flash;
-//   flash.init();
-
-//   char buf1[50] = {0};
-//   char buf2[50] = {0};
-//   strcpy(buf2, "Hello World ABCD!");
-
-//   int r = flash.read(buf1, CFG_REGION, 50);
-//   printf("Read %d - %s\n", r, buf1);
-
-//   ThisThread::sleep_for(100ms);
-
-//   r = flash.program(buf2, CFG_REGION, 50);
-//   printf("Programmed %d - %s\n", r, buf2);
-
-//   ThisThread::sleep_for(100ms);
-
-//   r = flash.read(buf1, CFG_REGION, 50);
-//   printf("Read %d - %s\n", r, buf1);
-
-//   flash.deinit();
-
-//   while(1) {
-//     ThisThread::sleep_for(1s);
-//   }
-// }
+#else
+#error MODE NOT DEFINED [RAM, BAM, STM, SGM]
+#endif

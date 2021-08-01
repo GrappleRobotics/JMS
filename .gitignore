@@ -21,3 +21,6 @@ old/
 debug/
 Cargo.lock
 **/*.rs.bk
+
+*.sqlite
+*.db

@@ -1,8 +1,7 @@
-use std::{convert::TryInto, io::Cursor};
+use std::{convert::TryInto};
 
-use bitvec::prelude::*;
-use bytes::{Buf, BufMut, Bytes};
-use chrono::{DateTime, Datelike, Local, Timelike, Utc};
+use bytes::{Buf, BufMut};
+use chrono::{DateTime, Datelike, Local, Timelike};
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::arena::station::AllianceStationId;
@@ -11,7 +10,7 @@ use super::{DSMode, TournamentLevel};
 
 // https://github.com/tokio-rs/tokio/blob/master/examples/tinyhttp.rs
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Ds2FmsUDP {
   pub seq: u16,
   pub team: u16,
@@ -22,16 +21,16 @@ pub struct Ds2FmsUDP {
   pub enabled: bool,
   pub mode: DSMode,
   pub battery: f64,
-  pub tags: Vec<Ds2FmsUDPTags>
+  pub tags: Vec<Ds2FmsUDPTags>,
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone)]
 pub enum Ds2FmsUDPTags {
-  FieldRadioMetrics(u8, u16),  // Signal strength, Bandwidth Util
+  FieldRadioMetrics(u8, u16), // Signal strength, Bandwidth Util
   CommsMetrics(u16, u16, u8), // Lost pkts, Sent pkts, Average trip time
   LaptopMetrics(u8, u8),      // Bat %, CPU %
   RobotRadioMetrics(u8, u16), // Signal strength, Bandwidth Util
-  Unknown(u8, usize)
+  Unknown(u8, usize),
 }
 
 #[derive(Debug)]
@@ -66,18 +65,18 @@ impl Decoder for DSUDPCodec {
       return Ok(None);
     } else {
       let mut buf = src.split_to(src.remaining());
-      
+
       let mut pkt: Ds2FmsUDP = Default::default();
       pkt.seq = buf.get_u16();
       buf.get_u8(); // Comms version
       {
         let status = buf.get_u8();
-        pkt.estop   = (status & 0b1000_0000) != 0;
-        pkt.robot   = (status & 0b0010_0000) != 0;
-        pkt.radio   = (status & 0b0001_0000) != 0;
-        pkt.rio     = (status & 0b0000_1000) != 0;
+        pkt.estop = (status & 0b1000_0000) != 0;
+        pkt.robot = (status & 0b0010_0000) != 0;
+        pkt.radio = (status & 0b0001_0000) != 0;
+        pkt.rio = (status & 0b0000_1000) != 0;
         pkt.enabled = (status & 0b0000_0100) != 0;
-        pkt.mode    = (status & 0b0000_0011).try_into().unwrap();   // TODO: Handle error
+        pkt.mode = (status & 0b0000_0011).try_into().unwrap(); // TODO: Handle error
       }
       pkt.team = buf.get_u16();
       {
@@ -95,26 +94,26 @@ impl Decoder for DSUDPCodec {
             let strength = buf.get_u8();
             let bandwidth = buf.get_u16();
             Ds2FmsUDPTags::FieldRadioMetrics(strength, bandwidth)
-          },
+          }
           0x01 => {
             // Comms metrics
             let lost = buf.get_u16();
             let sent = buf.get_u16();
             let avg_tt = buf.get_u8();
             Ds2FmsUDPTags::CommsMetrics(lost, sent, avg_tt)
-          },
+          }
           0x02 => {
             // Laptop metrics
             let batt = buf.get_u8();
             let cpu = buf.get_u8();
             Ds2FmsUDPTags::LaptopMetrics(batt, cpu)
-          },
+          }
           0x03 => {
             // Radio metrics
             let strength = buf.get_u8();
             let bandwidth = buf.get_u16();
             Ds2FmsUDPTags::RobotRadioMetrics(strength, bandwidth)
-          },
+          }
           unknown => {
             let _ = buf.split_to(size);
             Ds2FmsUDPTags::Unknown(unknown, size)
@@ -137,7 +136,7 @@ impl Encoder<Fms2DsUDP> for DSUDPCodec {
     self.seq_num_enc += 1;
     writer.put_u16(self.seq_num_enc);
     writer.put_u8(0x00);
-    
+
     // Control
     let control: u8 = ((pkt.estop as u8) << 7) | ((pkt.enabled as u8) << 2) | ((pkt.mode as u8) & 0b11);
     writer.put_u8(control);
