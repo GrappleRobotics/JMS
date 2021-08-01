@@ -3,34 +3,34 @@
 
 int PowerPort::_inner_bb_function() {
 	Handle(
-		_inner_bb.updateStart();
-		if (_inner_bb.broke()) {
+		_inner_bb->updateStart();
+		if (_inner_bb->broke()) {
 			_innerCounter++;
 			std::cout << "Inner Counter: " << _innerCounter << std::endl;
 		}
-		_inner_bb.updateEnd();
+		_inner_bb->updateEnd();
 	)
 }
 
 int PowerPort::_outer_bb_function() {
 	Handle(
-		_outer_bb.updateStart();
-		if (_outer_bb.broke()) {
+		_outer_bb->updateStart();
+		if (_outer_bb->broke()) {
 			_outerCounter++;
 			std::cout << "Outer Counter: " << _outerCounter << std::endl;
 		}
-		_outer_bb.updateEnd();
+		_outer_bb->updateEnd();
 	)
 }
 
 int PowerPort::_lower_bb_function() {
 	Handle(
-		_lower_bb.updateStart();
-		if (_lower_bb.broke()) {
+		_lower_bb->updateStart();
+		if (_lower_bb->broke()) {
 			_lowerCounter++;
 			std::cout << "Lower Counter: " << _lowerCounter << std::endl;
 		}
-		_lower_bb.updateEnd();
+		_lower_bb->updateEnd();
 	)
 }
 

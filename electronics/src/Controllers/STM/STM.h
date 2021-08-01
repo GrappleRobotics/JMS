@@ -2,18 +2,19 @@
 #define STM_H
 
 #include <mbed.h>
-#include "Conifg.h"
+#include "Config.h"
 #include <PinNames.h>
 #include <iostream>
 
 #include "libs/Controller.h"
+#include "libs/E_Stop/E_Stop.h"
 
 /**
  * Scoring Table microcontroller class
  */
-class STM : public Controller {
+class STM_Controller : public Controller {
  public:
-	STM() {
+	STM_Controller() {
 		std::cout << "STM Mode" << std::endl;
 	}
 

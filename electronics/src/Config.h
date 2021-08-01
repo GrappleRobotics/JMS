@@ -12,10 +12,10 @@
  * 
  */
 
-#define RAM // Red Alliance controller mode
+// #define RAM // Red Alliance controller mode
 // #define BAM // Blue Alliance controller mode
 // #define SGM // Shield Generator controller mode
-// #define STM // Scoring Table controller mode
+#define STM // Scoring Table controller mode
 
 #ifdef RAM
 #define MODE 0
@@ -61,8 +61,8 @@ global PinName E_STOP3_2 = D21;
 #ifdef BAM
 #define IP "10.0.100.5"
 global int DISPLAY_SDA_PORT = 14;
-
 global int DISPLAY_SCL_PORT = 15;
+
 global PinName INNER_BB_PORT = A0;
 global PinName OUTER_BB_PORT = A1;
 global PinName LOWER_BB_PORT = A2;
@@ -95,6 +95,9 @@ global int DISPLAY_SCL_PORT = 15;
 #define IP "10.0.100.2"
 global int DISPLAY_SDA_PORT = 14;
 global int DISPLAY_SCL_PORT = 15;
+
+global PinName ABORT_1 = D16;
+global PinName ABORT_2 = D17;
 #endif
 
 #endif // CONFIG_H

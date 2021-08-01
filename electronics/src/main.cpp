@@ -13,21 +13,22 @@
 #if defined(RAM) || defined(BAM)
 #include "Controllers/RAM_BAM/RAM_BAM.h"
 #include "Elements/PowerPort/PowerPort.h"
-HandleController(RAM_BAM)
+HandleController(RAM_BAM_Controller)
 #endif
 
 /**
  * SGM Controllers
  */
 #if defined(SGM)
-HandleController(SGM)
+HandleController(SGM_Controller)
 #endif
 
 /**
  * STM Controllers
  */
 #if defined(STM)
-HandleController(STM)
+#include "Controllers/STM/STM.h"
+HandleController(STM_Controller)
 #endif
 
 #else

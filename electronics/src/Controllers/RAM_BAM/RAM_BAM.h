@@ -8,13 +8,14 @@
 
 #include "libs/Controller.h"
 #include "Elements/PowerPort/PowerPort.h"
+#include "libs/E_Stop/E_Stop.h"
 
 /**
  * Red alliance/Blue alliance microcontroller class
  */
-class RAM_BAM : public Controller {
+class RAM_BAM_Controller : public Controller {
  public:
-	RAM_BAM() {
+	RAM_BAM_Controller() {
 		switch (MODE) {
 			case 0:
 				std::cout << "RAM Mode" << std::endl;

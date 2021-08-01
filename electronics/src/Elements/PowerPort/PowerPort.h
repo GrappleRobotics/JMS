@@ -17,7 +17,10 @@
  */
 class PowerPort : public Element {
  public:
-	PowerPort() {
+	PowerPort(PinName innerPort, PinName outerPort, PinName lowerPort) {
+		_inner_bb = new BeamBreak(innerPort);
+		_outer_bb = new BeamBreak(outerPort);
+		_lower_bb = new BeamBreak(lowerPort);
 		std::cout << "Power Port created" << std::endl;
 	}
 
@@ -26,9 +29,9 @@ class PowerPort : public Element {
 	int update(int argc, char const *argv[], int &userButton) override;
 
  private:
-	BeamBreak _inner_bb{ INNER_BB_PORT }; // Beam breaks for power ports
-	BeamBreak _outer_bb{ OUTER_BB_PORT };
-	BeamBreak _lower_bb{ LOWER_BB_PORT };
+	BeamBreak *_inner_bb; // Beam breaks for power ports
+	BeamBreak *_outer_bb;
+	BeamBreak *_lower_bb;
 
 	int _inner_bb_function();
 	int _outer_bb_function();
