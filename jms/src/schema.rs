@@ -1,4 +1,12 @@
 table! {
+    awards (id) {
+        id -> Integer,
+        name -> Text,
+        recipients -> Text,
+    }
+}
+
+table! {
     event_details (id) {
         id -> Integer,
         code -> Nullable<Text>,
@@ -76,6 +84,7 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
+    awards,
     event_details,
     match_generation_records,
     matches,

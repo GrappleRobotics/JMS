@@ -20,6 +20,9 @@ pub use alliances::*;
 mod rankings;
 pub use rankings::*;
 
+mod awards;
+pub use awards::*;
+
 // SQL-mapped vector (for sqlite)
 
 #[derive(AsExpression, Debug, serde::Deserialize, serde::Serialize, FromSqlRow, Clone)]

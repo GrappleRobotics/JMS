@@ -1,7 +1,7 @@
 use diesel::{RunQueryDsl, BelongingToDsl, ExpressionMethods};
 use log::info;
 
-use crate::{db, models::{self, Match, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance, SQLJson}, schedule::round_robin::round_robin_update};
+use crate::{db, models::{self, AwardRecipient, Match, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance, SQLJson}, schedule::round_robin::round_robin_update};
 
 use super::{GenerationUpdate, bracket::bracket_update, worker::MatchGenerator};
 
@@ -11,6 +11,20 @@ pub struct PlayoffMatchGenerator;
 impl PlayoffMatchGenerator {
   pub fn new() -> Self {
     Self {}
+  }
+
+  fn generate_award_for(&self, award_name: &str, alliance: &PlayoffAlliance) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::schema::awards::dsl::*;
+
+    let recipients_list: Vec<AwardRecipient> = alliance.teams.0.iter().filter_map(|t| {
+      t.map(|x| AwardRecipient { team: Some(x), awardee: None })
+    }).collect();
+
+    diesel::insert_into(awards)
+          .values( (name.eq(award_name), recipients.eq(SQLJson(recipients_list))) )
+          .execute(&db::connection())?;
+    
+    Ok(())
   }
 }
 
@@ -63,9 +77,10 @@ impl MatchGenerator for PlayoffMatchGenerator {
         diesel::insert_into(matches).values(&match_vec).execute(&*db::connection())?;
       },
       GenerationUpdate::TournamentWon(winner, finalist) => {
-        // TODO:
         info!("Winner: {:?}", winner);
         info!("Finalist: {:?}", finalist);
+        self.generate_award_for("Winner", &winner)?;
+        self.generate_award_for("Finalist", &finalist)?;
       },
     }
     
