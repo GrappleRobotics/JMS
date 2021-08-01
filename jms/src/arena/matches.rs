@@ -32,7 +32,7 @@ pub struct MatchConfig {
 #[derive(Clone, Debug, Serialize)]
 pub struct LoadedMatch {
   #[serde(rename = "match")]
-  match_meta: models::Match,
+  pub match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
   pub score: MatchScore,
@@ -44,8 +44,6 @@ pub struct LoadedMatch {
   #[serde(skip)]
   config: MatchConfig
 }
-
-// TODO: Update match metadata whenever the Arena team list changes (arena is able to swap teams out)
 
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
