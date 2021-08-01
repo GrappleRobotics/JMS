@@ -200,6 +200,22 @@ impl Arena {
     a
   }
 
+  pub fn unload_match(&mut self) -> ArenaResult<()> {
+    match self.state.state {
+      ArenaState::Idle => {
+        self.current_match = None;
+          for stn in self.stations.iter_mut() {
+            stn.reset();
+          }
+        Ok(())
+      },
+      ref s => Err(ArenaError::CannotLoadMatchError(format!(
+        "Can't unload match in state {}",
+        s
+      ))),
+    }
+  }
+
   pub fn load_match(&mut self, m: LoadedMatch) -> ArenaResult<()> {
     match self.state.state {
       ArenaState::Idle => {
@@ -273,10 +289,7 @@ impl Arena {
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
         if first {
-          self.current_match = None;
-          for stn in self.stations.iter_mut() {
-            stn.reset();
-          }
+          self.unload_match()?;
         } else if let Some(ArenaSignal::Prestart { force }) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false, force })?;
         }
