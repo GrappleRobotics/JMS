@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{db, models::{self, Alliance, SQLJson}, scoring::scores::MatchScore};
+use crate::{db, models::{self, Alliance, MatchGenerationRecordData, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
 
 use super::exceptions::{MatchError, MatchResult};
 
@@ -116,6 +116,16 @@ impl LoadedMatch {
           for &team in &self.match_meta.red_teams.0 {
             if let Some(team) = team {
               models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
+            }
+          }
+        } else if self.match_meta.match_type == models::MatchType::Playoff {
+          // Update playoff generation
+          // TODO: We should use a global worker, but this will do for now.
+          let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
+          let record = worker.record();
+          if let Some(record) = record {
+            if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data.map(|x| x.0) {
+              worker.generate(mode).await;
             }
           }
         }
