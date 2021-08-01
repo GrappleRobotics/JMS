@@ -5,7 +5,6 @@
 #include "Config.h"
 #include <PinNames.h>
 #include <iostream>
-#include <thread>
 
 #include "libs/Controller.h"
 #include "Elements/PowerPort/PowerPort.h"

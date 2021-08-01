@@ -1,6 +1,7 @@
 #ifndef ESTOP
 #define ESTOP
 
+#include <vector>
 #include "libs/Button/Button.h"
 
 /**
@@ -24,11 +25,33 @@ enum class E_StopType {
 /**
  * E Stop class, uses Button Interrupt to perform logic and send data
  */
-class E_Stop : public ButtonInterrupt {
+class E_Stop {
  public:
-	E_Stop(PinName buttonPin, E_StopType type) : ButtonInterrupt(buttonPin, callback(this, &E_Stop::sendStop)) {
-		printf("E Stop created\n");
+
+	/**
+	 * Constructor (Single interrupt input)
+	 */
+	E_Stop(PinName buttonPin, E_StopType type) {
 		this->_type = type;
+
+		/**
+		 * Push back interrupts
+		 */
+		_int.push_back(ButtonInterrupt(buttonPin, callback(this, &E_Stop::sendStop)));
+	}
+
+	/**
+	 * Construcctor (specify all pins used for this interrupt)
+	 */
+	E_Stop(std::vector<PinName> buttonPin, E_StopType type) {
+		this->_type = type;
+
+		/**
+		 * Push back interrupts
+		 */
+		for (size_t i = 0; i < buttonPin.size(); i++) {
+			_int.push_back(ButtonInterrupt(buttonPin[i], callback(this, &E_Stop::sendStop)));
+		}
 	}
 
 	void sendStop() {
@@ -36,16 +59,26 @@ class E_Stop : public ButtonInterrupt {
 		printf("E Stop triggered");
 	}
 
+	ButtonInterrupt get() {
+		return _int[0];
+	}
+
+	std::vector<ButtonInterrupt> getVector() {
+		return _int;
+	}
+
  private:
+	std::vector<ButtonInterrupt> _int;
 	E_StopType _type;
 };
 
 /**
- * Abort, super version of E-Stop, sends abort signal
+ * Abort, superised version of E-Stop, sends abort signal
  */
 class Abort : public E_Stop {
  public:
 	Abort(PinName buttonPin) : E_Stop(buttonPin, E_StopType::ABORT) {}
+	Abort(std::vector<PinName> buttonPin) : E_Stop(buttonPin, E_StopType::ABORT) {}
 };
 
 

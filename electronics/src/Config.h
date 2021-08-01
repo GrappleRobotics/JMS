@@ -48,9 +48,14 @@ global PinName OUTER_BB_PORT = A1;
 global PinName LOWER_BB_PORT = A2;
 global PinName OUTER_LED_PORT = D7;
 
-global PinName E_STOP1 = D16;
-global PinName E_STOP2 = D17;
-global PinName E_STOP3 = D18;
+global PinName E_STOP1_1 = D16;
+global PinName E_STOP1_2 = D17;
+
+global PinName E_STOP2_1 = D18;
+global PinName E_STOP2_2 = D19;
+
+global PinName E_STOP3_1 = D20;
+global PinName E_STOP3_2 = D21;
 #endif
 
 #ifdef BAM
@@ -63,9 +68,14 @@ global PinName OUTER_BB_PORT = A1;
 global PinName LOWER_BB_PORT = A2;
 global PinName OUTER_LED_PORT = D7;
 
-global PinName E_STOP1 = D16;
-global PinName E_STOP2 = D17;
-global PinName E_STOP3 = D18;
+global PinName E_STOP1_1 = D16;
+global PinName E_STOP1_2 = D17;
+
+global PinName E_STOP2_1 = D18;
+global PinName E_STOP2_2 = D19;
+
+global PinName E_STOP3_1 = D20;
+global PinName E_STOP3_2 = D21;
 #endif
 
 
