@@ -58,10 +58,10 @@ export default class MatchScheduleView extends React.Component {
         {
           matches.map(match => <tr className={ this.rowClass(match) } data-winner={ match.winner?.toLowerCase() }>
             <td> 
-              { moment.unix(match.time).format("dddd HH:mm:ss") }
+              { match.time ? moment.unix(match.time).format("dddd HH:mm:ss") : "" }
               &nbsp;
               {
-                match.played ? "" :
+                (match.played || !!!match.time) ? "" :
                 <small className="text-muted">
                 ({ this.howLongUntil(match) })
                 </small>

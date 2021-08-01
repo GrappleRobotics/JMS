@@ -57,10 +57,10 @@ impl LoadedMatch {
       state_start_time: Instant::now(),
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
-        warmup_cooldown_time: Duration::from_secs(3),
-        auto_time: Duration::from_secs(4),
+        warmup_cooldown_time: Duration::from_secs(1),
+        auto_time: Duration::from_secs(1),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(4),
+        teleop_time: Duration::from_secs(1),
       },
     }
   }

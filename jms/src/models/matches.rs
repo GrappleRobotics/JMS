@@ -18,7 +18,7 @@ sql_mapped_enum!(MatchSubtype, Quarterfinal, Semifinal, Final);
 #[table_name = "matches"]
 pub struct Match {
   pub id: i32,
-  pub start_time: SQLDatetime,
+  pub start_time: Option<SQLDatetime>,
   pub match_type: MatchType,
   pub set_number: i32,
   pub match_number: i32,
@@ -39,7 +39,7 @@ impl Match {
   pub fn new_test() -> Self {
     Match {
       id: -1,
-      start_time: SQLDatetime(chrono::Local::now().naive_utc()),
+      start_time: Some(SQLDatetime(chrono::Local::now().naive_utc())),
       match_type: MatchType::Test,
       set_number: 1,
       match_number: 1,

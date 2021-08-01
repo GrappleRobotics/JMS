@@ -18,7 +18,7 @@ export default class BottomNavbar extends React.Component {
     // let nextMatch = this.allMatches().find(m => !m.played && m.id != this.props.arena?.match?.match?.id);
     let nextMatch = this.props.next_match;
 
-    if (nextMatch === undefined || nextMatch === null)
+    if (nextMatch === undefined || nextMatch === null || nextMatch.time === null)
       return <React.Fragment />;
 
     let now = moment();

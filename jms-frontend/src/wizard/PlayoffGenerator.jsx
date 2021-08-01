@@ -60,7 +60,6 @@ export default class PlayoffGenerator extends React.Component {
       <Table bordered striped size="sm">
         <thead>
           <tr>
-            <th> Time </th>
             <th> Match </th>
             <th className="schedule-blue" colSpan={max_teams}> Blue </th>
             <th className="schedule-red" colSpan={max_teams}> Red </th>
@@ -69,7 +68,6 @@ export default class PlayoffGenerator extends React.Component {
         <tbody>
           {
             matches?.map(match => <tr>
-              <td> &nbsp; { moment.unix(match.time).format("ddd HH:mm:ss") } </td>
               <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
               { Array.from({...match.blue, length: max_teams}).map(t => <td className="schedule-blue"> { t } </td>) }
               { Array.from({...match.red, length: max_teams}).map(t =>  <td className="schedule-red"> { t } </td>) }

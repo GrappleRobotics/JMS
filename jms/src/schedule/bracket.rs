@@ -81,12 +81,13 @@ fn update_bracket_recursive(bracket: MatchSubtype, set: usize, alliances: &Vec<P
     }
   }
 
-  // Stagger the matches to make sure back-to-back matches don't happen below the finals level
-  new_matches.sort_by(|a, b| {
-    // n_sets(b.playoff_type).cmp(&n_sets(a.playoff_type))
-      a.match_num.cmp(&b.match_num)
-      .then(a.set.cmp(&b.set))
-  });
+  // No longer matters since we don't assign times to playoff matches, as matches are generated progressively
+  // // Stagger the matches to make sure back-to-back matches don't happen below the finals level
+  // new_matches.sort_by(|a, b| {
+  //   // n_sets(b.playoff_type).cmp(&n_sets(a.playoff_type))
+  //     a.match_num.cmp(&b.match_num)
+  //     .then(a.set.cmp(&b.set))
+  // });
 
   match (red, blue) {
     // Match is ready to be generated and/or update
@@ -153,12 +154,12 @@ mod tests {
     if let GenerationUpdate::NewMatches(matches) = results {
       assert_eq!(matches.len(), 2*n_sets(playoff_type));
       assert_eq!(matches[0], IncompleteMatch { red: 1, blue: 8, playoff_type, set: 1, match_num: 1 });
-      assert_eq!(matches[1], IncompleteMatch { red: 4, blue: 5, playoff_type, set: 2, match_num: 1 });
-      assert_eq!(matches[2], IncompleteMatch { red: 2, blue: 7, playoff_type, set: 3, match_num: 1 });
-      assert_eq!(matches[3], IncompleteMatch { red: 3, blue: 6, playoff_type, set: 4, match_num: 1 });
-      assert_eq!(matches[4], IncompleteMatch { red: 1, blue: 8, playoff_type, set: 1, match_num: 2 });
-      assert_eq!(matches[5], IncompleteMatch { red: 4, blue: 5, playoff_type, set: 2, match_num: 2 });
-      assert_eq!(matches[6], IncompleteMatch { red: 2, blue: 7, playoff_type, set: 3, match_num: 2 });
+      assert_eq!(matches[1], IncompleteMatch { red: 1, blue: 8, playoff_type, set: 1, match_num: 2 });
+      assert_eq!(matches[2], IncompleteMatch { red: 4, blue: 5, playoff_type, set: 2, match_num: 1 });
+      assert_eq!(matches[3], IncompleteMatch { red: 4, blue: 5, playoff_type, set: 2, match_num: 2 });
+      assert_eq!(matches[4], IncompleteMatch { red: 2, blue: 7, playoff_type, set: 3, match_num: 1 });
+      assert_eq!(matches[5], IncompleteMatch { red: 2, blue: 7, playoff_type, set: 3, match_num: 2 });
+      assert_eq!(matches[6], IncompleteMatch { red: 3, blue: 6, playoff_type, set: 4, match_num: 1 });
       assert_eq!(matches[7], IncompleteMatch { red: 3, blue: 6, playoff_type, set: 4, match_num: 2 });
     } else {
       assert!(false);
@@ -175,8 +176,8 @@ mod tests {
     if let GenerationUpdate::NewMatches(matches) = results {
       assert_eq!(matches.len(), 4);
       assert_eq!(matches[0], IncompleteMatch { red: 4, blue: 5, playoff_type: MatchSubtype::Quarterfinal, set: 2, match_num: 1 });
-      assert_eq!(matches[1], IncompleteMatch { red: 2, blue: 3, playoff_type, set: 2, match_num: 1 });
-      assert_eq!(matches[2], IncompleteMatch { red: 4, blue: 5, playoff_type: MatchSubtype::Quarterfinal, set: 2, match_num: 2 });
+      assert_eq!(matches[1], IncompleteMatch { red: 4, blue: 5, playoff_type: MatchSubtype::Quarterfinal, set: 2, match_num: 2 });
+      assert_eq!(matches[2], IncompleteMatch { red: 2, blue: 3, playoff_type, set: 2, match_num: 1 });
       assert_eq!(matches[3], IncompleteMatch { red: 2, blue: 3, playoff_type, set: 2, match_num: 2 });
     } else {
       assert!(false);
@@ -193,16 +194,16 @@ mod tests {
     if let GenerationUpdate::NewMatches(matches) = results {
       assert_eq!(matches.len(), 2*n_sets(playoff_type));
       assert_eq!(matches[0], IncompleteMatch { red: 1, blue: 4, playoff_type, set: 1, match_num: 1 });
-      assert_eq!(matches[1], IncompleteMatch { red: 2, blue: 3, playoff_type, set: 2, match_num: 1 });
-      assert_eq!(matches[2], IncompleteMatch { red: 1, blue: 4, playoff_type, set: 1, match_num: 2 });
+      assert_eq!(matches[1], IncompleteMatch { red: 1, blue: 4, playoff_type, set: 1, match_num: 2 });
+      assert_eq!(matches[2], IncompleteMatch { red: 2, blue: 3, playoff_type, set: 2, match_num: 1 });
       assert_eq!(matches[3], IncompleteMatch { red: 2, blue: 3, playoff_type, set: 2, match_num: 2 });
 
       // Tie 1v4
       // 2v3 not ready yet
       let mut existing = vec![
         make_match(&matches[0], true, None),
-        make_match(&matches[2], true, Some(Alliance::Red)),
-        make_match(&matches[1], false, None),
+        make_match(&matches[1], true, Some(Alliance::Red)),
+        make_match(&matches[2], false, None),
         make_match(&matches[3], false, None),
       ];
 
