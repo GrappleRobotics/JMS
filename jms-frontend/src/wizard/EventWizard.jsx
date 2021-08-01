@@ -59,7 +59,7 @@ export default class EventWizard extends React.Component {
     return <Container fluid className="px-5">
       <h3>Event Wizard { event?.event_name ? ("- " + event.event_name) : "" }</h3>
       <hr />
-      <Tab.Container defaultActiveKey={EK_WELCOME}>
+      <Tab.Container unmountOnExit defaultActiveKey={EK_WELCOME}>
         <Row>
           <Col md={3} className="vr-right wizard-tabs">
             <Nav variant="pills" className="flex-column">

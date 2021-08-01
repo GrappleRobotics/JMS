@@ -44,6 +44,13 @@ impl<T> MatchGenerationWorker<T>
     }).unwrap_or(vec![])
   }
 
+  pub fn has_played(&self) -> bool {
+    self.record().map(|record| {
+      use crate::schema::matches::dsl::*;
+      models::Match::belonging_to(&record).filter(played.eq(true)).count().get_result::<i64>(&db::connection()).unwrap() > 0
+    }).unwrap_or(false)
+  }
+
   pub fn delete(&self) {
     {
       use crate::schema::match_generation_records::dsl::*;

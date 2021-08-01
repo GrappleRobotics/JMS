@@ -3,7 +3,7 @@ use log::info;
 
 use crate::{db, models::{self, Match, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance, SQLDatetime, SQLJson, ScheduleBlock}, schedule::round_robin::round_robin_update};
 
-use super::{GenerationUpdate, worker::MatchGenerator};
+use super::{GenerationUpdate, bracket::bracket_update, worker::MatchGenerator};
 
 #[derive(Clone)]
 pub struct PlayoffMatchGenerator;
@@ -33,7 +33,7 @@ impl MatchGenerator for PlayoffMatchGenerator {
     });
 
     let update = match mode {
-      models::PlayoffMode::Bracket => round_robin_update(&alliances, &existing_matches),  // TODO: 
+      models::PlayoffMode::Bracket => bracket_update(&alliances, &existing_matches),
       models::PlayoffMode::RoundRobin => round_robin_update(&alliances, &existing_matches)
     };
 
