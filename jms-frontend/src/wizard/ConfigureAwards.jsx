@@ -43,14 +43,22 @@ class AwardCard extends React.Component {
         ...this.props.award,
         recipients
       });
+
+      this.setState({ newTeam: null, newAwardee: null });
     }
   }
 
-  deleteRecipient = (idx) => {
-    this.props.ws.send("event", "awards", "update", {
-      ...this.props.award,
-      recipients: this.props.award.recipients.filter((v, i) => i !== idx)
+  deleteRecipient = async (idx) => {
+    let result = await confirm("Are you sure?", {
+      title: `Delete Award Recipient?`,
+      okButtonStyle: "success"
     });
+
+    if (result)
+      this.props.ws.send("event", "awards", "update", {
+        ...this.props.award,
+        recipients: this.props.award.recipients.filter((v, i) => i !== idx)
+      });
   }
 
   updateName = (name) => {
