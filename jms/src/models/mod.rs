@@ -106,7 +106,7 @@ macro_rules! sql_mapped_enum {
 
 // SQL-mapped chrono types (for sqlite + serde)
 
-#[derive(AsExpression, Debug, FromSqlRow, Clone)]
+#[derive(AsExpression, Debug, FromSqlRow, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[sql_type = "BigInt"]
 pub struct SQLDatetime(pub NaiveDateTime);
 

@@ -108,7 +108,7 @@ impl Decoder for DSTCPCodec {
       }
     } else {
       // Currently decoding a frame
-      if src.remaining() < self.decode_frame_len.into() {
+      if src.remaining() < self.decode_frame_len as usize {
         return Ok(None);
       }
 

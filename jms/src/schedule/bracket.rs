@@ -1,14 +1,6 @@
-use crate::{models::{Alliance, Match, MatchSubtype, PlayoffAlliance}, schedule::IncompleteMatch};
+use crate::{models::{Alliance, Match, MatchSubtype, PlayoffAlliance, n_sets}, schedule::IncompleteMatch};
 
 use super::{GenerationUpdate, create_tiebreaker};
-
-fn n_sets(level: MatchSubtype) -> usize {
-  match level {
-    MatchSubtype::Quarterfinal => 4,
-    MatchSubtype::Semifinal => 2,
-    MatchSubtype::Final => 1,
-  }
-}
 
 fn pairings(level: MatchSubtype) -> &'static [i32] {
   match level {

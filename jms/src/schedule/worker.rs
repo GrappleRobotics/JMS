@@ -39,9 +39,10 @@ impl<T> MatchGenerationWorker<T>
   }
 
   pub fn matches(&self) -> Vec<models::Match> {
-    self.record().map(|record| {
-      models::Match::belonging_to(&record).load::<models::Match>(&db::connection()).unwrap()
-    }).unwrap_or(vec![])
+    models::Match::with_type(self.match_type())
+    // self.record().map(|record| {
+    //   models::Match::belonging_to(&record).load::<models::Match>(&db::connection()).unwrap()
+    // }).unwrap_or(vec![])
   }
 
   pub fn has_played(&self) -> bool {
