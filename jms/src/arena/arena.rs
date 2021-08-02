@@ -16,7 +16,7 @@ use super::{
   station::{AllianceStationId},
 };
 
-use crate::{arena::station::Alliance, log_expect, models::{self, MatchType}, network::{NetworkProvider, NetworkResult}};
+use crate::{ds::DSMode, log_expect, models::{self, Alliance, MatchType}, network::{NetworkProvider, NetworkResult}};
 
 use serde::{Deserialize, Serialize};
 
@@ -50,9 +50,13 @@ enum StateData {
   MatchCommit,
 }
 
-struct BoundState {
+#[derive(Serialize)]
+#[serde(transparent)]
+pub struct BoundState {
+  #[serde(skip)]
   first: bool, // First run?
   state: ArenaState,
+  #[serde(skip)]
   data: StateData,
 }
 
@@ -77,16 +81,35 @@ pub enum ArenaSignal {
 //   Any,       // Anyone (Idle only - awards etc)
 // }
 
-#[derive(Debug, Clone, Copy, Default, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct AllianceStationDSReport {
   pub robot_ping: bool,
   pub rio_ping: bool,
   pub radio_ping: bool,
   pub battery: f64,
 
+  pub estop: bool,
+  pub mode: Option<DSMode>,
+
   pub pkts_sent: u16,
   pub pkts_lost: u16,
   pub rtt: u8,
+}
+
+impl Default for AllianceStationDSReport {
+  fn default() -> Self {
+    Self {
+      robot_ping: false,
+      rio_ping: false,
+      radio_ping: false,
+      battery: 0.0f64,
+      estop: false,
+      mode: None,
+      pkts_sent: 0,
+      pkts_lost: 0,
+      rtt: 0
+    }
+  }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -121,17 +144,31 @@ impl AllianceStation {
     };
   }
 
+  pub fn reset(&mut self) {
+    self.team = None;
+    self.bypass = false;
+    self.estop = false;
+    self.astop = false;
+    self.ds_report = None;
+    self.occupancy = AllianceStationOccupancy::Vacant;
+  }
+
   pub fn can_arm_match(&self) -> bool {
     self.bypass || self.estop || (self.occupancy == AllianceStationOccupancy::Occupied)
   }
 }
 
+#[derive(Serialize)]
 pub struct Arena {
   // network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
+  #[serde(skip)]
   network: Option<Arc<Mutex<Box<dyn NetworkProvider + Send + Sync>>>>,
-  state: BoundState,
+  pub state: BoundState,
+  #[serde(skip)]
   pending_state_change: Option<ArenaState>,
+  #[serde(skip)]
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
+  #[serde(rename = "match")]
   pub current_match: Option<LoadedMatch>,
   pub stations: Vec<AllianceStation>,
 }
@@ -141,7 +178,6 @@ pub type SharedArena = Arc<Mutex<Arena>>;
 impl Arena {
   pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send + Sync>>) -> Arena {
     let mut a = Arena {
-      // network: Arc::new(Mutex::new(network)),
       network: network.map(|x| Arc::new(Mutex::new(x))),
       state: BoundState {
         first: true,
@@ -164,18 +200,27 @@ impl Arena {
     a
   }
 
+  pub fn unload_match(&mut self) -> ArenaResult<()> {
+    match self.state.state {
+      ArenaState::Idle => {
+        self.current_match = None;
+          for stn in self.stations.iter_mut() {
+            stn.reset();
+          }
+        Ok(())
+      },
+      ref s => Err(ArenaError::CannotLoadMatchError(format!(
+        "Can't unload match in state {}",
+        s
+      ))),
+    }
+  }
+
   pub fn load_match(&mut self, m: LoadedMatch) -> ArenaResult<()> {
     match self.state.state {
       ArenaState::Idle => {
         self.load_match_teams(m.metadata())?;
         self.current_match = Some(m);
-        Ok(())
-      }
-      // TODO: Ditch this, MatchCommit should automatically go to idle once scores are committed
-      ArenaState::MatchCommit => {
-        self.load_match_teams(m.metadata())?;
-        self.current_match = Some(m);
-        self.prepare_state_change(ArenaState::Idle)?;
         Ok(())
       }
       ref s => Err(ArenaError::CannotLoadMatchError(format!(
@@ -191,10 +236,12 @@ impl Arena {
         Alliance::Blue => &m.blue_teams,
         Alliance::Red => &m.red_teams,
       };
+      
+      stn.reset();
 
       let i = (stn.station.station - 1) as usize;
       if let Some(&t) = v.0.get(i) {
-        stn.team = if t <= 0 { None } else { Some(t as u16) };
+        stn.team = t.map(|team| team as u16);
       } else {
         // Test matches are an exception - they start off blank
         if m.match_type != MatchType::Test {
@@ -227,6 +274,25 @@ impl Arena {
     self.stations.iter_mut().find(|stn| stn.station == station)
   }
 
+  fn update_match_teams(&mut self) -> ArenaResult<()> {
+    if let Some(m) = self.current_match.as_mut() {
+      m.match_meta.blue_teams.0.resize(self.stations.len() / 2, None);
+      m.match_meta.red_teams.0.resize(self.stations.len() / 2, None);
+
+      for s in &self.stations {
+        match s.station.alliance {
+          Alliance::Blue => {
+            m.match_meta.blue_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
+          },
+          Alliance::Red => {
+            m.match_meta.red_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
+          },
+        }
+      }
+    }
+    Ok(())
+  }
+
   async fn update_field_estop(&mut self) -> ArenaResult<()> {
     if self.state.state != ArenaState::Estop {
       if let Some(ArenaSignal::Estop) = self.current_signal().await {
@@ -241,7 +307,9 @@ impl Arena {
     let signal = self.current_signal().await;
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
-        if let Some(ArenaSignal::Prestart { force }) = signal {
+        if first {
+          self.unload_match()?;
+        } else if let Some(ArenaSignal::Prestart { force }) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false, force })?;
         }
       }
@@ -313,7 +381,13 @@ impl Arena {
           self.prepare_state_change(ArenaState::MatchCommit)?;
         }
       }
-      (ArenaState::MatchCommit, _) => (),
+      (ArenaState::MatchCommit, _) => {
+        if first {
+          self.update_match_teams()?;
+          self.current_match.as_mut().unwrap().commit_score().await?;
+          self.prepare_state_change(ArenaState::Idle)?;
+        }
+      },
       (state, _) => Err(ArenaError::UnimplementedStateError(state))?,
     };
     Ok(())

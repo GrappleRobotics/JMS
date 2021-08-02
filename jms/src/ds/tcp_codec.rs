@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 use bytes::{Buf, BufMut, Bytes};
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{arena::station::AllianceStationId, utils::bufutil::utf8_str_with_len};
@@ -18,6 +18,7 @@ pub enum Ds2FmsTCPTags {
   DSVersion(String),
   LogData(DSLogData),
   Ping,
+  #[allow(dead_code)]
   ErrorData(Vec<TimestampedMessage>),
   Unknown(u8, usize),
 }
@@ -107,7 +108,7 @@ impl Decoder for DSTCPCodec {
       }
     } else {
       // Currently decoding a frame
-      if src.remaining() < self.decode_frame_len.into() {
+      if src.remaining() < self.decode_frame_len as usize {
         return Ok(None);
       }
 
@@ -173,24 +174,27 @@ impl Decoder for DSTCPCodec {
           }
           0x17 => {
             // Error / events data
-            let count = buf.get_u32();
-            let msgs: Result<Vec<TimestampedMessage>, Self::Error> = (0..count)
-              .map(|_| {
-                let secs_since_1904 = buf.get_u64() as i64;
-                /* Offset to the unix epoch */
-                let datetime = NaiveDateTime::from_timestamp(secs_since_1904 - 2_082_844_800, 0);
+            tags_ok = false;
+            None
+            // TODO: Having some out of bounds issues here
+            // let count = buf.get_u32();
+            // let msgs: Result<Vec<TimestampedMessage>, Self::Error> = (0..count)
+            //   .map(|_| {
+            //     let secs_since_1904 = buf.get_u64() as i64;
+            //     /* Offset to the unix epoch */
+            //     let datetime = NaiveDateTime::from_timestamp(secs_since_1904 - 2_082_844_800, 0);
 
-                buf.get_u64(); // Unknown bytes
-                let msg_len = buf.get_u32();
+            //     buf.get_u64(); // Unknown bytes
+            //     let msg_len = buf.get_u32();
 
-                Ok(TimestampedMessage {
-                  timestamp: DateTime::<Utc>::from_utc(datetime, Utc),
-                  message: utf8_str_with_len(&mut buf, msg_len as usize)?,
-                })
-              })
-              .collect();
+            //     Ok(TimestampedMessage {
+            //       timestamp: DateTime::<Utc>::from_utc(datetime, Utc),
+            //       message: utf8_str_with_len(&mut buf, msg_len as usize)?,
+            //     })
+            //   })
+            //   .collect();
 
-            Some(Ds2FmsTCPTags::ErrorData(msgs?))
+            // Some(Ds2FmsTCPTags::ErrorData(msgs?))
           }
           0x18 => {
             // Team Number

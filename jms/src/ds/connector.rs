@@ -103,12 +103,13 @@ impl DSConnection {
         _ = udp_timer.tick() => {
           if self._get_station_status().await == Fms2DsStationStatus::Good {
             if let Some(team) = self.team {
-              let msg = self._encode_udp_update(team).await;
-              self.framed_udp.send((msg, self.addr_udp)).await.unwrap();  // TODO: Handle error
+              if let Some(msg) = self._encode_udp_update(team).await {
+                self.framed_udp.send((msg, self.addr_udp)).await.unwrap();  // TODO: Handle error
+              }
             }
 
             // Check timeout
-            if self.last_packet_time.elapsed() > Duration::from_millis(1000) {
+            if self.last_packet_time.elapsed() > Duration::from_millis(2000) {
               self.state = DSConnectionState::Disconnected(DSDisconnectionReason::Timeout);
               break;
             }
@@ -117,21 +118,11 @@ impl DSConnection {
 
         // TCP Update
         _ = tcp_timer.tick() => {
-          // TODO: Can't TCP Update here
           // The DS buffers all TCP messages, so if we send TCP messages more often than the DS sends
           // them, the DS thinks it's still connected even if we close the socket.
           // Nice one, NI.
 
           let status = self._get_station_status().await;
-
-          // if let Some(team) = self.team {
-          //   let mut tags = vec![];
-          //   // TODO: Event Code (once implemented)
-          //   // TODO: Game Data (once implemented)
-          //   tags.push(self._construct_station_tag(status));
-
-          //   self.framed_tcp.send(Fms2DsTCP{ tags }).await.unwrap(); // TODO: Handle error
-          // }
 
           // Update arena record of station status
           {
@@ -222,54 +213,59 @@ impl DSConnection {
     }
   }
 
-  async fn _encode_udp_update(&self, _team: u16) -> Fms2DsUDP {
-    let station = self._get_desired_alliance_station().await.unwrap(); // Unwrap safe as UDP updates are only issued for correct stations (precondition)
-    let arena = self.arena.lock().await;
+  async fn _encode_udp_update(&self, _team: u16) -> Option<Fms2DsUDP> {
+    if let Some(station) = self._get_desired_alliance_station().await {
+      let arena = self.arena.lock().await;
 
-    let match_state = arena.current_match.as_ref().map(|m| m.current_state());
-    let estop = station.estop || (arena.current_state() == ArenaState::Estop);
-    let astop = station.astop;
+      let match_state = arena.current_match.as_ref().map(|m| m.current_state());
+      let estop = station.estop || (arena.current_state() == ArenaState::Estop);
+      let astop = station.astop;
 
-    let (mode, robots_enabled) = match match_state {
-      Some(MatchPlayState::Auto) => (ds::DSMode::Auto, true),
-      Some(MatchPlayState::Teleop) => (ds::DSMode::Teleop, true),
-      _ => (ds::DSMode::Auto, false),
-    };
-
-    let remaining_seconds = arena
-      .current_match
-      .as_ref()
-      .map(|x| x.remaining_time())
-      .map(|dt| dt.as_secs_f32())
-      .unwrap_or(0f32);
-
-    let match_meta = arena.current_match.as_ref().map(|x| x.metadata());
-    
-    let mut pkt = Fms2DsUDP {
-      estop: estop || astop,
-      enabled: (!station.bypass) && !(estop || astop) && robots_enabled,
-      mode,
-      station: station.station,
-      tournament_level: ds::TournamentLevel::Test,
-      match_number: 1,
-      play_number: 1,
-      time: Local::now(),
-      remaining_seconds: f32::max(remaining_seconds, 0f32) as u16,
-    };
-
-    if let Some(m) = match_meta {
-      pkt.tournament_level = ds::TournamentLevel::from(m.match_type);
-      // We use the same encoding as cheesy-arena. For matches with set numbers, the match num is encoded as
-      // XYZ, where X = final bracket (Q=4, S=2, F=1), Y = set number, Z = match number
-      pkt.match_number = match m.match_type {
-        models::MatchType::Test | models::MatchType::Qualification => m.match_number as u16,
-        models::MatchType::Quarterfinal => (400 + 10*m.set_number + m.match_number) as u16,
-        models::MatchType::Semifinal => (200 + 10*m.set_number + m.match_number) as u16,
-        models::MatchType::Final => (100 + 10*m.set_number + m.match_number) as u16,
+      let (mode, robots_enabled) = match match_state {
+        Some(MatchPlayState::Auto) => (ds::DSMode::Auto, true),
+        Some(MatchPlayState::Teleop) => (ds::DSMode::Teleop, true),
+        _ => (ds::DSMode::Auto, false),
       };
-    }
 
-    pkt
+      let remaining_seconds = arena
+        .current_match
+        .as_ref()
+        .map(|x| x.remaining_time())
+        .map(|dt| dt.as_secs_f32())
+        .unwrap_or(0f32);
+
+      let match_meta = arena.current_match.as_ref().map(|x| x.metadata());
+      
+      let mut pkt = Fms2DsUDP {
+        estop: estop || astop,
+        enabled: (!station.bypass) && !(estop || astop) && robots_enabled,
+        mode,
+        station: station.station,
+        tournament_level: ds::TournamentLevel::Test,
+        match_number: 1,
+        play_number: 1,
+        time: Local::now(),
+        remaining_seconds: f32::max(remaining_seconds, 0f32) as u16,
+      };
+
+      if let Some(m) = match_meta {
+        pkt.tournament_level = ds::TournamentLevel::from(m.match_type);
+        // We use the same encoding as cheesy-arena. For matches with set numbers, the match num is encoded as
+        // XYZ, where X = final bracket (Q=4, S=2, F=1), Y = set number, Z = match number
+        pkt.match_number = match m.match_type {
+          models::MatchType::Playoff => match m.match_subtype.unwrap() {
+            models::MatchSubtype::Quarterfinal => (400 + 10*m.set_number + m.match_number) as u16,
+            models::MatchSubtype::Semifinal => (200 + 10*m.set_number + m.match_number) as u16,
+            models::MatchSubtype::Final => (100 + 10*m.set_number + m.match_number) as u16,
+          }
+          _ => m.match_number as u16,
+        };
+      }
+
+      Some(pkt)
+    } else {
+      None
+    }
   }
 
   async fn _decode_udp_update(&self, pkt: Ds2FmsUDP) {
@@ -284,6 +280,9 @@ impl DSConnection {
         report.radio_ping = pkt.radio;
         report.rio_ping = pkt.rio;
         report.battery = pkt.battery;
+
+        report.estop = pkt.estop;
+        report.mode = if pkt.enabled { Some(pkt.mode) } else { None };
 
         for tag in pkt.tags {
           match tag {

@@ -32,6 +32,7 @@ pub enum ArenaError {
   UnimplementedStateError(ArenaState),
   NetworkError(NetworkError),
   MatchError(MatchError),
+  DBError(diesel::result::Error),
   CannotLoadMatchError(String),
 }
 
@@ -42,6 +43,7 @@ impl std::fmt::Display for ArenaError {
       ArenaError::UnimplementedStateError(ref s) => write!(f, "Unimplemented State: {}", s),
       ArenaError::NetworkError(ref e) => write!(f, "Network Error: {}", e),
       ArenaError::MatchError(ref e) => write!(f, "Match Error: {}", e),
+      ArenaError::DBError(ref e) => write!(f, "DB Error: {}", e),
       ArenaError::CannotLoadMatchError(ref s) => write!(f, "Could not load match: {}", s),
     }
   }
@@ -52,6 +54,7 @@ impl error::Error for ArenaError {
     match *self {
       ArenaError::NetworkError(ref e) => Some(e.as_ref()),
       ArenaError::MatchError(ref e) => Some(e),
+      ArenaError::DBError(ref e) => Some(e),
       _ => None,
     }
   }
@@ -69,6 +72,12 @@ impl From<MatchError> for ArenaError {
   }
 }
 
+impl From<diesel::result::Error> for ArenaError {
+  fn from(err: diesel::result::Error) -> ArenaError {
+    ArenaError::DBError(err)
+  }
+}
+
 // Match
 #[derive(Debug)]
 pub enum MatchError {
@@ -77,6 +86,8 @@ pub enum MatchError {
     to: MatchPlayState,
     why: String,
   },
+  WrongState { state: MatchPlayState, why: String },
+  DBError(diesel::result::Error)
 }
 
 impl std::fmt::Display for MatchError {
@@ -88,13 +99,26 @@ impl std::fmt::Display for MatchError {
         ref why,
       } => {
         write!(f, "Illegal State Change: {:?} -> {:?} ({})", from, to, why)
-      }
+      },
+      MatchError::WrongState { ref state, ref why } => {
+        write!(f, "Wrong State: {:?} ({})", state, why)
+      },
+      MatchError::DBError(ref e) => write!(f, "DB Error: {}", e),
     }
   }
 }
 
 impl error::Error for MatchError {
   fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-    None
+    match *self {
+      MatchError::DBError(ref e) => Some(e),
+      _ => None
+    }
+  }
+}
+
+impl From<diesel::result::Error> for MatchError {
+  fn from(e: diesel::result::Error) -> Self {
+    Self::DBError(e)
   }
 }

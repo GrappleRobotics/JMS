@@ -9,7 +9,7 @@ use crate::models;
 
 pub mod connector;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, serde::Serialize)]
 pub enum DSMode {
   Teleop = 0,
   Test = 1,
@@ -49,9 +49,7 @@ impl From<models::MatchType> for TournamentLevel {
     match mt {
       models::MatchType::Test => TournamentLevel::Test,
       models::MatchType::Qualification => TournamentLevel::Qualification,
-      models::MatchType::Quarterfinal | 
-        models::MatchType::Semifinal  | 
-        models::MatchType::Final => TournamentLevel::Playoff,
+      models::MatchType::Playoff => TournamentLevel::Playoff,
     }
   }
 }

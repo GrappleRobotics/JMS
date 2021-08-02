@@ -1,8 +1,9 @@
 use std::time::{Duration, Instant};
 
+use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::models;
+use crate::{db, models::{self, Alliance, MatchGenerationRecordData, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
 
 use super::exceptions::{MatchError, MatchResult};
 
@@ -28,29 +29,36 @@ pub struct MatchConfig {
   teleop_time: Duration,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct LoadedMatch {
-  match_meta: models::Match,
+  #[serde(rename = "match")]
+  pub match_meta: models::Match,
   state: MatchPlayState,
-  state_first: bool,
-  state_start_time: Instant,
   remaining_time: Duration,
+  pub score: MatchScore,
+
+  #[serde(skip)]
+  state_first: bool,
+  #[serde(skip)]
+  state_start_time: Instant,
+  #[serde(skip)]
   config: MatchConfig
 }
 
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
-      match_meta: m,
       state: MatchPlayState::Waiting,
+      score: MatchScore::new( m.red_teams.0.len(), m.blue_teams.0.len() ),
+      match_meta: m,
       state_first: true,
       state_start_time: Instant::now(),
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
-        warmup_cooldown_time: Duration::from_secs(3),
-        auto_time: Duration::from_secs(4),
+        warmup_cooldown_time: Duration::from_secs(1),
+        auto_time: Duration::from_secs(1),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(4),
+        teleop_time: Duration::from_secs(1),
       },
     }
   }
@@ -73,6 +81,61 @@ impl LoadedMatch {
         to: MatchPlayState::Waiting,
         why: "Match not ready!".to_owned(),
       })
+    }
+  }
+
+  pub async fn commit_score(&mut self) -> MatchResult<()> {
+    if self.match_meta.match_type != models::MatchType::Test {
+      if self.state == MatchPlayState::Complete {
+        let red = self.score.red.derive();
+        let blue = self.score.blue.derive();
+
+        let mut winner = None;
+        if blue.total_score.total() > red.total_score.total() {
+          winner = Some(Alliance::Blue);
+        } else if red.total_score.total() > blue.total_score.total() {
+          winner = Some(Alliance::Red);
+        }
+
+        self.match_meta.played = true;
+        self.match_meta.winner = winner;
+        self.match_meta.score = Some(SQLJson(self.score.clone()));
+
+        {
+          use crate::schema::matches::dsl::*;
+          diesel::replace_into(matches).values(&self.match_meta).execute(&db::connection()).unwrap();
+        }
+
+        if self.match_meta.match_type == models::MatchType::Qualification {
+          let conn = db::connection();
+          for &team in &self.match_meta.blue_teams.0 {
+            if let Some(team) = team {
+              models::TeamRanking::get(team, &conn)?.update( &blue, &red, &conn )?;
+            }
+          }
+          for &team in &self.match_meta.red_teams.0 {
+            if let Some(team) = team {
+              models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
+            }
+          }
+        } else if self.match_meta.match_type == models::MatchType::Playoff {
+          // Update playoff generation
+          // TODO: We should use a global worker, but this will do for now.
+          let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
+          let record = worker.record();
+          if let Some(record) = record {
+            if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data.map(|x| x.0) {
+              worker.generate(mode).await;
+            }
+          }
+        }
+
+        Ok(())
+      } else {
+        Err(MatchError::WrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
+      }
+    } else {
+      Ok(())
     }
   }
 

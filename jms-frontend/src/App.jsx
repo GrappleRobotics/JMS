@@ -1,22 +1,37 @@
 import React from 'react';
-import { Container, Row, Col, Button } from 'react-bootstrap';
-import Alliance from './components/alliance';
-import MatchFlow from './components/match_flow';
-import Navbar from './components/navbar';
-import JmsWebsocket from './support/ws';
+import { Route, Switch } from 'react-router-dom';
+import JmsWebsocket from 'support/ws';
+import MatchControl from 'match_control/MatchControl';
+import EventWizard from 'wizard/EventWizard';
+import { EVENT_WIZARD, MATCH_CONTROL, RANKINGS, SCORING } from 'paths';
+import TopNavbar from 'TopNavbar';
+import { Col, Navbar, Row } from 'react-bootstrap';
+import BottomNavbar from 'BottomNavbar';
+import { nullIfEmpty } from 'support/strings';
+import Home from 'Home';
+import { ScoringRouter } from 'scoring/Scoring';
+import Rankings from 'rankings/Rankings';
 
-class App extends React.Component {
+export default class App extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
       connected: false,
-      status: null
     }
 
     this.ws = new JmsWebsocket();
-    this.ws.onMessage("arena", "status", "get", data => {
-      this.setState({ status: data });
+    this.ws.onMessage("*", "*", "__update__", msg => {
+      if (!!nullIfEmpty(msg.noun)) {
+        this.setState({
+          [msg.object]: {
+            ...this.state[msg.object],
+            [msg.noun]: msg.data
+          }
+        });
+      } else {
+        this.setState({ [msg.object]: msg.data });
+      }
     });
 
     this.ws.onConnectChange(connected => {
@@ -29,71 +44,96 @@ class App extends React.Component {
 
     this.ws.connect();
 
-    this.updateInterval = setInterval(() => {
-      if (this.state.connected)
-        this.ws.send("arena", "status", "get");
-    }, 500);
+    window['ws'] = this.ws;
+  }
+
+  renderNoNavbar = () => {
+    return this.state.connected ? <React.Fragment /> : <Navbar bg="danger" variant="dark"> <Navbar.Brand className="ml-5"> DISCONNECTED </Navbar.Brand> </Navbar>
+  }
+
+  wrapView = (props) => {
+    let { navbar, children, fullscreen } = props;
+    let { arena, event, matches } = this.state;
+
+    return <div className="wrapper">
+      {
+        navbar ? <Row className="navbar-padding">
+          <Col>
+            <TopNavbar
+              ws={this.ws}
+              connected={this.state.connected}
+              state={arena?.state}
+              match={arena?.match}
+              onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
+            />
+          </Col>
+        </Row> : this.renderNoNavbar()
+      }
+      <Row className={"app-viewport " + (fullscreen ? "fullscreen" : "")} data-connected={this.state.connected}>
+        <Col>
+          { children }
+        </Col>
+      </Row>
+      {
+        navbar ? <Row className="navbar-padding">
+          <Col>
+            <BottomNavbar
+              ws={this.ws}
+              arena={arena}
+              next_match={matches?.next}
+              event={event?.details}
+            />s
+          </Col>
+        </Row> : <React.Fragment />
+      }
+    </div>
   }
 
   render() {
-    return <div>
-      <Navbar
-        connected={this.state.connected}
-        state={this.state.status?.state}
-        match={this.state.status?.match}
-        onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
-      />
+    let { arena, event, matches } = this.state;
 
-      <br />
-
-      <Container>
-        <br />
-        <Row>
-          <Col>
-            <h3> { this.state.status?.match?.meta?.name || <i>No Match Loaded</i> } </h3>
-          </Col>
-          <Col md="auto">
-            <Button
-              variant="warning"
-              onClick={() => this.ws.send("arena", "match", "loadTest")}
-              disabled={this.state.status?.state?.state !== "Idle"}
-            >
-              Load Test Match
-            </Button>
-          </Col>
-        </Row>
-        <br />
-        <Row >
-          <Col>
-            <Row>
-              <Col>
-                <Alliance
-                  colour="Blue"
-                  state={this.state.status?.state}
-                  stations={this.state.status?.alliances?.filter(x => x.station.alliance === "Blue")}
-                  onStationUpdate={ (data) => this.ws.send("arena", "alliances", "update", data) }
-                />
-              </Col>
-              <Col>
-                <Alliance
-                  colour="Red"
-                  state={this.state.status?.state}
-                  stations={this.state.status?.alliances?.filter(x => x.station.alliance === "Red").reverse()}  // Red teams go 3-2-1 to order how they're seen from the scoring table
-                  onStationUpdate={ (data) => this.ws.send("arena", "alliances", "update", data) }
-                />
-              </Col>
-            </Row>
-            <br />
-            <MatchFlow
-              state={this.state.status?.state}
-              match={this.state.status?.match}
-              onSignal={(data) => this.ws.send("arena", "state", "signal", data)}
-            />
-          </Col>
-        </Row>
-      </Container>
-    </div>
+    return <Switch>
+      <Route path={EVENT_WIZARD}>
+        <this.wrapView navbar>
+          <EventWizard
+            ws={this.ws}
+            event={event}
+            matches={matches}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={SCORING}>
+        <this.wrapView navbar>
+          <ScoringRouter
+            ws={this.ws}
+            arena={arena}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={MATCH_CONTROL}>
+        <this.wrapView navbar>
+          <MatchControl
+            ws={this.ws}
+            arena={arena}
+            matches={matches}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={RANKINGS}>
+        <this.wrapView fullscreen>
+          <Rankings
+            ws={this.ws}
+            rankings={event?.rankings}
+            details={event?.details}
+            next_match={matches?.next}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path="/">
+        <this.wrapView navbar>
+          <Home />
+        </this.wrapView>
+      </Route>
+    </Switch>
   }
 };
-
-export default App;

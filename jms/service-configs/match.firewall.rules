@@ -15,6 +15,10 @@ COMMIT
 
 # Enable SSH on WAN
 -A INPUT -p tcp -m state --state NEW --dport 22 -i {{ wan }} -j ACCEPT
+# Enable JMS on WAN (temporary) TODO: Remove
+-A INPUT -p tcp -m state --state NEW --dport 3000 -i {{ wan }} -j ACCEPT
+-A INPUT -p tcp -m state --state NEW --dport 9000 -i {{ wan }} -j ACCEPT
+
 
 # ADMIN Network Rules
 #   Allow access to whole admin network (as multiple addresses are served by this host)
