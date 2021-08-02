@@ -12,6 +12,7 @@ int STM_Controller::start(int argc, char const *argv[], int &userButton) {
 		#endif
 
 		LoopHandle(getRUNNING(),
+			std::cout << "Test" << std::endl;
 			// @TODO (lighting garbage)
 		)
 	)
