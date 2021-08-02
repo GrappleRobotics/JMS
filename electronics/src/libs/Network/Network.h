@@ -1,42 +1,18 @@
-// #include <EthernetInterface.h>
-// #include <FlashIAP.h>
-// #include <thread>
+#ifndef NETWORK_H
+#define NETWORK_H
 
-// #ifndef NETWORK_BUF_SIZE
-// #define NETWORK_BUF_SIZE 256
-// #endif
 
-// DigitalOut led(PB_0);
+/**
+ * pb
+ */
+#include <pb.h>
+#include <pb_decode.h>
+#include <pb_encode.h>
 
-// /**
-//  * Network controller test
-//  */
-// class Network {
-//  public:
+/**
+ * mbed socket
+ */
+#include <EthernetInterface.h>
+#include <FlashIAP.h>
 
-// 	Network(PinName pin = PB_0) {
-// 		eth.connect();
-// 		eth.get_ip_address(&s);
-// 		printf("Server IP: %s\n", s.get_ip_address());
-
-// 		// Server
-// 		srv.open(&eth);
-// 		srv.bind(9999); // Port bind
-// 		srv.listen(1);
-// 	}
-
-// 	void update() {
-// 		client = srv.accept();
-// 		while (client != nullptr && client->recv(buffer, NETWORK_BUF_SIZE) > 0) {
-// 			led = (atoi(buffer) != 0);
-// 		}
-
-// 		thread_sleep_for(50);
-// 	}
-
-//  private:
-// 	EthernetInterface eth;
-// 	SocketAddress s;
-// 	TCPSocket srv, *client;
-// 	char buffer[NETWORK_BUF_SIZE];
-// };
+#endif

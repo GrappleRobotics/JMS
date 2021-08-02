@@ -9,6 +9,9 @@
 #include "libs/Controller.h"
 #include "libs/E_Stop/E_Stop.h"
 
+#include "libs/Network/Network.h"
+
+
 /**
  * Scoring Table microcontroller class
  */
