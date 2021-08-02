@@ -22,6 +22,14 @@ export default class MatchControl extends React.Component {
         </Col>
         <Col md="auto">
           <Button
+            variant="danger"
+            onClick={() => ws.send("arena", "match", "unload")}
+            disabled={arena?.state?.state !== "Idle"}
+          >
+            Unload Match
+          </Button>
+          &nbsp;
+          <Button
             variant="warning"
             onClick={() => ws.send("arena", "match", "loadTest")}
             disabled={arena?.state?.state !== "Idle"}

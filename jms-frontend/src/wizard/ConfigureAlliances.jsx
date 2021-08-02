@@ -93,7 +93,7 @@ export default class ConfigureAlliances extends React.Component {
             disabled={this.state.max_num_alliances === 2}
             step={1}
             min={2}
-            max={this.state.max_num_alliances}
+            max={Math.min(this.state.max_num_alliances, 8)}
             tooltipLabel={v => v + " Alliances"}
             tooltip="on"
             tooltipPlacement="top"

@@ -1,5 +1,5 @@
 use crate::log_expect;
-use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
+use diesel::{Connection, r2d2::{ConnectionManager, Pool, PooledConnection}};
 use log::info;
 use std::env;
 use diesel::sqlite::SqliteConnection;
@@ -31,6 +31,8 @@ pub fn connection() -> DbPooledConnection {
     pool().get(),
     "Could not get a DB connection from the connection pool! {}"
   );
+
+  conn.execute("PRAGMA busy_timeout=5000;").unwrap();
 
   embedded_migrations::run_with_output(&conn, &mut std::io::stdout()).unwrap();
 

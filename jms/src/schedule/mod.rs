@@ -6,6 +6,7 @@ pub mod playoffs;
 
 pub mod randomiser;
 pub mod round_robin;
+pub mod bracket;
 
 #[derive(Debug)]
 pub enum GenerationUpdate {
@@ -14,7 +15,7 @@ pub enum GenerationUpdate {
   TournamentWon(PlayoffAlliance, PlayoffAlliance)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct IncompleteMatch {
   red: i32,
   blue: i32,

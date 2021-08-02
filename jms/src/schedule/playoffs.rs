@@ -1,9 +1,9 @@
 use diesel::{RunQueryDsl, BelongingToDsl, ExpressionMethods};
 use log::info;
 
-use crate::{db, models::{self, Match, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance, SQLDatetime, SQLJson, ScheduleBlock}, schedule::round_robin::round_robin_update};
+use crate::{db, models::{self, AwardRecipient, Match, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance, SQLJson}, schedule::round_robin::round_robin_update};
 
-use super::{GenerationUpdate, worker::MatchGenerator};
+use super::{GenerationUpdate, bracket::bracket_update, worker::MatchGenerator};
 
 #[derive(Clone)]
 pub struct PlayoffMatchGenerator;
@@ -11,6 +11,20 @@ pub struct PlayoffMatchGenerator;
 impl PlayoffMatchGenerator {
   pub fn new() -> Self {
     Self {}
+  }
+
+  fn generate_award_for(&self, award_name: &str, alliance: &PlayoffAlliance) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::schema::awards::dsl::*;
+
+    let recipients_list: Vec<AwardRecipient> = alliance.teams.0.iter().filter_map(|t| {
+      t.map(|x| AwardRecipient { team: Some(x), awardee: None })
+    }).collect();
+
+    diesel::insert_into(awards)
+          .values( (name.eq(award_name), recipients.eq(SQLJson(recipients_list))) )
+          .execute(&db::connection())?;
+    
+    Ok(())
   }
 }
 
@@ -33,7 +47,7 @@ impl MatchGenerator for PlayoffMatchGenerator {
     });
 
     let update = match mode {
-      models::PlayoffMode::Bracket => round_robin_update(&alliances, &existing_matches),  // TODO: 
+      models::PlayoffMode::Bracket => bracket_update(&alliances, &existing_matches),
       models::PlayoffMode::RoundRobin => round_robin_update(&alliances, &existing_matches)
     };
 
@@ -42,24 +56,12 @@ impl MatchGenerator for PlayoffMatchGenerator {
       GenerationUpdate::NewMatches(pending_matches) => {
         use crate::schema::matches::dsl::*;
 
-        let blocks = ScheduleBlock::playoff_blocks(&db::connection())?;
-        
-        // TODO: Need to support more than 1 playoff block here.
-        let mut time = match existing_matches {
-          Some(ref ms) if ms.len() > 0 => {
-            let last_match = ms.last().unwrap();
-            last_match.start_time.0 + blocks[0].cycle_time.0
-          },
-          _ => blocks[0].start_time.0
-        };
-
         let mut match_vec = vec![];
         for pending in pending_matches {
           let alliance_blue = &alliances.iter().find(|a| a.id == pending.blue).unwrap();
           let alliance_red = &alliances.iter().find(|a| a.id == pending.red).unwrap();
 
           match_vec.push((
-            start_time.eq(SQLDatetime(time)),
             match_type.eq(models::MatchType::Playoff),
             match_subtype.eq(pending.playoff_type),
             set_number.eq(pending.set),
@@ -70,15 +72,15 @@ impl MatchGenerator for PlayoffMatchGenerator {
             blue_teams.eq(alliance_blue.teams.clone()),
             played.eq(false),
           ));
-          time += blocks[0].cycle_time.0;
         }
 
         diesel::insert_into(matches).values(&match_vec).execute(&*db::connection())?;
       },
       GenerationUpdate::TournamentWon(winner, finalist) => {
-        // TODO:
         info!("Winner: {:?}", winner);
         info!("Finalist: {:?}", finalist);
+        self.generate_award_for("Winner", &winner)?;
+        self.generate_award_for("Finalist", &finalist)?;
       },
     }
     

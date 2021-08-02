@@ -1,9 +1,10 @@
-#include "STM.h"
+#include "STC.h"
 
 const char *ECHO_SERVER_ADDRESS = "192.168.178.125";
 const int ECHO_SERVER_PORT = 9999;
 
-int STM_Controller::start(int argc, char const *argv[], int &userButton) {
+int STC_Controller::start(int argc, char const *argv[]) {
+
 	Handle(
 		setRUNNING(true);
 		char buf[256] = "Hello world";

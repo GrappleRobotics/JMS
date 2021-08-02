@@ -1,5 +1,5 @@
-#ifndef STM_H
-#define STM_H
+#ifndef STC_H
+#define STC_H
 
 #include <mbed.h>
 #include "Config.h"
@@ -15,14 +15,14 @@
 /**
  * Scoring Table microcontroller class
  */
-class STM_Controller : public Controller {
+class STC_Controller : public Controller {
  public:
-	STM_Controller() {
+	STC_Controller() {
 		std::cout << "STM Mode" << std::endl;
 	}
 
 	// main controller functions
-	int start(int argc, char const *argv[], int &userButton) override;
+	int start(int argc, char const *argv[]) override;
 };
 
-#endif // STM_H
+#endif // STC_H

@@ -200,6 +200,22 @@ impl Arena {
     a
   }
 
+  pub fn unload_match(&mut self) -> ArenaResult<()> {
+    match self.state.state {
+      ArenaState::Idle => {
+        self.current_match = None;
+          for stn in self.stations.iter_mut() {
+            stn.reset();
+          }
+        Ok(())
+      },
+      ref s => Err(ArenaError::CannotLoadMatchError(format!(
+        "Can't unload match in state {}",
+        s
+      ))),
+    }
+  }
+
   pub fn load_match(&mut self, m: LoadedMatch) -> ArenaResult<()> {
     match self.state.state {
       ArenaState::Idle => {
@@ -258,6 +274,25 @@ impl Arena {
     self.stations.iter_mut().find(|stn| stn.station == station)
   }
 
+  fn update_match_teams(&mut self) -> ArenaResult<()> {
+    if let Some(m) = self.current_match.as_mut() {
+      m.match_meta.blue_teams.0.resize(self.stations.len() / 2, None);
+      m.match_meta.red_teams.0.resize(self.stations.len() / 2, None);
+
+      for s in &self.stations {
+        match s.station.alliance {
+          Alliance::Blue => {
+            m.match_meta.blue_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
+          },
+          Alliance::Red => {
+            m.match_meta.red_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
+          },
+        }
+      }
+    }
+    Ok(())
+  }
+
   async fn update_field_estop(&mut self) -> ArenaResult<()> {
     if self.state.state != ArenaState::Estop {
       if let Some(ArenaSignal::Estop) = self.current_signal().await {
@@ -273,10 +308,7 @@ impl Arena {
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Idle, _) => {
         if first {
-          self.current_match = None;
-          for stn in self.stations.iter_mut() {
-            stn.reset();
-          }
+          self.unload_match()?;
         } else if let Some(ArenaSignal::Prestart { force }) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false, force })?;
         }
@@ -351,6 +383,7 @@ impl Arena {
       }
       (ArenaState::MatchCommit, _) => {
         if first {
+          self.update_match_teams()?;
           self.current_match.as_mut().unwrap().commit_score().await?;
           self.prepare_state_change(ArenaState::Idle)?;
         }

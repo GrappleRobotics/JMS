@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{db, models::{self, Alliance, SQLJson}, scoring::scores::MatchScore};
+use crate::{db, models::{self, Alliance, MatchGenerationRecordData, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
 
 use super::exceptions::{MatchError, MatchResult};
 
@@ -32,7 +32,7 @@ pub struct MatchConfig {
 #[derive(Clone, Debug, Serialize)]
 pub struct LoadedMatch {
   #[serde(rename = "match")]
-  match_meta: models::Match,
+  pub match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
   pub score: MatchScore,
@@ -45,8 +45,6 @@ pub struct LoadedMatch {
   config: MatchConfig
 }
 
-// TODO: Update match metadata whenever the Arena team list changes (arena is able to swap teams out)
-
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
@@ -57,10 +55,10 @@ impl LoadedMatch {
       state_start_time: Instant::now(),
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
-        warmup_cooldown_time: Duration::from_secs(3),
-        auto_time: Duration::from_secs(4),
+        warmup_cooldown_time: Duration::from_secs(1),
+        auto_time: Duration::from_secs(1),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(4),
+        teleop_time: Duration::from_secs(1),
       },
     }
   }
@@ -118,6 +116,16 @@ impl LoadedMatch {
           for &team in &self.match_meta.red_teams.0 {
             if let Some(team) = team {
               models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
+            }
+          }
+        } else if self.match_meta.match_type == models::MatchType::Playoff {
+          // Update playoff generation
+          // TODO: We should use a global worker, but this will do for now.
+          let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
+          let record = worker.record();
+          if let Some(record) = record {
+            if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data.map(|x| x.0) {
+              worker.generate(mode).await;
             }
           }
         }

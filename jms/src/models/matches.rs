@@ -1,4 +1,5 @@
-use crate::{models::SQLJson, schema::match_generation_records, schema::matches, scoring::scores::MatchScore, sql_mapped_enum};
+use crate::{db, models::SQLJson, schema::match_generation_records, schema::matches, scoring::scores::MatchScore, sql_mapped_enum};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
 use super::{SQLDatetime, SQLJsonVector};
@@ -18,7 +19,7 @@ sql_mapped_enum!(MatchSubtype, Quarterfinal, Semifinal, Final);
 #[table_name = "matches"]
 pub struct Match {
   pub id: i32,
-  pub start_time: SQLDatetime,
+  pub start_time: Option<SQLDatetime>,
   pub match_type: MatchType,
   pub set_number: i32,
   pub match_number: i32,
@@ -39,7 +40,7 @@ impl Match {
   pub fn new_test() -> Self {
     Match {
       id: -1,
-      start_time: SQLDatetime(chrono::Local::now().naive_utc()),
+      start_time: Some(SQLDatetime(chrono::Local::now().naive_utc())),
       match_type: MatchType::Test,
       set_number: 1,
       match_number: 1,
@@ -64,6 +65,11 @@ impl Match {
         MatchSubtype::Final => format!("Final {}-{}", self.set_number, self.match_number),
       }
     }
+  }
+
+  pub fn with_type(mtype: MatchType) -> Vec<Match> {
+    use crate::schema::matches::dsl::*;
+    matches.filter(match_type.eq(mtype)).load::<Match>(&db::connection()).unwrap()
   }
 }
 
@@ -114,5 +120,51 @@ pub enum MatchGenerationRecordData {
   },
   Playoff {
     mode: PlayoffMode
+  }
+}
+
+pub fn n_sets(level: MatchSubtype) -> usize {
+  match level {
+    MatchSubtype::Quarterfinal => 4,
+    MatchSubtype::Semifinal => 2,
+    MatchSubtype::Final => 1,
+  }
+}
+
+impl Ord for MatchSubtype {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    let us_n = n_sets(*self);
+    let them_n = n_sets(*other);
+
+    them_n.cmp(&us_n)
+  }
+}
+
+impl PartialOrd for MatchSubtype {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    Some(self.cmp(other))
+  }
+}
+
+impl Ord for Match {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    self.start_time.cmp(&other.start_time)
+      .then(self.match_subtype.cmp(&other.match_subtype))
+      .then(self.match_number.cmp(&other.match_number))
+      .then(self.set_number.cmp(&other.set_number))
+  }
+}
+
+impl PartialOrd for Match {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    Some(self.cmp(&other))
+  }
+}
+
+impl Eq for Match { }
+
+impl PartialEq for Match {
+  fn eq(&self, other: &Self) -> bool {
+    self.id == other.id
   }
 }

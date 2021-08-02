@@ -93,7 +93,7 @@ export default class QualGenerator extends React.Component {
         onClick={this.clearSchedule}
         disabled={matches?.find(x => x.played)}
       >
-        { this.props.quals?.locked ? "Schedule Locked (Matches Played)" : "Clear Qualification Schedule" }
+        Clear Qualification Schedule
       </Button>
 
       <br /> <br />

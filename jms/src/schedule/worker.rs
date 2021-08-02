@@ -39,9 +39,17 @@ impl<T> MatchGenerationWorker<T>
   }
 
   pub fn matches(&self) -> Vec<models::Match> {
+    models::Match::with_type(self.match_type())
+    // self.record().map(|record| {
+    //   models::Match::belonging_to(&record).load::<models::Match>(&db::connection()).unwrap()
+    // }).unwrap_or(vec![])
+  }
+
+  pub fn has_played(&self) -> bool {
     self.record().map(|record| {
-      models::Match::belonging_to(&record).load::<models::Match>(&db::connection()).unwrap()
-    }).unwrap_or(vec![])
+      use crate::schema::matches::dsl::*;
+      models::Match::belonging_to(&record).filter(played.eq(true)).count().get_result::<i64>(&db::connection()).unwrap() > 0
+    }).unwrap_or(false)
   }
 
   pub fn delete(&self) {

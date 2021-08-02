@@ -7,6 +7,7 @@ mod ui;
 mod utils;
 mod schedule;
 mod scoring;
+mod reports;
 
 mod models;
 mod schema;
@@ -18,6 +19,8 @@ extern crate diesel;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
+#[macro_use] 
+extern crate rocket;
 
 use std::{error::Error, sync::Arc, time::Duration};
 
@@ -83,7 +86,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
   ws.register("matches", Box::new(MatchWebsocketHandler::new())).await;
   let ws_fut = ws.begin().map_err(|e| Box::new(e));
 
-  try_join!(arena_fut, ds_fut, ws_fut)?;
+  let web_fut = ui::web::begin();
+
+  try_join!(arena_fut, ds_fut, ws_fut, web_fut)?;
 
   Ok(())
 }

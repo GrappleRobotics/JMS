@@ -73,6 +73,9 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
             Err(response_msg.invalid_verb_or_data())?
           }
         },
+        ("unload", None) => {
+          self.arena.lock().await.unload_match()?;
+        }
         ("scoreUpdate", Some(data)) => {
           let update: ScoreUpdateData = serde_json::from_value(data)?;
           match self.arena.lock().await.current_match.as_mut() {

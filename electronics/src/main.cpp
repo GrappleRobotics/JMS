@@ -8,29 +8,37 @@
 #ifdef MODE
 
 /**
- * RAM/BAM Controllers
+ * RAC/BAC Controllers
  */
-#if defined(RAM) || defined(BAM)
-#include "Controllers/RAM_BAM/RAM_BAM.h"
+#if defined(RAC) || defined(BAC)
+#include "Controllers/RAC_BAC/RAC_BAC.h"
 #include "Elements/PowerPort/PowerPort.h"
-HandleController(RAM_BAM_Controller)
+HandleController(RAC_BAC_Controller)
 #endif
 
 /**
- * SGM Controllers
+ * SGC Controllers
  */
-#if defined(SGM)
-HandleController(SGM_Controller)
+#if defined(SGC)
+HandleController(SGC_Controller)
 #endif
 
 /**
- * STM Controllers
+ * STC Controllers
  */
-#if defined(STM)
-#include "Controllers/STM/STM.h"
-HandleController(STM_Controller)
+#if defined(STC)
+#include "Controllers/STC/STC.h"
+HandleController(STC_Controller)
 #endif
+
+/**
+ * Auto configure mode from network
+ */
+#if defined(AUTO_CONFIG)
+// @TODO
+#endif
+
 
 #else
-#error MODE NOT DEFINED [RAM, BAM, STM, SGM]
+#error MODE NOT DEFINED [RAC, BAC, STC, SGC, AUTO_CONFIG]
 #endif
