@@ -1,6 +1,6 @@
 use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 
-use crate::{db, models, schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
+use crate::{db, models, schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::{JsonMessage, WebsocketError}};
 
 use super::WebsocketMessageHandler;
 pub struct MatchWebsocketHandler {
@@ -45,7 +45,11 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
     match msg.noun.as_str() {
       "quals" => match (msg.verb.as_str(), msg.data) {
         ("clear", None) => {
-          self.quals.delete();
+          if self.quals.has_played() {
+            Err(WebsocketError::Other("Cannot delete after matches have started".to_owned()))?
+          } else {
+            self.quals.delete();
+          }
         },
         ("generate", Some(data)) => {
           let params = serde_json::from_value(data)?;
@@ -54,6 +58,13 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
         _ => Err(response_msg.invalid_verb_or_data())?
       },
       "playoffs" => match(msg.verb.as_str(), msg.data) {
+        ("clear", None) => {
+          if self.playoffs.has_played() {
+            Err(WebsocketError::Other("Cannot delete after matches have started".to_owned()))?
+          } else {
+            self.playoffs.delete();
+          }
+        },
         ("generate", Some(data)) => {
           let params = serde_json::from_value(data)?;
           self.playoffs.generate(params).await;

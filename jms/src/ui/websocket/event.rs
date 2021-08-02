@@ -1,6 +1,6 @@
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
-use crate::{db, models::{self, PlayoffAlliance, ScheduleBlock, TeamRanking}};
+use crate::{db, models::{self, AwardRecipient, PlayoffAlliance, SQLJson, ScheduleBlock, TeamRanking}};
 
 use super::{JsonMessage, WebsocketMessageHandler};
 
@@ -44,6 +44,12 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       // Rankings
       let rs = TeamRanking::get_sorted(&db::connection())?;
       response.push(msg.noun("rankings").to_data(&rs)?)
+    }
+    {
+      // Awards
+      use crate::schema::awards::dsl::*;
+      let aws = awards.load::<models::Award>(&db::connection())?;
+      response.push(msg.noun("awards").to_data(&aws)?)
     }
     Ok(response)
   }
@@ -128,7 +134,31 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           PlayoffAlliance::promote(&db::connection())?;
         },
         _ => Err(response_msg.invalid_verb_or_data())?
-      }
+      },
+      "awards" => match(msg.verb.as_str(), msg.data) {
+        ("create", Some(serde_json::Value::String(s))) => {
+          use crate::schema::awards::dsl::*;
+          diesel::insert_into(awards)
+            .values( (name.eq(s), recipients.eq(SQLJson(Vec::<AwardRecipient>::new()))) )
+            .execute(&db::connection())?;
+        },
+        ("update", Some(data)) => {
+          use crate::schema::awards::dsl::*;
+          let award: models::Award = serde_json::from_value(data)?;
+          diesel::replace_into(awards)
+            .values(&award)
+            .execute(&db::connection())?;
+        },
+        ("delete", Some(serde_json::Value::Number(award_id))) => {
+          use crate::schema::awards::dsl::*;
+          if let Some(n) = award_id.as_i64() {
+            diesel::delete(awards.filter(id.eq(n as i32))).execute(&db::connection())?;
+          } else {
+            Err(response_msg.invalid_verb_or_data())?
+          }
+        },
+        _ => Err(response_msg.invalid_verb_or_data())?
+      },
       _ => Err(response_msg.unknown_noun())?
     };
 

@@ -54,7 +54,7 @@ impl QualsMatchGenerator {
         
         let start = block.start_time.0 + (block.cycle_time.0 * (i as i32));
         match_vec.push((
-          start_time.eq(SQLDatetime(start)),
+          start_time.eq(Some(SQLDatetime(start))),
           match_type.eq(models::MatchType::Qualification),
           set_number.eq(0),
           match_number.eq((match_i + 1) as i32),

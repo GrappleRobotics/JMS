@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { Col, Container, Nav, Row, Tab } from "react-bootstrap";
 import ConfigureAlliances from "./ConfigureAlliances";
+import ConfigureAwards from "./ConfigureAwards";
 import ConfigureEvent from "./ConfigureEvent";
 import ConfigureSchedule from "./ConfigureSchedule";
 import ConfigureTeams from "./ConfigureTeams";
@@ -34,10 +35,10 @@ export default class EventWizard extends React.Component {
 
   render() {
     let { event, matches, ws } = this.props;
-    let { details, teams, schedule, alliances, rankings } = event || {};
+    let { details, teams, schedule, alliances, rankings, awards } = event || {};
 
     let data = {
-      details, teams, schedule, matches, alliances, rankings
+      details, teams, schedule, matches, alliances, rankings, awards
     };
 
     let navItemFor = (data, cls) => {
@@ -59,7 +60,7 @@ export default class EventWizard extends React.Component {
     return <Container fluid className="px-5">
       <h3>Event Wizard { event?.event_name ? ("- " + event.event_name) : "" }</h3>
       <hr />
-      <Tab.Container defaultActiveKey={EK_WELCOME}>
+      <Tab.Container unmountOnExit defaultActiveKey={EK_WELCOME}>
         <Row>
           <Col md={3} className="vr-right wizard-tabs">
             <Nav variant="pills" className="flex-column">
@@ -76,7 +77,9 @@ export default class EventWizard extends React.Component {
               <br /> <h6 className="text-muted">Playoffs</h6>
               { navItemFor(data, ConfigureAlliances) }
               { navItemFor(data, PlayoffGenerator) }
+
               <br /> <h6 className="text-muted">Awards</h6>
+              { navItemFor(data, ConfigureAwards) }
             </Nav>
           </Col>
           <Col md>
@@ -89,6 +92,7 @@ export default class EventWizard extends React.Component {
               { paneFor(<QualGenerator {...data} ws={ws} />) }
               { paneFor(<ConfigureAlliances {...data} ws={ws} />) }
               { paneFor(<PlayoffGenerator {...data} ws={ws} />) }
+              { paneFor(<ConfigureAwards {...data} ws={ws} />) }
               <br />
             </Tab.Content>
           </Col>
