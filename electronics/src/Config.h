@@ -12,92 +12,91 @@
  * 
  */
 
-// #define RAM // Red Alliance controller mode
-// #define BAM // Blue Alliance controller mode
-// #define SGM // Shield Generator controller mode
-#define STM // Scoring Table controller mode
+// #define AUTO_CONFIG // Auto configure depending on JMS (runtime flash)
+// #define RAC // Red Alliance controller mode
+// #define BAC // Blue Alliance controller mode
+// #define SGC // Shield Generator controller mode
+#define STC // Scoring Table controller mode
 
-#ifdef RAM
+#ifdef RAC
 #define MODE 0
 #endif
 
-#ifdef BAM
+#ifdef BAC
 #define MODE 1
 #endif
 
-#ifdef SGM
+#ifdef SGC
 #define MODE 2
 #endif
 
-#ifdef STM
+#ifdef STC
 #define MODE 3
 #endif
 
-#define global static const // Constant experssion accessable to all (cannot be modified)
+#ifdef AUTO_CONFIG
+#define MODE 4
+#endif
 
 /**
  * Config for Power port
  */
-#ifdef RAM
-#define IP "10.0.100.4"
-global int DISPLAY_SDA_PORT = 14;
-global int DISPLAY_SCL_PORT = 15;
+#ifdef RAC
+static const int DISPLAY_SDA_PORT = 14;
+static const int DISPLAY_SCL_PORT = 15;
 
-global PinName INNER_BB_PORT = A0;
-global PinName OUTER_BB_PORT = A1;
-global PinName LOWER_BB_PORT = A2;
-global PinName OUTER_LED_PORT = D7;
+static const PinName INNER_BB_PORT = A0;
+static const PinName OUTER_BB_PORT = A1;
+static const PinName LOWER_BB_PORT = A2;
+static const PinName OUTER_LED_PORT = D7;
 
-global PinName E_STOP1_1 = D16;
-global PinName E_STOP1_2 = D17;
+static const PinName E_STOP1_1 = D16;
+static const PinName E_STOP1_2 = D17;
 
-global PinName E_STOP2_1 = D18;
-global PinName E_STOP2_2 = D19;
+static const PinName E_STOP2_1 = D18;
+static const PinName E_STOP2_2 = D19;
 
-global PinName E_STOP3_1 = D20;
-global PinName E_STOP3_2 = D21;
+static const PinName E_STOP3_1 = D20;
+static const PinName E_STOP3_2 = D21;
 #endif
 
-#ifdef BAM
-#define IP "10.0.100.5"
-global int DISPLAY_SDA_PORT = 14;
-global int DISPLAY_SCL_PORT = 15;
+#ifdef BAC
+static const int DISPLAY_SDA_PORT = 14;
+static const int DISPLAY_SCL_PORT = 15;
 
-global PinName INNER_BB_PORT = A0;
-global PinName OUTER_BB_PORT = A1;
-global PinName LOWER_BB_PORT = A2;
-global PinName OUTER_LED_PORT = D7;
+static const PinName INNER_BB_PORT = A0;
+static const PinName OUTER_BB_PORT = A1;
+static const PinName LOWER_BB_PORT = A2;
+static const PinName OUTER_LED_PORT = D7;
 
-global PinName E_STOP1_1 = D16;
-global PinName E_STOP1_2 = D17;
+static const PinName E_STOP1_1 = D16;
+static const PinName E_STOP1_2 = D17;
 
-global PinName E_STOP2_1 = D18;
-global PinName E_STOP2_2 = D19;
+static const PinName E_STOP2_1 = D18;
+static const PinName E_STOP2_2 = D19;
 
-global PinName E_STOP3_1 = D20;
-global PinName E_STOP3_2 = D21;
+static const PinName E_STOP3_1 = D20;
+static const PinName E_STOP3_2 = D21;
 #endif
 
 
 /**
  * Shield generator config
  */
-#ifdef SGM
-#define IP "10.0.100.3"
-global int DISPLAY_SDA_PORT = 14;
-global int DISPLAY_SCL_PORT = 15;
+#ifdef SGC
+static const int DISPLAY_SDA_PORT = 14;
+static const int DISPLAY_SCL_PORT = 15;
 #endif
 
 /**
  * Scoring table config
  */
-#ifdef STM
-#define IP "10.0.100.2"
-global int DISPLAY_SDA_PORT = 14;
-global int DISPLAY_SCL_PORT = 15;
+#ifdef STC
+static const int DISPLAY_SDA_PORT = 14;
+static const int DISPLAY_SCL_PORT = 15;
 
-global PinName ABORT_1 = D16;
-global PinName ABORT_2 = D17;
+static const PinName ABORT_1 = D16;
+static const PinName ABORT_2 = D17;
 #endif
 
 #endif // CONFIG_H

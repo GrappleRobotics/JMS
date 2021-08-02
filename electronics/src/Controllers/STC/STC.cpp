@@ -1,6 +1,6 @@
-#include "STM.h"
+#include "STC.h"
 
-int STM_Controller::start(int argc, char const *argv[], int &userButton) {
+int STC_Controller::start(int argc, char const *argv[]) {
 	Handle(
 		setRUNNING(true);
 
@@ -12,7 +12,6 @@ int STM_Controller::start(int argc, char const *argv[], int &userButton) {
 		#endif
 
 		LoopHandle(getRUNNING(),
-			std::cout << "Test" << std::endl;
 			// @TODO (lighting garbage)
 		)
 	)

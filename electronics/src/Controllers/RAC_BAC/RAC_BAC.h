@@ -1,5 +1,5 @@
-#ifndef RAM_BAM_H
-#define RAM_BAM_H
+#ifndef RAC_BAC_H
+#define RAC_BAC_H
 
 #include <mbed.h>
 #include "Config.h"
@@ -13,21 +13,21 @@
 /**
  * Red alliance/Blue alliance microcontroller class
  */
-class RAM_BAM_Controller : public Controller {
+class RAC_BAC_Controller : public Controller {
  public:
-	RAM_BAM_Controller() {
+	RAC_BAC_Controller() {
 		switch (MODE) {
 			case 0:
-				std::cout << "RAM Mode" << std::endl;
+				std::cout << "RAC Mode" << std::endl;
 				break;
 			case 1:
-				std::cout << "BAM Mode" << std::endl;
+				std::cout << "BAC Mode" << std::endl;
 				break;
 		}
 	}
 
 	// Main controlled functions
-	int start(int argc, char const *argv[], int &userButton) override;
+	int start(int argc, char const *argv[]) override;
 };
 
-#endif // RAM_BAM_H
+#endif // RAC_BAC_H
