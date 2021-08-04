@@ -6,6 +6,7 @@
 #include "libs/Network/Network.h"
 
 namespace MainController {
+
 	/**
 	 * Current state container
 	 */
@@ -44,13 +45,35 @@ namespace MainController {
 		void setController(State st, Network::State nt_st = Network::State::IDLE, char *buffer = {0}) {
 			if (_network != nullptr) {
 				_state = st;
-				_network->setNetwork(nt_st, "Hello");
-				std::cout << "Network state: " << (int)_network->getState() << std::endl;
+				_network->setNetwork(nt_st, buffer);
 			} else {
 				std::cout << "Network is null for state controller" << std::endl;
 			}
 		}
+
+
+		/**
+		 * Set controller primitive
+		 */
+		void interruptSetController(int mainSt, int nt_st = 0, char *buffer = {0}) {
+			_intMain_st = mainSt;
+			_intNt_st = nt_st;
+			_intBuffer = buffer;
+			_interruptFlag++;
+		}
+
+		void updateStatus() {
+			if (_interruptFlag != 0) {
+				setController((State)_intMain_st, (Network::State)_intNt_st, _intBuffer);
+				_interruptFlag--;
+			}
+		}
+
 	 private:
+		int _interruptFlag = 0;
+		int _intMain_st;
+		int _intNt_st;
+		char *_intBuffer;
 		State _state{ State::IDLE };
 		Network *_network = nullptr;
 	};
@@ -79,6 +102,7 @@ namespace MainController {
 		 * Updater, state machine
 		 */
 		void update() {
+			_stateController->updateStatus();
 			switch (_stateController->getState()) {
 				case State::IDLE:
 					break;
@@ -88,13 +112,14 @@ namespace MainController {
 					break;
 
 				case State::NETWORK_DO:
-					std::cout << "Networking..." << std::endl;
-					std::cout << (int)_nt->getState() << std::endl;
 					_nt->update();
 					_stateController->setState(State::PROGRAM_DO);
+					// if (_nt->update() == 0) {
+					// } else {
+					// 	printf("Network State Issue");
+					// }
 					break;
 			}
-			ThisThread::sleep_for(100ms);
 		}
 
 		/**

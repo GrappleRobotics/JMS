@@ -34,6 +34,7 @@ class E_Stop {
 	 */
 	E_Stop(PinName buttonPin, E_StopType type, MainController::StateController &ct) : _ct(ct) {
 		this->_type = type;
+		this->_stopTypeInt = (int)_type;
 
 		/**
 		 * Push back interrupts
@@ -46,6 +47,7 @@ class E_Stop {
 	 */
 	E_Stop(std::vector<PinName> buttonPin, E_StopType type, MainController::StateController &ct) : _ct(ct) {
 		this->_type = type;
+		this->_stopTypeInt = (int)_type;
 
 		/**
 		 * Push back interrupts
@@ -55,46 +57,60 @@ class E_Stop {
 		}
 	}
 
+	E_StopType getType() {
+		return _type;
+	}
+
 	/**
 	 * Send stop signal/change current state to network send stop
 	 */
 	void sendStop() {
 		char *test = "E Stop Works";
-		switch (_type) {
-			case E_StopType::NONE:
-				_type = E_StopType::ABORT;
+
+		switch (_stopTypeInt) {
+			case (int)E_StopType::NONE:
+				_stopTypeInt = (int)E_StopType::ABORT;
+				_type = (E_StopType)_stopTypeInt;
+				printf("None");
 				sendStop();
 				break;
 
 			// Blue Alliance stations
-			case E_StopType::E_STOP_B_ALLIANCE_1:
-				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+			case (int)E_StopType::E_STOP_B_ALLIANCE_1:
+				printf("Alliance Stop called");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
 				break;
 
-			case E_StopType::E_STOP_B_ALLIANCE_2:
-				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+			case (int)E_StopType::E_STOP_B_ALLIANCE_2:
+				printf("Alliance Stop called");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
 				break;
 
-			case E_StopType::E_STOP_B_ALLIANCE_3:
-				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+			case (int)E_StopType::E_STOP_B_ALLIANCE_3:
+				printf("Alliance Stop called");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
 				break;
 
 			// Red Alliance stations
-			case E_StopType::E_STOP_R_ALLIANCE_1:
-				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+			case (int)E_StopType::E_STOP_R_ALLIANCE_1:
+				printf("Alliance Stop called");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
 				break;
 
-			case E_StopType::E_STOP_R_ALLIANCE_2:
-				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+			case (int)E_StopType::E_STOP_R_ALLIANCE_2:
+				printf("Alliance Stop called");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
 				break;
 
-			case E_StopType::E_STOP_R_ALLIANCE_3:
-				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+			case (int)E_StopType::E_STOP_R_ALLIANCE_3:
+				printf("Alliance Stop called");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
 				break;
 
 			// Abort game
-			case E_StopType::ABORT:
-				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+			case (int)E_StopType::ABORT:
+				printf("Abort called");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, "Abort");
 				break;
 		}
 	}
@@ -110,6 +126,7 @@ class E_Stop {
  private:
 	std::vector<ButtonInterrupt> _int;
 	E_StopType _type;
+	int _stopTypeInt;
 	MainController::StateController &_ct;
 };
 

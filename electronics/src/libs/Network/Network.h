@@ -78,12 +78,16 @@ class Network {
 
 	/**
 	 * Check if still connected, and reconnect if not
+	 * If connected returns 0, else returns 1
 	 */
-	void checkConn() {
+	int checkConn() {
 		if (_local_socket.connect(_remote_address) != NSAPI_ERROR_IS_CONNECTED) {
 			std::cout << "ERR: Connection lost, re-connecting...." << std::endl;
 			_local_socket.close();
 			nt_init();
+			return 1;
+		} else {
+			return 0;
 		}
 	}
 
@@ -91,7 +95,7 @@ class Network {
 	 * Get the buffer size in bytes
 	 */
 	size_t getBufferSize() {
-		return (sizeof(char) * _bufferSize - 1);
+		return (sizeof(char) * _bufferSize);
 	}
 
 	/**
@@ -114,11 +118,12 @@ class Network {
 	 */
 	void setNetwork(State st, char *buffer = {0}) {
 		setState(st);
+		_buffer = nullptr; // flush the local buffer
 		_buffer = buffer;
 	}
 
-	char *update() {
-		char *tmp = {0};
+	int update() {
+		int programValue = 1;
 		switch (_state) {
 			case State::UN_INITIALIZED:
 				std::cout << "-- WARNING --" << std::endl;
@@ -126,18 +131,24 @@ class Network {
 				break;
 
 			case State::IDLE:
-				checkConn();
+				programValue = checkConn();
 				break;
 			
 			case State::NETWORK_SEND:
-				nt_send(_buffer);
+				programValue = nt_send(_buffer);
+				if (programValue == 0) {
+					setState(State::IDLE);
+				}
 				break;
 
 			case State::NETWORK_RECV:
-				tmp = nt_recv();
+				// nt_recv();
+				programValue = 0;
+				setState(State::IDLE);
 				break;
 		}
-		return tmp;
+
+		return programValue != 0 ? 1 : 0;
 	}
 
  private: //// Private
@@ -145,10 +156,23 @@ class Network {
 	/**
 	 * Sender and receivers
 	 */
-	void nt_send(char *buffer) { _local_socket.send(buffer, getBufferSize()); }
+	int nt_send(char *buffer) {
+		int bytes = _local_socket.send(buffer, getBufferSize());
+		if (checkConn() != 0) {
+			_local_socket.send(buffer, getBufferSize());
+			return 1;
+		} else {
+			std::cout << "\nSent data: " << buffer << ", Bytes: " << bytes << std::endl;
+			return 0;
+		}
+	}
+
 	char *nt_recv() {
 		char *buffer;
 		_local_socket.recv(buffer, getBufferSize());
+		if (checkConn() != 0) {
+			_local_socket.recv(buffer, getBufferSize());
+		}
 		return buffer;
 	}
 

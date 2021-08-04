@@ -22,6 +22,11 @@ class STC_Controller : public MainController::Controller {
 	// main controller functions
 	int onInit() override;
 	int onUpdate() override;
+
+	// Buttons
+	#ifdef STC
+	Abort abortButton{{ABORT_1, ABORT_2, USER_BUTTON}, getStateController()};
+	#endif
 };
 
 #endif // STC_H
