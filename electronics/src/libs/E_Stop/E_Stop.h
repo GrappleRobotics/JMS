@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "libs/Button/Button.h"
+#include "libs/Controller.h"
 
 /**
  * E-Stop button type
@@ -31,7 +32,7 @@ class E_Stop {
 	/**
 	 * Constructor (Single interrupt input)
 	 */
-	E_Stop(PinName buttonPin, E_StopType type) {
+	E_Stop(PinName buttonPin, E_StopType type, MainController::StateController &ct) : _ct(ct) {
 		this->_type = type;
 
 		/**
@@ -43,7 +44,7 @@ class E_Stop {
 	/**
 	 * Construcctor (specify all pins used for this interrupt)
 	 */
-	E_Stop(std::vector<PinName> buttonPin, E_StopType type) {
+	E_Stop(std::vector<PinName> buttonPin, E_StopType type, MainController::StateController &ct) : _ct(ct) {
 		this->_type = type;
 
 		/**
@@ -54,9 +55,48 @@ class E_Stop {
 		}
 	}
 
+	/**
+	 * Send stop signal/change current state to network send stop
+	 */
 	void sendStop() {
-		// @TODO
-		printf("E Stop triggered");
+		char *test = "E Stop Works";
+		switch (_type) {
+			case E_StopType::NONE:
+				_type = E_StopType::ABORT;
+				sendStop();
+				break;
+
+			// Blue Alliance stations
+			case E_StopType::E_STOP_B_ALLIANCE_1:
+				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+				break;
+
+			case E_StopType::E_STOP_B_ALLIANCE_2:
+				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+				break;
+
+			case E_StopType::E_STOP_B_ALLIANCE_3:
+				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+				break;
+
+			// Red Alliance stations
+			case E_StopType::E_STOP_R_ALLIANCE_1:
+				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+				break;
+
+			case E_StopType::E_STOP_R_ALLIANCE_2:
+				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+				break;
+
+			case E_StopType::E_STOP_R_ALLIANCE_3:
+				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+				break;
+
+			// Abort game
+			case E_StopType::ABORT:
+				_ct.setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, test);
+				break;
+		}
 	}
 
 	ButtonInterrupt get() {
@@ -70,6 +110,7 @@ class E_Stop {
  private:
 	std::vector<ButtonInterrupt> _int;
 	E_StopType _type;
+	MainController::StateController &_ct;
 };
 
 /**
@@ -77,8 +118,8 @@ class E_Stop {
  */
 class Abort : public E_Stop {
  public:
-	Abort(PinName buttonPin) : E_Stop(buttonPin, E_StopType::ABORT) {}
-	Abort(std::vector<PinName> buttonPin) : E_Stop(buttonPin, E_StopType::ABORT) {}
+	Abort(PinName buttonPin, MainController::StateController &ct) : E_Stop(buttonPin, E_StopType::ABORT, ct) {}
+	Abort(std::vector<PinName> buttonPin, MainController::StateController &ct) : E_Stop(buttonPin, E_StopType::ABORT, ct) {}
 };
 
 
