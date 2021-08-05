@@ -110,7 +110,7 @@ class E_Stop {
 			// Abort game
 			case (int)E_StopType::ABORT:
 				printf("Abort called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, "Abort");
+				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
 				break;
 		}
 	}
