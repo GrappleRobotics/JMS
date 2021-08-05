@@ -9,17 +9,24 @@
 #include "libs/Controller.h"
 #include "libs/E_Stop/E_Stop.h"
 
+
 /**
  * Scoring Table microcontroller class
  */
-class STC_Controller : public Controller {
+class STC_Controller : public MainController::Controller {
  public:
 	STC_Controller() {
-		std::cout << "STM Mode" << std::endl;
+		std::cout << "STC Mode" << std::endl;
 	}
 
 	// main controller functions
-	int start(int argc, char const *argv[]) override;
+	int onInit() override;
+	int onUpdate() override;
+
+	// Buttons
+	#ifdef STC
+	Abort abortButton{{ABORT_1, ABORT_2, USER_BUTTON}, getStateController()};
+	#endif
 };
 
 #endif // STC_H

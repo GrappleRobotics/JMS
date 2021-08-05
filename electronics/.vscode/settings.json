@@ -56,6 +56,7 @@
 		"thread": "cpp",
 		"cinttypes": "cpp",
 		"typeinfo": "cpp",
-		"mstd_atomic": "cpp"
+		"mstd_atomic": "cpp",
+		"pb_encode.h": "c"
 	}
 }

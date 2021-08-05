@@ -1,18 +1,21 @@
 #include "STC.h"
 
-int STC_Controller::start(int argc, char const *argv[]) {
+int STC_Controller::onInit() {
 	Handle(
-		setRUNNING(true);
+		std::cout << "STC Init" << std::endl;
+		createNetwork(JMS_IP, JMS_PORT, JMS_BUFFER_SIZE);
+		getNetwork().nt_init();
 
-		/**
-		 * Scoring table Abort Button
-		 */
-		#ifdef STM
-		Abort abort({ABORT_1, ABORT_2});
-		#endif
+		// getStateController().setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, "Test From STC");
+		// getNetwork().setNetwork(Network::State::NETWORK_SEND, "Test");
+		// getNetwork().update();
+	)
+}
 
-		LoopHandle(getRUNNING(),
-			// @TODO (lighting garbage)
-		)
+int STC_Controller::onUpdate() {
+	Handle(
+		// std::cout << "Type: " << (int)abortButton.getType() << std::endl;
+		// @TODO Lighting magic
+		// std::cout << "Test Loop" << std::endl;
 	)
 }

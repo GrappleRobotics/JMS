@@ -85,11 +85,8 @@ class ButtonInterrupt {
  public:
 	ButtonInterrupt(PinName interruptPin, Callback<void()> bindFunction, int startingState = 0) {
 		_interruptButton = new InterruptIn(interruptPin);
-		printf("Created new interrupt in\n");
-		// *_interruptButtonState = *_interruptButton;
-		// printf("Button satte is not button interrupt\n");
 		_interruptButton->rise(bindFunction);
-		printf("Button interrupt created\n");
+		std::cout << "Button interrupt created on: " << interruptPin << std::endl;
 	}
 
 	~ButtonInterrupt() {

@@ -13,7 +13,7 @@
 /**
  * Red alliance/Blue alliance microcontroller class
  */
-class RAC_BAC_Controller : public Controller {
+class RAC_BAC_Controller : public MainController::Controller {
  public:
 	RAC_BAC_Controller() {
 		switch (MODE) {
@@ -27,7 +27,7 @@ class RAC_BAC_Controller : public Controller {
 	}
 
 	// Main controlled functions
-	int start(int argc, char const *argv[]) override;
+	// int start(int argc, char const *argv[]) override;
 };
 
 #endif // RAC_BAC_H
