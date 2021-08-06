@@ -1,124 +1,28 @@
-use std::error;
-
-use crate::network::NetworkError;
-
 use super::{matches::MatchPlayState, ArenaState};
 
-pub type ArenaResult<T> = std::result::Result<T, ArenaError>;
-pub type MatchResult<T> = std::result::Result<T, MatchError>;
-
-#[derive(Debug)]
-pub struct StateTransitionError {
+#[derive(thiserror::Error, Debug)]
+#[error("Arena State Transition Error: {from:?} to {to:?} ({why})")]
+pub struct ArenaIllegalStateChange {
   pub from: ArenaState,
   pub to: ArenaState,
   pub why: String,
 }
 
-impl std::fmt::Display for StateTransitionError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(
-      f,
-      "State Transition Error: {:?} to {:?} ({})",
-      self.from, self.to, self.why
-    )
-  }
+#[derive(thiserror::Error, Debug)]
+#[error("Match State Transition Error: {from:?} to {to:?} ({why})")]
+pub struct MatchIllegalStateChange {
+  pub from: MatchPlayState,
+  pub to: MatchPlayState,
+  pub why: String,
 }
 
-// Arena
+#[derive(thiserror::Error, Debug)]
+#[error("{0}")]
+pub struct CannotLoadMatchError(pub String);
 
-#[derive(Debug)]
-pub enum ArenaError {
-  IllegalStateChange(StateTransitionError),
-  UnimplementedStateError(ArenaState),
-  NetworkError(NetworkError),
-  MatchError(MatchError),
-  DBError(diesel::result::Error),
-  CannotLoadMatchError(String),
-}
-
-impl std::fmt::Display for ArenaError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match *self {
-      ArenaError::IllegalStateChange(ref e) => write!(f, "{}", e),
-      ArenaError::UnimplementedStateError(ref s) => write!(f, "Unimplemented State: {}", s),
-      ArenaError::NetworkError(ref e) => write!(f, "Network Error: {}", e),
-      ArenaError::MatchError(ref e) => write!(f, "Match Error: {}", e),
-      ArenaError::DBError(ref e) => write!(f, "DB Error: {}", e),
-      ArenaError::CannotLoadMatchError(ref s) => write!(f, "Could not load match: {}", s),
-    }
-  }
-}
-
-impl error::Error for ArenaError {
-  fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-    match *self {
-      ArenaError::NetworkError(ref e) => Some(e.as_ref()),
-      ArenaError::MatchError(ref e) => Some(e),
-      ArenaError::DBError(ref e) => Some(e),
-      _ => None,
-    }
-  }
-}
-
-impl From<NetworkError> for ArenaError {
-  fn from(err: NetworkError) -> ArenaError {
-    ArenaError::NetworkError(err)
-  }
-}
-
-impl From<MatchError> for ArenaError {
-  fn from(err: MatchError) -> ArenaError {
-    ArenaError::MatchError(err)
-  }
-}
-
-impl From<diesel::result::Error> for ArenaError {
-  fn from(err: diesel::result::Error) -> ArenaError {
-    ArenaError::DBError(err)
-  }
-}
-
-// Match
-#[derive(Debug)]
-pub enum MatchError {
-  IllegalStateChange {
-    from: MatchPlayState,
-    to: MatchPlayState,
-    why: String,
-  },
-  WrongState { state: MatchPlayState, why: String },
-  DBError(diesel::result::Error)
-}
-
-impl std::fmt::Display for MatchError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match *self {
-      MatchError::IllegalStateChange {
-        ref from,
-        ref to,
-        ref why,
-      } => {
-        write!(f, "Illegal State Change: {:?} -> {:?} ({})", from, to, why)
-      },
-      MatchError::WrongState { ref state, ref why } => {
-        write!(f, "Wrong State: {:?} ({})", state, why)
-      },
-      MatchError::DBError(ref e) => write!(f, "DB Error: {}", e),
-    }
-  }
-}
-
-impl error::Error for MatchError {
-  fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-    match *self {
-      MatchError::DBError(ref e) => Some(e),
-      _ => None
-    }
-  }
-}
-
-impl From<diesel::result::Error> for MatchError {
-  fn from(e: diesel::result::Error) -> Self {
-    Self::DBError(e)
-  }
+#[derive(thiserror::Error, Debug)]
+#[error("Wrong State: {state:?} ({why})")]
+pub struct MatchWrongState {
+  pub state: MatchPlayState,
+  pub why: String
 }

@@ -22,7 +22,7 @@ extern crate strum_macros;
 #[macro_use] 
 extern crate rocket;
 
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use arena::SharedArena;
 use clap::{App, Arg};
@@ -40,7 +40,7 @@ use crate::ui::websocket::EventWebsocketHandler;
 use crate::ui::websocket::MatchWebsocketHandler;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
   dotenv().ok();
 
   let matches = App::new("JMS")
@@ -78,13 +78,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
   };
 
   let mut ds_service = DSConnectionService::new(arena.clone()).await;
-  let ds_fut = ds_service.run();
+  let ds_fut = ds_service.run().map_err(|e| anyhow::anyhow!("DS Error: {}", e));
 
   let mut ws = Websockets::new(Duration::from_millis(500));
   ws.register("arena", Box::new(ArenaWebsocketHandler::new(arena))).await;
   ws.register("event", Box::new(EventWebsocketHandler::new())).await;
   ws.register("matches", Box::new(MatchWebsocketHandler::new())).await;
-  let ws_fut = ws.begin().map_err(|e| Box::new(e));
+  let ws_fut = ws.begin();
 
   let web_fut = ui::web::begin();
 

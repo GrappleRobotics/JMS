@@ -1,3 +1,5 @@
+use anyhow::bail;
+
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 
 use crate::{db, models::{self, AwardRecipient, PlayoffAlliance, SQLJson, ScheduleBlock, TeamRanking}};
@@ -55,7 +57,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
   }
 
   async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Vec<super::JsonMessage>> {
-    let response_msg = msg.response();
+    // let response_msg = msg.response();
     
     let response = vec![];
 
@@ -66,7 +68,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           let ed: models::EventDetails = serde_json::from_value(data)?;
           diesel::update(event_details).set(&ed).execute(&db::connection())?;
         },
-        _ => Err(response_msg.invalid_verb_or_data())?
+        _ => bail!("Invalid verb or data")
       },
       "teams" => match (msg.verb.as_str(), msg.data) {
         ("insert", Some(data)) => {
@@ -82,10 +84,10 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           if let Some(n) = team_id.as_i64() {
             diesel::delete(teams.filter(id.eq(n as i32))).execute(&db::connection())?;
           } else {
-            Err(response_msg.invalid_verb_or_data())?
+            bail!("Not an i64: {}", team_id);
           }
         }
-        _ => Err(response_msg.invalid_verb_or_data())?
+        _ => bail!("Invalid verb or data")
       },
       "schedule" => match (msg.verb.as_str(), msg.data) {
         ("new_block", None) => {
@@ -97,7 +99,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           if let Some(n) = block_id.as_i64() {
             diesel::delete(schedule_blocks.filter(id.eq(n as i32))).execute(&db::connection())?;
           } else {
-            Err(response_msg.invalid_verb_or_data())?
+            bail!("Not an i64: {}", block_id);
           }
         },
         ("update_block", Some(data)) => {
@@ -110,14 +112,14 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
         ("load_default", None) => {
           ScheduleBlock::generate_default_2day(&db::connection())?;
         },
-        _ => Err(response_msg.invalid_verb_or_data())?
+        _ => bail!("Invalid verb or data")
       },
       "alliances" => match(msg.verb.as_str(), msg.data) {
         ("create", Some(serde_json::Value::Number(n))) => {
           if let Some(n) = n.as_u64() {
             PlayoffAlliance::create_all(n as usize, &db::connection())?;
           } else {
-            Err(response_msg.invalid_verb_or_data())?
+            bail!("Not a u64: {}", n);
           }
         },
         ("clear", None) => {
@@ -133,7 +135,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
         ("promote", None) => {
           PlayoffAlliance::promote(&db::connection())?;
         },
-        _ => Err(response_msg.invalid_verb_or_data())?
+        _ => bail!("Invalid verb or data")
       },
       "awards" => match(msg.verb.as_str(), msg.data) {
         ("create", Some(serde_json::Value::String(s))) => {
@@ -154,12 +156,12 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           if let Some(n) = award_id.as_i64() {
             diesel::delete(awards.filter(id.eq(n as i32))).execute(&db::connection())?;
           } else {
-            Err(response_msg.invalid_verb_or_data())?
+            bail!("Not an i64: {}", award_id);
           }
         },
-        _ => Err(response_msg.invalid_verb_or_data())?
+        _ => bail!("Invalid verb or data")
       },
-      _ => Err(response_msg.unknown_noun())?
+      _ => bail!("Unknown noun")
     };
 
     Ok(response)
