@@ -5,6 +5,7 @@ pub mod team_report;
 pub mod rankings_report;
 pub mod match_report;
 pub mod award_report;
+pub mod wpa_report;
 
 // TODO: Embed into binary
 pub fn pdf_font() -> fonts::FontFamily<fonts::FontData> {

@@ -1,10 +1,19 @@
 use rocket::{http::ContentType, response::content::Custom};
 
-use crate::{models, reports::{award_report::awards_report, match_report::match_report, rankings_report::rankings_report, team_report::teams_report}};
+use crate::{models, reports::{award_report::awards_report, match_report::match_report, rankings_report::rankings_report, team_report::teams_report, wpa_report::{wpa_report, wpa_report_csv}}};
 
 #[get("/teams")]
 pub fn teams() -> Custom<Vec<u8>> {
   Custom(ContentType::PDF, teams_report().unwrap())
+}
+
+#[get("/wpa/<format>")]
+pub fn wpa(format: String) -> Custom<Vec<u8>> {
+  match format.as_str() {
+    "csv" => Custom(ContentType::CSV, wpa_report_csv().unwrap()),
+    "pdf" => Custom(ContentType::PDF, wpa_report().unwrap()),
+    _ => return Custom(ContentType::Text, "Invalid format".as_bytes().to_vec())
+  }
 }
 
 #[get("/rankings")]
