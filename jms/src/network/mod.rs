@@ -1,4 +1,5 @@
 pub mod onboard;
+pub mod radio;
 
 use crate::arena::AllianceStation;
 

@@ -8,4 +8,5 @@ pub struct Team {
   pub affiliation: Option<String>,
   pub location: Option<String>,
   pub notes: Option<String>,
+  pub wpakey: Option<String>,
 }
