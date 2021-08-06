@@ -123,14 +123,11 @@ impl ArenaWebsocketHandler {
         match (k.as_str(), v) {
           ("bypass", Value::Bool(v)) if (idle || prestart) => stn.bypass = *v,
           ("team", Value::Null) if idle => {
-            stn.team = None;
             // Reset DS reports
-            stn.occupancy = AllianceStationOccupancy::Vacant;
-            stn.ds_report = None;
+            stn.reset();
           }
           ("team", Value::Number(x)) if idle => {
-            stn.occupancy = AllianceStationOccupancy::Vacant;
-            stn.ds_report = None;
+            stn.reset();
             stn.team = Some(x.as_u64().unwrap_or(0) as u16);
           },
           _ => {
