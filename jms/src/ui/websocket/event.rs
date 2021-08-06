@@ -73,7 +73,17 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       "teams" => match (msg.verb.as_str(), msg.data) {
         ("insert", Some(data)) => {
           use crate::schema::teams::dsl::*;
-          let team: models::Team = serde_json::from_value(data)?;
+          let mut team: models::Team = serde_json::from_value(data)?;
+          
+          if team.wpakey.is_none() {
+            use rand::{Rng, thread_rng};
+            use rand::distributions::Alphanumeric;
+
+            team.wpakey = Some(
+              thread_rng().sample_iter(&Alphanumeric).take(30).map(char::from).collect()
+            )
+          }
+
           // TODO: Validate
           diesel::replace_into(teams)
             .values(&team)

@@ -142,7 +142,7 @@ impl Encoder<Fms2DsUDP> for DSUDPCodec {
     writer.put_u8(control);
 
     writer.put_u8(0x00);
-    writer.put_u8(pkt.station.into());
+    writer.put_u8(pkt.station.to_ds_number());
     writer.put_u8(pkt.tournament_level as u8);
     writer.put_u16(pkt.match_number);
     writer.put_u8(pkt.play_number);

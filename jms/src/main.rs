@@ -36,6 +36,8 @@ use tokio::{sync::Mutex, try_join};
 use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
+use crate::network::radio::FieldRadio;
+use crate::network::radio::FieldRadioSettings;
 use crate::ui::websocket::EventWebsocketHandler;
 use crate::ui::websocket::MatchWebsocketHandler;
 
@@ -52,17 +54,20 @@ async fn main() -> anyhow::Result<()> {
 
   db::connection(); // Start connection
 
+  let radio = FieldRadio::new(FieldRadioSettings::default());
+
   let network = Box::new(
     OnboardNetwork::new(
       "ens18",
       "ens19.100",
       &vec!["ens19.10", "ens19.20", "ens19.30"],
       &vec!["ens19.40", "ens19.50", "ens19.60"],
+      radio
     )
     .unwrap(),
   );
 
-  network.configure(&vec![], false).await.unwrap();
+  network.configure(&vec![], false).await?;
 
   let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
 

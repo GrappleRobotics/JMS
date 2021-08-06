@@ -5,8 +5,7 @@ use crate::arena::AllianceStation;
 
 use async_trait::async_trait;
 
-pub type NetworkError = Box<dyn std::error::Error + Send + Sync>;
-pub type NetworkResult<T> = std::result::Result<T, NetworkError>;
+pub type NetworkResult<T> = anyhow::Result<T>;
 
 #[async_trait]
 pub trait NetworkProvider {
