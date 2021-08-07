@@ -58,9 +58,9 @@ impl LoadedMatch {
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
         warmup_cooldown_time: Duration::from_secs(1),
-        auto_time: Duration::from_secs(1),
+        auto_time: Duration::from_secs(5),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(1),
+        teleop_time: Duration::from_secs(5),
       },
     }
   }

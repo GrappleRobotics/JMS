@@ -48,12 +48,13 @@ impl FieldRadio {
   }
 
   pub async fn configure(&self, teams: &[TeamRadioConfig]) -> Result<()> {
+    info!("Configuring Radio...");
     let addr = SocketAddr::new(self.settings.ip.into(), 22);
     let session = SSHSession::connect(addr, &self.settings.user, &self.settings.pass).await?;
 
     self.configure_admin(&session).await?;
     self.configure_teams(&session, teams).await?;
-
+    info!("Radio Configured!");
     Ok(())
   }
 

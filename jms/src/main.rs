@@ -30,7 +30,6 @@ use dotenv::dotenv;
 use ds::connector::DSConnectionService;
 use futures::TryFutureExt;
 use network::onboard::OnboardNetwork;
-use network::NetworkProvider;
 use tokio::{sync::Mutex, try_join};
 
 use ui::websocket::ArenaWebsocketHandler;
@@ -66,8 +65,6 @@ async fn main() -> anyhow::Result<()> {
     )
     .unwrap(),
   );
-
-  network.configure(&vec![], false).await?;
 
   let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
 

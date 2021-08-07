@@ -9,5 +9,5 @@ pub type NetworkResult<T> = anyhow::Result<T>;
 
 #[async_trait]
 pub trait NetworkProvider {
-  async fn configure(&self, stations: &[AllianceStation], force_reload: bool) -> NetworkResult<()>;
+  async fn configure(&self, stations: &[AllianceStation]) -> NetworkResult<()>;
 }

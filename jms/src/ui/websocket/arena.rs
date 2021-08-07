@@ -111,7 +111,7 @@ impl ArenaWebsocketHandler {
     let mut arena = self.arena.lock().await;
 
     let current_state = arena.current_state();
-    let idle = matches!(current_state, ArenaState::Idle);
+    let idle = matches!(current_state, ArenaState::Idle { .. });
     let prestart = matches!(current_state, ArenaState::Prestart { .. });
 
     if let Value::Object(ref map) = data.update {

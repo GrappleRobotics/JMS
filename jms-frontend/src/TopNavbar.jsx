@@ -23,7 +23,7 @@ export default class TopNavbar extends React.Component {
     
     switch (state.state) {
       case "Idle":
-        return ["Idle", "dark"];
+        return state.ready ? ["Idle", "dark"] : ["Idle (working)...", "warning"];
       case "Prestart":
         return state.ready ? ["Prestarted", "success"] : ["Prestarting...", "warning"];
       case "MatchArmed":
