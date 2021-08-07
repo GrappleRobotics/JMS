@@ -64,6 +64,9 @@ html, body, #root {
 
 .navbar-padding {
   padding-top: 72px;
+  > .col {
+    height: 0;
+  }
 }
 
 $hazard-dark-primary: #735a00;
