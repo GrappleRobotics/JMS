@@ -85,20 +85,24 @@ impl FieldRadio {
           vec![
             format!("set wireless.@wifi-iface[{}].disabled='1'", radio_num),
             format!("set wireless.@wifi-iface[{}].ssid='{}-no-key'", radio_num, team),
+            format!("set wireless.@wifi-iface[{}].key='{}-no-key'", radio_num, team),
           ]
         },
         (None, _) => {
           vec![
             format!("set wireless.@wifi-iface[{}].disabled='1'", radio_num),
             format!("set wireless.@wifi-iface[{}].ssid='unoccupied-{}'", radio_num, radio_num),
+            format!("set wireless.@wifi-iface[{}].key='unoccupied-{}'", radio_num, radio_num),
           ]
         }
       }
     }).collect();
     cfgs.push("commit wireless".to_owned());
 
-    let cfgs: Vec<&str> = cfgs.iter().map(|x| x.as_str()).collect();
-    
+    let chan_cfg = format!("set wireless.radio0.channel='{}'", self.settings.team_channel.map_or("auto".to_owned(), |c| format!("{}", c)));
+    let mut cfgs: Vec<&str> = cfgs.iter().map(|x| x.as_str()).collect();
+    cfgs.insert(0, chan_cfg.as_str());
+
     self.do_uci(session, "wifi radio0", &cfgs).await?;
     Ok(())
   }
