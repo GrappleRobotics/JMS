@@ -250,16 +250,18 @@ export function ScoringRouter(props) {
 
   return <Switch>
     <Route exact path={path}>
-      <h3 className="mb-4"> Scorer Selection </h3>
-      <Link to={`${url}/blue`}>
-        <Button size="lg" variant="primary"> Blue Alliance  </Button>
-      </Link> &nbsp;
-      <Link to={`${url}/center`}>
-        <Button size="lg" variant="warning"> Center Field </Button>
-      </Link> &nbsp;
-      <Link to={`${url}/red`}>
-        <Button size="lg" variant="danger"> Red Alliance  </Button>
-      </Link>
+      <Container>
+        <h3 className="mb-4"> Scorer Selection </h3>
+        <Link to={`${url}/blue`}>
+          <Button size="lg" variant="primary"> Blue Alliance  </Button>
+        </Link> &nbsp;
+        <Link to={`${url}/center`}>
+          <Button size="lg" variant="warning"> Center Field </Button>
+        </Link> &nbsp;
+        <Link to={`${url}/red`}>
+          <Button size="lg" variant="danger"> Red Alliance  </Button>
+        </Link>
+      </Container>
     </Route>
     <Route path={`${path}/blue`}>
       <ScoringAlliance {...props} alliance="Blue" />

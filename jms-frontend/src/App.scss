@@ -37,6 +37,10 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  > .row {
+    margin: 0;
+  }
 }
 
 .app-viewport {
@@ -422,4 +426,126 @@ th {
 .award {
   min-width: 315px;
   max-width: 400px;
+}
+
+.grow {
+  flex-grow: 1;
+}
+
+.col-full {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+
+  > * {
+    flex-grow: 1;
+    margin: 0;
+  }
+}
+
+.monitor-alliance {
+  align-content: stretch;
+  @each $alliance in blue, red {
+    $tc: theme-color("alliance-#{$alliance}");
+    &[data-alliance=#{$alliance}] {
+      > .monitor-station {
+        flex: 1 !important;
+
+        background-color: desaturate(darken($tc, 45%), 25%);
+        border: 2px solid gray("800");
+        
+        > .monitor-team {
+          background-color: desaturate(darken($tc, 25%), 25%);
+          writing-mode: vertical-lr;
+          text-align: center;
+          font-size: 30px;
+          font-weight: bold;
+          padding: 0.25em;
+          text-decoration: underline rgba(255,255,255,0.25);
+        }
+        
+        > .monitor-data {
+          align-content: stretch;
+          
+          font-size: 25px;
+          font-weight: bold;
+          color: theme-color("secondary");
+
+          [data-ok="false"] {
+            color: theme-color("danger");
+          }
+
+          [data-ok="true"] {
+            color: theme-color("success");
+          }
+
+          > .row {
+            flex: 1 !important;
+            padding: 4px;
+          }
+
+          .monitor-data-header {
+            flex-grow: 0 !important;
+            background-color: black;
+          }
+
+          .monitor-error {
+            text-align: center;
+            font-size: 40px;
+            color: theme-color("danger");
+          }
+
+          .monitor-indicators {
+            flex-grow: 0 !important;
+            padding: 5px 0;
+            background-color: black;
+            margin: 0;
+            > .col {
+              padding: 0;
+            }
+          }
+        }
+
+        .monitor-occupancy {
+          &[data-occupancy="Vacant"] {
+            &:before { content: "NO DS" }
+            color: theme-color("danger")
+          }
+          &[data-occupancy="Occupied"] {
+            &:before { content: "DS OK" }
+            color: theme-color("success");
+          }
+          &[data-occupancy="WrongMatch"] {
+            &:before { content: "DS WAIT" }
+            color: theme-color("danger");
+          }
+          &[data-occupancy="WrongStation"] {
+            &:before { content: "DS MOVE" }
+            color: theme-color("warning");
+          }
+        }
+
+        &[data-error] {
+          border: 2px red solid;
+        }
+
+        &[data-bypass="true"] {
+          background-color: gray("900");
+          > .monitor-team {
+            color: gray("600");
+          }
+
+          .monitor-error {
+            color: gray("700");
+          }
+        }
+
+        &[data-estop="true"] {
+          > .monitor-team {
+            @extend .bg-hazard-red-dark;
+          }
+        }
+      }
+    }
+  }
 }
