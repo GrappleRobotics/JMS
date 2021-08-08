@@ -3,7 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, SCORING } from 'paths';
+import { EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REPORTS, SCORING } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
@@ -12,6 +12,7 @@ import Home from 'Home';
 import { ScoringRouter } from 'scoring/Scoring';
 import Rankings from 'rankings/Rankings';
 import FieldMonitor from 'monitor/FieldMonitor';
+import Reports from 'reports/Reports';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -109,6 +110,11 @@ export default class App extends React.Component {
             ws={this.ws}
             arena={arena}
           />
+        </this.wrapView>
+      </Route>
+      <Route path={REPORTS}>
+        <this.wrapView navbar>
+          <Reports />
         </this.wrapView>
       </Route>
       <Route path={MATCH_CONTROL}>

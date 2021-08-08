@@ -4,3 +4,4 @@ export const SCORING = "/scoring";
 export const REFEREE = "/referee";
 export const RANKINGS = "/rankings";
 export const MONITOR = "/monitor";
+export const REPORTS = "/reports";
