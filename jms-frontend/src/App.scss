@@ -548,8 +548,11 @@ th {
         }
 
         &[data-estop="true"] {
-          > .monitor-team {
-            @extend .bg-hazard-red-dark;
+          > .monitor-data {
+            @extend .bg-hazard-red-dark-active;
+            .monitor-jumbo {
+              color: white;
+            }
           }
         }
       }

@@ -305,6 +305,13 @@ impl Arena {
   async fn update_states(&mut self) -> Result<()> {
     let first = self.state.first;
     let signal = self.current_signal().await;
+    
+    // Need this as self is borrowed as mut below
+    match self.state.state {
+      ArenaState::Idle { ready: true } if first => self.unload_match()?,
+      _ => ()
+    }
+
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Init, _) => {
         if first {
@@ -314,7 +321,7 @@ impl Arena {
       }
       (ArenaState::Idle { ready: false }, StateData::Idle(maybe_recv)) => {
         if first {
-          info!("Idle begin...")
+          info!("Idle begin...");
         }
 
         if let Some(recv) = maybe_recv {
@@ -332,7 +339,7 @@ impl Arena {
       }
       (ArenaState::Idle { ready: true }, _) => {
         if first {
-          self.unload_match()?;
+          info!("Idle ready!");
         } else if let Some(ArenaSignal::Prestart) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false })?;
         }

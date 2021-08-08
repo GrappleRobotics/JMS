@@ -60,7 +60,7 @@ impl FieldRadio {
   }
 
   async fn configure_admin(&self, session: &SSHSession) -> Result<()> {
-    self.do_uci(session, "wifi radio1", &vec![
+    self.do_uci(session, &vec![
       format!("set wireless.radio1.channel='{}'", self.settings.admin_channel.map_or("auto".to_owned(), |c| format!("{}", c))).as_str(),
       format!("set wireless.radio1.disabled='{}'", self.settings.admin_ssid.is_none() as usize).as_str(),
       format!("set wireless.@wifi-iface[0].ssid='{}'", self.settings.admin_ssid.as_ref().unwrap_or(&"no-admin".to_owned())).as_str(),
@@ -105,16 +105,22 @@ impl FieldRadio {
     let mut cfgs: Vec<&str> = cfgs.iter().map(|x| x.as_str()).collect();
     cfgs.insert(0, chan_cfg.as_str());
 
-    self.do_uci(session, "wifi radio0", &cfgs).await?;
+    self.do_uci(session, &cfgs).await?;
     Ok(())
   }
 
-  async fn do_uci(&self, session: &SSHSession, target: &str, cmds: &[&str]) -> Result<CommandResult> {
-    let cmd = format!("uci batch <<EOI && {}\n{}\nEOI\n", target, cmds.join("\n"));
+  async fn do_uci(&self, session: &SSHSession, cmds: &[&str]) -> Result<CommandResult> {
+    let cmd = format!("uci batch <<EOI && {}\nEOI\n", cmds.join("\n"));
     let reply = session.run(&cmd).await?;
     if !reply.success() {
-      bail!("Failed to apply UCI {} - {}", target, reply.output())
+      bail!("Failed to apply UCI {}", reply.output());
     }
+
+    let reply = session.run("/sbin/wifi; /etc/init.d/network restart").await?;
+    if !reply.success() {
+      bail!("Failed to restart router network {}", reply.output());
+    }
+
     Ok(reply)
   }
 
