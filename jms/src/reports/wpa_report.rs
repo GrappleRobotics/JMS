@@ -14,8 +14,7 @@ pub fn wpa_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     teams.load::<models::Team>(&db::connection())?
   };
   
-  let title = format!("WPA Key Report (FTA ONLY) - {}", event_name);
-  let mut doc = report_pdf(&title);
+  let mut doc = report_pdf("WPA Key Report (FTA ONLY)", &event_name, true);
   
   let headers = vec!["Team", "Key"];
   let rows: Vec<Vec<String>> = teams.iter().map(|t| {
