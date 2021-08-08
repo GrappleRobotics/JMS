@@ -10,8 +10,9 @@ pub struct FieldRadioSettings {
   pub user: String,
   pub pass: String,
 
-  pub admin_ssid: String,
-  pub admin_key: String,
+  // None = no admin
+  pub admin_ssid: Option<String>,
+  pub admin_key: Option<String>,
   
   // None = "auto"
   pub admin_channel: Option<usize>,
@@ -24,8 +25,8 @@ impl Default for FieldRadioSettings {
       ip: Ipv4Addr::new(10, 0, 100, 2),
       user: "root".to_owned(),
       pass: "root".to_owned(),
-      admin_ssid: "JMS".to_owned(),
-      admin_key: "jmsR0cks".to_owned(),
+      admin_ssid: Some("JMS".to_owned()),
+      admin_key: Some("jmsR0cks".to_owned()),
       admin_channel: None,
       team_channel: None
     }
@@ -61,9 +62,9 @@ impl FieldRadio {
   async fn configure_admin(&self, session: &SSHSession) -> Result<()> {
     self.do_uci(session, "wifi radio1", &vec![
       format!("set wireless.radio1.channel='{}'", self.settings.admin_channel.map_or("auto".to_owned(), |c| format!("{}", c))).as_str(),
-      format!("set wireless.radio1.disabled='0'").as_str(),
-      format!("set wireless.@wifi-iface[0].key='{}'", self.settings.admin_key).as_str(),
-      format!("set wireless.@wifi-iface[0].ssid='{}'", self.settings.admin_ssid).as_str(),
+      format!("set wireless.radio1.disabled='{}'", self.settings.admin_ssid.is_none() as usize).as_str(),
+      format!("set wireless.@wifi-iface[0].ssid='{}'", self.settings.admin_ssid.as_ref().unwrap_or(&"no-admin".to_owned())).as_str(),
+      format!("set wireless.@wifi-iface[0].key='{}'", self.settings.admin_key.as_ref().unwrap_or(&"".to_owned())).as_str(),
       "commit wireless"
     ]).await?;
     Ok(())
