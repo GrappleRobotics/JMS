@@ -17,6 +17,8 @@ class FieldMonitorStation extends React.PureComponent {
   }
 
   whatError = (stn, report, estop) => {
+    let playing_match = this.props.state == "MatchPlay";
+
     if (stn.bypass) return null;
     if (estop) return "E-STOPPED";
 
@@ -35,8 +37,14 @@ class FieldMonitorStation extends React.PureComponent {
 
     if (report.battery < 9) return "LOW BATTERY";
 
-    if (report.mode !== null && this.lostPktPercent(report.pkts_lost, report.pkts_sent) > 10)
+    if (playing_match && this.lostPktPercent(report.pkts_lost, report.pkts_sent) > 10)
       return "HIGH PACKET LOSS";
+    
+    if (playing_match && report.mode === null)
+      return "DISABLED";
+
+    if (playing_match && report.mode !== this.props.match?.state)
+      return report.mode.toUpperCase();
 
     return null;
   }
@@ -49,25 +57,30 @@ class FieldMonitorStation extends React.PureComponent {
     let error = this.whatError(s, report, estop);
 
     return <Row className="monitor-station" data-error={error} data-bypass={s.bypass} data-estop={estop}>
-      <Col className="monitor-team" md="auto">
-        { s.team || <i className="text-muted"> --- </i> }
+      <Col className="monitor-station-id" md="auto">
+        { s.station.station }
       </Col>
       <Col className="monitor-data col-full">
         {
           s.bypass ? <React.Fragment /> : 
             <Row className="monitor-data-header">
               <Col className="monitor-occupancy" data-occupancy={s.occupancy} />
-              <Col className="text-center" data-ok={s.ds_report ? (s.ds_report.mode ? "true" : "false") : ""}>
-                { s.ds_report?.estop ? "ESTOP" : (s.ds_report?.mode?.toUpperCase() || "DISABLED") }
+              <Col className="monitor-team">
+                { s.team || "" }
               </Col>
               <Col className="text-right" data-ok={ this.lostPktPercent(report?.pkts_lost, report?.pkts_sent) < 10 }>
                 { this.renderSent(s.ds_report?.pkts_lost, s.ds_report?.pkts_sent) }%
               </Col>
             </Row>
         }
-        <Row className="monitor-error align-items-center">
+        <Row className="monitor-jumbo align-items-center" data-error={error}>
           <Col>
-            { s.bypass ? "BYPASS" : (error || "") }
+            {
+              s.bypass 
+                ? `BYPASS ${s.team || ""}` : 
+                  error ? error :
+                    (report?.mode?.toUpperCase() || "READY")
+            }
           </Col>
         </Row>
         {
@@ -78,13 +91,13 @@ class FieldMonitorStation extends React.PureComponent {
                 { (s.ds_report?.rtt?.toString() || "---").padStart(3, "\u00A0") }ms
               </Col>
               <Col data-ok={s.ds_report?.rio_ping}>
-                <FontAwesomeIcon icon={faRobot} size="lg"/> &nbsp;
+                <FontAwesomeIcon icon={faRobot} size="lg"/>
               </Col>
               <Col data-ok={s.ds_report?.robot_ping}>
-                <FontAwesomeIcon icon={faCode} size="lg"/> &nbsp;
+                <FontAwesomeIcon icon={faCode} size="lg"/>
               </Col>
               <Col data-ok={s.ds_report?.battery ? s.ds_report.battery > 9 : ""} md="auto">
-                <FontAwesomeIcon icon={faCarBattery} size="lg"/> &nbsp;
+                {/* <FontAwesomeIcon icon={faCarBattery} size="lg"/> &nbsp; */}
                 { s.ds_report?.battery?.toFixed(2) || "--.--" } V
               </Col>
             </Row>
@@ -104,7 +117,7 @@ export default class FieldMonitor extends React.PureComponent {
   renderAlliance = (stations) => {
     return <React.Fragment>
       {
-        stations.map(s => <FieldMonitorStation station={s}/>)
+        stations.map(s => <FieldMonitorStation state={this.props.arena?.state} match={this.props.arena?.match} station={s}/>)
       }
     </React.Fragment>
   }

@@ -23,8 +23,8 @@ export const REPORT_MAP = [
   },
   {
     title: "Playoffs Match Schedules", paths: [
-      { title: "Quals", path: "matches/playoffs", variant: "primary" },
-      { title: "Quals (Individual)", path: "matches/playoffs/individual", variant: "info" },
+      { title: "Playoffs", path: "matches/playoffs", variant: "primary" },
+      { title: "Playoffs (Individual)", path: "matches/playoffs/individual", variant: "info" },
     ]
   }
 ]

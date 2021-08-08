@@ -454,16 +454,15 @@ th {
         background-color: desaturate(darken($tc, 45%), 25%);
         border: 2px solid gray("800");
         
-        > .monitor-team {
+        > .monitor-station-id {
           background-color: desaturate(darken($tc, 25%), 25%);
-          writing-mode: vertical-lr;
           text-align: center;
           font-size: 30px;
           font-weight: bold;
           padding: 0.25em;
-          text-decoration: underline rgba(255,255,255,0.25);
+          color: desaturate($tc, 25%);
         }
-        
+
         > .monitor-data {
           align-content: stretch;
           
@@ -483,16 +482,24 @@ th {
             flex: 1 !important;
             padding: 4px;
           }
-
+          
           .monitor-data-header {
             flex-grow: 0 !important;
             background-color: black;
           }
 
-          .monitor-error {
+          .monitor-team {
+            color: white;
+            text-align: center;
+          }
+
+          .monitor-jumbo {
             text-align: center;
             font-size: 40px;
-            color: theme-color("danger");
+            color: theme-color("success");
+            &[data-error] {
+              color: theme-color("danger");
+            }
           }
 
           .monitor-indicators {
@@ -535,7 +542,7 @@ th {
             color: gray("600");
           }
 
-          .monitor-error {
+          .monitor-jumbo {
             color: gray("700");
           }
         }
