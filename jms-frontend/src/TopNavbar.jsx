@@ -3,7 +3,7 @@ import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import { Button } from 'react-bootstrap';
 import { EVENT_WIZARD, MATCH_CONTROL } from 'paths';
-import { faHome, faMagic } from '@fortawesome/free-solid-svg-icons';
+import { faCompressArrowsAlt, faExpand, faHome, faMagic } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 export default class TopNavbar extends React.Component {
@@ -56,6 +56,8 @@ export default class TopNavbar extends React.Component {
 
   render() {
     const [arenaState, navbarColour] = this.decodeArenaState();
+    let fullscreen = document.fullscreenElement != null;
+
     return <Navbar bg={navbarColour} variant="dark" fixed="top">
       <Button variant="hazard-red-dark" disabled={!this.props.connected || this.props.state?.state == "Estop"} onClick={this.props.onEstop}>
         E-STOP
@@ -73,6 +75,13 @@ export default class TopNavbar extends React.Component {
           <Nav.Link href="/">
             <FontAwesomeIcon icon={faHome} /> &nbsp;
             Home
+          </Nav.Link>
+          <Nav.Link className="mx-3" onClick={ e => {
+            if (fullscreen) document.exitFullscreen();
+            else document.body.requestFullscreen();
+            e.preventDefault();
+          }}>
+            <FontAwesomeIcon icon={fullscreen ? faCompressArrowsAlt : faExpand} size="lg" />
           </Nav.Link>
         </Nav>
       </Navbar.Collapse>
