@@ -237,7 +237,7 @@ impl Encoder<Fms2DsTCP> for DSTCPCodec {
         }
         Fms2DsTCPTags::StationInfo(stn, status) => {
           writer.put_u8(0x19);
-          writer.put_u8(stn.into());
+          writer.put_u8(stn.to_ds_number());
           writer.put_u8(status as u8);
         }
         Fms2DsTCPTags::GameData(data) => {

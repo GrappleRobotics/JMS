@@ -12,8 +12,7 @@ pub fn teams_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     teams.load::<models::Team>(&db::connection())?
   };
   
-  let title = format!("Team Report - {}", event_name);
-  let mut doc = report_pdf(&title);
+  let mut doc = report_pdf("Team Report", &event_name, true);
   
   let headers = vec!["Team", "Name", "Affiliation", "Location"];
   let rows: Vec<Vec<String>> = teams.iter().map(|t| {

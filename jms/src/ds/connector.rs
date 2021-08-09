@@ -237,7 +237,7 @@ impl DSConnection {
       let match_meta = arena.current_match.as_ref().map(|x| x.metadata());
       
       let mut pkt = Fms2DsUDP {
-        estop: estop || astop,
+        estop: estop,
         enabled: (!station.bypass) && !(estop || astop) && robots_enabled,
         mode,
         station: station.station,

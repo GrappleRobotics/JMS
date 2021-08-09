@@ -7,8 +7,7 @@ pub fn rankings_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let event_name = event_details.event_name.unwrap_or("Unnamed Event".to_owned());
   let rankings = models::TeamRanking::get_sorted(&db::connection())?;
   
-  let title = format!("Qualification Rankings Report - {}", event_name);
-  let mut doc = report_pdf(&title);
+  let mut doc = report_pdf("Qualification Rankings Report", &event_name, true);
   
   let weights = vec![3, 3, 3, 3, 3, 5, 3, 3];
   let headers = vec!["Rank", "Team", "Played", "RP", "Auto", "Endgame", "Teleop", "W-L-T"];

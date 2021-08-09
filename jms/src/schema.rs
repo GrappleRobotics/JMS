@@ -80,6 +80,7 @@ table! {
         affiliation -> Nullable<Text>,
         location -> Nullable<Text>,
         notes -> Nullable<Text>,
+        wpakey -> Nullable<Text>,
     }
 }
 

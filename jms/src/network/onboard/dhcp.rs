@@ -1,6 +1,6 @@
-use core::fmt;
 use std::{fs::{File, OpenOptions}, io::{Read, Write}, net::Ipv4Addr, time::Duration};
 
+use anyhow::bail;
 use dbus::nonblock::Proxy;
 use handlebars::Handlebars;
 use ipnetwork::Ipv4Network;
@@ -61,7 +61,7 @@ async fn generate_dhcp_conf(file: &mut File, admin_cfg: &DHCPConfig, stn_cfgs: &
     },
     None => {
       error!("No ServiceConfig exists: match.dhcp.conf");
-      return Err(Box::new(DHCPError { msg: "No ServiceConfig exists: match.dhcp.conf".to_owned() }));
+      bail!(DHCPError { msg: "No ServiceConfig exists: match.dhcp.conf".to_owned() });
     },
   }
 
@@ -101,15 +101,8 @@ async fn maybe_update_dhcpd_conf() -> NetworkResult<()> {
   Ok(())
 }
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
+#[error("DHCP Error: {msg}")]
 struct DHCPError {
   msg: String
 }
-
-impl fmt::Display for DHCPError {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "DHCP Error: {}", self.msg)
-  }
-}
-
-impl std::error::Error for DHCPError {}

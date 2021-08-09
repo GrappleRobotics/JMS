@@ -3,7 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { EVENT_WIZARD, MATCH_CONTROL, RANKINGS, SCORING } from 'paths';
+import { EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REPORTS, SCORING } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
@@ -11,6 +11,8 @@ import { nullIfEmpty } from 'support/strings';
 import Home from 'Home';
 import { ScoringRouter } from 'scoring/Scoring';
 import Rankings from 'rankings/Rankings';
+import FieldMonitor from 'monitor/FieldMonitor';
+import Reports from 'reports/Reports';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -52,7 +54,7 @@ export default class App extends React.Component {
   }
 
   wrapView = (props) => {
-    let { navbar, children, fullscreen } = props;
+    let { navbar, children, fullscreen, nopad } = props;
     let { arena, event, matches } = this.state;
 
     return <div className="wrapper">
@@ -69,10 +71,10 @@ export default class App extends React.Component {
           </Col>
         </Row> : this.renderNoNavbar()
       }
-      <Row className={"app-viewport " + (fullscreen ? "fullscreen" : "")} data-connected={this.state.connected}>
-        <Col>
-          { children }
-        </Col>
+      <Row className={"app-viewport " + (fullscreen ? "fullscreen " : "") + (nopad ? "p-0 " : "")} data-connected={this.state.connected}>
+        {/* <Col> */}
+        { children }
+        {/* </Col> */}
       </Row>
       {
         navbar ? <Row className="navbar-padding">
@@ -110,6 +112,11 @@ export default class App extends React.Component {
           />
         </this.wrapView>
       </Route>
+      <Route path={REPORTS}>
+        <this.wrapView navbar>
+          <Reports />
+        </this.wrapView>
+      </Route>
       <Route path={MATCH_CONTROL}>
         <this.wrapView navbar>
           <MatchControl
@@ -126,6 +133,14 @@ export default class App extends React.Component {
             rankings={event?.rankings}
             details={event?.details}
             next_match={matches?.next}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={MONITOR}>
+        <this.wrapView navbar fullscreen nopad>
+          <FieldMonitor
+            ws={this.ws}
+            arena={arena}
           />
         </this.wrapView>
       </Route>

@@ -6,9 +6,12 @@ use tokio::try_join;
 
 use crate::arena::station::AllianceStationId;
 use crate::arena::AllianceStation;
-use crate::models::Alliance;
+use crate::db;
+use crate::models::{self, Alliance};
+use crate::network::radio::TeamRadioConfig;
 
 use super::NetworkProvider;
+use super::radio::FieldRadio;
 
 pub mod netlink;
 pub mod dhcp;
@@ -22,11 +25,12 @@ pub struct OnboardNetwork {
   wan_iface: String,
   admin_iface: String,
   station_ifaces: HashMap<AllianceStationId, String>,
+  radio: FieldRadio,
 }
 
 impl OnboardNetwork {
 
-  pub fn new(iface_wan: &str, iface_admin: &str, ifaces_blue: &[&str], ifaces_red: &[&str]) -> super::NetworkResult<OnboardNetwork> {
+  pub fn new(iface_wan: &str, iface_admin: &str, ifaces_blue: &[&str], ifaces_red: &[&str], radio: FieldRadio) -> super::NetworkResult<OnboardNetwork> {
     let mut station_ifaces = HashMap::new();
 
     for (i, &iface) in ifaces_red.iter().enumerate() {
@@ -50,6 +54,7 @@ impl OnboardNetwork {
       wan_iface: iface_wan.to_owned(),
       admin_iface: iface_admin.to_owned(),
       station_ifaces,
+      radio
     })
   }
 
@@ -145,12 +150,24 @@ impl OnboardNetwork {
 
 #[async_trait::async_trait]
 impl NetworkProvider for OnboardNetwork {
-  async fn configure(&self, stations: &[AllianceStation], _force_reload: bool) -> super::NetworkResult<()> {
+  async fn configure(&self, stations: &[AllianceStation]) -> super::NetworkResult<()> {
+    info!("Onboard Network Config Begin...");
     self.configure_ip_addrs(stations).await?;
     let fut_dhcp = self.configure_dhcp(stations);
     let fut_firewall = self.configure_firewall(stations);
 
+    let team_radios: Vec<TeamRadioConfig> = stations.iter().map(|s| {
+      TeamRadioConfig {
+        station: s.station,
+        team: s.team.map(|t| t as usize),
+        wpakey: s.team.and_then(|t| models::Team::wpakey(t as usize, &db::connection()))
+      }
+    }).collect();
+
+    self.radio.configure(&team_radios[..]).await?;
+
     try_join!(fut_dhcp, fut_firewall)?;
+    info!("Onboard Network Config Done!");
     Ok(())
   }
 }
