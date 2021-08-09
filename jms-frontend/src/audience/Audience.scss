@@ -1,0 +1,247 @@
+.audience {
+  background-color: #f0f;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: none;
+
+  font-size: 0.8vw;
+}
+
+.audience-field {
+  @extend .audience;
+}
+
+
+.audience-preview {
+  $border-colour: #7b0096;
+  // $border-colour: gray("700");
+
+  @extend .audience;
+  background-color: desaturate(darken($border-colour, 20%), 20%);
+
+  .match-preview {
+    background-color: gray("300");
+    position: absolute;
+    width: 80vw;
+    height: 80vh;
+    top: 10vh;
+    left: 10vw;
+    border-radius: 1.5vw;
+    border: 1vw solid $border-colour;
+
+    color: theme-color("dark");
+    font-size: 3em;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 0;
+
+    > .row {
+      margin: 0.4em 2em;
+
+      overflow: hidden;
+    }
+
+    .event-name {
+      font-size: 0.8em;
+
+      margin: -3px -3px;
+      margin-bottom: 0.5em;
+      padding: 0.5em;
+      text-align: center;
+      background-color: $border-colour;
+      color: white;
+
+      img {
+        width: 8em;
+      }
+    }
+
+    .match-name {
+      font-weight: bold;
+    }
+
+    .preview-text {
+      font-style: italic;
+      opacity: 0.7;
+    }
+
+    .match-teams {
+      font-size: 0.8em;
+      font-weight: bold;
+      color: white;
+
+      align-items: stretch;
+
+      .card {
+        height: 100%;
+        border-radius: 0.5em;
+
+        @each $alliance in blue, red {
+          $tc: theme-color("alliance-#{$alliance}");
+          &[data-alliance=#{$alliance}] {
+            background-color: $tc;
+            > .card-header {
+              background-color: desaturate(darken($tc, 15%), 10%);
+            }
+          }
+        }
+
+        > .card-header {
+          text-align: center;
+          border-radius: 0.5em;
+          font-size: 0.75em;
+        }
+
+        > .card-body {
+          padding: 0.5em;
+        }
+      }
+
+      .team:not(:first-child) {
+        padding-top: 0.2em;
+      }
+
+      .team:not(:last-child) {
+        padding-bottom: 0.2em;
+        border-bottom: 0.05em solid rgba(255, 255, 255, 0.4);
+      }
+
+      .team-number {
+        text-align: right;
+      }
+
+      .team-name {
+        color: darken(white, 10%);
+        font-size: 0.8em;
+        display: flex;
+        flex-direction: column;
+
+        .affiliation {
+          font-size: 0.8em;
+          opacity: 0.7;
+        }
+      }
+
+      .team-rank {
+        text-align: right;
+        padding: 0 1em 0 1em;
+      }
+    }
+  }
+}
+
+.audience-play {
+  @extend .audience;
+
+  .score-block {
+    position: fixed;
+    bottom: 0;
+    width: 100vw;
+    background-color: theme-color("dark");
+    display: flex;
+    flex-direction: column;
+
+    .progress-row {
+      height: 5vh;
+    }
+
+    .match-progress {
+      height: 100%;
+      border-radius: 0;
+      opacity: 0.7;
+
+      > .progress-bar {
+        background-color: theme-color("success");
+        transition: width 1s linear;
+      }
+
+      &[data-active="true"] {
+        > .progress-bar {
+          background-color: theme-color("primary");
+        }
+      }
+      &[data-fault="true"] {
+        > .progress-bar {
+          transition: width 0s;
+          background-color: theme-color("danger");
+        }
+      }
+    }
+
+    .progress-overlay {
+      position: relative;
+      top: -4.5vh;
+      width: 100vw;
+      font-size: 2em;
+      font-weight: bold;
+      display: flex;
+
+      text-align: center;
+    }
+  }
+
+  .score-row {
+    height: 18vh;
+
+    .alliance-teams {
+      max-width: 5.5vw;
+      color: white;
+      font-size: 2em;
+      text-align: center;
+
+      display: flex;
+      flex-direction: column;
+
+      .alliance-team {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        &[data-bypass="true"] {
+          color: gray("300");
+          background-color: gray("700");
+        }
+
+        &[data-estop="true"] {
+          @extend .bg-hazard-dark-active;
+        }
+
+        &[data-alive="false"] {
+          color: red;
+          background-color: black;
+        }
+      }
+
+      @each $alliance in blue, red {
+        $tc: theme-color("alliance-#{$alliance}");
+        &[data-alliance=#{$alliance}] {
+          background-color: desaturate(darken($tc, 25%), 40%);
+        }
+      }
+    }
+
+    .total-score {
+      max-width: 12vw;
+      display: flex;
+      font-size: 6em;
+      font-weight: bold;
+      justify-content: center;
+      align-items: center;
+
+      @each $alliance in blue, red {
+        $tc: theme-color("alliance-#{$alliance}");
+        &[data-alliance=#{$alliance}] {
+          background-color: desaturate(darken($tc, 15%), 20%);
+        }
+      }
+    }
+  }
+
+}

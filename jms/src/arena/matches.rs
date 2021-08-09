@@ -23,7 +23,7 @@ pub enum MatchPlayState {
   Fault, // E-stop, cancelled, etc. Fault is unrecoverable without reloading the match.
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MatchConfig {
   warmup_cooldown_time: Duration,
   auto_time: Duration,
@@ -43,7 +43,7 @@ pub struct LoadedMatch {
   state_first: bool,
   #[serde(skip)]
   state_start_time: Instant,
-  #[serde(skip)]
+
   config: MatchConfig
 }
 
@@ -58,9 +58,9 @@ impl LoadedMatch {
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
         warmup_cooldown_time: Duration::from_secs(1),
-        auto_time: Duration::from_secs(5),
+        auto_time: Duration::from_secs(3),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(5),
+        teleop_time: Duration::from_secs(3),
       },
     }
   }
