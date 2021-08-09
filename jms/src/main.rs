@@ -22,7 +22,7 @@ extern crate strum_macros;
 #[macro_use] 
 extern crate rocket;
 
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use arena::SharedArena;
 use clap::{App, Arg};
@@ -30,17 +30,18 @@ use dotenv::dotenv;
 use ds::connector::DSConnectionService;
 use futures::TryFutureExt;
 use network::onboard::OnboardNetwork;
-use network::NetworkProvider;
 use tokio::{sync::Mutex, try_join};
 
 use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
+use crate::network::radio::FieldRadio;
+use crate::network::radio::FieldRadioSettings;
 use crate::ui::websocket::EventWebsocketHandler;
 use crate::ui::websocket::MatchWebsocketHandler;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
   dotenv().ok();
 
   let matches = App::new("JMS")
@@ -52,17 +53,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
   db::connection(); // Start connection
 
+  let radio = FieldRadio::new(FieldRadioSettings::default());
+
   let network = Box::new(
     OnboardNetwork::new(
       "ens18",
       "ens19.100",
       &vec!["ens19.10", "ens19.20", "ens19.30"],
       &vec!["ens19.40", "ens19.50", "ens19.60"],
+      radio
     )
     .unwrap(),
   );
-
-  network.configure(&vec![], false).await.unwrap();
 
   let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, Some(network))));
 
@@ -78,13 +80,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
   };
 
   let mut ds_service = DSConnectionService::new(arena.clone()).await;
-  let ds_fut = ds_service.run();
+  let ds_fut = ds_service.run().map_err(|e| anyhow::anyhow!("DS Error: {}", e));
 
   let mut ws = Websockets::new(Duration::from_millis(500));
   ws.register("arena", Box::new(ArenaWebsocketHandler::new(arena))).await;
   ws.register("event", Box::new(EventWebsocketHandler::new())).await;
   ws.register("matches", Box::new(MatchWebsocketHandler::new())).await;
-  let ws_fut = ws.begin().map_err(|e| Box::new(e));
+  let ws_fut = ws.begin();
 
   let web_fut = ui::web::begin();
 

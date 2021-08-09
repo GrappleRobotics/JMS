@@ -1,10 +1,12 @@
+use anyhow::{anyhow, bail};
+
 use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{arena::{AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
 
-use super::{JsonMessage, WebsocketError, WebsocketMessageHandler};
+use super::{JsonMessage, WebsocketMessageHandler};
 
 pub struct ArenaWebsocketHandler {
   pub arena: SharedArena,
@@ -42,7 +44,7 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
   }
 
   async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Vec<JsonMessage>> {
-    let response_msg = msg.response();
+    // let response_msg = msg.response();
 
     let response = vec![];
 
@@ -52,13 +54,13 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
           let sig: ArenaSignal = serde_json::from_value(data)?;
           self.arena.lock().await.signal(sig).await;
         }
-        _ => Err(response_msg.invalid_verb_or_data())?,
+        _ => bail!("Invalid verb or data"),
       },
       "alliances" => match (msg.verb.as_str(), msg.data) {
         ("update", Some(data)) => {
           self.alliance_update(serde_json::from_value(data)?).await?;
         }
-        _ => Err(response_msg.invalid_verb_or_data())?,
+        _ => bail!("Invalid verb or data"),
       },
       "match" => match (msg.verb.as_str(), msg.data) {
         ("loadTest", None) => {
@@ -70,7 +72,7 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
             let match_meta = matches.filter(id.eq(n as i32)).first::<models::Match>(&db::connection())?;
             self.arena.lock().await.load_match(LoadedMatch::new(match_meta))?;
           } else {
-            Err(response_msg.invalid_verb_or_data())?
+            bail!("{} is not an i64", match_id);
           }
         },
         ("unload", None) => {
@@ -85,13 +87,13 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
                 models::Alliance::Red => m.score.red.update(update.update),
               }
             },
-            None => Err(WebsocketError::Other("No Match!".to_owned()))?
+            None => bail!("Can't update score: no match is running!")
           }
           // self.arena.lock().await.current_match
         },
-        _ => Err(response_msg.invalid_verb_or_data())?,
+        _ => bail!("Invalid verb or data"),
       },
-      _ => Err(response_msg.unknown_noun())?,
+      _ => bail!("Unknown noun"),
     };
 
     return Ok(response);
@@ -109,39 +111,36 @@ impl ArenaWebsocketHandler {
     let mut arena = self.arena.lock().await;
 
     let current_state = arena.current_state();
-    let idle = matches!(current_state, ArenaState::Idle);
+    let idle = matches!(current_state, ArenaState::Idle { .. });
     let prestart = matches!(current_state, ArenaState::Prestart { .. });
 
     if let Value::Object(ref map) = data.update {
-      let stn = arena.station_mut(data.station).ok_or(WebsocketError::Other(format!(
+      let stn = arena.station_mut(data.station).ok_or(anyhow!(
         "No alliance station: {:?}",
         data.station
-      )))?;
+      ))?;
       for (k, v) in map {
         match (k.as_str(), v) {
           ("bypass", Value::Bool(v)) if (idle || prestart) => stn.bypass = *v,
           ("team", Value::Null) if idle => {
-            stn.team = None;
             // Reset DS reports
-            stn.occupancy = AllianceStationOccupancy::Vacant;
-            stn.ds_report = None;
+            stn.reset();
           }
           ("team", Value::Number(x)) if idle => {
-            stn.occupancy = AllianceStationOccupancy::Vacant;
-            stn.ds_report = None;
+            stn.reset();
             stn.team = Some(x.as_u64().unwrap_or(0) as u16);
           },
           _ => {
-            return Err(WebsocketError::Other(format!(
+            bail!(
               "Unknown data key or format (or state): key={} value={:?}",
               k, v
-            )))
+            )
           }
         }
       }
       Ok(())
     } else {
-      Err(WebsocketError::Other("Update must be an object!".to_owned()))
+      bail!("update must be an object!")
     }
   }
 }

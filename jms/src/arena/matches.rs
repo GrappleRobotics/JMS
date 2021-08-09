@@ -1,13 +1,15 @@
 use std::time::{Duration, Instant};
 
+use anyhow::{Result, bail};
+
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{db, models::{self, Alliance, MatchGenerationRecordData, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
-
-use super::exceptions::{MatchError, MatchResult};
+use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
 
 use serde::Serialize;
+
+use super::exceptions::MatchIllegalStateChange;
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Display, Serialize)]
 pub enum MatchPlayState {
@@ -56,9 +58,9 @@ impl LoadedMatch {
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
         warmup_cooldown_time: Duration::from_secs(1),
-        auto_time: Duration::from_secs(1),
+        auto_time: Duration::from_secs(5),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(1),
+        teleop_time: Duration::from_secs(5),
       },
     }
   }
@@ -71,12 +73,12 @@ impl LoadedMatch {
     &self.match_meta
   }
 
-  pub fn start(&mut self) -> MatchResult<()> {
+  pub fn start(&mut self) -> Result<()> {
     if self.state == MatchPlayState::Waiting {
       self.do_change_state(MatchPlayState::Warmup);
       Ok(())
     } else {
-      Err(MatchError::IllegalStateChange {
+      bail!(MatchIllegalStateChange {
         from: self.state,
         to: MatchPlayState::Waiting,
         why: "Match not ready!".to_owned(),
@@ -84,7 +86,7 @@ impl LoadedMatch {
     }
   }
 
-  pub async fn commit_score(&mut self) -> MatchResult<()> {
+  pub async fn commit_score(&mut self) -> Result<()> {
     if self.match_meta.match_type != models::MatchType::Test {
       if self.state == MatchPlayState::Complete {
         let red = self.score.red.derive();
@@ -132,7 +134,7 @@ impl LoadedMatch {
 
         Ok(())
       } else {
-        Err(MatchError::WrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
+        bail!(MatchWrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
       }
     } else {
       Ok(())

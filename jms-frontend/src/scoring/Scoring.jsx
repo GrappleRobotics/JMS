@@ -4,9 +4,54 @@ import BooleanToggleGroup from "components/elements/BooleanToggleGroup";
 import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import React from "react";
 import { Button, Card, Col, Container, Row, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { TypeaheadInputMulti } from "react-bootstrap-typeahead";
 import { Link, Route, Switch, useRouteMatch } from "react-router-dom";
 
-export class Scoring extends React.Component {
+class ScoreTeam extends React.PureComponent {
+  render() {
+    let { station, livescore, idx, update } = this.props;
+    let alliance = station.station.alliance.toLowerCase();
+    let team = station.team;
+
+    return <Card className="scorer-card" data-alliance={alliance} border={`alliance-${alliance}`}>
+      <Card.Header className="h4"> { team || <i className="text-muted"> Unoccupied </i> } </Card.Header>
+      {
+        !!!team ? <Card.Body> <i className="text-muted"> Unoccupied </i>  </Card.Body> 
+          : <Card.Body className="text-muted m-0 py-1">
+            <Row className="my-3">
+              <Col md={5}> Auto Cross </Col>
+              <Col>
+                <BooleanToggleGroup 
+                  name={`${TypeaheadInputMulti}-auto-cross`} 
+                  value={livescore.initiation_line_crossed[idx]} 
+                  onChange={v => update("Initiation", { station: idx, crossed: v })}
+                  size="md"
+                />
+              </Col>
+            </Row>
+            <Row className="my-2">
+              <Col> End Game </Col>
+            </Row>
+            <Row className="mb-3">
+              <Col>
+                <EnumToggleGroup
+                  name={`${team}-endgame`}
+                  value={livescore.endgame[idx]}
+                  onChange={v => update("Endgame", { station: idx, endgame: v })}
+                  values={["None", "Park", "Hang"]}
+                  outline
+                  variant="light"
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+      }
+      
+    </Card>
+  }
+}
+
+export class ScoringAlliance extends React.Component {
   constructor(props) {
     super(props);
 
@@ -15,6 +60,7 @@ export class Scoring extends React.Component {
   }
 
   updateScore(field, data) {
+    console.log(field, data);
     this.props.ws.send("arena", "match", "scoreUpdate", {
       alliance: this.props.alliance,
       update: {
@@ -24,7 +70,10 @@ export class Scoring extends React.Component {
   }
 
   renderNoScore() {
-    return <h3> Waiting for Scorekeeper... </h3>
+    return <React.Fragment>
+      <h3> Waiting for Scorekeeper... </h3>
+      <i className="text-muted"> { this.props.alliance } Alliance Scorer </i>
+    </React.Fragment>
   }
 
   renderScore() {
@@ -32,50 +81,24 @@ export class Scoring extends React.Component {
     let match_state = this.props.arena.match.state;
     let score = this.props.arena.match.score[alliance];
     let { live, derived } = score;
-    let teams = this.props.arena.stations.filter(s => s.station.alliance == this.props.alliance).map(s => s.team);
+    let stations = this.props.arena.stations.filter(s => s.station.alliance == this.props.alliance);
 
     return <React.Fragment>
       <Row className="mb-3">
         <Col>
-          <h3> { this.props.arena.match.match.name } </h3>
+          <h3 className="mb-0"> { this.props.arena.match.match.name } </h3>
+          <i className="text-muted"> { this.props.alliance } Alliance Scorer </i>
         </Col>
       </Row>
       <Row className="mb-4">
         {
-          teams.map((t, i) => <Col>
-            <Card className="scorer-card" data-alliance={alliance} border={`alliance-${alliance}`}>
-              <Card.Header className="h4"> { t || <i className="text-muted"> Unoccupied </i> } </Card.Header>
-              {
-                !!!t ? <Card.Body> <i className="text-muted"> Unoccupied </i>  </Card.Body> 
-                 : <Card.Body className="text-muted m-0">
-                    <Row>
-                      <Col md={3}> Auto Cross </Col>
-                      <Col>
-                        <BooleanToggleGroup 
-                          name={`${t}-auto-cross`} 
-                          value={live.initiation_line_crossed[i]} 
-                          onChange={v => this.updateScore("Initiation", { station: i, crossed: v })}
-                          size="lg"
-                        />
-                      </Col>
-                    </Row>
-                    <Row>
-                      <Col md={3}> End Game </Col>
-                      <Col>
-                        <EnumToggleGroup
-                          name={`${t}-endgame`}
-                          value={live.endgame[i]}
-                          onChange={v => this.updateScore("Endgame", { station: i, endgame: v })}
-                          values={["None", "Park", "Hang"]}
-                          outline
-                          variant="light"
-                        />
-                      </Col>
-                    </Row>
-                  </Card.Body>
-              }
-              
-            </Card>
+          stations.map((station, i) => <Col>
+            <ScoreTeam
+              idx={i}
+              station={station}
+              livescore={live}
+              update={(field, data) => this.updateScore(field, data)}
+            />
           </Col>)
         }
       </Row>
@@ -136,23 +159,118 @@ export class Scoring extends React.Component {
   }
 }
 
+export class ScoringCenter extends React.Component {
+  constructor(props) {
+    super(props);
+
+    props.ws.subscribe("arena", "match");
+    props.ws.subscribe("arena", "stations");
+  }
+
+  updateScore(alliance, field, data) {
+    this.props.ws.send("arena", "match", "scoreUpdate", {
+      alliance: alliance,
+      update: {
+        [field]: data
+      }
+    });
+  }
+
+  renderNoScore() {
+    return <React.Fragment>
+      <h3> Waiting for Scorekeeper... </h3>
+      <i className="text-muted"> Center Field Scorer </i>
+    </React.Fragment>
+  }
+
+  renderScoreForAlliance = (alliance) => {
+    let match_state = this.props.arena.match.state;
+    let score = this.props.arena.match.score[alliance.toLowerCase()];
+    let { live, derived } = score;
+    let stations = this.props.arena.stations.filter(s => s.station.alliance == alliance);
+
+    return <Row className="mb-4">
+      {
+        stations.map((station, i) => <Col>
+          <ScoreTeam
+            idx={i}
+            station={station}
+            livescore={live}
+            update={(field, data) => this.updateScore(alliance, field, data)}
+          />
+        </Col>)
+      }
+      <Col md={2}>
+        <Card className="scorer-card" border={ match_state == "Complete" ? `alliance-${alliance.toLowerCase()}` : `dark` }>
+          <Card.Header className="h5"> End Game </Card.Header>
+          <Card.Body className="text-muted h6 m-0">
+            <Row>
+              <Col> Rung Level </Col>
+            </Row>
+            <Row>
+              <Col>
+                <BooleanToggleGroup
+                  name="rung-level"
+                  value={live.rung_level}
+                  onChange={v => this.updateScore(alliance, "RungLevel", v)}
+                  size="lg"
+                />
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Col>
+    </Row>
+  }
+
+  renderScore() {
+    return <React.Fragment>
+      <Row className="mb-3">
+        <Col>
+          <h3 className="mb-0"> { this.props.arena.match.match.name } </h3>
+          <i className="text-muted"> Center Field Scorer </i>
+        </Col>
+      </Row>
+      { this.renderScoreForAlliance("Blue") }
+      { this.renderScoreForAlliance("Red") }
+    </React.Fragment>
+  }
+
+  render() {
+    return <Container fluid>
+      {
+        (this.props.arena?.match?.score && this.props.arena?.stations ) ? this.renderScore() : this.renderNoScore()
+      }
+    </Container>
+  }
+}
+
 export function ScoringRouter(props) {
   let { path, url } = useRouteMatch();
 
   return <Switch>
     <Route exact path={path}>
-      <Link to={`${url}/blue`}>
-        <Button size="lg" variant="primary"> Blue Alliance  </Button>
-      </Link> &nbsp;
-      <Link to={`${url}/red`}>
-        <Button size="lg" variant="danger"> Red Alliance  </Button>
-      </Link>
+      <Container>
+        <h3 className="mb-4"> Scorer Selection </h3>
+        <Link to={`${url}/blue`}>
+          <Button size="lg" variant="primary"> Blue Alliance  </Button>
+        </Link> &nbsp;
+        <Link to={`${url}/center`}>
+          <Button size="lg" variant="warning"> Center Field </Button>
+        </Link> &nbsp;
+        <Link to={`${url}/red`}>
+          <Button size="lg" variant="danger"> Red Alliance  </Button>
+        </Link>
+      </Container>
     </Route>
     <Route path={`${path}/blue`}>
-      <Scoring {...props} alliance="Blue" />
+      <ScoringAlliance {...props} alliance="Blue" />
     </Route>
     <Route path={`${path}/red`}>
-      <Scoring {...props} alliance="Red" />
+      <ScoringAlliance {...props} alliance="Red" />
+    </Route>
+    <Route path={`${path}/center`}>
+      <ScoringCenter {...props} />
     </Route>
   </Switch>
 }
