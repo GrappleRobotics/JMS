@@ -1,0 +1,68 @@
+syntax = "proto3";
+package jms.electronics;
+
+enum NodeRole {
+  NODE_UNASSIGNED = 0;
+  NODE_BLUE = 1;
+  NODE_RED = 2;
+}
+
+// Light Status
+message Lights {
+  oneof mode {
+    Off off = 1;
+    Constant constant = 2;
+    Pulse pulse = 3;
+    Chase chase = 4;
+    Rainbow rainbow = 5;
+  }
+
+  message Off {};
+  message Constant {
+    bytes rgb = 1;
+  }
+  message Pulse {
+    bytes rgb = 1;
+    uint32 speed = 2;   // In milliseconds
+  }
+  message Chase {
+    bytes rgb = 1;
+    uint32 speed = 2;   // In milliseconds
+  }
+  message Rainbow {
+    uint32 speed = 1;   // In milliseconds
+  }
+}
+
+// Update issued from nodes to JMS
+message UpdateNode2Field {
+  bytes ipv4 = 1;
+  NodeRole role = 2;
+
+  oneof data {
+    NoData nodata = 3;
+    Alliance alliance = 4;
+  }
+
+  // Message types
+  message NoData {};
+  message Alliance {
+    repeated bool estop = 1;
+  }
+}
+
+// Update from JMS to nodes
+message UpdateField2Node {
+  // NodeRole role = 1;
+
+  oneof data {
+    NoData nodata = 2;
+    Alliance alliance = 3;
+  }
+
+  // Message types
+  message NoData {};
+  message Alliance {
+    repeated Lights lights = 1;
+  }
+}
