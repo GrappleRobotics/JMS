@@ -17,11 +17,11 @@
 
 
 .audience-preview {
-  $border-colour: #7b0096;
+  $border-colour: #9c00be;
   // $border-colour: gray("700");
 
   @extend .audience;
-  background-color: desaturate(darken($border-colour, 20%), 20%);
+  background-color: desaturate(darken($border-colour, 30%), 20%);
 
   .match-preview {
     background-color: gray("300");
@@ -58,7 +58,7 @@
       color: white;
 
       img {
-        width: 8em;
+        height: 12.5vh;
       }
     }
 

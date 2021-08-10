@@ -46,6 +46,9 @@ export default class MatchPreview extends React.Component {
           <Col className="d-flex align-items-center justify-content-center">
             { event.details.event_name || "" }
           </Col>
+          <Col md="auto">
+            <img src="/img/tourney_logo.png" />
+          </Col>
         </Row>
 
         <Row>

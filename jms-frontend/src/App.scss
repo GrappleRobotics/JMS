@@ -33,6 +33,7 @@ html, body, #root {
 
 .wrapper {
   min-height: 100vh;
+  min-height: -webkit-fill-available;
   max-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -71,6 +72,17 @@ html, body, #root {
   > .col {
     height: 0;
   }
+}
+
+.estop-big {
+  padding: 2rem;
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.estop-subtitle {
+  font-size: 1.25rem;
+  text-align: center;
 }
 
 $hazard-dark-primary: #735a00;
