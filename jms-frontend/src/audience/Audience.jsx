@@ -1,4 +1,6 @@
 import React from "react";
+import AllianceSelection from "./AllianceSelection";
+import CustomMessage from "./CustomMessage";
 import MatchPlay from "./MatchPlay";
 import MatchPreview from "./MatchPreview";
 import MatchResults from "./MatchResults";
@@ -9,19 +11,18 @@ export default class Audience extends React.PureComponent {
 
     this.props.ws.subscribe("arena", "*");
     this.props.ws.subscribe("event", "*");
-    this.props.ws.subscribe("matches", "*");
+    // this.props.ws.subscribe("matches", "*");
   }
 
   render() {
-    let view = window.location.hash.substr(1);
-
-    if (!this.props.arena || !this.props.event || !this.props.matches)
+    if (!this.props.arena || !this.props.event)
       return <React.Fragment />
+    
+    let display = this.props.arena.audience_display;
+    let { arena, event } = this.props;
 
-    let { arena, event, matches } = this.props;
-
-    switch (view) {
-      case "preview":
+    switch (display.scene) {
+      case "MatchPreview":
         if (arena?.stations && arena?.match?.match)
           return <MatchPreview
             stations={arena.stations}
@@ -29,21 +30,34 @@ export default class Audience extends React.PureComponent {
             event={event}
           />
         break;
-      case "play":
+      case "MatchPlay":
         if (arena?.stations && arena?.match)
           return <MatchPlay
             arena={arena}
             event={event}
           />
         break;
-      case "results":
-        if (matches.last)
+      case "MatchResults":
+        if (display.params)
           return <MatchResults
-            match={matches.last}
+            match={display.params}
             event={event}
           />
         break;
-      case "field":
+      case "AllianceSelection":
+        if (event.alliances)
+          return <AllianceSelection
+            event={event}
+          />
+        break;
+      case "CustomMessage":
+        if (display.params)
+          return <CustomMessage
+            event={event}
+            msg={display.params}
+          />
+        break;
+      case "Field":
       default:
         break;
     }

@@ -27,10 +27,10 @@
   .audience-card-inner {
     background-color: gray("300");
     position: absolute;
-    width: 80vw;
-    height: 80vh;
-    top: 10vh;
-    left: 10vw;
+    width: 90vw;
+    height: 90vh;
+    top: 5vh;
+    left: 5vw;
     border-radius: 1.5vw;
     border: 1vw solid $border-colour;
 
@@ -63,7 +63,7 @@
       }
     }
 
-    .match-name {
+    .audience-card-title {
       font-weight: bold;
     }
 
@@ -85,7 +85,7 @@
     .card {
       height: 100%;
       border-radius: 0.5em;
-
+      
       > .card-header {
         text-align: center;
         border-radius: 0.5em;
@@ -274,11 +274,13 @@
     .card {
       height: 100%;
       border-radius: 0.5em;
-
+      
       > .card-header {
+        color: white;
+        font-weight: bold;
         text-align: center;
         border-radius: 0.5em;
-        font-size: 0.75em;
+        font-size: 0.8em;
       }
 
       > .card-body {
@@ -341,6 +343,42 @@
           background-color: desaturate(darken($tc, 25%), 40%);
         }
       }
+    }
+  }
+}
+
+.audience-alliance-selection {
+  .alliance-table {
+    text-align: right;
+    font-size: 0.8em;
+
+    background-color: white;
+    border-radius: 1em;
+    padding: 0.5em;
+    padding-right: 1.5em;
+
+    > .row {
+
+      margin-bottom: 0.2em;
+
+      &:first-child {
+        font-weight: bold;
+        font-size: 1.1em;
+      }
+    }
+  }
+
+  .alliance-remaining {
+    font-size: 0.8em;
+    margin-left: 0.5em;
+
+    background-color: white;
+    border-radius: 1em;
+    padding: 1em;
+
+    .rank {
+      font-weight: bold;
+      color: red;
     }
   }
 }

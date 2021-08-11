@@ -40,7 +40,7 @@ export default class MatchPreview extends React.Component {
 
     return <AudienceCard event={event} className="audience-preview">
       <Row>
-        <Col className="match-name" md="auto">
+        <Col className="audience-card-title" md="auto">
           { match.name }
         </Col>
         <Col className="preview-text">

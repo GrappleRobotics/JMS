@@ -86,7 +86,7 @@ impl LoadedMatch {
     }
   }
 
-  pub async fn commit_score(&mut self) -> Result<()> {
+  pub async fn commit_score(&mut self) -> Result<Option<models::Match>> {
     if self.match_meta.match_type != models::MatchType::Test {
       if self.state == MatchPlayState::Complete {
         let red = self.score.red.derive();
@@ -133,12 +133,12 @@ impl LoadedMatch {
           }
         }
 
-        Ok(())
+        Ok(Some(self.match_meta.clone()))
       } else {
         bail!(MatchWrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
       }
     } else {
-      Ok(())
+      Ok(None)
     }
   }
 

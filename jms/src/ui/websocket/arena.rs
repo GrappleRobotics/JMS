@@ -1,10 +1,10 @@
 use anyhow::{anyhow, bail};
 
-use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{arena::{ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{ArenaSignal, ArenaState, AudienceDisplay, SharedArena, matches::LoadedMatch, station::{AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
 
 use super::{JsonMessage, WebsocketMessageHandler};
 
@@ -38,6 +38,10 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
     {
       // Stations
       response.push(msg.noun("stations").to_data(&arena.stations)?);
+    }
+    {
+      // Audience Display
+      response.push(msg.noun("audience_display").to_data(&arena.audience_display)?);
     }
     // Ok(vec![ msg.to_data(&*arena)? ])
     Ok(response)
@@ -93,11 +97,24 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
         },
         _ => bail!("Invalid verb or data"),
       },
+      "audience_display" => match (msg.verb.as_str(), msg.data) {
+        ("set", Some(data)) => {
+          let ad = self.audience_display_update(serde_json::from_value(data)?).await?;
+          self.arena.lock().await.audience_display = ad;
+        }
+        _ => bail!("Invalid verb or data")
+      }
       _ => bail!("Unknown noun"),
     };
 
     return Ok(response);
   }
+}
+
+#[derive(Deserialize)]
+struct AudienceDisplayUpdate {
+  scene: String,
+  params: Option<Value>
 }
 
 #[derive(Deserialize)]
@@ -142,5 +159,36 @@ impl ArenaWebsocketHandler {
     } else {
       bail!("update must be an object!")
     }
+  }
+
+  async fn audience_display_update(&self, data: AudienceDisplayUpdate) -> super::Result<AudienceDisplay> {
+    Ok(match (data.scene.as_str(), data.params) {
+      ("Field", None) => AudienceDisplay::Field,
+      ("MatchPreview", None) => AudienceDisplay::MatchPreview,
+      ("MatchPlay", None) => AudienceDisplay::MatchPlay,
+      ("MatchResults", None) => {
+        use crate::schema::matches::dsl::*;
+        let last_match = matches.filter(played.eq(true)).order_by(score_time.desc()).first::<models::Match>(&db::connection()).optional()?;
+        if let Some(last_match) = last_match {
+          AudienceDisplay::MatchResults(last_match)
+        } else {
+          bail!("Can't display results when no matches have been played!");
+        }
+      },
+      ("MatchResults", Some(Value::Number(match_id))) => {
+        use crate::schema::matches::dsl::*;
+        if let Some(n) = match_id.as_i64() {
+          let match_meta = matches.filter(id.eq(n as i32)).first::<models::Match>(&db::connection())?;
+          AudienceDisplay::MatchResults(match_meta)
+        } else {
+          bail!("{} is not an i64", match_id);
+        }
+      },
+      ("AllianceSelection", None) => AudienceDisplay::AllianceSelection,
+      ("CustomMessage", Some(Value::String(msg))) => {
+        AudienceDisplay::CustomMessage(msg)
+      },
+      (_, _) => bail!("Invalid Audience Display scene")
+    })
   }
 }

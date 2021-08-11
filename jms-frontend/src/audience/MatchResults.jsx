@@ -89,7 +89,7 @@ export default class MatchResults extends React.PureComponent {
 
     return <AudienceCard event={event} className="audience-results">
       <Row>
-        <Col className="match-name" md="auto">
+        <Col className="audience-card-title" md="auto">
           { match.name }
         </Col>
         <Col className="preview-text">
