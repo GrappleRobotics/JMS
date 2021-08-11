@@ -1,6 +1,6 @@
-import { faCalculator, faClipboard, faFlagCheckered, faHeartbeat, faMagic, faRobot, faTrophy, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faCalculator, faClipboard, faFlagCheckered, faGamepad, faHeartbeat, faMagic, faRobot, faTrophy, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { AUDIENCE, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING } from "paths";
+import { AUDIENCE, AUDIENCE_CONTROL, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING } from "paths";
 import React from "react";
 import { Container } from "react-bootstrap";
 
@@ -37,6 +37,7 @@ export default class Home extends React.PureComponent {
           <h4> Displays </h4>
           <ul>
             <li className="h5" > <a href={ AUDIENCE }> <FontAwesomeIcon icon={faUsers} /> &nbsp; Audience Display </a></li>
+            <li className="h5" > <a href={ AUDIENCE_CONTROL }> <FontAwesomeIcon icon={faGamepad} /> &nbsp; Audience Display Control </a></li>
             <li className="h5" > <a href={ RANKINGS }> <FontAwesomeIcon icon={faTrophy} /> &nbsp; Rankings (PIT) Display </a></li>
           </ul>
         </li>

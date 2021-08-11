@@ -69,6 +69,7 @@ export default class MatchControl extends React.Component {
             state={arena?.state}
             match={arena?.match}
             onSignal={(data) => ws.send("arena", "state", "signal", data)}
+            onAudienceDisplay={(scene, params) => ws.send("arena", "audience_display", "set", { scene: scene, params: params })}
           />
         </Col>
       </Row>

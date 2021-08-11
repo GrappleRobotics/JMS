@@ -3,7 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { AUDIENCE, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REPORTS, SCORING } from 'paths';
+import { AUDIENCE, AUDIENCE_CONTROL, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REPORTS, SCORING } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
@@ -14,6 +14,7 @@ import Rankings from 'rankings/Rankings';
 import FieldMonitor from 'monitor/FieldMonitor';
 import Reports from 'reports/Reports';
 import Audience from 'audience/Audience';
+import AudienceDisplayControl from 'audience/AudienceDisplayControl';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -134,6 +135,13 @@ export default class App extends React.Component {
             rankings={event?.rankings}
             details={event?.details}
             next_match={matches?.next}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={AUDIENCE_CONTROL}>
+        <this.wrapView fullscreen>
+          <AudienceDisplayControl
+            ws={this.ws}
           />
         </this.wrapView>
       </Route>
