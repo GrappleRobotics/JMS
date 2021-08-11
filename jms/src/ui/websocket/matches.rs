@@ -38,6 +38,12 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
       let next_match = matches.filter(played.eq(false)).first::<models::Match>(&db::connection()).optional()?;
       response.push(msg.noun("next").to_data(&next_match)?);
     }
+    {
+      // Last Match
+      use crate::schema::matches::dsl::*;
+      let last_match = matches.filter(played.eq(true)).order_by(score_time.desc()).first::<models::Match>(&db::connection()).optional()?;
+      response.push(msg.noun("last").to_data(&last_match)?);
+    }
     Ok(response)
   }
 

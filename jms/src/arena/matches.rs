@@ -5,7 +5,7 @@ use anyhow::{Result, bail};
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
+use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
 
 use serde::Serialize;
 
@@ -102,6 +102,7 @@ impl LoadedMatch {
         self.match_meta.played = true;
         self.match_meta.winner = winner;
         self.match_meta.score = Some(SQLJson(self.score.clone()));
+        self.match_meta.score_time = Some(SQLDatetime(chrono::Local::now().naive_utc()));
 
         {
           use crate::schema::matches::dsl::*;

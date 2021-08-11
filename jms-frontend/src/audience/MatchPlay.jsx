@@ -52,7 +52,7 @@ class MatchProgressBar extends React.Component {
 
 class AllianceScore extends React.Component {
   render() {
-    const { reverse, colour, score, stations, img } = this.props;
+    const { reverse, colour, score, stations, img, hasrp } = this.props;
 
     const els = [
       <Col className="score-image">
@@ -77,7 +77,7 @@ class AllianceScore extends React.Component {
       <Col className="total-score" data-alliance={colour}>
         { Object.values(score.derived.total_score).reduce((a, b) => a + b, 0) }
         {
-          withVal(score.derived.total_bonus_rp || undefined, bonus => <span className="total-score-bonus-rp">
+          withVal((hasrp && score.derived.total_bonus_rp) || undefined, bonus => <span className="total-score-bonus-rp">
             +{ score.derived.total_bonus_rp } RP
           </span>)
         }
@@ -92,6 +92,8 @@ export default class MatchPlay extends React.Component {
   render() {
     const { arena, event } = this.props;
     const { match } = arena;
+
+    const rp = match.match.type == "Qualification";
 
     return <div className="audience-play">
       <div className="score-block">
@@ -124,12 +126,14 @@ export default class MatchPlay extends React.Component {
             img="game/wide-white.png"
             score={match.score.red}
             stations={arena.stations.filter(s => s.station.alliance.toLowerCase() == "red")}
+            hasrp={rp}
           />
           <AllianceScore
             colour="blue"
-            img="game/wide-white.png"
+            img="tourney_logo_white.png"
             score={match.score.blue}
             stations={arena.stations.filter(s => s.station.alliance.toLowerCase() == "blue")}
+            hasrp={rp}
             reverse
           />
         </Row>

@@ -36,6 +36,7 @@ table! {
         match_subtype -> Nullable<Text>,
         red_alliance -> Nullable<Integer>,
         blue_alliance -> Nullable<Integer>,
+        score_time -> Nullable<BigInt>,
     }
 }
 

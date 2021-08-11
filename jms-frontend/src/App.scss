@@ -572,4 +572,16 @@ th {
   }
 }
 
+.card {
+  @each $alliance in blue, red {
+    $tc: theme-color("alliance-#{$alliance}");
+    &[data-alliance=#{$alliance}] {
+      background-color: $tc;
+      > .card-header {
+        background-color: desaturate(darken($tc, 15%), 10%);
+      }
+    }
+  }
+}
+
 @import "audience/Audience.scss";

@@ -16,15 +16,15 @@
 }
 
 
-.audience-preview {
+.audience-card {
   // $border-colour: #9c00be;
   $border-colour: #e9ab01;
   // $border-colour: gray("700");
-
+  
   @extend .audience;
   background-color: desaturate(darken($border-colour, 30%), 20%);
 
-  .match-preview {
+  .audience-card-inner {
     background-color: gray("300");
     position: absolute;
     width: 80vw;
@@ -43,7 +43,7 @@
     padding: 0;
 
     > .row {
-      margin: 0.4em 2em;
+      margin: 0.3em 1em;
 
       overflow: hidden;
     }
@@ -71,68 +71,60 @@
       font-style: italic;
       opacity: 0.7;
     }
+  }
+}
 
-    .match-teams {
-      font-size: 0.8em;
-      font-weight: bold;
-      color: white;
+.audience-preview {
+  .match-teams {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
 
-      align-items: stretch;
+    align-items: stretch;
 
-      .card {
-        height: 100%;
+    .card {
+      height: 100%;
+      border-radius: 0.5em;
+
+      > .card-header {
+        text-align: center;
         border-radius: 0.5em;
-
-        @each $alliance in blue, red {
-          $tc: theme-color("alliance-#{$alliance}");
-          &[data-alliance=#{$alliance}] {
-            background-color: $tc;
-            > .card-header {
-              background-color: desaturate(darken($tc, 15%), 10%);
-            }
-          }
-        }
-
-        > .card-header {
-          text-align: center;
-          border-radius: 0.5em;
-          font-size: 0.75em;
-        }
-
-        > .card-body {
-          padding: 0.5em;
-        }
+        font-size: 0.75em;
       }
 
-      .team:not(:first-child) {
-        padding-top: 0.2em;
+      > .card-body {
+        padding: 0.5em;
       }
+    }
 
-      .team:not(:last-child) {
-        padding-bottom: 0.2em;
-        border-bottom: 0.05em solid rgba(255, 255, 255, 0.4);
-      }
+    .team:not(:first-child) {
+      padding-top: 0.2em;
+    }
 
-      .team-number {
-        text-align: right;
-      }
+    .team:not(:last-child) {
+      padding-bottom: 0.2em;
+      border-bottom: 0.05em solid rgba(255, 255, 255, 0.4);
+    }
 
-      .team-name {
-        color: darken(white, 10%);
+    .team-number {
+      text-align: right;
+    }
+
+    .team-name {
+      color: darken(white, 10%);
+      font-size: 0.8em;
+      display: flex;
+      flex-direction: column;
+
+      .affiliation {
         font-size: 0.8em;
-        display: flex;
-        flex-direction: column;
-
-        .affiliation {
-          font-size: 0.8em;
-          opacity: 0.7;
-        }
+        opacity: 0.7;
       }
+    }
 
-      .team-rank {
-        text-align: right;
-        padding: 0 1em 0 1em;
-      }
+    .team-rank {
+      text-align: right;
+      padding: 0 1em 0 1em;
     }
   }
 }
@@ -266,4 +258,89 @@
     }
   }
 
+}
+
+.audience-results {
+  .results {
+    display: flex;
+    flex-direction: row;
+
+    flex-grow: 1;
+    align-items: stretch;
+
+    font-size: 0.75em;
+    margin-bottom: 2vh !important;
+
+    .card {
+      height: 100%;
+      border-radius: 0.5em;
+
+      > .card-header {
+        text-align: center;
+        border-radius: 0.5em;
+        font-size: 0.75em;
+      }
+
+      > .card-body {
+        padding: 0.5em;
+        display: flex;
+        flex-direction: column;
+      }
+    }
+
+    .teams {
+      font-size: 1.5em;
+      font-weight: bold;
+      color: white;
+      padding: 0.5em;
+    }
+
+    .alliance-score {
+      background-color: white;
+      width: 14vw;
+      height: 10vw;
+      border-radius: 0.5em;
+
+      display: flex;
+      flex-direction: column;
+
+      align-items: center;
+      justify-content: center;
+
+      .total {
+        font-size: 2.5em;
+        font-weight: bold;
+      }
+
+      .win-status {
+        font-weight: bold;
+      }
+    }
+
+    .alliance-rp {
+      background-color: white;
+      width: 10vw;
+      height: 3vw;
+      border-radius: 0.5em;
+      text-align: center;
+    }
+
+    .breakdown {
+      height: 100%;
+      border-radius: 0.5em;
+      margin: 0 0.5em;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 0.5em 1em;
+
+      display: flex;
+      flex-direction: column;
+
+      @each $alliance in blue, red {
+        $tc: theme-color("alliance-#{$alliance}");
+        &[data-alliance=#{$alliance}] {
+          background-color: desaturate(darken($tc, 25%), 40%);
+        }
+      }
+    }
+  }
 }
