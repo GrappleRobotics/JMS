@@ -13,7 +13,17 @@ namespace MainController {
 	enum class State {
 		IDLE = 0,
 		PROGRAM_DO,
-		NETWORK_DO
+		INTERRUPT_DO
+	};
+
+	/**
+	 * @TODO
+	 * Might want to have different interrupt types for controller, not all have to be e stop types
+	 * But for the moment it's just e stop
+	 */
+	enum class InterruptType {
+		NONE = 0,
+		E_STOP = 1
 	};
 
 	/**
@@ -41,8 +51,9 @@ namespace MainController {
 
 		/**
 		 * Set controller
+		 * Set the main state, the network state, and optionally the buffer
 		 */
-		void setController(State st, Network::State nt_st = Network::State::IDLE, char *buffer = {0}) {
+		void setController(State st, Network::State nt_st = Network::State::IDLE, uint8_t *buffer = {0}) {
 			if (_network != nullptr) {
 				_state = st;
 				_network->setNetwork(nt_st, buffer);
@@ -53,27 +64,29 @@ namespace MainController {
 
 
 		/**
-		 * Set controller primitive
+		 * Set controller primitive, used for interrupts
+		 * Sets the interrupt flag, next loop the program stops and completes interrupt code then continues
+		 * 
+		 * Set the main state of the program, the network state, interrupt type [NONE, E_STOP, PROGRAM], and input flag (if it's e stop, flag is e stop type)
+		 * if it's program. it's @TODO/EXTRA
 		 */
-		void interruptSetController(int mainSt, int nt_st = 0, char *buffer = {0}) {
+		void interruptSetController(int mainSt, int nt_st = 0, int intType = 0, int inputFlag = 0) {
 			_intMain_st = mainSt;
 			_intNt_st = nt_st;
-			_intBuffer = buffer;
+			_intType = intType;
+			_inputFlag = inputFlag;
 			_interruptFlag++;
 		}
 
-		void updateStatus() {
-			if (_interruptFlag != 0) {
-				setController((State)_intMain_st, (Network::State)_intNt_st, _intBuffer);
-				_interruptFlag--;
-			}
-		}
+		void updateStatus();
 
 	 private:
+		void _estop();
 		int _interruptFlag = 0;
 		int _intMain_st;
 		int _intNt_st;
-		char *_intBuffer;
+		uint8_t _intType;
+		int _inputFlag;
 		State _state{ State::IDLE };
 		Network *_network = nullptr;
 	};
@@ -111,13 +124,12 @@ namespace MainController {
 					onUpdate();
 					break;
 
-				case State::NETWORK_DO:
-					_nt->update();
-					_stateController->setState(State::PROGRAM_DO);
-					// if (_nt->update() == 0) {
-					// } else {
-					// 	printf("Network State Issue");
-					// }
+				case State::INTERRUPT_DO:
+					if (_nt->update() == 0) {
+						_stateController->setState(State::PROGRAM_DO);
+					} else {
+						printf("Interrupt state issue");
+					}
 					break;
 			}
 		}

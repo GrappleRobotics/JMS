@@ -1,0 +1,17 @@
+
+/**
+ * E Stop types
+ */
+enum class E_StopType {
+	NONE = 0,
+
+	E_STOP_B_ALLIANCE_1,
+	E_STOP_B_ALLIANCE_2,
+	E_STOP_B_ALLIANCE_3,
+
+	E_STOP_R_ALLIANCE_1,
+	E_STOP_R_ALLIANCE_2,
+	E_STOP_R_ALLIANCE_3,
+
+	ABORT
+};

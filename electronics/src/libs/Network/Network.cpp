@@ -7,10 +7,9 @@ Network::Network(const char *ip, int port, const int bufferSize) : _bufferSize(b
 }
 
 void Network::nt_init() {
-	int connection = 1;
 
 	// Buffer size malloc
-	_buffer = (char *)malloc(sizeof(char)*getBufferSize());
+	_buffer = (uint8_t *)malloc(sizeof(uint8_t)*getBufferSize());
 	std::cout << "Buffer size set" << std::endl;
 
 	// Open socket
@@ -78,22 +77,40 @@ int Network::update() {
 	return programValue != 0 ? 1 : 0;
 }
 
-int Network::nt_send(char *buffer) {
+// Raw send of buffers
+int Network::nt_raw_send(uint8_t *buffer) {
 	int bytes = _local_socket.send(buffer, getBufferSize());
 	if (checkConn() != 0) {
 		_local_socket.send(buffer, getBufferSize());
 		return 1;
 	} else {
-		std::cout << "\nSent data: " << buffer << ", Bytes: " << bytes << std::endl;
 		return 0;
 	}
 }
 
-char *Network::nt_recv() {
-	char *buffer;
+// Raw receive of buffer
+uint8_t *Network::nt_raw_recv() {
+	uint8_t *buffer = {};
 	_local_socket.recv(buffer, getBufferSize());
 	if (checkConn() != 0) {
 		_local_socket.recv(buffer, getBufferSize());
 	}
 	return buffer;
+}
+
+// message send
+void Network::nt_send() {
+	int bytes = _local_socket.send(buffer, getBufferSize());
+	if (checkConn() != 0) {
+		_local_socket.send(buffer, getBufferSize());
+	}
+}
+
+// message receive
+void Network::nt_recv() {
+	uint8_t *buffer = {};
+	_local_socket.recv(buffer, getBufferSize());
+	if (checkConn() != 0) {
+		_local_socket.recv(buffer, getBufferSize());
+	}
 }

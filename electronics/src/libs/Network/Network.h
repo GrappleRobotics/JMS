@@ -6,6 +6,12 @@
  */
 #include "Config.h"
 
+/**
+ * JMS Packets/Messages
+ * Send/Recv
+ */
+#include "Messages/JMS_Network.h"
+
 
 /**
  * pb
@@ -68,7 +74,7 @@ class Network {
 	 * Get the buffer size in bytes
 	 */
 	size_t getBufferSize() {
-		return (sizeof(char) * _bufferSize);
+		return (sizeof(uint8_t) * _bufferSize);
 	}
 
 	/**
@@ -89,7 +95,7 @@ class Network {
 	 * Set the network, 
 	 * and on next update it will process and execute request
 	 */
-	void setNetwork(State st, char *buffer = {0}) {
+	void setNetwork(State st, uint8_t *buffer) {
 		setState(st);
 		_buffer = nullptr; // flush the local buffer
 		_buffer = buffer;
@@ -104,8 +110,11 @@ class Network {
 	/**
 	 * Sender and receivers
 	 */
-	int nt_send(char *buffer);
-	char *nt_recv();
+	void nt_send();
+	void nt_recv();
+
+	int nt_raw_send(uint8_t *buffer);
+	uint8_t *nt_raw_recv();
 
 	/**
 	 * Network state
@@ -113,9 +122,9 @@ class Network {
 	State _state{ State::UN_INITIALIZED };
 
 	/**
-	 * Network packet
+	 * Network packet buffer
 	 */
-	char *_buffer;
+	uint8_t *_buffer;
 
 	/**
 	 * Network values
