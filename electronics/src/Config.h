@@ -41,9 +41,9 @@
 /**
  * Network
  */
-#define JMS_IP "192.168.178.59"
-#define JMS_PORT 9999
-#define JMS_BUFFER_SIZE 512
+#define JMS_IP "192.168.178.59" // FMS -> 10.0.100.5
+#define JMS_PORT 5333
+#define JMS_BUFFER_SIZE 128
 
 
 /**
