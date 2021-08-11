@@ -17,7 +17,8 @@
 
 
 .audience-preview {
-  $border-colour: #9c00be;
+  // $border-colour: #9c00be;
+  $border-colour: #e9ab01;
   // $border-colour: gray("700");
 
   @extend .audience;
@@ -55,7 +56,7 @@
       padding: 0.5em;
       text-align: center;
       background-color: $border-colour;
-      color: white;
+      color: black;
 
       img {
         height: 12.5vh;
@@ -189,6 +190,19 @@
   .score-row {
     height: 18vh;
 
+    .score-image {
+      width: 25vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      img {
+        height: 15vh;
+      }
+    }
+
     .alliance-teams {
       max-width: 5.5vw;
       color: white;
@@ -230,6 +244,7 @@
     .total-score {
       max-width: 12vw;
       display: flex;
+      flex-direction: column;
       font-size: 6em;
       font-weight: bold;
       justify-content: center;
@@ -240,6 +255,13 @@
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 15%), 20%);
         }
+      }
+
+      .total-score-bonus-rp {
+        font-size: 0.35em;
+        margin-top: -0.5em;
+        font-weight: normal;
+        opacity: 0.7;
       }
     }
   }

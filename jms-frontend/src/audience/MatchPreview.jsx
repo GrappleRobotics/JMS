@@ -14,7 +14,7 @@ export default class MatchPreview extends React.Component {
         <Col className="team-name">
           {
             withVal(event.teams?.find(t => t.id == s.team), t => <React.Fragment>
-              { t.name }
+              { t.name || t.affiliation }
               {
                 withVal(t.affiliation, a => <React.Fragment>
                   <span className="affiliation">
@@ -41,7 +41,7 @@ export default class MatchPreview extends React.Component {
       <div className="match-preview">
         <Row className="event-name">
           <Col md="auto">
-            <img src="/img/game/wide-white.png" />
+            <img src="/img/game/wide-black.png" />
           </Col>
           <Col className="d-flex align-items-center justify-content-center">
             { event.details.event_name || "" }

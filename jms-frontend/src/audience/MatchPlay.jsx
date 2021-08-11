@@ -1,6 +1,7 @@
 import ProgressBar from "react-bootstrap/ProgressBar";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
+import { withVal } from "support/util";
 
 class MatchProgressBar extends React.Component {
   render() {
@@ -51,10 +52,13 @@ class MatchProgressBar extends React.Component {
 
 class AllianceScore extends React.Component {
   render() {
-    const { reverse, colour, score, stations } = this.props;
+    const { reverse, colour, score, stations, img } = this.props;
 
     const els = [
-      <Col>
+      <Col className="score-image">
+        {
+          withVal(img, () => <img src={`/img/${img}`} />)
+        }
       </Col>,
       <Col className="alliance-teams" data-alliance={colour}>
         {
@@ -72,6 +76,11 @@ class AllianceScore extends React.Component {
       </Col>,
       <Col className="total-score" data-alliance={colour}>
         { Object.values(score.derived.total_score).reduce((a, b) => a + b, 0) }
+        {
+          withVal(score.derived.total_bonus_rp || undefined, bonus => <span className="total-score-bonus-rp">
+            +{ score.derived.total_bonus_rp } RP
+          </span>)
+        }
       </Col>
     ];
 
@@ -80,14 +89,9 @@ class AllianceScore extends React.Component {
 }
 
 export default class MatchPlay extends React.Component {
-  renderAllianceScore = (props) => {
-
-  }
-
   render() {
     const { arena, event } = this.props;
     const { match } = arena;
-    const { red, blue } = match.score; 
 
     return <div className="audience-play">
       <div className="score-block">
@@ -117,11 +121,13 @@ export default class MatchPlay extends React.Component {
         <Row className="score-row">
           <AllianceScore
             colour="red"
+            img="game/wide-white.png"
             score={match.score.red}
             stations={arena.stations.filter(s => s.station.alliance.toLowerCase() == "red")}
           />
           <AllianceScore
             colour="blue"
+            img="game/wide-white.png"
             score={match.score.blue}
             stations={arena.stations.filter(s => s.station.alliance.toLowerCase() == "blue")}
             reverse
