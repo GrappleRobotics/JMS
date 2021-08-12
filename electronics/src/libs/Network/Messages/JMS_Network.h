@@ -29,12 +29,22 @@ class JMS_NetworkMessages {
 		return &_receive_packet;
 	}
 
+	static bool encode_string(pb_ostream_t* stream, const pb_field_t* field, void* const* arg) {
+		const char* str = (const char*)(*arg);
+		if (!pb_encode_tag_for_field(stream, field)) {
+			return false;
+		}
+
+		return pb_encode_string(stream, (uint8_t*)str, strlen(str));
+	}
+
 	/**
 	 * Encode the local send message.
 	 * Returns the enocded buffer
 	 */
 	uint8_t *encodeSendMessage() {
-		uint8_t *buffer;
+		uint8_t *buffer = {};
+
 		pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
 
 		bool status = pb_encode(&stream, jms_electronics_UpdateNode2Field_fields, &_send_packet);

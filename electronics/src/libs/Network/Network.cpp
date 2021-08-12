@@ -3,6 +3,12 @@
 Network::Network(const char *ip, int port, const int bufferSize) : _bufferSize(bufferSize), _ip(ip), _port(port) {
 	_eth.connect();
 	_eth.get_ip_address(&_remote_address);
+
+	/**
+	 * get ip and encode string
+	 */
+	this->getSendPacket()->ipv4.arg = (void *)_remote_address.get_ip_address();
+	this->getSendPacket()->ipv4.funcs.encode = &encode_string;
 	std::cout << "Created Network Interface" << std::endl;
 }
 

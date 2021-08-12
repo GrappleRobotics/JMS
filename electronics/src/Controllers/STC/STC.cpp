@@ -6,16 +6,26 @@ int STC_Controller::onInit() {
 		createNetwork(JMS_IP, JMS_PORT, JMS_BUFFER_SIZE);
 		getNetwork().nt_init();
 
-		// getStateController().setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND);
-		// getNetwork().setNetwork(Network::State::NETWORK_SEND, "Test");
-		// getNetwork().update();
+		/**
+		 * Set initial send values
+		 */
+		this->getNetwork().getSendPacket()->role = jms_electronics_NodeRole::jms_electronics_NodeRole_NODE_SCORING_TABLE;
+		// this->getNetwork().getSendPacket()->ipv4 = 
+		Abort abort({ABORT_1, ABORT_2, USER_BUTTON}, getStateController());
+
+
+		/**
+		 * Initial set of controller and update network
+		 */
+		getStateController().setController(MainController::State::PROGRAM_DO, Network::State::NETWORK_SEND);
+		getNetwork().update();
 	)
 }
 
 int STC_Controller::onUpdate() {
 	Handle(
-		// std::cout << "Type: " << (int)abortButton.getType() << std::endl;
-		// @TODO Lighting magic
-		// std::cout << "Test Loop" << std::endl;
+		/**
+		 * 
+		 */
 	)
 }
