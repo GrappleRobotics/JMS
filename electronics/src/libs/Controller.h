@@ -75,13 +75,20 @@ namespace MainController {
 			_intNt_st = nt_st;
 			_intType = intType;
 			_inputFlag = inputFlag;
-			_interruptFlag++;
+			_interruptFlag = 1;
+			printf("interrupted");
 		}
 
-		void updateStatus();
+		void updateStatus() {
+			if (_interruptFlag != 0) {
+				std::cout << "Do interrupt" << std::endl;
+				setController(State::INTERRUPT_DO, Network::State::NETWORK_SEND);
+				_interruptFlag = 0;
+			}
+		}
 
 	 private:
-		void _estop();
+		int _estop();
 		int _interruptFlag = 0;
 		int _intMain_st;
 		int _intNt_st;
@@ -117,19 +124,22 @@ namespace MainController {
 		void update() {
 			_stateController->updateStatus();
 			switch (_stateController->getState()) {
-				case State::IDLE:
+				case State::IDLE: // do nothing
 					break;
 
-				case State::PROGRAM_DO:
-					onUpdate();
+				case State::PROGRAM_DO: // receive from network, do code, then send
+					// onUpdate();
+					std::cout << "Test" << std::endl;
 					break;
 
 				case State::INTERRUPT_DO:
-					if (_nt->update() == 0) {
-						_stateController->setState(State::PROGRAM_DO);
-					} else {
-						printf("Interrupt state issue");
-					}
+					std::cout << "Interrupting" << std::endl;
+					_stateController->setState(State::PROGRAM_DO);
+					// if (_nt->update() == 0) {
+					// 	_stateController->setState(State::PROGRAM_DO);
+					// } else {
+					// 	printf("Interrupt state issue");
+					// }
 					break;
 			}
 		}

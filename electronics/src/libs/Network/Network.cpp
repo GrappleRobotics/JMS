@@ -62,7 +62,6 @@ int Network::update() {
 		case State::NETWORK_SEND:
 			programValue = nt_send();
 			if (programValue == 0) {
-				// Flush local buffer
 				setState(State::IDLE);
 			}
 			break;
@@ -115,7 +114,8 @@ uint8_t *Network::nt_raw_recv() {
 
 // message send
 int Network::nt_send() {
-	uint8_t *buffer = encodeSendMessage();
+	uint8_t *buffer = encodeSendMessage(getBufferSize());
+	printf("buffersize: %d\n", getBufferSize());
 	int sendBytes = _local_socket.send(buffer, getBufferSize());
 	if (sendBytes < 0) {
 		printf("Send failed error: %d", sendBytes);

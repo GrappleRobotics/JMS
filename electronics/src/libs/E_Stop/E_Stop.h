@@ -49,7 +49,7 @@ class E_Stop {
 	 * Send stop signal/change current state to network send stop
 	 */
 	void sendStop() {
-		_ct.interruptSetController((int)MainController::State::INTERRUPT_DO, (int)Network::State::NETWORK_SEND, _stopTypeInt);
+		_ct.interruptSetController((int)MainController::State::INTERRUPT_DO, (int)Network::State::NETWORK_SEND, (int)MainController::InterruptType::E_STOP, _stopTypeInt);
 	}
 
 	ButtonInterrupt get() {
@@ -65,6 +65,7 @@ class E_Stop {
 	E_StopType _type;
 	int _stopTypeInt;
 	MainController::StateController &_ct;
+	int _sendStopSent;
 };
 
 /**

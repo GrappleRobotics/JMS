@@ -42,10 +42,12 @@ class JMS_NetworkMessages {
 	 * Encode the local send message.
 	 * Returns the enocded buffer
 	 */
-	uint8_t *encodeSendMessage() {
-		uint8_t *buffer = {};
+	uint8_t *encodeSendMessage(size_t bufferSize) {
+		uint8_t buffer[bufferSize];
 
 		pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+
+		printf("buffer: %d\n", sizeof(buffer));
 
 		bool status = pb_encode(&stream, jms_electronics_UpdateNode2Field_fields, &_send_packet);
 		if (!status) {

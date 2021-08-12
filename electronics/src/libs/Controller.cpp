@@ -16,51 +16,47 @@
  * E Stop
  * Sends e stop over the network
  */
-void MainController::StateController::_estop() {
+int MainController::StateController::_estop() {
+	int programValue = 1;
 	switch (_inputFlag) {
 		case (int)E_StopType::NONE:
 			_intType = (int)E_StopType::ABORT;
 			_network->getSendPacket()->data.scoringTable.abort = true;
+			programValue = 0;
 			printf("None type Interrupt detected. ABORTING");
 			break;
 
 		// Blue Alliance stations
 		case (int)E_StopType::E_STOP_ALLIANCE_1:
 			_network->getSendPacket()->data.alliance.estop1 = true;
+			programValue = 0;
 			printf("Alliance 1 Stop called");
 			break;
 
 		case (int)E_StopType::E_STOP_ALLIANCE_2:
 			_network->getSendPacket()->data.alliance.estop2 = true;
+			programValue = 0;
 			printf("Alliance 2 Stop called");
 			break;
 
 		case (int)E_StopType::E_STOP_ALLIANCE_3:
 			_network->getSendPacket()->data.alliance.estop3 = true;
+			programValue = 0;
 			printf("Alliance 3 Stop called");
 			break;
 
 		// Abort game
 		case (int)E_StopType::ABORT:
 			_network->getSendPacket()->data.scoringTable.abort = true;
+			programValue = 0;
 			printf("Abort called");
 			break;
-	}
-}
 
-void MainController::StateController::updateStatus() {
-	if (_interruptFlag != 0) { // If flagged, then process interrupt
-		switch (_intType) {
-			case (int)InterruptType::NONE:
-				break;
-
-			case (int)InterruptType::E_STOP:
-				_estop();
-				break;
-			
-			default:
-				_intType = (int)InterruptType::NONE;
-				break;
-		}
+		default:
+			_intType = (int)E_StopType::ABORT;
+			printf("Entered default int state. Unknown error. Setting abort");
+			break;
 	}
+
+	return programValue;
 }
