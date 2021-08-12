@@ -21,7 +21,7 @@ export default class Audience extends React.PureComponent {
     let display = this.props.arena.audience_display;
     let { arena, event } = this.props;
 
-    switch (display.scene) {
+    switch (display?.scene) {
       case "MatchPreview":
         if (arena?.stations && arena?.match?.match)
           return <MatchPreview

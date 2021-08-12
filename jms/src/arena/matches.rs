@@ -89,13 +89,13 @@ impl LoadedMatch {
   pub async fn commit_score(&mut self) -> Result<Option<models::Match>> {
     if self.match_meta.match_type != models::MatchType::Test {
       if self.state == MatchPlayState::Complete {
-        let red = self.score.red.derive();
-        let blue = self.score.blue.derive();
+        let red = self.score.red.derive(&self.score.blue);
+        let blue = self.score.blue.derive(&self.score.red);
 
         let mut winner = None;
-        if blue.total_score.total() > red.total_score.total() {
+        if blue.total_score > red.total_score {
           winner = Some(Alliance::Blue);
-        } else if red.total_score.total() > blue.total_score.total() {
+        } else if red.total_score > blue.total_score {
           winner = Some(Alliance::Red);
         }
 

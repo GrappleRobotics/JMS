@@ -4,7 +4,8 @@ $theme-colors: (
   "primary": #007bff,
   "success": #28a745,
   "alliance-red": #f53e31,
-  "alliance-blue": #3152f5
+  "alliance-blue": #3152f5,
+  "purple": #9300e9
 );
 
 @import "~bootstrap/scss/bootstrap";
@@ -581,6 +582,55 @@ th {
         background-color: desaturate(darken($tc, 15%), 10%);
       }
     }
+  }
+}
+
+.penalty-category {
+  margin: 0.5em;
+  padding: 0.5em;
+  border-radius: 1em;
+
+  @each $alliance in blue, red {
+    $tc: theme-color("alliance-#{$alliance}");
+    &[data-alliance=#{$alliance}] {
+      background-color: desaturate(darken($tc, 25%), 30%);
+    }
+  }
+
+  .penalty-count {
+    text-align: center;
+    font-size: 4em;
+    margin-bottom: 0.125em;
+  }
+
+  .btn {
+    font-weight: bold;
+    font-size: 1.35em;
+    height: 3.75em;
+  }
+}
+
+.referee-team {
+  margin: 0.5em;
+  padding: 1em;
+  border-radius: 1em;
+
+  @each $alliance in blue, red {
+    $tc: theme-color("alliance-#{$alliance}");
+    &[data-alliance=#{$alliance}] {
+      background-color: desaturate(darken($tc, 25%), 30%);
+    }
+  }
+
+  .team {
+    font-size: 2em;
+    margin-left: 0.5em;
+  }
+}
+
+.head-ref-field-ax {
+  > .btn {
+    margin-left: 1em;
   }
 }
 

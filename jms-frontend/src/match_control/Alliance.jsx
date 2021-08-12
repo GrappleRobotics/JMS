@@ -132,7 +132,7 @@ export default class Alliance extends React.Component {
         <h6> {score.derived.total_bonus_rp} rp </h6>
       </Col>,
       <Col>
-        <h4> { Object.values(score.derived.total_score).reduce((a, b) => a + b) } </h4>
+        <h4> { score.derived.total_score } </h4>
       </Col>
     ]
 

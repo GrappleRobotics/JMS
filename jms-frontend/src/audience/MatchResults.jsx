@@ -19,6 +19,11 @@ const DERIVED_RENDER = [
     key: "endgame_points",
     name: "ENDGAME",
     render: v => v
+  },
+  {
+    key: "penalty_score",
+    name: "OPPONENT PENALTY",
+    render: v => v
   }
 ];
 
@@ -42,7 +47,7 @@ class AllianceResult extends React.PureComponent {
         <div className="alliance-score">
           <Row>
             <Col className="total"> 
-              { Object.values(score.derived.total_score).reduce((a, b) => a + b, 0) }
+              { score.derived.total_score }
             </Col>
           </Row>
           <Row>

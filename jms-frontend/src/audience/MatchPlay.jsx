@@ -75,7 +75,7 @@ class AllianceScore extends React.Component {
         }
       </Col>,
       <Col className="total-score" data-alliance={colour}>
-        { Object.values(score.derived.total_score).reduce((a, b) => a + b, 0) }
+        { score.derived.total_score }
         {
           withVal((hasrp && score.derived.total_bonus_rp) || undefined, bonus => <span className="total-score-bonus-rp">
             +{ score.derived.total_bonus_rp } RP
