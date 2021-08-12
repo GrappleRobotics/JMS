@@ -14,6 +14,7 @@
 // Gets built from compile_proto.sh
 #include "JMS_Messages/messages.h"
 
+
 /**
  * Encoder and decoder for JMS network messages
  */

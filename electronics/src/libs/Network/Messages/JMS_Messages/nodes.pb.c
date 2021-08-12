@@ -33,6 +33,9 @@ PB_BIND(jms_electronics_UpdateNode2Field_NoData, jms_electronics_UpdateNode2Fiel
 PB_BIND(jms_electronics_UpdateNode2Field_Alliance, jms_electronics_UpdateNode2Field_Alliance, AUTO)
 
 
+PB_BIND(jms_electronics_UpdateNode2Field_ScoringTable, jms_electronics_UpdateNode2Field_ScoringTable, AUTO)
+
+
 PB_BIND(jms_electronics_UpdateField2Node, jms_electronics_UpdateField2Node, AUTO)
 
 
@@ -40,6 +43,12 @@ PB_BIND(jms_electronics_UpdateField2Node_NoData, jms_electronics_UpdateField2Nod
 
 
 PB_BIND(jms_electronics_UpdateField2Node_Alliance, jms_electronics_UpdateField2Node_Alliance, AUTO)
+
+
+PB_BIND(jms_electronics_UpdateField2Node_ScoringTable, jms_electronics_UpdateField2Node_ScoringTable, AUTO)
+
+
+PB_BIND(jms_electronics_UpdateField2Node_ShieldGenerator, jms_electronics_UpdateField2Node_ShieldGenerator, AUTO)
 
 
 

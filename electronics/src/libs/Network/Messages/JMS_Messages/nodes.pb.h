@@ -13,7 +13,9 @@
 typedef enum _jms_electronics_NodeRole { 
     jms_electronics_NodeRole_NODE_UNASSIGNED = 0, 
     jms_electronics_NodeRole_NODE_BLUE = 1, 
-    jms_electronics_NodeRole_NODE_RED = 2 
+    jms_electronics_NodeRole_NODE_RED = 2, 
+    jms_electronics_NodeRole_NODE_SCORING_TABLE = 3, 
+    jms_electronics_NodeRole_NODE_SHIELD_GEN = 4 
 } jms_electronics_NodeRole;
 
 /* Struct definitions */
@@ -21,21 +23,9 @@ typedef struct _jms_electronics_Lights_Constant {
     pb_callback_t rgb; 
 } jms_electronics_Lights_Constant;
 
-typedef struct _jms_electronics_Lights_Off { 
-    char dummy_field;
-} jms_electronics_Lights_Off;
-
-typedef struct _jms_electronics_UpdateField2Node_Alliance { 
-    pb_callback_t lights; 
-} jms_electronics_UpdateField2Node_Alliance;
-
 typedef struct _jms_electronics_UpdateField2Node_NoData { 
     char dummy_field;
 } jms_electronics_UpdateField2Node_NoData;
-
-typedef struct _jms_electronics_UpdateNode2Field_Alliance { 
-    pb_callback_t estop; 
-} jms_electronics_UpdateNode2Field_Alliance;
 
 typedef struct _jms_electronics_UpdateNode2Field_NoData { 
     char dummy_field;
@@ -46,6 +36,10 @@ typedef struct _jms_electronics_Lights_Chase {
     uint32_t speed; 
 } jms_electronics_Lights_Chase;
 
+typedef struct _jms_electronics_Lights_Off { 
+    bool off; 
+} jms_electronics_Lights_Off;
+
 typedef struct _jms_electronics_Lights_Pulse { 
     pb_callback_t rgb; 
     uint32_t speed; 
@@ -55,23 +49,15 @@ typedef struct _jms_electronics_Lights_Rainbow {
     uint32_t speed; 
 } jms_electronics_Lights_Rainbow;
 
-typedef struct _jms_electronics_UpdateField2Node { 
-    pb_size_t which_data;
-    union {
-        jms_electronics_UpdateField2Node_NoData nodata;
-        jms_electronics_UpdateField2Node_Alliance alliance;
-    } data; 
-} jms_electronics_UpdateField2Node;
+typedef struct _jms_electronics_UpdateNode2Field_Alliance { 
+    bool estop1; 
+    bool estop2; 
+    bool estop3; 
+} jms_electronics_UpdateNode2Field_Alliance;
 
-typedef struct _jms_electronics_UpdateNode2Field { 
-    pb_callback_t ipv4; 
-    jms_electronics_NodeRole role; 
-    pb_size_t which_data;
-    union {
-        jms_electronics_UpdateNode2Field_NoData nodata;
-        jms_electronics_UpdateNode2Field_Alliance alliance;
-    } data; 
-} jms_electronics_UpdateNode2Field;
+typedef struct _jms_electronics_UpdateNode2Field_ScoringTable { 
+    bool abort; 
+} jms_electronics_UpdateNode2Field_ScoringTable;
 
 typedef struct _jms_electronics_Lights { 
     pb_size_t which_mode;
@@ -84,11 +70,56 @@ typedef struct _jms_electronics_Lights {
     } mode; 
 } jms_electronics_Lights;
 
+typedef struct _jms_electronics_UpdateNode2Field { 
+    pb_callback_t ipv4; 
+    jms_electronics_NodeRole role; 
+    pb_size_t which_data;
+    union {
+        jms_electronics_UpdateNode2Field_NoData nodata;
+        jms_electronics_UpdateNode2Field_Alliance alliance;
+        jms_electronics_UpdateNode2Field_ScoringTable scoringTable;
+    } data; 
+} jms_electronics_UpdateNode2Field;
+
+typedef struct _jms_electronics_UpdateField2Node_Alliance { 
+    bool has_lights1;
+    jms_electronics_Lights lights1; 
+    bool has_lights2;
+    jms_electronics_Lights lights2; 
+    bool has_lights3;
+    jms_electronics_Lights lights3; 
+} jms_electronics_UpdateField2Node_Alliance;
+
+typedef struct _jms_electronics_UpdateField2Node_ScoringTable { 
+    bool has_lights1;
+    jms_electronics_Lights lights1; 
+    bool has_lights2;
+    jms_electronics_Lights lights2; 
+} jms_electronics_UpdateField2Node_ScoringTable;
+
+typedef struct _jms_electronics_UpdateField2Node_ShieldGenerator { 
+    bool has_lights1;
+    jms_electronics_Lights lights1; 
+    bool has_lights2;
+    jms_electronics_Lights lights2; 
+} jms_electronics_UpdateField2Node_ShieldGenerator;
+
+typedef struct _jms_electronics_UpdateField2Node { 
+    jms_electronics_NodeRole role; 
+    pb_size_t which_data;
+    union {
+        jms_electronics_UpdateField2Node_NoData nodata;
+        jms_electronics_UpdateField2Node_Alliance alliance;
+        jms_electronics_UpdateField2Node_ScoringTable scoringTable;
+        jms_electronics_UpdateField2Node_ShieldGenerator shieldGenerator;
+    } data; 
+} jms_electronics_UpdateField2Node;
+
 
 /* Helper constants for enums */
 #define _jms_electronics_NodeRole_MIN jms_electronics_NodeRole_NODE_UNASSIGNED
-#define _jms_electronics_NodeRole_MAX jms_electronics_NodeRole_NODE_RED
-#define _jms_electronics_NodeRole_ARRAYSIZE ((jms_electronics_NodeRole)(jms_electronics_NodeRole_NODE_RED+1))
+#define _jms_electronics_NodeRole_MAX jms_electronics_NodeRole_NODE_SHIELD_GEN
+#define _jms_electronics_NodeRole_ARRAYSIZE ((jms_electronics_NodeRole)(jms_electronics_NodeRole_NODE_SHIELD_GEN+1))
 
 
 #ifdef __cplusplus
@@ -104,10 +135,13 @@ extern "C" {
 #define jms_electronics_Lights_Rainbow_init_default {0}
 #define jms_electronics_UpdateNode2Field_init_default {{{NULL}, NULL}, _jms_electronics_NodeRole_MIN, 0, {jms_electronics_UpdateNode2Field_NoData_init_default}}
 #define jms_electronics_UpdateNode2Field_NoData_init_default {0}
-#define jms_electronics_UpdateNode2Field_Alliance_init_default {{{NULL}, NULL}}
-#define jms_electronics_UpdateField2Node_init_default {0, {jms_electronics_UpdateField2Node_NoData_init_default}}
+#define jms_electronics_UpdateNode2Field_Alliance_init_default {0, 0, 0}
+#define jms_electronics_UpdateNode2Field_ScoringTable_init_default {0}
+#define jms_electronics_UpdateField2Node_init_default {_jms_electronics_NodeRole_MIN, 0, {jms_electronics_UpdateField2Node_NoData_init_default}}
 #define jms_electronics_UpdateField2Node_NoData_init_default {0}
-#define jms_electronics_UpdateField2Node_Alliance_init_default {{{NULL}, NULL}}
+#define jms_electronics_UpdateField2Node_Alliance_init_default {false, jms_electronics_Lights_init_default, false, jms_electronics_Lights_init_default, false, jms_electronics_Lights_init_default}
+#define jms_electronics_UpdateField2Node_ScoringTable_init_default {false, jms_electronics_Lights_init_default, false, jms_electronics_Lights_init_default}
+#define jms_electronics_UpdateField2Node_ShieldGenerator_init_default {false, jms_electronics_Lights_init_default, false, jms_electronics_Lights_init_default}
 #define jms_electronics_Lights_init_zero         {0, {jms_electronics_Lights_Off_init_zero}}
 #define jms_electronics_Lights_Off_init_zero     {0}
 #define jms_electronics_Lights_Constant_init_zero {{{NULL}, NULL}}
@@ -116,31 +150,48 @@ extern "C" {
 #define jms_electronics_Lights_Rainbow_init_zero {0}
 #define jms_electronics_UpdateNode2Field_init_zero {{{NULL}, NULL}, _jms_electronics_NodeRole_MIN, 0, {jms_electronics_UpdateNode2Field_NoData_init_zero}}
 #define jms_electronics_UpdateNode2Field_NoData_init_zero {0}
-#define jms_electronics_UpdateNode2Field_Alliance_init_zero {{{NULL}, NULL}}
-#define jms_electronics_UpdateField2Node_init_zero {0, {jms_electronics_UpdateField2Node_NoData_init_zero}}
+#define jms_electronics_UpdateNode2Field_Alliance_init_zero {0, 0, 0}
+#define jms_electronics_UpdateNode2Field_ScoringTable_init_zero {0}
+#define jms_electronics_UpdateField2Node_init_zero {_jms_electronics_NodeRole_MIN, 0, {jms_electronics_UpdateField2Node_NoData_init_zero}}
 #define jms_electronics_UpdateField2Node_NoData_init_zero {0}
-#define jms_electronics_UpdateField2Node_Alliance_init_zero {{{NULL}, NULL}}
+#define jms_electronics_UpdateField2Node_Alliance_init_zero {false, jms_electronics_Lights_init_zero, false, jms_electronics_Lights_init_zero, false, jms_electronics_Lights_init_zero}
+#define jms_electronics_UpdateField2Node_ScoringTable_init_zero {false, jms_electronics_Lights_init_zero, false, jms_electronics_Lights_init_zero}
+#define jms_electronics_UpdateField2Node_ShieldGenerator_init_zero {false, jms_electronics_Lights_init_zero, false, jms_electronics_Lights_init_zero}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define jms_electronics_Lights_Constant_rgb_tag  1
-#define jms_electronics_UpdateField2Node_Alliance_lights_tag 1
-#define jms_electronics_UpdateNode2Field_Alliance_estop_tag 1
 #define jms_electronics_Lights_Chase_rgb_tag     1
 #define jms_electronics_Lights_Chase_speed_tag   2
+#define jms_electronics_Lights_Off_off_tag       1
 #define jms_electronics_Lights_Pulse_rgb_tag     1
 #define jms_electronics_Lights_Pulse_speed_tag   2
 #define jms_electronics_Lights_Rainbow_speed_tag 1
-#define jms_electronics_UpdateField2Node_nodata_tag 2
-#define jms_electronics_UpdateField2Node_alliance_tag 3
-#define jms_electronics_UpdateNode2Field_ipv4_tag 1
-#define jms_electronics_UpdateNode2Field_role_tag 2
-#define jms_electronics_UpdateNode2Field_nodata_tag 3
-#define jms_electronics_UpdateNode2Field_alliance_tag 4
+#define jms_electronics_UpdateNode2Field_Alliance_estop1_tag 1
+#define jms_electronics_UpdateNode2Field_Alliance_estop2_tag 2
+#define jms_electronics_UpdateNode2Field_Alliance_estop3_tag 3
+#define jms_electronics_UpdateNode2Field_ScoringTable_abort_tag 1
 #define jms_electronics_Lights_off_tag           1
 #define jms_electronics_Lights_constant_tag      2
 #define jms_electronics_Lights_pulse_tag         3
 #define jms_electronics_Lights_chase_tag         4
 #define jms_electronics_Lights_rainbow_tag       5
+#define jms_electronics_UpdateNode2Field_ipv4_tag 1
+#define jms_electronics_UpdateNode2Field_role_tag 2
+#define jms_electronics_UpdateNode2Field_nodata_tag 3
+#define jms_electronics_UpdateNode2Field_alliance_tag 4
+#define jms_electronics_UpdateNode2Field_scoringTable_tag 5
+#define jms_electronics_UpdateField2Node_Alliance_lights1_tag 1
+#define jms_electronics_UpdateField2Node_Alliance_lights2_tag 2
+#define jms_electronics_UpdateField2Node_Alliance_lights3_tag 3
+#define jms_electronics_UpdateField2Node_ScoringTable_lights1_tag 1
+#define jms_electronics_UpdateField2Node_ScoringTable_lights2_tag 2
+#define jms_electronics_UpdateField2Node_ShieldGenerator_lights1_tag 1
+#define jms_electronics_UpdateField2Node_ShieldGenerator_lights2_tag 2
+#define jms_electronics_UpdateField2Node_role_tag 1
+#define jms_electronics_UpdateField2Node_nodata_tag 2
+#define jms_electronics_UpdateField2Node_alliance_tag 3
+#define jms_electronics_UpdateField2Node_scoringTable_tag 4
+#define jms_electronics_UpdateField2Node_shieldGenerator_tag 5
 
 /* Struct field encoding specification for nanopb */
 #define jms_electronics_Lights_FIELDLIST(X, a) \
@@ -158,7 +209,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (mode,rainbow,mode.rainbow),   5)
 #define jms_electronics_Lights_mode_rainbow_MSGTYPE jms_electronics_Lights_Rainbow
 
 #define jms_electronics_Lights_Off_FIELDLIST(X, a) \
-
+X(a, STATIC,   SINGULAR, BOOL,     off,               1)
 #define jms_electronics_Lights_Off_CALLBACK NULL
 #define jms_electronics_Lights_Off_DEFAULT NULL
 
@@ -188,11 +239,13 @@ X(a, STATIC,   SINGULAR, UINT32,   speed,             1)
 X(a, CALLBACK, SINGULAR, BYTES,    ipv4,              1) \
 X(a, STATIC,   SINGULAR, UENUM,    role,              2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,nodata,data.nodata),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,alliance,data.alliance),   4)
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,alliance,data.alliance),   4) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,scoringTable,data.scoringTable),   5)
 #define jms_electronics_UpdateNode2Field_CALLBACK pb_default_field_callback
 #define jms_electronics_UpdateNode2Field_DEFAULT NULL
 #define jms_electronics_UpdateNode2Field_data_nodata_MSGTYPE jms_electronics_UpdateNode2Field_NoData
 #define jms_electronics_UpdateNode2Field_data_alliance_MSGTYPE jms_electronics_UpdateNode2Field_Alliance
+#define jms_electronics_UpdateNode2Field_data_scoringTable_MSGTYPE jms_electronics_UpdateNode2Field_ScoringTable
 
 #define jms_electronics_UpdateNode2Field_NoData_FIELDLIST(X, a) \
 
@@ -200,17 +253,29 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (data,alliance,data.alliance),   4)
 #define jms_electronics_UpdateNode2Field_NoData_DEFAULT NULL
 
 #define jms_electronics_UpdateNode2Field_Alliance_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, BOOL,     estop,             1)
-#define jms_electronics_UpdateNode2Field_Alliance_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, BOOL,     estop1,            1) \
+X(a, STATIC,   SINGULAR, BOOL,     estop2,            2) \
+X(a, STATIC,   SINGULAR, BOOL,     estop3,            3)
+#define jms_electronics_UpdateNode2Field_Alliance_CALLBACK NULL
 #define jms_electronics_UpdateNode2Field_Alliance_DEFAULT NULL
 
+#define jms_electronics_UpdateNode2Field_ScoringTable_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     abort,             1)
+#define jms_electronics_UpdateNode2Field_ScoringTable_CALLBACK NULL
+#define jms_electronics_UpdateNode2Field_ScoringTable_DEFAULT NULL
+
 #define jms_electronics_UpdateField2Node_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UENUM,    role,              1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,nodata,data.nodata),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,alliance,data.alliance),   3)
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,alliance,data.alliance),   3) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,scoringTable,data.scoringTable),   4) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,shieldGenerator,data.shieldGenerator),   5)
 #define jms_electronics_UpdateField2Node_CALLBACK NULL
 #define jms_electronics_UpdateField2Node_DEFAULT NULL
 #define jms_electronics_UpdateField2Node_data_nodata_MSGTYPE jms_electronics_UpdateField2Node_NoData
 #define jms_electronics_UpdateField2Node_data_alliance_MSGTYPE jms_electronics_UpdateField2Node_Alliance
+#define jms_electronics_UpdateField2Node_data_scoringTable_MSGTYPE jms_electronics_UpdateField2Node_ScoringTable
+#define jms_electronics_UpdateField2Node_data_shieldGenerator_MSGTYPE jms_electronics_UpdateField2Node_ShieldGenerator
 
 #define jms_electronics_UpdateField2Node_NoData_FIELDLIST(X, a) \
 
@@ -218,10 +283,30 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (data,alliance,data.alliance),   3)
 #define jms_electronics_UpdateField2Node_NoData_DEFAULT NULL
 
 #define jms_electronics_UpdateField2Node_Alliance_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  lights,            1)
-#define jms_electronics_UpdateField2Node_Alliance_CALLBACK pb_default_field_callback
+X(a, STATIC,   OPTIONAL, MESSAGE,  lights1,           1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  lights2,           2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  lights3,           3)
+#define jms_electronics_UpdateField2Node_Alliance_CALLBACK NULL
 #define jms_electronics_UpdateField2Node_Alliance_DEFAULT NULL
-#define jms_electronics_UpdateField2Node_Alliance_lights_MSGTYPE jms_electronics_Lights
+#define jms_electronics_UpdateField2Node_Alliance_lights1_MSGTYPE jms_electronics_Lights
+#define jms_electronics_UpdateField2Node_Alliance_lights2_MSGTYPE jms_electronics_Lights
+#define jms_electronics_UpdateField2Node_Alliance_lights3_MSGTYPE jms_electronics_Lights
+
+#define jms_electronics_UpdateField2Node_ScoringTable_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  lights1,           1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  lights2,           2)
+#define jms_electronics_UpdateField2Node_ScoringTable_CALLBACK NULL
+#define jms_electronics_UpdateField2Node_ScoringTable_DEFAULT NULL
+#define jms_electronics_UpdateField2Node_ScoringTable_lights1_MSGTYPE jms_electronics_Lights
+#define jms_electronics_UpdateField2Node_ScoringTable_lights2_MSGTYPE jms_electronics_Lights
+
+#define jms_electronics_UpdateField2Node_ShieldGenerator_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  lights1,           1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  lights2,           2)
+#define jms_electronics_UpdateField2Node_ShieldGenerator_CALLBACK NULL
+#define jms_electronics_UpdateField2Node_ShieldGenerator_DEFAULT NULL
+#define jms_electronics_UpdateField2Node_ShieldGenerator_lights1_MSGTYPE jms_electronics_Lights
+#define jms_electronics_UpdateField2Node_ShieldGenerator_lights2_MSGTYPE jms_electronics_Lights
 
 extern const pb_msgdesc_t jms_electronics_Lights_msg;
 extern const pb_msgdesc_t jms_electronics_Lights_Off_msg;
@@ -232,9 +317,12 @@ extern const pb_msgdesc_t jms_electronics_Lights_Rainbow_msg;
 extern const pb_msgdesc_t jms_electronics_UpdateNode2Field_msg;
 extern const pb_msgdesc_t jms_electronics_UpdateNode2Field_NoData_msg;
 extern const pb_msgdesc_t jms_electronics_UpdateNode2Field_Alliance_msg;
+extern const pb_msgdesc_t jms_electronics_UpdateNode2Field_ScoringTable_msg;
 extern const pb_msgdesc_t jms_electronics_UpdateField2Node_msg;
 extern const pb_msgdesc_t jms_electronics_UpdateField2Node_NoData_msg;
 extern const pb_msgdesc_t jms_electronics_UpdateField2Node_Alliance_msg;
+extern const pb_msgdesc_t jms_electronics_UpdateField2Node_ScoringTable_msg;
+extern const pb_msgdesc_t jms_electronics_UpdateField2Node_ShieldGenerator_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define jms_electronics_Lights_fields &jms_electronics_Lights_msg
@@ -246,9 +334,12 @@ extern const pb_msgdesc_t jms_electronics_UpdateField2Node_Alliance_msg;
 #define jms_electronics_UpdateNode2Field_fields &jms_electronics_UpdateNode2Field_msg
 #define jms_electronics_UpdateNode2Field_NoData_fields &jms_electronics_UpdateNode2Field_NoData_msg
 #define jms_electronics_UpdateNode2Field_Alliance_fields &jms_electronics_UpdateNode2Field_Alliance_msg
+#define jms_electronics_UpdateNode2Field_ScoringTable_fields &jms_electronics_UpdateNode2Field_ScoringTable_msg
 #define jms_electronics_UpdateField2Node_fields &jms_electronics_UpdateField2Node_msg
 #define jms_electronics_UpdateField2Node_NoData_fields &jms_electronics_UpdateField2Node_NoData_msg
 #define jms_electronics_UpdateField2Node_Alliance_fields &jms_electronics_UpdateField2Node_Alliance_msg
+#define jms_electronics_UpdateField2Node_ScoringTable_fields &jms_electronics_UpdateField2Node_ScoringTable_msg
+#define jms_electronics_UpdateField2Node_ShieldGenerator_fields &jms_electronics_UpdateField2Node_ShieldGenerator_msg
 
 /* Maximum encoded size of messages (where known) */
 /* jms_electronics_Lights_size depends on runtime parameters */
@@ -256,13 +347,16 @@ extern const pb_msgdesc_t jms_electronics_UpdateField2Node_Alliance_msg;
 /* jms_electronics_Lights_Pulse_size depends on runtime parameters */
 /* jms_electronics_Lights_Chase_size depends on runtime parameters */
 /* jms_electronics_UpdateNode2Field_size depends on runtime parameters */
-/* jms_electronics_UpdateNode2Field_Alliance_size depends on runtime parameters */
 /* jms_electronics_UpdateField2Node_size depends on runtime parameters */
 /* jms_electronics_UpdateField2Node_Alliance_size depends on runtime parameters */
-#define jms_electronics_Lights_Off_size          0
+/* jms_electronics_UpdateField2Node_ScoringTable_size depends on runtime parameters */
+/* jms_electronics_UpdateField2Node_ShieldGenerator_size depends on runtime parameters */
+#define jms_electronics_Lights_Off_size          2
 #define jms_electronics_Lights_Rainbow_size      6
 #define jms_electronics_UpdateField2Node_NoData_size 0
+#define jms_electronics_UpdateNode2Field_Alliance_size 6
 #define jms_electronics_UpdateNode2Field_NoData_size 0
+#define jms_electronics_UpdateNode2Field_ScoringTable_size 2
 
 #ifdef __cplusplus
 } /* extern "C" */

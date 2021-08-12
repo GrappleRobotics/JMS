@@ -20,37 +20,29 @@ void MainController::StateController::_estop() {
 	switch (_inputFlag) {
 		case (int)E_StopType::NONE:
 			_intType = (int)E_StopType::ABORT;
-			printf("None type Interrupt detected");
+			_network->getSendPacket()->data.scoringTable.abort = true;
+			printf("None type Interrupt detected. ABORTING");
 			break;
 
 		// Blue Alliance stations
-		case (int)E_StopType::E_STOP_B_ALLIANCE_1:
+		case (int)E_StopType::E_STOP_ALLIANCE_1:
+			_network->getSendPacket()->data.alliance.estop1 = true;
 			printf("Alliance 1 Stop called");
 			break;
 
-		case (int)E_StopType::E_STOP_B_ALLIANCE_2:
+		case (int)E_StopType::E_STOP_ALLIANCE_2:
+			_network->getSendPacket()->data.alliance.estop2 = true;
 			printf("Alliance 2 Stop called");
 			break;
 
-		case (int)E_StopType::E_STOP_B_ALLIANCE_3:
+		case (int)E_StopType::E_STOP_ALLIANCE_3:
+			_network->getSendPacket()->data.alliance.estop3 = true;
 			printf("Alliance 3 Stop called");
-			break;
-
-		// Red Alliance stations
-		case (int)E_StopType::E_STOP_R_ALLIANCE_1:
-			printf("Alliance Stop called");
-			break;
-
-		case (int)E_StopType::E_STOP_R_ALLIANCE_2:
-			printf("Alliance Stop called");
-			break;
-
-		case (int)E_StopType::E_STOP_R_ALLIANCE_3:
-			printf("Alliance Stop called");
 			break;
 
 		// Abort game
 		case (int)E_StopType::ABORT:
+			_network->getSendPacket()->data.scoringTable.abort = true;
 			printf("Abort called");
 			break;
 	}

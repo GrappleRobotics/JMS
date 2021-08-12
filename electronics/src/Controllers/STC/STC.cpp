@@ -6,7 +6,7 @@ int STC_Controller::onInit() {
 		createNetwork(JMS_IP, JMS_PORT, JMS_BUFFER_SIZE);
 		getNetwork().nt_init();
 
-		// getStateController().setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND, "Test From STC");
+		// getStateController().setController(MainController::State::NETWORK_DO, Network::State::NETWORK_SEND);
 		// getNetwork().setNetwork(Network::State::NETWORK_SEND, "Test");
 		// getNetwork().update();
 	)

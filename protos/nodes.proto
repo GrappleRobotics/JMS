@@ -2,67 +2,94 @@ syntax = "proto3";
 package jms.electronics;
 
 enum NodeRole {
-  NODE_UNASSIGNED = 0;
-  NODE_BLUE = 1;
-  NODE_RED = 2;
+	NODE_UNASSIGNED = 0;
+
+	NODE_BLUE = 1; // Alliances
+	NODE_RED = 2;
+
+	NODE_SCORING_TABLE = 3; // Field Extra nodes
+	NODE_SHIELD_GEN = 4;
 }
 
 // Light Status
 message Lights {
-  oneof mode {
-    Off off = 1;
-    Constant constant = 2;
-    Pulse pulse = 3;
-    Chase chase = 4;
-    Rainbow rainbow = 5;
-  }
+	oneof mode {
+		Off off = 1;
+		Constant constant = 2;
+		Pulse pulse = 3;
+		Chase chase = 4;
+		Rainbow rainbow = 5;
+	}
 
-  message Off {};
-  message Constant {
-    bytes rgb = 1;
-  }
-  message Pulse {
-    bytes rgb = 1;
-    uint32 speed = 2;   // In milliseconds
-  }
-  message Chase {
-    bytes rgb = 1;
-    uint32 speed = 2;   // In milliseconds
-  }
-  message Rainbow {
-    uint32 speed = 1;   // In milliseconds
-  }
+	message Off {
+		bool off = 1; // Doesn't matter if there is a bool here. But it makes it easier for code to view and set it
+	};
+	message Constant {
+		bytes rgb = 1;
+	}
+	message Pulse {
+		bytes rgb = 1;
+		uint32 speed = 2;   // In milliseconds
+	}
+	message Chase {
+		bytes rgb = 1;
+		uint32 speed = 2;   // In milliseconds
+	}
+	message Rainbow {
+		uint32 speed = 1;   // In milliseconds
+	}
 }
 
 // Update issued from nodes to JMS
 message UpdateNode2Field {
-  bytes ipv4 = 1;
-  NodeRole role = 2;
+	bytes ipv4 = 1;
+	NodeRole role = 2;
 
-  oneof data {
-    NoData nodata = 3;
-    Alliance alliance = 4;
-  }
+	oneof data {
+		NoData nodata = 3;
+		Alliance alliance = 4;
+		ScoringTable scoringTable = 5;
+	}
 
-  // Message types
-  message NoData {};
-  message Alliance {
-    repeated bool estop = 1;
-  }
+	// Message types
+	message NoData {};
+	message Alliance {
+		bool estop1 = 1;
+		bool estop2 = 2;
+		bool estop3 = 3;
+	}
+
+	message ScoringTable {
+		bool abort = 1;
+	}
 }
 
 // Update from JMS to nodes
 message UpdateField2Node {
-  // NodeRole role = 1;
+	NodeRole role = 1;
 
-  oneof data {
-    NoData nodata = 2;
-    Alliance alliance = 3;
-  }
+	oneof data {
+		NoData nodata = 2;
+		Alliance alliance = 3;
+		ScoringTable scoringTable = 4;
+		ShieldGenerator shieldGenerator = 5;
+	}
 
-  // Message types
-  message NoData {};
-  message Alliance {
-    repeated Lights lights = 1;
-  }
+	// Message types
+	message NoData {};
+	message Alliance { // 2 meter strips per alliance
+		Lights lights1 = 1; // Alliance 1
+		Lights lights2 = 2; // Alliance 2
+		Lights lights3 = 3; // Alliance 3
+	}
+
+	message ScoringTable { // 2 2m strips on truss
+		Lights lights1 = 1;
+		Lights lights2 = 2;
+	}
+
+	message ShieldGenerator { // 2 2m stips on scoring table
+		Lights lights1 = 1;
+		Lights lights2 = 2;
+	}
 }
