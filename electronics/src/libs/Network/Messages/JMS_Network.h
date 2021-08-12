@@ -28,8 +28,14 @@ class JMS_NetworkMessages {
 		return &_receive_packet;
 	}
 
-	uint8_t *getEncodedSendMessage(uint8_t *buffer) {
+	/**
+	 * Encode the local send message.
+	 * Returns the enocded buffer
+	 */
+	uint8_t *encodeSendMessage() {
+		uint8_t *buffer;
 		pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+
 		bool status = pb_encode(&stream, jms_electronics_UpdateNode2Field_fields, &_send_packet);
 		if (!status) {
 			printf("Encoding Failed: %s\n", PB_GET_ERROR(&stream));
@@ -38,31 +44,21 @@ class JMS_NetworkMessages {
 		return buffer;
 	}
 
-	static bool callback(pb_istream_t *stream, uint8_t *buffer, size_t count) {
-		FILE *file = (FILE*)stream->state;
-		bool result;
-
-		if (count == 0) {
-			return true;
-		}
-
-		result = _socket->recv(buffer, count);
-
-		if (result == 0) {
-			stream->bytes_left = 0;
-		}
-
-		return result == count;
-	} 
-
-	jms_electronics_UpdateField2Node getDecodedReceiveMessage(TCPSocket *socket, size_t bufferSize) {
+	/**
+	 * Decode form the buffer
+	 * places decoded data into local receive message
+	 */
+	void decodeReceiveMessage(uint8_t *buffer, size_t message_length) {
 		jms_electronics_UpdateField2Node tmpInputMessage = jms_electronics_UpdateField2Node_init_zero;
 
-		_socket = socket;
-		int fd;
-		pb_istream_t stream = {&callback, buffer, SIZE_MAX};
+		pb_istream_t stream = pb_istream_from_buffer(buffer, message_length);
+		bool status = pb_decode(&stream, jms_electronics_UpdateField2Node_fields, &tmpInputMessage);
 
-		return tmpInputMessage;
+		if (!status) {
+			printf("Decoding failed: %s\n", PB_GET_ERROR(&stream));
+		}
+
+		_receive_packet = tmpInputMessage;
 	}
 
  protected:

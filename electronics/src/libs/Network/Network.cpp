@@ -8,10 +8,6 @@ Network::Network(const char *ip, int port, const int bufferSize) : _bufferSize(b
 
 void Network::nt_init() {
 
-	// Buffer size malloc
-	_buffer = (uint8_t *)malloc(sizeof(uint8_t)*getBufferSize());
-	std::cout << "Buffer size set" << std::endl;
-
 	// Open socket
 	std::cout << "Opening socket..." << std::endl;
 	if (_local_socket.open(&_eth) < 0) {
@@ -58,17 +54,15 @@ int Network::update() {
 			break;
 		
 		case State::NETWORK_SEND:
-			programValue = nt_send(_buffer);
+			programValue = nt_send();
 			if (programValue == 0) {
 				// Flush local buffer
-				_buffer = NULL;
 				setState(State::IDLE);
 			}
 			break;
 
 		case State::NETWORK_RECV:
-			_buffer = NULL;
-			// nt_recv();
+			nt_recv();
 			programValue = 0;
 			setState(State::IDLE);
 			break;
@@ -79,11 +73,19 @@ int Network::update() {
 
 // Raw send of buffers
 int Network::nt_raw_send(uint8_t *buffer) {
-	int bytes = _local_socket.send(buffer, getBufferSize());
-	if (checkConn() != 0) {
-		_local_socket.send(buffer, getBufferSize());
+	int sendBytes = _local_socket.send(buffer, getBufferSize());
+	if (sendBytes < 0) {
+		printf("Send failed error: %d", sendBytes);
 		return 1;
 	} else {
+		if (checkConn() != 0 ) {
+			sendBytes = _local_socket.send(buffer, getBufferSize());
+			if (sendBytes < 0) {
+				printf("Send failed error: %d", sendBytes);
+				return 1;
+			}
+			return 0;
+		} 
 		return 0;
 	}
 }
@@ -91,26 +93,55 @@ int Network::nt_raw_send(uint8_t *buffer) {
 // Raw receive of buffer
 uint8_t *Network::nt_raw_recv() {
 	uint8_t *buffer = {};
-	_local_socket.recv(buffer, getBufferSize());
-	if (checkConn() != 0) {
-		_local_socket.recv(buffer, getBufferSize());
+	int recvBytes = _local_socket.recv(buffer, getBufferSize());
+	if (recvBytes < 0) {
+		printf("Receive failed error: %d", recvBytes);
+	} else {
+		if (checkConn() != 0) {
+			recvBytes = _local_socket.recv(buffer, getBufferSize());
+			if (recvBytes < 0) {
+				printf("Receive failed error: %d", recvBytes);
+			}
+		}
 	}
 	return buffer;
 }
 
 // message send
-void Network::nt_send() {
-	int bytes = _local_socket.send(buffer, getBufferSize());
-	if (checkConn() != 0) {
-		_local_socket.send(buffer, getBufferSize());
+int Network::nt_send() {
+	uint8_t *buffer = encodeSendMessage();
+	int sendBytes = _local_socket.send(buffer, getBufferSize());
+	if (sendBytes < 0) {
+		printf("Send failed error: %d", sendBytes);
+		return 1;
+	} else {
+		if (checkConn() != 0) {
+			sendBytes = _local_socket.send(buffer, getBufferSize());
+			if (sendBytes < 0) {
+				printf("Send failed error: %d", sendBytes);
+				return 1;
+			}
+			return 0;
+		}
+		return 0;
 	}
 }
 
 // message receive
 void Network::nt_recv() {
 	uint8_t *buffer = {};
-	_local_socket.recv(buffer, getBufferSize());
-	if (checkConn() != 0) {
-		_local_socket.recv(buffer, getBufferSize());
+	int recvBytes = _local_socket.recv(buffer, getBufferSize());
+	if (recvBytes < 0) {
+		printf("Receive failed error: %d", recvBytes);
+	} else {
+		if (checkConn() != 0) { // extra cheeky check to receive again if failed
+			recvBytes = _local_socket.recv(buffer, getBufferSize());
+			if (recvBytes < 0) {
+				printf("Receive failed error: %d", recvBytes);
+			}
+		}
+
+		// Decode
+		decodeReceiveMessage(buffer, recvBytes);
 	}
 }

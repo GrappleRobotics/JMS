@@ -53,10 +53,10 @@ namespace MainController {
 		 * Set controller
 		 * Set the main state, the network state, and optionally the buffer
 		 */
-		void setController(State st, Network::State nt_st = Network::State::IDLE, uint8_t *buffer = {0}) {
+		void setController(State st, Network::State nt_st = Network::State::IDLE) {
 			if (_network != nullptr) {
 				_state = st;
-				_network->setNetwork(nt_st, buffer);
+				_network->setNetwork(nt_st);
 			} else {
 				std::cout << "Network is null for state controller" << std::endl;
 			}

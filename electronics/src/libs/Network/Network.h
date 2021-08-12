@@ -40,7 +40,7 @@
  * Network Client for connecting to servers (JMS for the moment) 
  * @TODO Have server as optional setup in network
  */
-class Network {
+class Network : public JMS_NetworkMessages {
  public:
 
 	enum class State {
@@ -55,7 +55,7 @@ class Network {
 	 */
 	Network(const char *ip = JMS_IP, int port = JMS_PORT, const int bufferSize = JMS_BUFFER_SIZE);
 	~Network() {
-		free(_buffer);
+		printf("Yo, that shit just go detroyed [NETWORK]");
 	}
 
 	/**
@@ -95,10 +95,8 @@ class Network {
 	 * Set the network, 
 	 * and on next update it will process and execute request
 	 */
-	void setNetwork(State st, uint8_t *buffer) {
+	void setNetwork(State st) {
 		setState(st);
-		_buffer = nullptr; // flush the local buffer
-		_buffer = buffer;
 	}
 
 	/**
@@ -110,9 +108,12 @@ class Network {
 	/**
 	 * Sender and receivers
 	 */
-	void nt_send();
+	int nt_send();
 	void nt_recv();
 
+	/**
+	 * Raw sender and receivers for buffers
+	 */
 	int nt_raw_send(uint8_t *buffer);
 	uint8_t *nt_raw_recv();
 
@@ -124,7 +125,7 @@ class Network {
 	/**
 	 * Network packet buffer
 	 */
-	uint8_t *_buffer;
+	// uint8_t *_buffer;
 
 	/**
 	 * Network values
