@@ -14,6 +14,46 @@ export default class Audience extends React.PureComponent {
     // this.props.ws.subscribe("matches", "*");
   }
 
+  componentDidUpdate(prevProps) {
+    const last_match_state = prevProps.arena?.match?.state;
+    const match_state = this.props.arena?.match?.state;
+
+    if (last_match_state !== undefined && last_match_state !== match_state) {
+      switch (match_state) {
+        case "Auto":
+          this.audio = new Audio("/sounds/auto.wav");
+          this.audio.play();
+          break;
+        case "Teleop":
+          this.audio = new Audio("/sounds/teleop.wav");
+          this.audio.play();
+          break;
+        case "Cooldown":
+          this.audio = new Audio("/sounds/match_stop.wav");
+          this.audio.play();
+          break;
+        default:
+          break;
+      }
+    }
+
+    const last_endgame = prevProps.arena?.match?.endgame;
+    const endgame = this.props.arena?.match?.endgame;
+
+    if (last_endgame !== undefined && !last_endgame && endgame) {
+      this.audio = new Audio("/sounds/endgame.wav");
+      this.audio.play();
+    }
+
+    const last_arena_state = prevProps.arena?.state?.state;
+    const arena_state = this.props.arena?.state?.state;
+
+    if (last_arena_state !== undefined && last_arena_state !== arena_state && arena_state === "Estop") {
+      this.audio = new Audio("/sounds/estop.wav");
+      this.audio.play();
+    }
+  }
+
   render() {
     if (!this.props.arena || !this.props.event)
       return <React.Fragment />
