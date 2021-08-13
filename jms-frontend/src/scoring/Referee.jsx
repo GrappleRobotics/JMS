@@ -78,7 +78,7 @@ class RefereePanel extends React.PureComponent {
 
 export class RefereeAlliance extends RefereePanel {
   TeamCard = (props) => {
-    let { station, live, idx, update } = props;
+    let { station, live, idx, update, endgame} = props;
     let alliance = station.station.alliance.toLowerCase();
     let team = station.team;
     let crossed = live.initiation_line_crossed[idx];
@@ -112,6 +112,7 @@ export class RefereeAlliance extends RefereePanel {
               live.endgame[idx] == "None" ? "light" : "success"
             }
             size="lg"
+            disabled={!endgame}
           />
         </Col>
       </Row>
@@ -163,6 +164,7 @@ export class RefereeAlliance extends RefereePanel {
             station={station}
             live={score.live}
             update={(field, data) => this.updateScore(alliance, field, data)}
+            endgame={match?.endgame || false}
           />)
         }
       </Row>

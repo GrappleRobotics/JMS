@@ -191,8 +191,11 @@ impl LoadedMatch {
         if self.remaining_time == Duration::ZERO {
           self.do_change_state(MatchPlayState::Complete);
         }
+        endgame = true;
       }
-      MatchPlayState::Complete => {}
+      MatchPlayState::Complete => {
+        endgame = true;
+      }
       MatchPlayState::Fault => {
         if first {
           warn!("Match fault");
