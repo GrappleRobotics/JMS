@@ -7,3 +7,4 @@ export const MONITOR = "/monitor";
 export const REPORTS = "/reports";
 export const AUDIENCE = "/audience";
 export const AUDIENCE_CONTROL = "/audience/control";
+export const DEBUG = "/debug";

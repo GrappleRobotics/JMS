@@ -1,5 +1,6 @@
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { Link, Route, Switch, useRouteMatch } from "react-router-dom";
@@ -43,7 +44,8 @@ class RefereePanel extends React.PureComponent {
               <Button
                 block
                 variant={`alliance-${alliance}`}
-                size="lg"
+                // @ts-ignore
+                size="xl"
                 onClick={() => this.updateScore(alliance, "Penalty", { [category.key]: 1 })}
               >
                 {category.name}
@@ -51,7 +53,8 @@ class RefereePanel extends React.PureComponent {
               <Button
                 block
                 variant="secondary"
-                size="lg"
+                // @ts-ignore
+                size="xl"
                 onClick={() => this.updateScore(alliance, "Penalty", { [category.key]: -1 })}
               >
                 SUBTRACT
@@ -66,6 +69,7 @@ class RefereePanel extends React.PureComponent {
   render() {
     return <Container fluid>
       {
+        // @ts-ignore
         (this.props.arena?.match?.score && this.props.arena?.stations) ? this.renderIt() : this.renderWaiting()
       }
     </Container>
@@ -80,7 +84,7 @@ export class RefereeAlliance extends RefereePanel {
     let crossed = live.initiation_line_crossed[idx];
 
     return withVal(team, () => <Col className="referee-team" data-alliance={alliance}>
-      <Row>
+      <Row className="mb-3">
         <Col className="team" md="auto"> { team } </Col>
         <Col>
           <Button
@@ -96,6 +100,21 @@ export class RefereeAlliance extends RefereePanel {
           </Button>
         </Col>
       </Row>
+      <Row>
+        <Col className="endgame-state">
+          <EnumToggleGroup
+            name={`${team}-endgame`}
+            value={live.endgame[idx]}
+            onChange={v => update("Endgame", { station: idx, endgame: v })}
+            values={["None", "Park", "Hang"]}
+            outline
+            variant={
+              live.endgame[idx] == "None" ? "light" : "success"
+            }
+            size="lg"
+          />
+        </Col>
+      </Row>
     </Col>) || <Col />
   }
 
@@ -107,6 +126,8 @@ export class RefereeAlliance extends RefereePanel {
   }
 
   renderIt() {
+    let match = this.props.arena?.match;
+
     let alliance = this.props.alliance.toLowerCase();
     let other_alliance = alliance == "blue" ? "red" : "blue";
 
@@ -120,6 +141,9 @@ export class RefereeAlliance extends RefereePanel {
         <Col>
           <h3 className="mb-0"> { this.props.arena.match.match.name } </h3>
           <i className="text-muted"> { this.props.alliance } Alliance Referee </i>
+        </Col>
+        <Col className="text-right">
+          <h3 className="text-muted"> { match?.state || "--" } &nbsp; { match?.remaining_time?.secs }s </h3>
         </Col>
       </Row>
       <Row>
@@ -148,33 +172,63 @@ export class RefereeAlliance extends RefereePanel {
 
 export class HeadReferee extends RefereePanel {
   renderTopBar = () => {
-    let state = this.props.arena.state?.state;
+    let match = this.props.arena?.match;
+    let state = this.props.arena?.state?.state;
 
-    return <Row className="mb-3">
-      <Col>
-        <h3 className="mb-0"> { this.props.arena.match?.match?.name || "Waiting for Scorekeeper..." } </h3>
-        <i className="text-muted"> Head Referee </i>
-      </Col>
-      <Col md="auto" className="head-ref-field-ax">
-        <Button
-          variant="purple"
-          size="lg"
-          // TODO: PIPE THIS
-          disabled={state === "MatchArmed" || state === "MatchPlay"}
-        >
-          FIELD RESET
-        </Button>
+    return <React.Fragment>
+      <Row className="mb-3">
+        <Col>
+          <h3 className="mb-0"> { this.props.arena?.match?.match?.name || "Waiting for Scorekeeper..." } </h3>
+          <i className="text-muted"> Head Referee </i>
+        </Col>
+        <Col className="text-center">
+          <h3 className="text-muted"> { match?.state || "--" } &nbsp; { match?.remaining_time?.secs }s </h3>
+        </Col>
+        <Col md="auto" className="head-ref-field-ax">
+          <Button
+            variant="purple"
+            size="lg"
+            // TODO: PIPE THIS
+            disabled={state === "MatchArmed" || state === "MatchPlay"}
+          >
+            FIELD RESET
+          </Button>
 
-        <Button
-          variant="success"
-          size="lg"
-          // TODO: PIPE THIS
-          disabled={state === "MatchArmed" || state === "MatchPlay"}
-        >
-          TEAMS ON FIELD
-        </Button>
-      </Col>
-    </Row>
+          <Button
+            variant="success"
+            size="lg"
+            // TODO: PIPE THIS
+            disabled={state === "MatchArmed" || state === "MatchPlay"}
+          >
+            TEAMS ON FIELD
+          </Button>
+        </Col>
+      </Row>
+    </React.Fragment>
+  }
+
+  RungLevel = (props) => {
+    let { score, alliance, endgame } = props;
+    let rung_level = score.live.rung_level;
+
+    return <Col>
+      <Button
+        variant={endgame ? (rung_level ? "success" : "danger") : "secondary"}
+        // @ts-ignore
+        size="xl"
+        block
+        onClick={v => this.updateScore(alliance, "RungLevel", !rung_level)}
+        disabled={!endgame}
+      >
+        <FontAwesomeIcon icon={rung_level ? faCheck : faTimes} />
+        &nbsp; &nbsp;
+        {
+          rung_level ? "RUNG LEVEL OK" : "RUNG NOT LEVEL"
+        }
+        &nbsp; &nbsp;
+        <FontAwesomeIcon icon={rung_level ? faCheck : faTimes} />
+      </Button>
+    </Col>
   }
 
   renderWaiting() {
@@ -182,7 +236,8 @@ export class HeadReferee extends RefereePanel {
   }
 
   renderIt() {
-    let score = this.props.arena.match.score;
+    let match = this.props.arena.match;
+    let { score, endgame } = match;
 
     return <React.Fragment>
       { this.renderTopBar() }
@@ -194,6 +249,18 @@ export class HeadReferee extends RefereePanel {
         <this.AllianceFouls
           alliance={"blue"}
           score={score.blue}
+        />
+      </Row>
+      <Row>
+        <this.RungLevel
+          alliance={"red"}
+          score={score.red}
+          endgame={endgame}
+        />
+        <this.RungLevel
+          alliance={"blue"}
+          score={score.blue}
+          endgame={endgame}
         />
       </Row>
     </React.Fragment>

@@ -3,7 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { AUDIENCE, AUDIENCE_CONTROL, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING } from 'paths';
+import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
@@ -16,6 +16,7 @@ import Reports from 'reports/Reports';
 import Audience from 'audience/Audience';
 import AudienceDisplayControl from 'audience/AudienceDisplayControl';
 import { RefereeRouter } from 'scoring/Referee';
+import Debug from 'Debug';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -140,7 +141,7 @@ export default class App extends React.Component {
         </this.wrapView>
       </Route>
       <Route path={AUDIENCE_CONTROL}>
-        <this.wrapView fullscreen>
+        <this.wrapView>
           <AudienceDisplayControl
             ws={this.ws}
           />
@@ -170,6 +171,11 @@ export default class App extends React.Component {
             ws={this.ws}
             arena={arena}
           />
+        </this.wrapView>
+      </Route>
+      <Route path={DEBUG}>
+        <this.wrapView navbar>
+          <Debug />
         </this.wrapView>
       </Route>
       <Route path="/">

@@ -29,6 +29,7 @@ pub struct MatchConfig {
   auto_time: Duration,
   pause_time: Duration,
   teleop_time: Duration,
+  endgame_time: Duration,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -44,7 +45,8 @@ pub struct LoadedMatch {
   #[serde(skip)]
   state_start_time: Instant,
 
-  config: MatchConfig
+  config: MatchConfig,
+  endgame: bool
 }
 
 impl LoadedMatch {
@@ -57,11 +59,13 @@ impl LoadedMatch {
       state_start_time: Instant::now(),
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
-        warmup_cooldown_time: Duration::from_secs(1),
-        auto_time: Duration::from_secs(3),
+        warmup_cooldown_time: Duration::from_secs(3),
+        auto_time: Duration::from_secs(15),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(3),
+        teleop_time: Duration::from_secs(2*60 + 15),
+        endgame_time: Duration::from_secs(30)
       },
+      endgame: false
     }
   }
 
@@ -153,6 +157,8 @@ impl LoadedMatch {
     self.state_first = false;
     let elapsed = self.elapsed();
 
+    let mut endgame = false;
+
     match self.state {
       MatchPlayState::Waiting => (),
       MatchPlayState::Warmup => {
@@ -178,6 +184,7 @@ impl LoadedMatch {
         if self.remaining_time == Duration::ZERO {
           self.do_change_state(MatchPlayState::Cooldown);
         }
+        endgame = self.remaining_time <= self.config.endgame_time;
       }
       MatchPlayState::Cooldown => {
         self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
@@ -192,6 +199,8 @@ impl LoadedMatch {
         }
       }
     }
+
+    self.endgame = endgame;
   }
 
   pub fn remaining_time(&self) -> Duration {
