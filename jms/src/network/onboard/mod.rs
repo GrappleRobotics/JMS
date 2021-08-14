@@ -25,12 +25,12 @@ pub struct OnboardNetwork {
   wan_iface: String,
   admin_iface: String,
   station_ifaces: HashMap<AllianceStationId, String>,
-  radio: FieldRadio,
+  radio: Option<FieldRadio>,
 }
 
 impl OnboardNetwork {
 
-  pub fn new(iface_wan: &str, iface_admin: &str, ifaces_blue: &[&str], ifaces_red: &[&str], radio: FieldRadio) -> super::NetworkResult<OnboardNetwork> {
+  pub fn new(iface_wan: &str, iface_admin: &str, ifaces_blue: &[&str], ifaces_red: &[&str], radio: Option<FieldRadio>) -> super::NetworkResult<OnboardNetwork> {
     let mut station_ifaces = HashMap::new();
 
     for (i, &iface) in ifaces_red.iter().enumerate() {
@@ -164,7 +164,9 @@ impl NetworkProvider for OnboardNetwork {
       }
     }).collect();
 
-    self.radio.configure(&team_radios[..]).await?;
+    if let Some(ref radio) = self.radio {
+      radio.configure(&team_radios[..]).await?;
+    }
 
     try_join!(fut_dhcp, fut_firewall)?;
     info!("Onboard Network Config Done!");

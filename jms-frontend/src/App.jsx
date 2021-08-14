@@ -3,7 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REPORTS, SCORING } from 'paths';
+import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
@@ -13,6 +13,10 @@ import { ScoringRouter } from 'scoring/Scoring';
 import Rankings from 'rankings/Rankings';
 import FieldMonitor from 'monitor/FieldMonitor';
 import Reports from 'reports/Reports';
+import Audience from 'audience/Audience';
+import AudienceDisplayControl from 'audience/AudienceDisplayControl';
+import { RefereeRouter } from 'scoring/Referee';
+import Debug from 'Debug';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -105,7 +109,7 @@ export default class App extends React.Component {
         </this.wrapView>
       </Route>
       <Route path={SCORING}>
-        <this.wrapView navbar>
+        <this.wrapView navbar fullscreen>
           <ScoringRouter
             ws={this.ws}
             arena={arena}
@@ -136,12 +140,42 @@ export default class App extends React.Component {
           />
         </this.wrapView>
       </Route>
+      <Route path={AUDIENCE_CONTROL}>
+        <this.wrapView>
+          <AudienceDisplayControl
+            ws={this.ws}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={AUDIENCE}>
+        <this.wrapView fullscreen>
+          <Audience
+            ws={this.ws}
+            arena={arena}
+            event={event}
+            matches={matches}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={REFEREE}>
+        <this.wrapView navbar>
+          <RefereeRouter
+            ws={this.ws}
+            arena={arena}
+          />
+        </this.wrapView>
+      </Route>
       <Route path={MONITOR}>
         <this.wrapView navbar fullscreen nopad>
           <FieldMonitor
             ws={this.ws}
             arena={arena}
           />
+        </this.wrapView>
+      </Route>
+      <Route path={DEBUG}>
+        <this.wrapView navbar>
+          <Debug />
         </this.wrapView>
       </Route>
       <Route path="/">
