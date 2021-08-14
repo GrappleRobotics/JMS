@@ -13,25 +13,40 @@ Network::Network(const char *ip, int port, const int bufferSize) : _bufferSize(b
 }
 
 void Network::nt_init() {
+	// Keep trying to open the socket until success
+	while (_connStat != ConnectionStatus::CONNECTED) {
+		if (_connStat == ConnectionStatus::CONNECTING) {
+			std::cout << "Closing Socket, reconnecting..." << std::endl;
+			_local_socket.close();
+		}
 
-	// Open socket
-	std::cout << "Opening socket..." << std::endl;
-	if (_local_socket.open(&_eth) < 0) {
-		std::cout << "Failed to open TCP socket" << std::endl;
+		// Set the status to connecting
+		_connStat = ConnectionStatus::CONNECTING;
+
+		std::cout << "Opening socket..." << std::endl;
+		if (_local_socket.open(&_eth) < 0) {
+			std::cout << "Failed to open TCP socket" << std::endl;
+		}
+		std::cout << "-- Socket open --" << std::endl;
+
+		_remote_address.set_ip_address(_ip);
+		_remote_address.set_port(_port);
+
+		std::cout << "Connecting to server..." << std::endl;
+		if (_local_socket.connect(_remote_address) != 0) {
+			std::cout << "[ERROR]: Unable to connect to " << _remote_address.get_ip_address() << ":" << _remote_address.get_port() << std::endl;
+		}
+
+		// check if it's connected
+		if (_local_socket.connect(_remote_address) != NSAPI_ERROR_IS_CONNECTED) {
+			std::cout << "[WARNING]: Binded but not connected to " << _remote_address.get_ip_address() << ":" << _remote_address.get_port() << std::endl;
+		} else if (_local_socket.connect(_remote_address) == NSAPI_ERROR_IS_CONNECTED) {
+			std::cout << "-- Connected to server at: " << _remote_address.get_ip_address() << ":" << _remote_address.get_port() << " --" << std::endl;
+			_connStat = ConnectionStatus::CONNECTED;
+		}
 	}
-	std::cout << "-- Socket open --" << std::endl;
 
-	_remote_address.set_ip_address(_ip);
-	_remote_address.set_port(_port);
-
-	std::cout << "Connecting to server..." << std::endl;
-	while (_local_socket.connect(_remote_address) != 0) {
-		std::cout << "Unable to connect to " << _remote_address.get_ip_address() << ":" << _remote_address.get_port() << std::endl;
-	}
-
-	if (_local_socket.connect(_remote_address) == NSAPI_ERROR_IS_CONNECTED) {
-		std::cout << "-- Connected to server at: " << _remote_address.get_ip_address() << ":" << _remote_address.get_port() << " --" << std::endl;
-	}
+	// Set the network state to idle, unless told otherwise
 	setState(State::IDLE);
 }
 
@@ -39,7 +54,7 @@ void Network::nt_init() {
 int Network::checkConn() {
 	if (_local_socket.connect(_remote_address) != NSAPI_ERROR_IS_CONNECTED) {
 		std::cout << "ERR: Connection lost, re-connecting...." << std::endl;
-		_local_socket.close();
+		_connStat = ConnectionStatus::CONNECTING;
 		nt_init();
 		return 1;
 	} else {
@@ -67,10 +82,14 @@ int Network::update() {
 			break;
 
 		case State::NETWORK_RECV:
-			nt_recv();
-			programValue = 0;
-			setState(State::IDLE);
+			programValue = nt_recv();
+			if (programValue == 0) {
+				setState(State::IDLE);
+			}
 			break;
+
+		default:
+			setState(State::IDLE);
 	}
 
 	return programValue != 0 ? 1 : 0;
@@ -78,34 +97,36 @@ int Network::update() {
 
 // Raw send of buffers
 int Network::nt_raw_send(uint8_t *buffer) {
+	checkConn();
 	int sendBytes = _local_socket.send(buffer, getBufferSize());
 	if (sendBytes < 0) {
-		printf("Send failed error: %d", sendBytes);
-		return 1;
-	} else {
-		if (checkConn() != 0 ) {
+		printf("Send first failed, error: %d\n", sendBytes);
+		
+		if (checkConn() != 1) {
 			sendBytes = _local_socket.send(buffer, getBufferSize());
 			if (sendBytes < 0) {
-				printf("Send failed error: %d", sendBytes);
+				printf("Send second failed, error: %d\n", sendBytes);
 				return 1;
 			}
 			return 0;
-		} 
-		return 0;
+		} else {
+			return 1;
+		}
 	}
+	return 0;
 }
 
 // Raw receive of buffer
 uint8_t *Network::nt_raw_recv() {
+	checkConn();
 	uint8_t *buffer = {};
 	int recvBytes = _local_socket.recv(buffer, getBufferSize());
 	if (recvBytes < 0) {
-		printf("Receive failed error: %d", recvBytes);
-	} else {
-		if (checkConn() != 0) {
+		printf("Receive frist failed, error: %d\n", recvBytes);
+		if (checkConn() != 1) {
 			recvBytes = _local_socket.recv(buffer, getBufferSize());
 			if (recvBytes < 0) {
-				printf("Receive failed error: %d", recvBytes);
+				printf("Receive first failed, error: %d\n", recvBytes);
 			}
 		}
 	}
@@ -114,40 +135,44 @@ uint8_t *Network::nt_raw_recv() {
 
 // message send
 int Network::nt_send() {
+	checkConn();
 	uint8_t *buffer = encodeSendMessage(getBufferSize());
 	printf("buffersize: %d\n", getBufferSize());
 	int sendBytes = _local_socket.send(buffer, getBufferSize());
 	if (sendBytes < 0) {
-		printf("Send failed error: %d", sendBytes);
-		return 1;
-	} else {
-		if (checkConn() != 0) {
+		printf("Send first failed, error: %d\n", sendBytes);
+		if (checkConn() != 1) {
 			sendBytes = _local_socket.send(buffer, getBufferSize());
 			if (sendBytes < 0) {
-				printf("Send failed error: %d", sendBytes);
+				printf("Send second failed, error: %d\n", sendBytes);
 				return 1;
 			}
 			return 0;
+		} else {
+			return 1;
 		}
-		return 0;
 	}
+	return 0;
 }
 
-// message receive
-void Network::nt_recv() {
+// message receive/
+int Network::nt_recv() {
+	checkConn();
 	uint8_t *buffer = {};
 	int recvBytes = _local_socket.recv(buffer, getBufferSize());
 	if (recvBytes < 0) {
-		printf("Receive failed error: %d", recvBytes);
-	} else {
-		if (checkConn() != 0) { // extra cheeky check to receive again if failed
+		printf("Receive first failed, error: %d\n", recvBytes);
+		if (checkConn() != 1) {
 			recvBytes = _local_socket.recv(buffer, getBufferSize());
 			if (recvBytes < 0) {
-				printf("Receive failed error: %d", recvBytes);
+				printf("Receive second failed, error: %d\n", recvBytes);
+				return 1;
 			}
+			return 0;
+		} else {
+			return 1;
 		}
-
-		// Decode
-		decodeReceiveMessage(buffer, recvBytes);
 	}
+	decodeReceiveMessage(buffer, recvBytes);
+	return 0;
 }

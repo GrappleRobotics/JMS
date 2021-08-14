@@ -8,7 +8,7 @@
 
 #include "libs/Controller.h"
 #include "libs/E_Stop/E_Stop.h"
-#include "libs/LED/LED.h"
+#include "libs/LED/LED_Strip.h"
 
 /**
  * Scoring Table microcontroller class

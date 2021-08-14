@@ -9,9 +9,9 @@ int STC_Controller::onInit() {
 		/**
 		 * Set initial send values
 		 */
+		std::cout << "Sending Role to JMS" << std::endl;
 		this->getNetwork().getSendPacket()->role = jms_electronics_NodeRole::jms_electronics_NodeRole_NODE_SCORING_TABLE;
 		// this->getNetwork().getSendPacket()->ipv4 = 
-		Abort abort({ABORT_1, ABORT_2, USER_BUTTON}, getStateController());
 
 
 		/**

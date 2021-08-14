@@ -43,6 +43,12 @@
 class Network : public JMS_NetworkMessages {
  public:
 
+	enum class ConnectionStatus {
+		DISCONNECTED = 0,
+		CONNECTING,
+		CONNECTED
+	};
+
 	enum class State {
 		UN_INITIALIZED = 0,
 		IDLE,
@@ -54,9 +60,6 @@ class Network : public JMS_NetworkMessages {
 	 * Create the interface and pass through the network values (IP/Port/buffSize)
 	 */
 	Network(const char *ip = JMS_IP, int port = JMS_PORT, const int bufferSize = JMS_BUFFER_SIZE);
-	~Network() {
-		printf("Yo, that shit just go detroyed [NETWORK]");
-	}
 
 	/**
 	 * Initialize network and connect to server
@@ -109,7 +112,7 @@ class Network : public JMS_NetworkMessages {
 	 * Sender and receivers
 	 */
 	int nt_send();
-	void nt_recv();
+	int nt_recv();
 
 	/**
 	 * Raw sender and receivers for buffers
@@ -121,6 +124,11 @@ class Network : public JMS_NetworkMessages {
 	 * Network state
 	 */
 	State _state{ State::UN_INITIALIZED };
+
+	/**
+	 * Network connection
+	 */
+	ConnectionStatus _connStat{ ConnectionStatus::DISCONNECTED };
 
 	/**
 	 * Network packet buffer
@@ -140,6 +148,7 @@ class Network : public JMS_NetworkMessages {
 	EthernetInterface _eth;
 	TCPSocket _local_socket;
 	SocketAddress _remote_address;
+
 };
 
 #endif
