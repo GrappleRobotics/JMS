@@ -1,10 +1,12 @@
-use diesel::{QueryDsl, RunQueryDsl, ExpressionMethods};
+use anyhow::{anyhow, bail};
+
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{arena::{AllianceStationOccupancy, ArenaSignal, ArenaState, SharedArena, matches::LoadedMatch, station::{AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{ArenaSignal, ArenaState, AudienceDisplay, SharedArena, matches::LoadedMatch, station::{AllianceStationId}}, db, models, scoring::scores::ScoreUpdateData};
 
-use super::{JsonMessage, WebsocketError, WebsocketMessageHandler};
+use super::{JsonMessage, WebsocketMessageHandler};
 
 pub struct ArenaWebsocketHandler {
   pub arena: SharedArena,
@@ -37,12 +39,16 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
       // Stations
       response.push(msg.noun("stations").to_data(&arena.stations)?);
     }
+    {
+      // Audience Display
+      response.push(msg.noun("audience_display").to_data(&arena.audience_display)?);
+    }
     // Ok(vec![ msg.to_data(&*arena)? ])
     Ok(response)
   }
 
   async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Vec<JsonMessage>> {
-    let response_msg = msg.response();
+    // let response_msg = msg.response();
 
     let response = vec![];
 
@@ -52,13 +58,13 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
           let sig: ArenaSignal = serde_json::from_value(data)?;
           self.arena.lock().await.signal(sig).await;
         }
-        _ => Err(response_msg.invalid_verb_or_data())?,
+        _ => bail!("Invalid verb or data"),
       },
       "alliances" => match (msg.verb.as_str(), msg.data) {
         ("update", Some(data)) => {
           self.alliance_update(serde_json::from_value(data)?).await?;
         }
-        _ => Err(response_msg.invalid_verb_or_data())?,
+        _ => bail!("Invalid verb or data"),
       },
       "match" => match (msg.verb.as_str(), msg.data) {
         ("loadTest", None) => {
@@ -70,7 +76,7 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
             let match_meta = matches.filter(id.eq(n as i32)).first::<models::Match>(&db::connection())?;
             self.arena.lock().await.load_match(LoadedMatch::new(match_meta))?;
           } else {
-            Err(response_msg.invalid_verb_or_data())?
+            bail!("{} is not an i64", match_id);
           }
         },
         ("unload", None) => {
@@ -85,17 +91,30 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
                 models::Alliance::Red => m.score.red.update(update.update),
               }
             },
-            None => Err(WebsocketError::Other("No Match!".to_owned()))?
+            None => bail!("Can't update score: no match is running!")
           }
           // self.arena.lock().await.current_match
         },
-        _ => Err(response_msg.invalid_verb_or_data())?,
+        _ => bail!("Invalid verb or data"),
       },
-      _ => Err(response_msg.unknown_noun())?,
+      "audience_display" => match (msg.verb.as_str(), msg.data) {
+        ("set", Some(data)) => {
+          let ad = self.audience_display_update(serde_json::from_value(data)?).await?;
+          self.arena.lock().await.audience_display = ad;
+        }
+        _ => bail!("Invalid verb or data")
+      }
+      _ => bail!("Unknown noun"),
     };
 
     return Ok(response);
   }
+}
+
+#[derive(Deserialize)]
+struct AudienceDisplayUpdate {
+  scene: String,
+  params: Option<Value>
 }
 
 #[derive(Deserialize)]
@@ -109,39 +128,67 @@ impl ArenaWebsocketHandler {
     let mut arena = self.arena.lock().await;
 
     let current_state = arena.current_state();
-    let idle = matches!(current_state, ArenaState::Idle);
+    let idle = matches!(current_state, ArenaState::Idle { .. });
     let prestart = matches!(current_state, ArenaState::Prestart { .. });
 
     if let Value::Object(ref map) = data.update {
-      let stn = arena.station_mut(data.station).ok_or(WebsocketError::Other(format!(
+      let stn = arena.station_mut(data.station).ok_or(anyhow!(
         "No alliance station: {:?}",
         data.station
-      )))?;
+      ))?;
       for (k, v) in map {
         match (k.as_str(), v) {
           ("bypass", Value::Bool(v)) if (idle || prestart) => stn.bypass = *v,
           ("team", Value::Null) if idle => {
-            stn.team = None;
             // Reset DS reports
-            stn.occupancy = AllianceStationOccupancy::Vacant;
-            stn.ds_report = None;
+            stn.reset();
           }
           ("team", Value::Number(x)) if idle => {
-            stn.occupancy = AllianceStationOccupancy::Vacant;
-            stn.ds_report = None;
+            stn.reset();
             stn.team = Some(x.as_u64().unwrap_or(0) as u16);
           },
           _ => {
-            return Err(WebsocketError::Other(format!(
+            bail!(
               "Unknown data key or format (or state): key={} value={:?}",
               k, v
-            )))
+            )
           }
         }
       }
       Ok(())
     } else {
-      Err(WebsocketError::Other("Update must be an object!".to_owned()))
+      bail!("update must be an object!")
     }
+  }
+
+  async fn audience_display_update(&self, data: AudienceDisplayUpdate) -> super::Result<AudienceDisplay> {
+    Ok(match (data.scene.as_str(), data.params) {
+      ("Field", None) => AudienceDisplay::Field,
+      ("MatchPreview", None) => AudienceDisplay::MatchPreview,
+      ("MatchPlay", None) => AudienceDisplay::MatchPlay,
+      ("MatchResults", None) => {
+        use crate::schema::matches::dsl::*;
+        let last_match = matches.filter(played.eq(true)).order_by(score_time.desc()).first::<models::Match>(&db::connection()).optional()?;
+        if let Some(last_match) = last_match {
+          AudienceDisplay::MatchResults(last_match)
+        } else {
+          bail!("Can't display results when no matches have been played!");
+        }
+      },
+      ("MatchResults", Some(Value::Number(match_id))) => {
+        use crate::schema::matches::dsl::*;
+        if let Some(n) = match_id.as_i64() {
+          let match_meta = matches.filter(id.eq(n as i32)).first::<models::Match>(&db::connection())?;
+          AudienceDisplay::MatchResults(match_meta)
+        } else {
+          bail!("{} is not an i64", match_id);
+        }
+      },
+      ("AllianceSelection", None) => AudienceDisplay::AllianceSelection,
+      ("CustomMessage", Some(Value::String(msg))) => {
+        AudienceDisplay::CustomMessage(msg)
+      },
+      (_, _) => bail!("Invalid Audience Display scene")
+    })
   }
 }

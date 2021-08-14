@@ -57,6 +57,9 @@
 		"cinttypes": "cpp",
 		"typeinfo": "cpp",
 		"mstd_atomic": "cpp",
-		"pb_encode.h": "c"
+		"pb_encode.h": "c",
+		"common.h": "c",
+		"socket.h": "c",
+		"types.h": "c"
 	}
 }

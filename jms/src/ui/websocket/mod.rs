@@ -6,15 +6,15 @@ pub use arena::ArenaWebsocketHandler;
 pub use event::EventWebsocketHandler;
 pub use matches::MatchWebsocketHandler;
 
+use anyhow::Result;
+
 use futures::{lock::Mutex, SinkExt, StreamExt};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, error, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::{net::{TcpListener, TcpStream}, sync::broadcast};
 use tokio_tungstenite::{WebSocketStream, accept_async, tungstenite};
-
-use crate::arena::exceptions::ArenaError;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JsonMessage {
@@ -78,13 +78,15 @@ impl JsonMessage {
     n
   }
 
-  pub fn unknown_noun(&self) -> WebsocketError {
-    WebsocketError::Other("Unknown noun".to_owned())
-  }
+  // pub fn unknown_noun(&self) -> anyhow::Error {
+  //   anyhow!("Unknown noun")
+  //   // WebsocketError::Other("Unknown noun".to_owned())
+  // }
 
-  pub fn invalid_verb_or_data(&self) -> WebsocketError {
-    WebsocketError::Other("Invalid verb/data".to_owned())
-  }
+  // pub fn invalid_verb_or_data(&self) -> anyhow::Error {
+  //   anyhow!("Unknown ")
+  //   // WebsocketError::Other("Invalid verb/data".to_owned())
+  // }
 }
 
 #[async_trait::async_trait]
@@ -136,13 +138,17 @@ impl Websockets {
       
             tokio::spawn(async move {
               if let Err(e) = connection_handler(stream, tx, rx, h).await {
-                match e {
-                  WebsocketError::Tungstenite(ref e) => match e {
-                    tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8 => (),
-                    err => error!("Tungstenite Error: {}", err),
-                  },
-                  err => error!("Error: {}", err),
+                match e.downcast_ref::<tungstenite::Error>() {
+                    Some(tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8) => (),
+                    _ => error!("Websocket Error: {}", e),
                 }
+                // match e {
+                //   WebsocketError::Tungstenite(ref e) => match e {
+                //     tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8 => (),
+                //     err => error!("Tungstenite Error: {}", err),
+                //   },
+                //   err => error!("Error: {}", err),
+                // }
               }
             });
           },
@@ -268,72 +274,72 @@ async fn process_incoming(
   Ok(())
 }
 
-#[derive(Debug)]
-pub enum WebsocketError {
-  Tungstenite(tungstenite::Error),
-  JSON(serde_json::Error),
-  IO(std::io::Error),
-  Arena(ArenaError),
-  Other(String),
-  DBError(diesel::result::Error)
-}
+// #[derive(Debug)]
+// pub enum WebsocketError {
+//   Tungstenite(tungstenite::Error),
+//   JSON(serde_json::Error),
+//   IO(std::io::Error),
+//   Arena(ArenaError),
+//   Other(String),
+//   DBError(diesel::result::Error)
+// }
 
-impl std::fmt::Display for WebsocketError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match *self {
-      WebsocketError::Tungstenite(ref e) => write!(f, "Tungstenite Error: {}", e),
-      WebsocketError::JSON(ref e) => write!(f, "JSON Error: {}", e),
-      WebsocketError::IO(ref e) => write!(f, "IO Error: {}", e),
-      WebsocketError::Arena(ref e) => write!(f, "Arena Error: {}", e),
-      WebsocketError::Other(ref s) => write!(f, "Error: {}", s),
-      WebsocketError::DBError(ref e) => write!(f, "DB Error: {}", e),
-    }
-  }
-}
+// impl std::fmt::Display for WebsocketError {
+//   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//     match *self {
+//       WebsocketError::Tungstenite(ref e) => write!(f, "Tungstenite Error: {}", e),
+//       WebsocketError::JSON(ref e) => write!(f, "JSON Error: {}", e),
+//       WebsocketError::IO(ref e) => write!(f, "IO Error: {}", e),
+//       WebsocketError::Arena(ref e) => write!(f, "Arena Error: {}", e),
+//       WebsocketError::Other(ref s) => write!(f, "Error: {}", s),
+//       WebsocketError::DBError(ref e) => write!(f, "DB Error: {}", e),
+//     }
+//   }
+// }
 
-// Error Handling
+// // Error Handling
 
-pub type Result<T> = std::result::Result<T, WebsocketError>;
+// pub type Result<T> = std::result::Result<T, WebsocketError>;
 
-impl error::Error for WebsocketError {
-  fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-    match *self {
-      WebsocketError::Tungstenite(ref e) => Some(e),
-      WebsocketError::JSON(ref e) => Some(e),
-      WebsocketError::IO(ref e) => Some(e),
-      WebsocketError::Arena(ref e) => Some(e),
-      WebsocketError::Other(_) => None,
-      WebsocketError::DBError(ref e) => Some(e),
-    }
-  }
-}
+// impl error::Error for WebsocketError {
+//   fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+//     match *self {
+//       WebsocketError::Tungstenite(ref e) => Some(e),
+//       WebsocketError::JSON(ref e) => Some(e),
+//       WebsocketError::IO(ref e) => Some(e),
+//       WebsocketError::Arena(ref e) => Some(e),
+//       WebsocketError::Other(_) => None,
+//       WebsocketError::DBError(ref e) => Some(e),
+//     }
+//   }
+// }
 
-impl From<tungstenite::Error> for WebsocketError {
-  fn from(e: tungstenite::Error) -> Self {
-    WebsocketError::Tungstenite(e)
-  }
-}
+// impl From<tungstenite::Error> for WebsocketError {
+//   fn from(e: tungstenite::Error) -> Self {
+//     WebsocketError::Tungstenite(e)
+//   }
+// }
 
-impl From<serde_json::Error> for WebsocketError {
-  fn from(e: serde_json::Error) -> Self {
-    WebsocketError::JSON(e)
-  }
-}
+// impl From<serde_json::Error> for WebsocketError {
+//   fn from(e: serde_json::Error) -> Self {
+//     WebsocketError::JSON(e)
+//   }
+// }
 
-impl From<std::io::Error> for WebsocketError {
-  fn from(e: std::io::Error) -> Self {
-    WebsocketError::IO(e)
-  }
-}
+// impl From<std::io::Error> for WebsocketError {
+//   fn from(e: std::io::Error) -> Self {
+//     WebsocketError::IO(e)
+//   }
+// }
 
-impl From<ArenaError> for WebsocketError {
-  fn from(e: ArenaError) -> Self {
-    WebsocketError::Arena(e)
-  }
-}
+// impl From<ArenaError> for WebsocketError {
+//   fn from(e: ArenaError) -> Self {
+//     WebsocketError::Arena(e)
+//   }
+// }
 
-impl From<diesel::result::Error> for WebsocketError {
-  fn from(e: diesel::result::Error) -> Self {
-    WebsocketError::DBError(e)
-  }
-}
+// impl From<diesel::result::Error> for WebsocketError {
+//   fn from(e: diesel::result::Error) -> Self {
+//     WebsocketError::DBError(e)
+//   }
+// }

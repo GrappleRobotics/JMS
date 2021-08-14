@@ -13,7 +13,17 @@ namespace MainController {
 	enum class State {
 		IDLE = 0,
 		PROGRAM_DO,
-		NETWORK_DO
+		INTERRUPT_DO
+	};
+
+	/**
+	 * @TODO
+	 * Might want to have different interrupt types for controller, not all have to be e stop types
+	 * But for the moment it's just e stop
+	 */
+	enum class InterruptType {
+		NONE = 0,
+		E_STOP = 1
 	};
 
 	/**
@@ -41,11 +51,12 @@ namespace MainController {
 
 		/**
 		 * Set controller
+		 * Set the main state, the network state, and optionally the buffer
 		 */
-		void setController(State st, Network::State nt_st = Network::State::IDLE, char *buffer = {0}) {
+		void setController(State st, Network::State nt_st = Network::State::IDLE) {
 			if (_network != nullptr) {
 				_state = st;
-				_network->setNetwork(nt_st, buffer);
+				_network->setNetwork(nt_st);
 			} else {
 				std::cout << "Network is null for state controller" << std::endl;
 			}
@@ -53,33 +64,67 @@ namespace MainController {
 
 
 		/**
-		 * Set controller primitive
+		 * Set controller primitive, used for interrupts
+		 * Sets the interrupt flag, next loop the program stops and completes interrupt code then continues
+		 * 
+		 * Set the main state of the program, the network state, interrupt type [NONE, E_STOP, PROGRAM], and input flag (if it's e stop, flag is e stop type)
+		 * if it's program. it's @TODO/EXTRA
 		 */
-		void interruptSetController(int mainSt, int nt_st = 0, char *buffer = {0}) {
+		void interruptSetController(int mainSt, int nt_st = 0, int intType = 0, int inputFlag = 0) {
 			_intMain_st = mainSt;
 			_intNt_st = nt_st;
-			_intBuffer = buffer;
-			_interruptFlag++;
+			_intType = intType;
+			_inputFlag = inputFlag;
+			_interruptFlag = 1;
+		}
+
+		void resetPrimitiveInterruptValues() {
+			_interruptFlag = 0;
+
+			_intMain_st = 0;
+			_intNt_st = 0;
+			_intType = 0;
+			_inputFlag = 0;
 		}
 
 		void updateStatus() {
 			if (_interruptFlag != 0) {
-				setController((State)_intMain_st, (Network::State)_intNt_st, _intBuffer);
-				_interruptFlag--;
+				std::cout << "Do interrupt" << std::endl;
+				switch (_intType) {
+					case (int)InterruptType::NONE:
+						std::cout << "No Interrupt type specified, or not supported yet" << std::endl;
+						setController(State::PROGRAM_DO, Network::State::IDLE);
+						_interruptFlag = 0;
+						break;
+
+					case (int)InterruptType::E_STOP:
+						_estop(); // Configure E Stop type
+						setController(State::INTERRUPT_DO, Network::State::NETWORK_SEND);
+						_interruptFlag = 0;
+						break;
+
+					default:
+						_intType = (int)InterruptType::NONE;
+						break;
+				}
 			}
 		}
 
 	 private:
+		int _estop();
 		int _interruptFlag = 0;
 		int _intMain_st;
 		int _intNt_st;
-		char *_intBuffer;
+		int _intType;
+		int _inputFlag;
 		State _state{ State::IDLE };
 		Network *_network = nullptr;
 	};
 
 	/**
 	 * Main Controller base class
+	 * 
+	 * @NOTE: Only the controller should be accessing the network, not sub layers e.g LED libraries.
 	 */
 	class Controller {
 	 public:
@@ -104,20 +149,20 @@ namespace MainController {
 		void update() {
 			_stateController->updateStatus();
 			switch (_stateController->getState()) {
-				case State::IDLE:
+				case State::IDLE: // do nothing
 					break;
 
-				case State::PROGRAM_DO:
+				case State::PROGRAM_DO: // receive from network, do code, then send
 					onUpdate();
 					break;
 
-				case State::NETWORK_DO:
-					_nt->update();
-					_stateController->setState(State::PROGRAM_DO);
-					// if (_nt->update() == 0) {
-					// } else {
-					// 	printf("Network State Issue");
-					// }
+				case State::INTERRUPT_DO:
+					std::cout << "Interrupting" << std::endl;
+					if (_nt->update() == 0) {
+						_stateController->setState(State::PROGRAM_DO);
+					} else {
+						std::cout << "Interrupt state error, trying again" << std::endl;
+					}
 					break;
 			}
 		}

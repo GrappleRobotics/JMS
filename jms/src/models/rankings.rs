@@ -44,10 +44,10 @@ impl TeamRanking {
   }
 
   pub fn update(&mut self, us_score: &DerivedScore, them_score: &DerivedScore, conn: &db::ConnectionT) -> QueryResult<()> {
-    if us_score.total_score.total() > them_score.total_score.total() {
+    if us_score.total_score > them_score.total_score {
       self.rp += 2;
       self.win += 1;
-    } else if us_score.total_score.total() < them_score.total_score.total() {
+    } else if us_score.total_score < them_score.total_score {
       self.loss += 1;
     } else {
       self.rp += 1;
@@ -56,8 +56,8 @@ impl TeamRanking {
 
     self.rp += us_score.total_bonus_rp as i32;
 
-    self.auto_points += us_score.total_score.auto as i32;
-    self.teleop_points += us_score.total_score.teleop as i32;
+    self.auto_points += us_score.mode_score.auto as i32;
+    self.teleop_points += us_score.mode_score.teleop as i32;
     self.endgame_points += us_score.endgame_points as i32;
 
     self.played += 1;

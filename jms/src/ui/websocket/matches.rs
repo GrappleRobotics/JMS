@@ -1,6 +1,8 @@
+use anyhow::bail;
+
 use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 
-use crate::{db, models, schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::{JsonMessage, WebsocketError}};
+use crate::{db, models, schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
 
 use super::WebsocketMessageHandler;
 pub struct MatchWebsocketHandler {
@@ -36,17 +38,23 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
       let next_match = matches.filter(played.eq(false)).first::<models::Match>(&db::connection()).optional()?;
       response.push(msg.noun("next").to_data(&next_match)?);
     }
+    {
+      // Last Match
+      use crate::schema::matches::dsl::*;
+      let last_match = matches.filter(played.eq(true)).order_by(score_time.desc()).first::<models::Match>(&db::connection()).optional()?;
+      response.push(msg.noun("last").to_data(&last_match)?);
+    }
     Ok(response)
   }
 
   async fn handle(&mut self, msg: JsonMessage) -> super::Result<Vec<JsonMessage>> {
-    let response_msg = msg.response();
+    // let response_msg = msg.response();
 
     match msg.noun.as_str() {
       "quals" => match (msg.verb.as_str(), msg.data) {
         ("clear", None) => {
           if self.quals.has_played() {
-            Err(WebsocketError::Other("Cannot delete after matches have started".to_owned()))?
+            bail!("Cannot delete after matches have started")
           } else {
             self.quals.delete();
           }
@@ -55,12 +63,12 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
           let params = serde_json::from_value(data)?;
           self.quals.generate(params).await;
         },
-        _ => Err(response_msg.invalid_verb_or_data())?
+        _ => bail!("Invalid verb or data")
       },
       "playoffs" => match(msg.verb.as_str(), msg.data) {
         ("clear", None) => {
           if self.playoffs.has_played() {
-            Err(WebsocketError::Other("Cannot delete after matches have started".to_owned()))?
+            bail!("Cannot delete after matches have started")
           } else {
             self.playoffs.delete();
           }
@@ -69,9 +77,9 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
           let params = serde_json::from_value(data)?;
           self.playoffs.generate(params).await;
         },
-        _ => Err(response_msg.invalid_verb_or_data())?
+        _ => bail!("Invalid verb or data")
       }
-      _ => Err(response_msg.invalid_verb_or_data())?
+      _ => bail!("Unknown noun")
     }
     Ok(vec![])
   }

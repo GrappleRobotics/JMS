@@ -12,8 +12,7 @@ pub fn awards_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     awards.load::<models::Award>(&db::connection())?
   };
   
-  let title = format!("Awards Report - {}", event_name);
-  let mut doc = report_pdf(&title);
+  let mut doc = report_pdf("Awards Report", &event_name, true);
   
   let headers = vec!["Award", "Team", "Awardee"];
   let rows: Vec<Vec<String>> = awards.iter().flat_map(|a| {

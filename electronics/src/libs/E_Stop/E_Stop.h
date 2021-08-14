@@ -4,23 +4,7 @@
 #include <vector>
 #include "libs/Button/Button.h"
 #include "libs/Controller.h"
-
-/**
- * E-Stop button type
- */
-enum class E_StopType {
-	NONE = 0,
-
-	E_STOP_B_ALLIANCE_1,
-	E_STOP_B_ALLIANCE_2,
-	E_STOP_B_ALLIANCE_3,
-
-	E_STOP_R_ALLIANCE_1,
-	E_STOP_R_ALLIANCE_2,
-	E_STOP_R_ALLIANCE_3,
-
-	ABORT
-};
+#include "libs/E_Stop/E_StopType.h"
 
 
 /**
@@ -65,54 +49,7 @@ class E_Stop {
 	 * Send stop signal/change current state to network send stop
 	 */
 	void sendStop() {
-		char *test = "E Stop Works";
-
-		switch (_stopTypeInt) {
-			case (int)E_StopType::NONE:
-				_stopTypeInt = (int)E_StopType::ABORT;
-				_type = (E_StopType)_stopTypeInt;
-				printf("None");
-				sendStop();
-				break;
-
-			// Blue Alliance stations
-			case (int)E_StopType::E_STOP_B_ALLIANCE_1:
-				printf("Alliance Stop called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
-				break;
-
-			case (int)E_StopType::E_STOP_B_ALLIANCE_2:
-				printf("Alliance Stop called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
-				break;
-
-			case (int)E_StopType::E_STOP_B_ALLIANCE_3:
-				printf("Alliance Stop called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
-				break;
-
-			// Red Alliance stations
-			case (int)E_StopType::E_STOP_R_ALLIANCE_1:
-				printf("Alliance Stop called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
-				break;
-
-			case (int)E_StopType::E_STOP_R_ALLIANCE_2:
-				printf("Alliance Stop called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
-				break;
-
-			case (int)E_StopType::E_STOP_R_ALLIANCE_3:
-				printf("Alliance Stop called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
-				break;
-
-			// Abort game
-			case (int)E_StopType::ABORT:
-				printf("Abort called");
-				_ct.interruptSetController((int)MainController::State::NETWORK_DO, (int)Network::State::NETWORK_SEND, test);
-				break;
-		}
+		_ct.interruptSetController((int)MainController::State::INTERRUPT_DO, (int)Network::State::NETWORK_SEND, (int)MainController::InterruptType::E_STOP, _stopTypeInt);
 	}
 
 	ButtonInterrupt get() {
@@ -128,6 +65,7 @@ class E_Stop {
 	E_StopType _type;
 	int _stopTypeInt;
 	MainController::StateController &_ct;
+	int _sendStopSent;
 };
 
 /**

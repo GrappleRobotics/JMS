@@ -1,13 +1,15 @@
 use std::time::{Duration, Instant};
 
+use anyhow::{Result, bail};
+
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{db, models::{self, Alliance, MatchGenerationRecordData, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
-
-use super::exceptions::{MatchError, MatchResult};
+use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
 
 use serde::Serialize;
+
+use super::exceptions::MatchIllegalStateChange;
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Display, Serialize)]
 pub enum MatchPlayState {
@@ -21,12 +23,13 @@ pub enum MatchPlayState {
   Fault, // E-stop, cancelled, etc. Fault is unrecoverable without reloading the match.
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct MatchConfig {
   warmup_cooldown_time: Duration,
   auto_time: Duration,
   pause_time: Duration,
   teleop_time: Duration,
+  endgame_time: Duration,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -41,8 +44,9 @@ pub struct LoadedMatch {
   state_first: bool,
   #[serde(skip)]
   state_start_time: Instant,
-  #[serde(skip)]
-  config: MatchConfig
+
+  config: MatchConfig,
+  endgame: bool
 }
 
 impl LoadedMatch {
@@ -55,11 +59,13 @@ impl LoadedMatch {
       state_start_time: Instant::now(),
       remaining_time: Duration::from_secs(0),
       config: MatchConfig {
-        warmup_cooldown_time: Duration::from_secs(1),
-        auto_time: Duration::from_secs(1),
+        warmup_cooldown_time: Duration::from_secs(3),
+        auto_time: Duration::from_secs(15),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(1),
+        teleop_time: Duration::from_secs(2*60 + 15),
+        endgame_time: Duration::from_secs(30)
       },
+      endgame: false
     }
   }
 
@@ -71,12 +77,12 @@ impl LoadedMatch {
     &self.match_meta
   }
 
-  pub fn start(&mut self) -> MatchResult<()> {
+  pub fn start(&mut self) -> Result<()> {
     if self.state == MatchPlayState::Waiting {
       self.do_change_state(MatchPlayState::Warmup);
       Ok(())
     } else {
-      Err(MatchError::IllegalStateChange {
+      bail!(MatchIllegalStateChange {
         from: self.state,
         to: MatchPlayState::Waiting,
         why: "Match not ready!".to_owned(),
@@ -84,22 +90,23 @@ impl LoadedMatch {
     }
   }
 
-  pub async fn commit_score(&mut self) -> MatchResult<()> {
+  pub async fn commit_score(&mut self) -> Result<Option<models::Match>> {
     if self.match_meta.match_type != models::MatchType::Test {
       if self.state == MatchPlayState::Complete {
-        let red = self.score.red.derive();
-        let blue = self.score.blue.derive();
+        let red = self.score.red.derive(&self.score.blue);
+        let blue = self.score.blue.derive(&self.score.red);
 
         let mut winner = None;
-        if blue.total_score.total() > red.total_score.total() {
+        if blue.total_score > red.total_score {
           winner = Some(Alliance::Blue);
-        } else if red.total_score.total() > blue.total_score.total() {
+        } else if red.total_score > blue.total_score {
           winner = Some(Alliance::Red);
         }
 
         self.match_meta.played = true;
         self.match_meta.winner = winner;
         self.match_meta.score = Some(SQLJson(self.score.clone()));
+        self.match_meta.score_time = Some(SQLDatetime(chrono::Local::now().naive_utc()));
 
         {
           use crate::schema::matches::dsl::*;
@@ -130,12 +137,12 @@ impl LoadedMatch {
           }
         }
 
-        Ok(())
+        Ok(Some(self.match_meta.clone()))
       } else {
-        Err(MatchError::WrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
+        bail!(MatchWrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
       }
     } else {
-      Ok(())
+      Ok(None)
     }
   }
 
@@ -149,6 +156,8 @@ impl LoadedMatch {
     let first = self.state_first;
     self.state_first = false;
     let elapsed = self.elapsed();
+
+    let mut endgame = false;
 
     match self.state {
       MatchPlayState::Waiting => (),
@@ -175,20 +184,26 @@ impl LoadedMatch {
         if self.remaining_time == Duration::ZERO {
           self.do_change_state(MatchPlayState::Cooldown);
         }
+        endgame = self.remaining_time <= self.config.endgame_time;
       }
       MatchPlayState::Cooldown => {
         self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
         if self.remaining_time == Duration::ZERO {
           self.do_change_state(MatchPlayState::Complete);
         }
+        endgame = true;
       }
-      MatchPlayState::Complete => {}
+      MatchPlayState::Complete => {
+        endgame = true;
+      }
       MatchPlayState::Fault => {
         if first {
           warn!("Match fault");
         }
       }
     }
+
+    self.endgame = endgame;
   }
 
   pub fn remaining_time(&self) -> Duration {

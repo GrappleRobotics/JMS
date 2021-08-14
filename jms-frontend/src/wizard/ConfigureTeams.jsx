@@ -1,4 +1,4 @@
-import { faCloudDownloadAlt, faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCloudDownloadAlt, faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditableFormControl from "components/elements/EditableFormControl";
 import React from "react";
@@ -208,6 +208,7 @@ export default class ConfigureTeams extends React.Component {
             <th> Name </th>
             <th> Affiliation </th>
             <th> Location </th>
+            <th> WPA </th>
             <th> Actions </th>
           </tr>
         </thead>
@@ -225,6 +226,7 @@ export default class ConfigureTeams extends React.Component {
             <td>
               <this.newTeamField id="location" name="Location..." />
             </td>
+            <td></td>
             <td></td>
           </tr>
           {
@@ -247,6 +249,11 @@ export default class ConfigureTeams extends React.Component {
                   team={t}
                   field="location"
                 />
+              </td>
+              <td>
+                {
+                  (t.wpakey || "").length > 0 ? <FontAwesomeIcon className="text-success" icon={faCheck} /> : <FontAwesomeIcon className="text-danger" icon={faTimes} />
+                }
               </td>
               <td>
                 {

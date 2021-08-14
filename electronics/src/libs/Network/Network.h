@@ -6,6 +6,12 @@
  */
 #include "Config.h"
 
+/**
+ * JMS Packets/Messages
+ * Send/Recv
+ */
+#include "Messages/JMS_Network.h"
+
 
 /**
  * pb
@@ -34,8 +40,14 @@
  * Network Client for connecting to servers (JMS for the moment) 
  * @TODO Have server as optional setup in network
  */
-class Network {
+class Network : public JMS_NetworkMessages {
  public:
+
+	enum class ConnectionStatus {
+		DISCONNECTED = 0,
+		CONNECTING,
+		CONNECTED
+	};
 
 	enum class State {
 		UN_INITIALIZED = 0,
@@ -48,9 +60,6 @@ class Network {
 	 * Create the interface and pass through the network values (IP/Port/buffSize)
 	 */
 	Network(const char *ip = JMS_IP, int port = JMS_PORT, const int bufferSize = JMS_BUFFER_SIZE);
-	~Network() {
-		free(_buffer);
-	}
 
 	/**
 	 * Initialize network and connect to server
@@ -68,7 +77,7 @@ class Network {
 	 * Get the buffer size in bytes
 	 */
 	size_t getBufferSize() {
-		return (sizeof(char) * _bufferSize);
+		return (sizeof(uint8_t) * _bufferSize);
 	}
 
 	/**
@@ -89,10 +98,8 @@ class Network {
 	 * Set the network, 
 	 * and on next update it will process and execute request
 	 */
-	void setNetwork(State st, char *buffer = {0}) {
+	void setNetwork(State st) {
 		setState(st);
-		_buffer = nullptr; // flush the local buffer
-		_buffer = buffer;
 	}
 
 	/**
@@ -104,8 +111,14 @@ class Network {
 	/**
 	 * Sender and receivers
 	 */
-	int nt_send(char *buffer);
-	char *nt_recv();
+	int nt_send();
+	int nt_recv();
+
+	/**
+	 * Raw sender and receivers for buffers
+	 */
+	int nt_raw_send(uint8_t *buffer);
+	uint8_t *nt_raw_recv();
 
 	/**
 	 * Network state
@@ -113,9 +126,14 @@ class Network {
 	State _state{ State::UN_INITIALIZED };
 
 	/**
-	 * Network packet
+	 * Network connection
 	 */
-	char *_buffer;
+	ConnectionStatus _connStat{ ConnectionStatus::DISCONNECTED };
+
+	/**
+	 * Network packet buffer
+	 */
+	// uint8_t *_buffer;
 
 	/**
 	 * Network values
@@ -130,6 +148,7 @@ class Network {
 	EthernetInterface _eth;
 	TCPSocket _local_socket;
 	SocketAddress _remote_address;
+
 };
 
 #endif

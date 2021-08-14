@@ -24,7 +24,7 @@ export default class MatchControl extends React.Component {
           <Button
             variant="danger"
             onClick={() => ws.send("arena", "match", "unload")}
-            disabled={arena?.state?.state !== "Idle"}
+            disabled={arena?.state?.state !== "Idle" || !!!arena?.match}
           >
             Unload Match
           </Button>
@@ -69,6 +69,7 @@ export default class MatchControl extends React.Component {
             state={arena?.state}
             match={arena?.match}
             onSignal={(data) => ws.send("arena", "state", "signal", data)}
+            onAudienceDisplay={(scene, params) => ws.send("arena", "audience_display", "set", { scene: scene, params: params })}
           />
         </Col>
       </Row>
