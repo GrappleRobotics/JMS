@@ -100,6 +100,8 @@ namespace MainController {
 
 	/**
 	 * Main Controller base class
+	 * 
+	 * @NOTE: Only the controller should be accessing the network, not sub layers e.g LED libraries.
 	 */
 	class Controller {
 	 public:
