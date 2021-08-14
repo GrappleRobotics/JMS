@@ -109,7 +109,7 @@ export default class App extends React.Component {
         </this.wrapView>
       </Route>
       <Route path={SCORING}>
-        <this.wrapView navbar>
+        <this.wrapView navbar fullscreen>
           <ScoringRouter
             ws={this.ws}
             arena={arena}

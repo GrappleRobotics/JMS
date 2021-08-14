@@ -30,6 +30,7 @@ $theme-colors: (
 
 html, body, #root {
   height: 100%;
+  touch-action: manipulation;
 }
 
 .wrapper {
@@ -370,29 +371,6 @@ th {
   }
 }
 
-.scorer-card {
-  @each $alliance in blue, red {
-    $tc: theme-color("alliance-#{$alliance}");
-    &[data-alliance=#{$alliance}] {
-      > .card-header {
-        background-color: desaturate(darken($tc, 15%), 25%);
-      }
-      > .card-body {
-        background-color: desaturate(darken($tc, 40%), 40%);
-      }
-    }
-  }
-
-  .card-body {
-    .row {
-      margin-bottom: 25px;
-      &:last-child {
-        margin-bottom: 0px;
-      }
-    }
-  }
-}
-
 #rankings-container {
   padding: 0;
 }
@@ -635,6 +613,42 @@ th {
 .head-ref-field-ax {
   > .btn {
     margin-left: 1em;
+  }
+}
+
+.scorer-container {
+  .scorer-img {
+    img {
+      max-width: 40vw;
+      max-height: calc(100vh - 280px);
+      // height: 100%;
+      object-fit: contain;
+    }
+  }
+
+  .scorer-col {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .scorer-button-pair {
+    > *:first-child {
+      padding-right: 0;
+    }
+
+    > *:last-child {
+      padding-left: 0;
+    }
+
+    .btn {
+      font-size: 1.5em;
+      height: 5em;
+
+      .current-value {
+        font-size: 2em;
+      }
+    }
   }
 }
 
