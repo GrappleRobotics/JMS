@@ -38,13 +38,19 @@ pub struct PowerCellCounts {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Penalties {
+  pub fouls: usize,
+  pub tech_fouls: usize,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LiveScore {
   pub initiation_line_crossed: Vec<bool>,
   pub power_cells: ModeScore<PowerCellCounts>,
   // TODO: Control Panel (if we are about it)
   pub endgame: Vec<EndgamePointType>,
   pub rung_level: bool,
-  // TODO: Deductions / Fouls / Cards
+  pub penalties: Penalties
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -55,8 +61,10 @@ pub struct DerivedScore {
   pub shield_gen_rp: bool,
   pub stage3_rp: bool,
   pub stage: usize,
-  pub total_score: ModeScore<isize>,
-  pub total_bonus_rp: usize
+  pub mode_score: ModeScore<isize>,
+  pub penalty_score: usize,
+  pub total_score: usize,
+  pub total_bonus_rp: usize,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -89,8 +97,8 @@ pub struct MatchScoreSnapshot {
 
 impl Into<MatchScoreSnapshot> for MatchScore {
   fn into(self) -> MatchScoreSnapshot {
-    let derive_red = self.red.derive();
-    let derive_blue = self.blue.derive();
+    let derive_red = self.red.derive(&self.blue);
+    let derive_blue = self.blue.derive(&self.red);
     
     MatchScoreSnapshot {
       red: SnapshotScore { live: self.red, derived: derive_red },
@@ -122,7 +130,13 @@ pub enum ScoreUpdate {
     bottom: isize,
   },
   Endgame { station: usize, endgame: EndgamePointType },
-  RungLevel(bool)
+  RungLevel(bool),
+  Penalty {
+    #[serde(default)]
+    fouls: isize,
+    #[serde(default)]
+    tech_fouls: isize
+  }
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -141,11 +155,15 @@ impl LiveScore {
         teleop: PowerCellCounts { outer: 0, inner: 0, bottom: 0 },
       },
       endgame: vec![EndgamePointType::None; num_teams],
-      rung_level: false
+      rung_level: false,
+      penalties: Penalties { fouls: 0, tech_fouls: 0 }
     }
   }
 
-  pub fn derive(&self) -> DerivedScore {
+  pub fn derive(&self, other_alliance: &LiveScore) -> DerivedScore {
+    let penalty_points = other_alliance.penalty_points_other_alliance();
+    let mode_score = self.mode_score();
+
     DerivedScore {
       initiation_points: self.initiation_points(),
       cell_points: self.cell_points(),
@@ -153,8 +171,10 @@ impl LiveScore {
       shield_gen_rp: self.shield_gen_rp(),
       stage3_rp: self.stage3_rp(),
       stage: self.shield_gen_stage(),
-      total_score: self.total_score(),
-      total_bonus_rp: self.total_bonus_rp()
+      penalty_score: penalty_points,
+      total_score: mode_score.total() as usize + penalty_points,
+      mode_score: mode_score,
+      total_bonus_rp: self.total_bonus_rp(),
     }
   }
 
@@ -176,6 +196,10 @@ impl LiveScore {
       ScoreUpdate::RungLevel(is_level) => {
         self.rung_level = is_level;
       },
+      ScoreUpdate::Penalty { fouls, tech_fouls } => {
+        self.penalties.fouls = saturating_offset(self.penalties.fouls, fouls);
+        self.penalties.tech_fouls = saturating_offset(self.penalties.tech_fouls, tech_fouls);
+      }
     }
   }
 
@@ -223,7 +247,11 @@ impl LiveScore {
     self.shield_gen_stage() == 3
   }
 
-  fn total_score(&self) -> ModeScore<isize> {
+  fn penalty_points_other_alliance(&self) -> usize {
+    self.penalties.fouls * 3 + self.penalties.tech_fouls * 15
+  }
+
+  fn mode_score(&self) -> ModeScore<isize> {
     let cell_points = self.cell_points();
     ModeScore {
       auto: self.initiation_points() + cell_points.auto,

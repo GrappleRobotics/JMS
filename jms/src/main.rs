@@ -61,7 +61,8 @@ async fn main() -> anyhow::Result<()> {
       "ens19.100",
       &vec!["ens19.10", "ens19.20", "ens19.30"],
       &vec!["ens19.40", "ens19.50", "ens19.60"],
-      radio
+      // Some(radio)
+      None
     )
     .unwrap(),
   );

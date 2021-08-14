@@ -71,6 +71,17 @@ pub enum ArenaSignal {
   MatchCommit,
 }
 
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "scene", content = "params")]
+pub enum AudienceDisplay {
+  Field,
+  MatchPreview,
+  MatchPlay,
+  MatchResults(models::Match),
+  AllianceSelection,
+  CustomMessage(String)
+}
+
 // /**
 //  * Who's permitted on the field?
 //  */
@@ -171,6 +182,8 @@ pub struct Arena {
   #[serde(rename = "match")]
   pub current_match: Option<LoadedMatch>,
   pub stations: Vec<AllianceStation>,
+
+  pub audience_display: AudienceDisplay
 }
 
 pub type SharedArena = Arc<Mutex<Arena>>;
@@ -188,6 +201,7 @@ impl Arena {
       pending_signal: Arc::new(Mutex::new(None)),
       current_match: None,
       stations: vec![],
+      audience_display: AudienceDisplay::Field
     };
 
     for alliance in vec![Alliance::Blue, Alliance::Red] {
@@ -398,6 +412,7 @@ impl Arena {
         let m = self.current_match.as_mut().unwrap();
         if first {
           info!("Match play!");
+          self.audience_display = AudienceDisplay::MatchPlay;
           m.start()?;
         }
         if m.current_state() == MatchPlayState::Complete {
@@ -415,8 +430,12 @@ impl Arena {
       (ArenaState::MatchCommit, _) => {
         if first {
           self.update_match_teams()?;
-          self.current_match.as_mut().unwrap().commit_score().await?;
+          let m = self.current_match.as_mut().unwrap().commit_score().await?;
           self.prepare_state_change(ArenaState::Idle { ready: false })?;
+
+          if let Some(m) = m {
+            self.audience_display = AudienceDisplay::MatchResults(m);
+          }
         }
       },
       (state, _) => Err(anyhow!("Unimplemented state: {:?}", state))?,

@@ -32,6 +32,18 @@ export default class MatchFlow extends React.Component {
             </MatchFlowButton>
           </Col>
           <Col>
+            <Button
+              size="lg"
+              className="p-3"
+              block
+              variant={!!!this.props.match ? "secondary" : "warning"}
+              disabled={!!!this.props.match}
+              onClick={() => this.props.onAudienceDisplay("MatchPreview", null)}
+            >
+              Match Preview
+            </Button>
+          </Col>
+          <Col>
             <MatchFlowButton 
               state={this.props.state} 
               stateName="MatchArmed"

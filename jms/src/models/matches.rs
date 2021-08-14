@@ -33,7 +33,8 @@ pub struct Match {
   // Playoffs only
   pub match_subtype: Option<MatchSubtype>,
   pub red_alliance: Option<i32>,
-  pub blue_alliance: Option<i32>
+  pub blue_alliance: Option<i32>,
+  pub score_time: Option<SQLDatetime>,
 }
 
 impl Match {
@@ -51,7 +52,8 @@ impl Match {
       winner: None,
       match_subtype: None,
       red_alliance: None,
-      blue_alliance: None
+      blue_alliance: None,
+      score_time: None
     }
   }
 
@@ -78,11 +80,12 @@ impl Serialize for Match {
   where
       S: Serializer,
 {
-    let mut state = serializer.serialize_struct("Match", 14)?;
+    let mut state = serializer.serialize_struct("Match", 15)?;
     state.serialize_field("id", &self.id)?;
     state.serialize_field("type", &self.match_type)?;
     state.serialize_field("subtype", &self.match_subtype)?;
     state.serialize_field("time", &self.start_time)?;
+    state.serialize_field("score_time", &self.score_time)?;
     state.serialize_field("name", &self.name())?;
     state.serialize_field("set_number", &self.set_number)?;
     state.serialize_field("match_number", &self.match_number)?;
