@@ -1,37 +1,12 @@
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::SocketAddr;
 
 use anyhow::{bail, Result};
 
 use crate::{arena::station::AllianceStationId, utils::ssh::{CommandResult, SSHSession}};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
-pub struct FieldRadioSettings {
-  pub ip: Ipv4Addr,
-  pub user: String,
-  pub pass: String,
+use self::settings::FieldRadioSettings;
 
-  // None = no admin
-  pub admin_ssid: Option<String>,
-  pub admin_key: Option<String>,
-  
-  // None = "auto"
-  pub admin_channel: Option<usize>,
-  pub team_channel: Option<usize>
-}
-
-impl Default for FieldRadioSettings {
-  fn default() -> Self {
-    Self {
-      ip: Ipv4Addr::new(10, 0, 100, 2),
-      user: "root".to_owned(),
-      pass: "root".to_owned(),
-      admin_ssid: Some("JMS".to_owned()),
-      admin_key: Some("jmsR0cks".to_owned()),
-      admin_channel: None,
-      team_channel: None
-    }
-  }
-}
+pub mod settings;
 
 pub struct TeamRadioConfig {
   pub station: AllianceStationId,

@@ -10,49 +10,52 @@ use crate::db;
 use crate::models::{self, Alliance};
 use crate::network::radio::TeamRadioConfig;
 
+use self::settings::OnboardNetworkSettings;
+
 use super::NetworkProvider;
 use super::radio::FieldRadio;
 
 pub mod netlink;
 pub mod dhcp;
 pub mod firewall;
+pub mod settings;
 
 const ADMIN_IP: &'static str = "10.0.100.5/24";
 const ADMIN_ROUTER: &'static str = "10.0.100.1/24";
 
 pub struct OnboardNetwork {
+  settings: OnboardNetworkSettings,
   nl_handle: rtnetlink::Handle,
-  wan_iface: String,
-  admin_iface: String,
   station_ifaces: HashMap<AllianceStationId, String>,
   radio: Option<FieldRadio>,
 }
 
 impl OnboardNetwork {
 
-  pub fn new(iface_wan: &str, iface_admin: &str, ifaces_blue: &[&str], ifaces_red: &[&str], radio: Option<FieldRadio>) -> super::NetworkResult<OnboardNetwork> {
+  pub fn new(settings: OnboardNetworkSettings) -> super::NetworkResult<OnboardNetwork> {
     let mut station_ifaces = HashMap::new();
 
-    for (i, &iface) in ifaces_red.iter().enumerate() {
+    for (i, iface) in settings.ifaces_red.iter().enumerate() {
       let id = AllianceStationId {
         alliance: Alliance::Red,
         station: (i + 1) as u32,
       };
-      station_ifaces.insert(id, iface.to_owned());
+      station_ifaces.insert(id, iface.clone());
     }
 
-    for (i, &iface) in ifaces_blue.iter().enumerate() {
+    for (i, iface) in settings.ifaces_blue.iter().enumerate() {
       let id = AllianceStationId {
         alliance: Alliance::Blue,
         station: (i + 1) as u32,
       };
-      station_ifaces.insert(id, iface.to_owned());
+      station_ifaces.insert(id, iface.clone());
     }
 
+    let radio = settings.radio.as_ref().map(|x| x.clone()).map(FieldRadio::new);
+
     Ok(OnboardNetwork {
+      settings,
       nl_handle: netlink::handle()?,
-      wan_iface: iface_wan.to_owned(),
-      admin_iface: iface_admin.to_owned(),
       station_ifaces,
       radio
     })
@@ -61,7 +64,7 @@ impl OnboardNetwork {
   async fn configure_ip_addrs(&self, stations: &[AllianceStation]) -> super::NetworkResult<()> {
     netlink::configure_addresses(
       &self.nl_handle,
-      self.admin_iface.as_str(),
+      self.settings.iface_admin.as_str(),
       vec![
         self.v4_network(ADMIN_IP)?,     // Admin gets both 10.0.100.5 and 10.0.100.1
         self.v4_network(ADMIN_ROUTER)?
@@ -113,7 +116,7 @@ impl OnboardNetwork {
 
   async fn configure_firewall(&self, stations: &[AllianceStation]) -> super::NetworkResult<()> {
     let admin_cfg = firewall::FirewallConfig {
-      iface: self.admin_iface.clone(),
+      iface: self.settings.iface_admin.clone(),
       router: Some(self.v4_network(ADMIN_ROUTER)?),
       server: Some(self.v4_network(ADMIN_IP)?)
     };
@@ -130,7 +133,7 @@ impl OnboardNetwork {
       }
     }).collect();
 
-    firewall::configure_firewall(self.wan_iface.clone(), admin_cfg, &station_cfgs[..]).await?;
+    firewall::configure_firewall(self.settings.iface_wan.clone(), admin_cfg, &station_cfgs[..]).await?;
 
     Ok(())
   }
