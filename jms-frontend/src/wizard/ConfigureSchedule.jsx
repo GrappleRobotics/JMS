@@ -1,4 +1,4 @@
-import { faCloudSun, faDownload, faExclamationTriangle, faHourglassHalf, faInfoCircle, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faExclamationTriangle, faHourglassHalf, faInfoCircle, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import EditableFormControl from "components/elements/EditableFormControl";
@@ -6,8 +6,7 @@ import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import moment from "moment";
 import "moment-duration-format";
 import React from "react";
-import { Accordion, Button, Card, Col, Form, Row, ToggleButton, ToggleButtonGroup, Modal } from "react-bootstrap";
-import { confirm } from "react-bootstrap-confirmation";
+import { Accordion, Button, Card, Col, Form, Row, Modal } from "react-bootstrap";
 
 const ELEMENT_FORMAT = "YYYY-MM-DD[T]HH:mm";
 
