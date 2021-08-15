@@ -1,6 +1,6 @@
-import { faCalculator, faClipboard, faFlagCheckered, faGamepad, faHeartbeat, faHourglassHalf, faMagic, faRobot, faTrophy, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faCalculator, faClipboard, faExclamationTriangle, faFlagCheckered, faGamepad, faHeartbeat, faHourglassHalf, faMagic, faRobot, faTrophy, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { AUDIENCE, AUDIENCE_CONTROL, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING, TIMER } from "paths";
+import { AUDIENCE, AUDIENCE_CONTROL, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING, TIMER } from "paths";
 import React from "react";
 import { Container } from "react-bootstrap";
 
@@ -28,6 +28,15 @@ export default class Home extends React.PureComponent {
           <ul>
             <li className="h5"> <a href={ SCORING }> <FontAwesomeIcon icon={faCalculator} /> &nbsp; Scorer  </a> </li>
             <li className="h5"> <a href={ REFEREE }> <FontAwesomeIcon icon={faFlagCheckered} /> &nbsp; Referee  </a> </li>
+          </ul>
+        </li>
+
+        <br />
+
+        <li>
+          <h4> Teams </h4>
+          <ul>
+            <li className="h5"> <a href={ ESTOPS }> <FontAwesomeIcon icon={faExclamationTriangle} /> &nbsp; Team E-Stops </a> </li>
           </ul>
         </li>
 

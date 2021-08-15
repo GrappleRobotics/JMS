@@ -666,4 +666,25 @@ th {
   font-weight: bold;
 }
 
+.team-estop {
+  text-align: center;
+  
+  .estop-all {
+    height: 50vh;
+    font-weight: bold;
+    font-size: 5em;
+  }
+
+  .estop-auto {
+    height: 30vh;
+    font-weight: bold;
+    font-size: 4em;
+
+    .subtext {
+      font-size: 0.8em;
+      opacity: 0.8;
+    }
+  }
+}
+
 @import "audience/Audience.scss";

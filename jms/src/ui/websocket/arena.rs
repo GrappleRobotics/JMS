@@ -163,6 +163,8 @@ impl ArenaWebsocketHandler {
             stn.reset();
             stn.team = Some(x.as_u64().unwrap_or(0) as u16);
           }
+          ("estop", Value::Bool(v)) => stn.estop = stn.estop || *v,
+          ("astop", Value::Bool(v)) => stn.astop = stn.astop || *v,
           _ => {
             bail!("Unknown data key or format (or state): key={} value={:?}", k, v)
           }

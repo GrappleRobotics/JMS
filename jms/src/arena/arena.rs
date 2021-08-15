@@ -420,8 +420,12 @@ impl Arena {
           self.audience_display = AudienceDisplay::MatchPlay;
           m.start()?;
         }
-        if m.current_state() == MatchPlayState::Complete {
-          self.prepare_state_change(ArenaState::MatchComplete)?;
+        match m.current_state() {
+          MatchPlayState::Pause | MatchPlayState::Teleop => for stn in self.stations.iter_mut() {
+            stn.astop = false;
+          },
+          MatchPlayState::Complete => self.prepare_state_change(ArenaState::MatchComplete)?,
+          _ => ()
         }
       }
       (ArenaState::MatchComplete, _) => {

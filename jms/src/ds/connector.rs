@@ -219,7 +219,7 @@ impl DSConnection {
 
       let match_state = arena.current_match.as_ref().map(|m| m.current_state());
       let estop = station.estop || (arena.current_state() == ArenaState::Estop);
-      let astop = station.astop;
+      let astop = station.astop && match_state == Some(MatchPlayState::Auto);
 
       let (mode, robots_enabled) = match match_state {
         Some(MatchPlayState::Auto) => (ds::DSMode::Auto, true),

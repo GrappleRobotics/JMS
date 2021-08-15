@@ -3,7 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
+import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
@@ -18,6 +18,7 @@ import AudienceDisplayControl from 'audience/AudienceDisplayControl';
 import { RefereeRouter } from 'scoring/Referee';
 import Debug from 'Debug';
 import Timer from 'Timer';
+import { TeamEstops } from 'TeamEstop';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -178,6 +179,14 @@ export default class App extends React.Component {
       <Route path={TIMER}>
         <this.wrapView fullscreen nopad>
           <Timer
+            ws={this.ws}
+            arena={arena}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={ESTOPS}>
+        <this.wrapView fullscreen>
+          <TeamEstops
             ws={this.ws}
             arena={arena}
           />

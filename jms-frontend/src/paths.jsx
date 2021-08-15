@@ -8,4 +8,5 @@ export const REPORTS = "/reports";
 export const AUDIENCE = "/audience";
 export const AUDIENCE_CONTROL = "/audience/control";
 export const TIMER = "/timer";
+export const ESTOPS = "/estops";
 export const DEBUG = "/debug";
