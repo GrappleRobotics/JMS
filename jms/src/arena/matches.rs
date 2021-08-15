@@ -97,23 +97,24 @@ impl LoadedMatch {
   }
 
   pub async fn commit_score(&mut self) -> Result<Option<models::Match>> {
-    if self.match_meta.match_type != models::MatchType::Test {
-      if self.state == MatchPlayState::Complete {
-        let red = self.score.red.derive(&self.score.blue);
-        let blue = self.score.blue.derive(&self.score.red);
 
-        let mut winner = None;
-        if blue.total_score > red.total_score {
-          winner = Some(Alliance::Blue);
-        } else if red.total_score > blue.total_score {
-          winner = Some(Alliance::Red);
-        }
+    if self.state == MatchPlayState::Complete {
+      let red = self.score.red.derive(&self.score.blue);
+      let blue = self.score.blue.derive(&self.score.red);
 
-        self.match_meta.played = true;
-        self.match_meta.winner = winner;
-        self.match_meta.score = Some(SQLJson(self.score.clone()));
-        self.match_meta.score_time = Some(SQLDatetime(chrono::Local::now().naive_utc()));
+      let mut winner = None;
+      if blue.total_score > red.total_score {
+        winner = Some(Alliance::Blue);
+      } else if red.total_score > blue.total_score {
+        winner = Some(Alliance::Red);
+      }
 
+      self.match_meta.played = true;
+      self.match_meta.winner = winner;
+      self.match_meta.score = Some(SQLJson(self.score.clone()));
+      self.match_meta.score_time = Some(SQLDatetime(chrono::Local::now().naive_utc()));
+
+      if self.match_meta.match_type != models::MatchType::Test {
         {
           use crate::schema::matches::dsl::*;
           diesel::replace_into(matches)
@@ -145,16 +146,14 @@ impl LoadedMatch {
             }
           }
         }
-
-        Ok(Some(self.match_meta.clone()))
-      } else {
-        bail!(MatchWrongState {
-          state: self.state,
-          why: "Can't commit score before Match is complete!".to_owned()
-        })
       }
+
+      Ok(Some(self.match_meta.clone()))
     } else {
-      Ok(None)
+      bail!(MatchWrongState {
+        state: self.state,
+        why: "Can't commit score before Match is complete!".to_owned()
+      })
     }
   }
 
