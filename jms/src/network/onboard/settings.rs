@@ -1,4 +1,7 @@
-use crate::{config::Interactive, network::{onboard::netlink, radio::settings::FieldRadioSettings}};
+use crate::{
+  config::Interactive,
+  network::{onboard::netlink, radio::settings::FieldRadioSettings},
+};
 
 use super::netlink::LinkMetadata;
 
@@ -8,7 +11,7 @@ pub struct OnboardNetworkSettings {
   pub iface_admin: String,
   pub ifaces_blue: Vec<String>,
   pub ifaces_red: Vec<String>,
-  pub radio: Option<FieldRadioSettings>
+  pub radio: Option<FieldRadioSettings>,
 }
 
 pub fn select_iface<'a>(message: &str, vlan: u16, ifaces: &'a Vec<LinkMetadata>) -> anyhow::Result<&'a LinkMetadata> {
@@ -35,27 +38,41 @@ impl Interactive for OnboardNetworkSettings {
 
     let iface_wan = select_iface("WAN Interface", 0, &ifaces)?.name.clone();
     let iface_admin = select_iface("Admin Interface (VLAN 100)", 100, &ifaces)?.name.clone();
-    
-    let ifaces_blue: Vec<String> = (1..=3).map(|x| {
-      Ok(select_iface(
-        &format!("Blue {} Interface (VLAN {})", x, x*10),
-        x * 10 as u16,
-        &ifaces
-      )?.name.clone())
-    }).collect::<anyhow::Result<Vec<String>>>()?;
 
-    let ifaces_red: Vec<String> = (1..=3).map(|x| {
-      Ok(select_iface(
-        &format!("Red {} Interface (VLAN {})", x, 30 + x*10),
-        30 + x*10 as u16,
-        &ifaces
-      )?.name.clone())
-    }).collect::<anyhow::Result<Vec<String>>>()?;
+    let ifaces_blue: Vec<String> = (1..=3)
+      .map(|x| {
+        Ok(
+          select_iface(
+            &format!("Blue {} Interface (VLAN {})", x, x * 10),
+            x * 10 as u16,
+            &ifaces,
+          )?
+          .name
+          .clone(),
+        )
+      })
+      .collect::<anyhow::Result<Vec<String>>>()?;
 
-    let use_radio = inquire::Confirm::new("Do you want to configure a Field Wireless Radio?").with_default(true).prompt()?;
+    let ifaces_red: Vec<String> = (1..=3)
+      .map(|x| {
+        Ok(
+          select_iface(
+            &format!("Red {} Interface (VLAN {})", x, 30 + x * 10),
+            30 + x * 10 as u16,
+            &ifaces,
+          )?
+          .name
+          .clone(),
+        )
+      })
+      .collect::<anyhow::Result<Vec<String>>>()?;
+
+    let use_radio = inquire::Confirm::new("Do you want to configure a Field Wireless Radio?")
+      .with_default(true)
+      .prompt()?;
     let radio = match use_radio {
       true => Some(FieldRadioSettings::interactive().await?),
-      false => None
+      false => None,
     };
 
     Ok(Self {
@@ -63,7 +80,7 @@ impl Interactive for OnboardNetworkSettings {
       iface_admin,
       ifaces_blue,
       ifaces_red,
-      radio
+      radio,
     })
   }
 }

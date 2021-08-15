@@ -1,6 +1,10 @@
-use diesel::{QueryResult, RunQueryDsl, ExpressionMethods};
+use diesel::{ExpressionMethods, QueryResult, RunQueryDsl};
 
-use crate::{db, models::{SQLJson, TeamRanking}, schema::playoff_alliances};
+use crate::{
+  db,
+  models::{SQLJson, TeamRanking},
+  schema::playoff_alliances,
+};
 
 use super::SQLJsonVector;
 
@@ -8,7 +12,7 @@ use super::SQLJsonVector;
 pub struct PlayoffAlliance {
   pub id: i32,
   pub teams: SQLJsonVector<Option<usize>>,
-  pub ready: bool
+  pub ready: bool,
 }
 
 impl PlayoffAlliance {
@@ -31,11 +35,13 @@ impl PlayoffAlliance {
       alliance_vec.push((
         id.eq(i as i32),
         teams.eq(SQLJson(vec![team, None, None, None] as Vec<Option<usize>>)),
-        ready.eq(false)
+        ready.eq(false),
       ));
     }
 
-    diesel::insert_into(playoff_alliances).values(&alliance_vec).execute(conn)?;
+    diesel::insert_into(playoff_alliances)
+      .values(&alliance_vec)
+      .execute(conn)?;
 
     Ok(())
   }
@@ -43,7 +49,10 @@ impl PlayoffAlliance {
   pub fn promote(conn: &db::ConnectionT) -> QueryResult<()> {
     use crate::schema::playoff_alliances::dsl::*;
     let alliances = playoff_alliances.load::<PlayoffAlliance>(conn)?;
-    let chosen: Vec<usize> = alliances.iter().flat_map(|a| a.teams.0.iter().filter_map(|x| *x)).collect();
+    let chosen: Vec<usize> = alliances
+      .iter()
+      .flat_map(|a| a.teams.0.iter().filter_map(|x| *x))
+      .collect();
 
     let rankings = TeamRanking::get_sorted(conn)?;
     let mut rankings_it = rankings.iter().filter(|&r| !chosen.contains(&(r.team as usize)));
@@ -55,11 +64,11 @@ impl PlayoffAlliance {
       if this_alliance.teams.0[0] == None {
         shuffle = true;
       }
-      
+
       if shuffle {
         match alliances.get(i + 1) {
           Some(a) => this_alliance.teams.0[0] = a.teams.0[0],
-          None => this_alliance.teams.0[0] = rankings_it.next().map(|r| r.team as usize)
+          None => this_alliance.teams.0[0] = rankings_it.next().map(|r| r.team as usize),
         }
 
         diesel::replace_into(playoff_alliances)

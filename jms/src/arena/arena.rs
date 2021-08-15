@@ -6,7 +6,7 @@ use std::{
   },
 };
 
-use anyhow::{anyhow, Result, bail};
+use anyhow::{anyhow, bail, Result};
 
 use enum_as_inner::EnumAsInner;
 use log::{error, info};
@@ -14,7 +14,13 @@ use tokio::sync::Mutex;
 
 use super::{exceptions::ArenaIllegalStateChange, matches::MatchPlayState, station::AllianceStationId};
 
-use crate::{arena::exceptions::CannotLoadMatchError, ds::DSMode, log_expect, models::{self, Alliance, MatchType}, network::{NetworkProvider, NetworkResult}};
+use crate::{
+  arena::exceptions::CannotLoadMatchError,
+  ds::DSMode,
+  log_expect,
+  models::{self, Alliance, MatchType},
+  network::{NetworkProvider, NetworkResult},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -24,9 +30,9 @@ use super::matches::LoadedMatch;
 #[serde(tag = "state")]
 pub enum ArenaState {
   Init,
-  Idle { ready: bool },       // Idle state
-  Estop,      // Arena is emergency stopped and can only be unlocked by FTA
-  EstopReset, // E-stop resetting...
+  Idle { ready: bool }, // Idle state
+  Estop,                // Arena is emergency stopped and can only be unlocked by FTA
+  EstopReset,           // E-stop resetting...
 
   // Match Pipeline //
   Prestart { ready: bool },
@@ -39,7 +45,7 @@ pub enum ArenaState {
 #[derive(EnumAsInner)]
 enum StateData {
   Init,
-  Idle(Option<Receiver<NetworkResult<()>>>),  // recv: network ready receiver
+  Idle(Option<Receiver<NetworkResult<()>>>), // recv: network ready receiver
   Estop,
   EstopReset,
 
@@ -80,7 +86,7 @@ pub enum AudienceDisplay {
   MatchResults(models::Match),
   AllianceSelection,
   Award(models::Award),
-  CustomMessage(String)
+  CustomMessage(String),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -116,7 +122,7 @@ impl Default for AllianceStationDSReport {
       mode: None,
       pkts_sent: 0,
       pkts_lost: 0,
-      rtt: 0
+      rtt: 0,
     }
   }
 }
@@ -201,7 +207,7 @@ impl Arena {
       current_match: None,
       stations: vec![],
       access: ArenaAccessRestriction::NoRestriction,
-      audience_display: AudienceDisplay::Field
+      audience_display: AudienceDisplay::Field,
     };
 
     for alliance in vec![Alliance::Blue, Alliance::Red] {
@@ -218,15 +224,14 @@ impl Arena {
     match self.state.state {
       ArenaState::Idle { ready: true } => {
         self.current_match = None;
-          for stn in self.stations.iter_mut() {
-            stn.reset();
-          }
+        for stn in self.stations.iter_mut() {
+          stn.reset();
+        }
         Ok(())
-      },
-      ref s => bail!(CannotLoadMatchError(format!(
-        "Can't unload match in state {}",
-        s
-      ).into())),
+      }
+      ref s => bail!(CannotLoadMatchError(
+        format!("Can't unload match in state {}", s).into()
+      )),
     }
   }
 
@@ -237,10 +242,7 @@ impl Arena {
         self.current_match = Some(m);
         Ok(())
       }
-      ref s => bail!(CannotLoadMatchError(format!(
-        "Can't load match in state {}",
-        s
-      ))),
+      ref s => bail!(CannotLoadMatchError(format!("Can't load match in state {}", s))),
     }
   }
 
@@ -250,7 +252,7 @@ impl Arena {
         Alliance::Blue => &m.blue_teams,
         Alliance::Red => &m.red_teams,
       };
-      
+
       stn.reset();
 
       let i = (stn.station.station - 1) as usize;
@@ -259,7 +261,10 @@ impl Arena {
       } else {
         // Test matches are an exception - they start off blank
         if m.match_type != MatchType::Test {
-          error!("{} does not have the correct amount of alliance members! Defaulting to None...", m.name());
+          error!(
+            "{} does not have the correct amount of alliance members! Defaulting to None...",
+            m.name()
+          );
         }
         stn.team = None;
       }
@@ -297,10 +302,10 @@ impl Arena {
         match s.station.alliance {
           Alliance::Blue => {
             m.match_meta.blue_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
-          },
+          }
           Alliance::Red => {
             m.match_meta.red_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
-          },
+          }
         }
       }
     }
@@ -319,11 +324,11 @@ impl Arena {
   async fn update_states(&mut self) -> Result<()> {
     let first = self.state.first;
     let signal = self.current_signal().await;
-    
+
     // Need this as self is borrowed as mut below
     match self.state.state {
       ArenaState::Idle { ready: true } if first => self.unload_match()?,
-      _ => ()
+      _ => (),
     }
 
     match (self.state.state, &mut self.state.data) {
@@ -437,7 +442,7 @@ impl Arena {
             self.audience_display = AudienceDisplay::MatchResults(m);
           }
         }
-      },
+      }
       (state, _) => Err(anyhow!("Unimplemented state: {:?}", state))?,
     };
     Ok(())
@@ -445,12 +450,10 @@ impl Arena {
 
   pub fn can_change_state_to(&self, desired: ArenaState) -> Result<()> {
     let current = self.state.state;
-    let illegal = move |why: &str| {
-      ArenaIllegalStateChange {
-        from: current,
-        to: desired,
-        why: why.to_owned(),
-      }
+    let illegal = move |why: &str| ArenaIllegalStateChange {
+      from: current,
+      to: desired,
+      why: why.to_owned(),
     };
 
     if current == desired {
@@ -486,9 +489,11 @@ impl Arena {
       (ArenaState::Prestart { ready: true }, ArenaState::MatchArmed, _) => {
         match self.access {
           ArenaAccessRestriction::NoRestriction => (),
-          _ => bail!(illegal("Cannot Arm Match if there is an Arena Access Restriction. Talk to the Head Ref!"))
+          _ => bail!(illegal(
+            "Cannot Arm Match if there is an Arena Access Restriction. Talk to the Head Ref!"
+          )),
         }
-        
+
         if self.stations.iter().all(|x| x.can_arm_match()) {
           Ok(())
         } else {
@@ -570,7 +575,7 @@ impl Arena {
       data: StateData::Idle(the_rx),
     })
   }
-  
+
   fn state_init_prestart(&mut self) -> Result<BoundState> {
     let the_rx = self.state_init_with_network()?;
 

@@ -1,4 +1,9 @@
-use std::{fs::{self, File}, io::{ErrorKind}, path::Path, str::FromStr};
+use std::{
+  fs::{self, File},
+  io::ErrorKind,
+  path::Path,
+  str::FromStr,
+};
 
 use crate::network::NetworkSettings;
 
@@ -9,14 +14,14 @@ const CONFIG_PATH: &'static str = "/etc/jms/jms.yml";
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct JMSSettings {
-  pub network: NetworkSettings
+  pub network: NetworkSettings,
 }
 
 #[async_trait::async_trait]
 impl Interactive for JMSSettings {
   async fn interactive() -> anyhow::Result<Self> {
     Ok(Self {
-      network: NetworkSettings::interactive().await?
+      network: NetworkSettings::interactive().await?,
     })
   }
 }
@@ -40,17 +45,17 @@ impl JMSSettings {
     info!("Configuration written!");
     Ok(settings)
   }
-  
+
   pub async fn load_or_create_config(force_new: bool) -> anyhow::Result<Self> {
     if force_new {
       return Self::create_config().await;
     }
-    
+
     match Self::load_config() {
       Ok(s) => {
         info!("Loaded JMS Config");
         Ok(s)
-      },
+      }
       Err(e) => match e.downcast_ref::<std::io::Error>() {
         Some(ioe) => match ioe.kind() {
           ErrorKind::NotFound => {
@@ -58,27 +63,29 @@ impl JMSSettings {
             warn!("Creating new configuration interactively");
 
             Self::create_config().await
-          },
-          _ => Err(e)
+          }
+          _ => Err(e),
+        },
+        None => Err(e),
       },
-        None => Err(e)
-      }
     }
   }
 }
 
 #[async_trait::async_trait]
 pub trait Interactive
-  where Self: Sized
+where
+  Self: Sized,
 {
   async fn interactive() -> anyhow::Result<Self>;
 }
 
 pub fn enum_interactive<E, I, T>(message: &str) -> anyhow::Result<T>
-  where E: IntoEnumIterator<Iterator=I>,
-        I: Iterator<Item=T>,
-        T: ToString + FromStr,
-        <T as FromStr>::Err: std::fmt::Debug
+where
+  E: IntoEnumIterator<Iterator = I>,
+  I: Iterator<Item = T>,
+  T: ToString + FromStr,
+  <T as FromStr>::Err: std::fmt::Debug,
 {
   let options: Vec<String> = E::iter().map(|t| t.to_string()).collect();
   let options_ref: Vec<&str> = options.iter().map(|s| s.as_str()).collect();

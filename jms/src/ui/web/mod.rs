@@ -1,8 +1,8 @@
-use std::net::IpAddr;
 use rust_embed::RustEmbed;
+use std::net::IpAddr;
 
-mod reports;
 mod embed;
+mod reports;
 
 #[derive(RustEmbed)]
 #[folder = "../jms-frontend/build"]
@@ -16,7 +16,17 @@ pub async fn begin() -> anyhow::Result<()> {
 
   rocket::custom(&default)
     .mount("/", embed::EmbedServer::<WebRoot>::new())
-    .mount("/reports", routes![reports::teams, reports::rankings, reports::matches_per_team, reports::matches, reports::awards, reports::wpa])
+    .mount(
+      "/reports",
+      routes![
+        reports::teams,
+        reports::rankings,
+        reports::matches_per_team,
+        reports::matches,
+        reports::awards,
+        reports::wpa
+      ],
+    )
     .launch()
     .await?;
   Ok(())

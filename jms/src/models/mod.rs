@@ -2,7 +2,10 @@ mod team;
 use std::fmt::Debug;
 
 use chrono::{DateTime, Duration, NaiveDateTime};
-use diesel::{sql_types::{BigInt, Text}, types::{FromSql, ToSql}};
+use diesel::{
+  sql_types::{BigInt, Text},
+  types::{FromSql, ToSql},
+};
 pub use team::*;
 
 mod matches;
@@ -30,10 +33,10 @@ pub use awards::*;
 pub struct SQLJson<T>(pub T);
 
 impl<'a, T, DB> FromSql<Text, DB> for SQLJson<T>
-where 
+where
   DB: diesel::backend::Backend,
   T: serde::de::DeserializeOwned,
-  String: FromSql<Text, DB>
+  String: FromSql<Text, DB>,
 {
   fn from_sql(bytes: Option<&DB::RawValue>) -> diesel::deserialize::Result<Self> {
     let t = String::from_sql(bytes)?;
@@ -46,7 +49,7 @@ impl<T, DB> ToSql<Text, DB> for SQLJson<T>
 where
   DB: diesel::backend::Backend,
   T: serde::Serialize + std::fmt::Debug,
-  String: ToSql<Text, DB>
+  String: ToSql<Text, DB>,
 {
   fn to_sql<W: std::io::Write>(&self, out: &mut diesel::serialize::Output<W, DB>) -> diesel::serialize::Result {
     let s = serde_json::to_string(&self.0)?;
@@ -60,12 +63,13 @@ pub type SQLJsonVector<T> = SQLJson<Vec<T>>;
 // #[sql_type = "Text"]
 // pub struct SQLJsonVector<T>(pub Vec<T>);
 
-
 // SQL Enums as text (for sqlite)
 
 #[macro_export]
 macro_rules! as_item {
-    ($i:item) => { $i };
+  ($i:item) => {
+    $i
+  };
 }
 
 // Map an enum to TEXT in SQL
@@ -113,7 +117,7 @@ pub struct SQLDatetime(pub NaiveDateTime);
 impl serde::Serialize for SQLDatetime {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
-    S: serde::Serializer
+    S: serde::Serializer,
   {
     serializer.serialize_i64(self.0.timestamp())
   }
@@ -122,7 +126,7 @@ impl serde::Serialize for SQLDatetime {
 impl<'de> serde::Deserialize<'de> for SQLDatetime {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
   where
-    D: serde::Deserializer<'de>
+    D: serde::Deserializer<'de>,
   {
     let ms: i64 = serde::Deserialize::deserialize(deserializer)?;
     Ok(Self(NaiveDateTime::from_timestamp(ms, 0)))
@@ -130,9 +134,9 @@ impl<'de> serde::Deserialize<'de> for SQLDatetime {
 }
 
 impl<'a, DB> FromSql<BigInt, DB> for SQLDatetime
-where 
+where
   DB: diesel::backend::Backend,
-  i64: FromSql<BigInt, DB>
+  i64: FromSql<BigInt, DB>,
 {
   fn from_sql(bytes: Option<&DB::RawValue>) -> diesel::deserialize::Result<Self> {
     let t = NaiveDateTime::from_timestamp(i64::from_sql(bytes)?, 0);
@@ -143,7 +147,7 @@ where
 impl<DB> ToSql<BigInt, DB> for SQLDatetime
 where
   DB: diesel::backend::Backend,
-  i64: ToSql<BigInt, DB>
+  i64: ToSql<BigInt, DB>,
 {
   fn to_sql<W: std::io::Write>(&self, out: &mut diesel::serialize::Output<W, DB>) -> diesel::serialize::Result {
     i64::to_sql(&self.0.timestamp(), out)
@@ -178,7 +182,7 @@ pub struct SQLDuration(pub Duration);
 impl serde::Serialize for SQLDuration {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
-    S: serde::Serializer
+    S: serde::Serializer,
   {
     serializer.serialize_i64(self.0.num_milliseconds())
   }
@@ -187,7 +191,7 @@ impl serde::Serialize for SQLDuration {
 impl<'de> serde::Deserialize<'de> for SQLDuration {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
   where
-    D: serde::Deserializer<'de>
+    D: serde::Deserializer<'de>,
   {
     let ms: i64 = serde::Deserialize::deserialize(deserializer)?;
     Ok(Self(Duration::milliseconds(ms)))
@@ -195,9 +199,9 @@ impl<'de> serde::Deserialize<'de> for SQLDuration {
 }
 
 impl<'a, DB> FromSql<BigInt, DB> for SQLDuration
-where 
+where
   DB: diesel::backend::Backend,
-  i64: FromSql<BigInt, DB>
+  i64: FromSql<BigInt, DB>,
 {
   fn from_sql(bytes: Option<&DB::RawValue>) -> diesel::deserialize::Result<Self> {
     let t = Duration::milliseconds(i64::from_sql(bytes)?);
@@ -208,7 +212,7 @@ where
 impl<DB> ToSql<BigInt, DB> for SQLDuration
 where
   DB: diesel::backend::Backend,
-  i64: ToSql<BigInt, DB>
+  i64: ToSql<BigInt, DB>,
 {
   fn to_sql<W: std::io::Write>(&self, out: &mut diesel::serialize::Output<W, DB>) -> diesel::serialize::Result {
     i64::to_sql(&self.0.num_milliseconds(), out)

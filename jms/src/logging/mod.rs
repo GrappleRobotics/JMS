@@ -80,17 +80,9 @@ fn builder() -> Builder {
     let splitter = style.set_color(COLOR_GRAY_DARK).set_bold(true).value(">");
 
     if record.level() <= Level::Error {
-      writeln!(
-        f,
-        " {} {} {} {} {}: {}",
-        time, level, target, splitter, lineno, message
-      )
+      writeln!(f, " {} {} {} {} {}: {}", time, level, target, splitter, lineno, message)
     } else {
-      writeln!(
-        f,
-        " {} {} {} {} {}",
-        time, level, target, splitter, message
-      )
+      writeln!(f, " {} {} {} {} {}", time, level, target, splitter, message)
     }
   });
 

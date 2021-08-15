@@ -1,14 +1,14 @@
 mod arena;
+mod config;
 mod db;
 mod ds;
 mod logging;
 mod network;
-mod ui;
-mod utils;
+mod reports;
 mod schedule;
 mod scoring;
-mod reports;
-mod config;
+mod ui;
+mod utils;
 
 mod models;
 mod schema;
@@ -20,7 +20,7 @@ extern crate diesel;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
-#[macro_use] 
+#[macro_use]
 extern crate rocket;
 
 use std::{sync::Arc, time::Duration};
@@ -46,8 +46,16 @@ async fn main() -> anyhow::Result<()> {
   let matches = App::new("JMS")
     .about("An Alternative Field-Management-System for FRC Offseason Events.")
     .arg(Arg::with_name("debug").short("d").help("Enable debug logging."))
-    .arg(Arg::with_name("new-cfg").long("new-cfg").help("Forcefully set a new configuration"))
-    .arg(Arg::with_name("cfg-only").long("cfg-only").help("Only load the configuration, don't start JMS"))
+    .arg(
+      Arg::with_name("new-cfg")
+        .long("new-cfg")
+        .help("Forcefully set a new configuration"),
+    )
+    .arg(
+      Arg::with_name("cfg-only")
+        .long("cfg-only")
+        .help("Only load the configuration, don't start JMS"),
+    )
     .get_matches();
 
   logging::configure(matches.is_present("debug"));
@@ -69,18 +77,18 @@ async fn main() -> anyhow::Result<()> {
       }
       Ok(())
     };
-    
+
     let mut ds_service = DSConnectionService::new(arena.clone()).await;
     let ds_fut = ds_service.run().map_err(|e| anyhow::anyhow!("DS Error: {}", e));
-  
+
     let mut ws = Websockets::new(Duration::from_millis(500));
     ws.register("arena", Box::new(ArenaWebsocketHandler::new(arena))).await;
     ws.register("event", Box::new(EventWebsocketHandler::new())).await;
     ws.register("matches", Box::new(MatchWebsocketHandler::new())).await;
     let ws_fut = ws.begin();
-  
+
     let web_fut = ui::web::begin();
-  
+
     try_join!(arena_fut, ds_fut, ws_fut, web_fut)?;
   }
 

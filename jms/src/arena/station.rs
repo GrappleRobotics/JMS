@@ -1,6 +1,6 @@
+use crate::models::Alliance;
 use serde::{Deserialize, Serialize};
 use std::{convert::TryInto, fmt::Display};
-use crate::models::Alliance;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub struct AllianceStationId {
@@ -17,7 +17,7 @@ impl AllianceStationId {
     // 3, 4, 5 = Red  1, 2, 3
     match self.alliance {
       Alliance::Blue => stn,
-      Alliance::Red => stn + 3
+      Alliance::Red => stn + 3,
     }
   }
 
@@ -46,4 +46,3 @@ impl Display for AllianceStationId {
     write!(f, "{} {}", self.alliance.to_string(), self.station)
   }
 }
-

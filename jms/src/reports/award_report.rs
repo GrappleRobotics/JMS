@@ -1,6 +1,9 @@
 use diesel::RunQueryDsl;
 
-use crate::{db, models, reports::{pdf_table, report_pdf}};
+use crate::{
+  db, models,
+  reports::{pdf_table, report_pdf},
+};
 
 pub fn awards_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];
@@ -11,20 +14,27 @@ pub fn awards_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     use crate::schema::awards::dsl::*;
     awards.load::<models::Award>(&db::connection())?
   };
-  
+
   let mut doc = report_pdf("Awards Report", &event_name, true);
-  
+
   let headers = vec!["Award", "Team", "Awardee"];
-  let rows: Vec<Vec<String>> = awards.iter().flat_map(|a| {
-    let name = &a.name;
-    a.recipients.0.iter().map(|r| {
-      vec![
-        name.clone(),
-        r.team.map_or("".to_owned(), |t| format!("{}", t)),
-        r.awardee.clone().unwrap_or("".to_owned()),
-      ]
-    }).collect::<Vec<Vec<String>>>()
-  }).collect();
+  let rows: Vec<Vec<String>> = awards
+    .iter()
+    .flat_map(|a| {
+      let name = &a.name;
+      a.recipients
+        .0
+        .iter()
+        .map(|r| {
+          vec![
+            name.clone(),
+            r.team.map_or("".to_owned(), |t| format!("{}", t)),
+            r.awardee.clone().unwrap_or("".to_owned()),
+          ]
+        })
+        .collect::<Vec<Vec<String>>>()
+    })
+    .collect();
 
   let table = pdf_table(vec![3, 1, 5], headers, rows);
 

@@ -24,5 +24,5 @@ pub struct CannotLoadMatchError(pub String);
 #[error("Wrong State: {state:?} ({why})")]
 pub struct MatchWrongState {
   pub state: MatchPlayState,
-  pub why: String
+  pub why: String,
 }

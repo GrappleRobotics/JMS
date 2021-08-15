@@ -3,7 +3,7 @@ use diesel::{QueryDsl, RunQueryDsl};
 use crate::{db, schema::teams};
 
 #[derive(Insertable, Queryable, Debug, Clone, AsChangeset, serde::Serialize, serde::Deserialize)]
-#[changeset_options(treat_none_as_null="true")]
+#[changeset_options(treat_none_as_null = "true")]
 pub struct Team {
   pub id: i32,
   pub name: Option<String>,
@@ -19,7 +19,7 @@ impl Team {
 
     match teams.find(team_id as i32).first::<Team>(conn) {
       Ok(t) => t.wpakey,
-      Err(_) => None
+      Err(_) => None,
     }
   }
 }

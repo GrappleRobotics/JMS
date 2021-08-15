@@ -3,12 +3,12 @@ use diesel::{ExpressionMethods, QueryResult, RunQueryDsl};
 use crate::{db, schema::event_details};
 
 #[derive(Insertable, Queryable, Debug, Clone, AsChangeset, serde::Serialize, serde::Deserialize)]
-#[table_name="event_details"]
-#[changeset_options(treat_none_as_null="true")]
+#[table_name = "event_details"]
+#[changeset_options(treat_none_as_null = "true")]
 pub struct EventDetails {
   pub id: i32,
   pub code: Option<String>,
-  pub event_name: Option<String>
+  pub event_name: Option<String>,
 }
 
 impl EventDetails {
@@ -23,10 +23,10 @@ impl EventDetails {
         diesel::insert_into(event_details)
           .values((code.eq::<Option<String>>(None), event_name.eq::<Option<String>>(None)))
           .execute(conn)?;
-        
+
         event_details.first::<EventDetails>(conn)
-      },
-      Err(e) => Err(e)
+      }
+      Err(e) => Err(e),
     }
   }
 }

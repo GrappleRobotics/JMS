@@ -1,8 +1,8 @@
 pub mod bufutil;
 pub mod danger;
 pub mod service_configs;
-pub mod templates;
 pub mod ssh;
+pub mod templates;
 
 pub fn saturating_offset(base: usize, delta: isize) -> usize {
   if delta < 0 {

@@ -1,8 +1,11 @@
 use crate::log_expect;
-use diesel::{Connection, r2d2::{ConnectionManager, Pool, PooledConnection}};
+use diesel::sqlite::SqliteConnection;
+use diesel::{
+  r2d2::{ConnectionManager, Pool, PooledConnection},
+  Connection,
+};
 use log::info;
 use std::env;
-use diesel::sqlite::SqliteConnection;
 //use diesel::pg::PgConnection;
 use lazy_static::lazy_static;
 

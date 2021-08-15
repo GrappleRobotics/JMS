@@ -2,7 +2,10 @@ use std::io::Write;
 
 use diesel::RunQueryDsl;
 
-use crate::{db, models, reports::{pdf_table, report_pdf}};
+use crate::{
+  db, models,
+  reports::{pdf_table, report_pdf},
+};
 
 pub fn wpa_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];
@@ -13,16 +16,14 @@ pub fn wpa_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     use crate::schema::teams::dsl::*;
     teams.load::<models::Team>(&db::connection())?
   };
-  
+
   let mut doc = report_pdf("WPA Key Report (FTA ONLY)", &event_name, true);
-  
+
   let headers = vec!["Team", "Key"];
-  let rows: Vec<Vec<String>> = teams.iter().map(|t| {
-    vec![
-      format!("{}", t.id),
-      t.wpakey.clone().unwrap_or("<No Key>".to_owned()),
-    ]
-  }).collect();
+  let rows: Vec<Vec<String>> = teams
+    .iter()
+    .map(|t| vec![format!("{}", t.id), t.wpakey.clone().unwrap_or("<No Key>".to_owned())])
+    .collect();
   let table = pdf_table(vec![2, 10], headers, rows);
 
   doc.push(table);

@@ -1,11 +1,14 @@
 pub mod onboard;
 pub mod radio;
 
-use crate::{arena::AllianceStation, config::{Interactive, enum_interactive}};
+use crate::{
+  arena::AllianceStation,
+  config::{enum_interactive, Interactive},
+};
 
 use async_trait::async_trait;
 
-use self::onboard::{OnboardNetwork, settings::OnboardNetworkSettings};
+use self::onboard::{settings::OnboardNetworkSettings, OnboardNetwork};
 
 pub type NetworkResult<T> = anyhow::Result<T>;
 
@@ -16,9 +19,9 @@ pub trait NetworkProvider {
 
 #[derive(serde::Serialize, serde::Deserialize, EnumDiscriminants, Clone, Debug)]
 #[strum_discriminants(derive(EnumIter, EnumString, Display))]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum InnerNetworkSettings {
-  Onboard(OnboardNetworkSettings)
+  Onboard(OnboardNetworkSettings),
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -40,7 +43,9 @@ impl Interactive for InnerNetworkSettings {
   async fn interactive() -> anyhow::Result<Self> {
     let disc = enum_interactive::<InnerNetworkSettingsDiscriminants, _, _>("Network Type?")?;
     match disc {
-      InnerNetworkSettingsDiscriminants::Onboard => Ok(InnerNetworkSettings::Onboard(OnboardNetworkSettings::interactive().await?)),
+      InnerNetworkSettingsDiscriminants::Onboard => Ok(InnerNetworkSettings::Onboard(
+        OnboardNetworkSettings::interactive().await?,
+      )),
     }
   }
 }
@@ -48,7 +53,9 @@ impl Interactive for InnerNetworkSettings {
 #[async_trait::async_trait]
 impl Interactive for NetworkSettings {
   async fn interactive() -> anyhow::Result<Self> {
-    let use_network = inquire::Confirm::new("Configure network?").with_default(true).prompt()?;
+    let use_network = inquire::Confirm::new("Configure network?")
+      .with_default(true)
+      .prompt()?;
     match use_network {
       true => Ok(Self(Some(InnerNetworkSettings::interactive().await?))),
       false => Ok(Self(None)),

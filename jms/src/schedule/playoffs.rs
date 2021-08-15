@@ -1,9 +1,13 @@
-use diesel::{RunQueryDsl, BelongingToDsl, ExpressionMethods};
+use diesel::{BelongingToDsl, ExpressionMethods, RunQueryDsl};
 use log::info;
 
-use crate::{db, models::{self, AwardRecipient, Match, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance, SQLJson}, schedule::round_robin::round_robin_update};
+use crate::{
+  db,
+  models::{self, AwardRecipient, Match, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance, SQLJson},
+  schedule::round_robin::round_robin_update,
+};
 
-use super::{GenerationUpdate, bracket::bracket_update, worker::MatchGenerator};
+use super::{bracket::bracket_update, worker::MatchGenerator, GenerationUpdate};
 
 #[derive(Clone)]
 pub struct PlayoffMatchGenerator;
@@ -16,14 +20,22 @@ impl PlayoffMatchGenerator {
   fn generate_award_for(&self, award_name: &str, alliance: &PlayoffAlliance) -> Result<(), Box<dyn std::error::Error>> {
     use crate::schema::awards::dsl::*;
 
-    let recipients_list: Vec<AwardRecipient> = alliance.teams.0.iter().filter_map(|t| {
-      t.map(|x| AwardRecipient { team: Some(x), awardee: None })
-    }).collect();
+    let recipients_list: Vec<AwardRecipient> = alliance
+      .teams
+      .0
+      .iter()
+      .filter_map(|t| {
+        t.map(|x| AwardRecipient {
+          team: Some(x),
+          awardee: None,
+        })
+      })
+      .collect();
 
     diesel::insert_into(awards)
-          .values( (name.eq(award_name), recipients.eq(SQLJson(recipients_list))) )
-          .execute(&db::connection())?;
-    
+      .values((name.eq(award_name), recipients.eq(SQLJson(recipients_list))))
+      .execute(&db::connection())?;
+
     Ok(())
   }
 }
@@ -36,19 +48,21 @@ impl MatchGenerator for PlayoffMatchGenerator {
     models::MatchType::Playoff
   }
 
-  async fn generate(&self, mode: Self::ParamType, record: Option<MatchGenerationRecord>) -> Result<(), Box<dyn std::error::Error>> {
+  async fn generate(
+    &self,
+    mode: Self::ParamType,
+    record: Option<MatchGenerationRecord>,
+  ) -> Result<(), Box<dyn std::error::Error>> {
     let alliances = {
       use crate::schema::playoff_alliances::dsl::*;
       playoff_alliances.load::<PlayoffAlliance>(&db::connection())?
     };
 
-    let existing_matches = record.and_then(|r| {
-      models::Match::belonging_to(&r).load::<Match>(&db::connection()).ok()
-    });
+    let existing_matches = record.and_then(|r| models::Match::belonging_to(&r).load::<Match>(&db::connection()).ok());
 
     let update = match mode {
       models::PlayoffMode::Bracket => bracket_update(&alliances, &existing_matches),
-      models::PlayoffMode::RoundRobin => round_robin_update(&alliances, &existing_matches)
+      models::PlayoffMode::RoundRobin => round_robin_update(&alliances, &existing_matches),
     };
 
     match update {
@@ -74,25 +88,25 @@ impl MatchGenerator for PlayoffMatchGenerator {
           ));
         }
 
-        diesel::insert_into(matches).values(&match_vec).execute(&*db::connection())?;
-      },
+        diesel::insert_into(matches)
+          .values(&match_vec)
+          .execute(&*db::connection())?;
+      }
       GenerationUpdate::TournamentWon(winner, finalist) => {
         info!("Winner: {:?}", winner);
         info!("Finalist: {:?}", finalist);
         self.generate_award_for("Winner", &winner)?;
         self.generate_award_for("Finalist", &finalist)?;
-      },
+      }
     }
-    
+
     {
       use crate::schema::match_generation_records::dsl::*;
 
       diesel::replace_into(match_generation_records)
         .values(MatchGenerationRecord {
           match_type: models::MatchType::Playoff,
-          data: Some(SQLJson(MatchGenerationRecordData::Playoff {
-            mode
-          }))
+          data: Some(SQLJson(MatchGenerationRecordData::Playoff { mode })),
         })
         .execute(&db::connection())?;
     }

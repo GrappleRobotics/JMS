@@ -1,11 +1,17 @@
 use std::time::{Duration, Instant};
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
+use crate::{
+  arena::exceptions::MatchWrongState,
+  db,
+  models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson},
+  schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker},
+  scoring::scores::MatchScore,
+};
 
 use serde::Serialize;
 
@@ -46,14 +52,14 @@ pub struct LoadedMatch {
   state_start_time: Instant,
 
   config: MatchConfig,
-  endgame: bool
+  endgame: bool,
 }
 
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
       state: MatchPlayState::Waiting,
-      score: MatchScore::new( m.red_teams.0.len(), m.blue_teams.0.len() ),
+      score: MatchScore::new(m.red_teams.0.len(), m.blue_teams.0.len()),
       match_meta: m,
       state_first: true,
       state_start_time: Instant::now(),
@@ -62,10 +68,10 @@ impl LoadedMatch {
         warmup_cooldown_time: Duration::from_secs(3),
         auto_time: Duration::from_secs(15),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(2*60 + 15),
-        endgame_time: Duration::from_secs(30)
+        teleop_time: Duration::from_secs(2 * 60 + 15),
+        endgame_time: Duration::from_secs(30),
       },
-      endgame: false
+      endgame: false,
     }
   }
 
@@ -110,19 +116,22 @@ impl LoadedMatch {
 
         {
           use crate::schema::matches::dsl::*;
-          diesel::replace_into(matches).values(&self.match_meta).execute(&db::connection()).unwrap();
+          diesel::replace_into(matches)
+            .values(&self.match_meta)
+            .execute(&db::connection())
+            .unwrap();
         }
 
         if self.match_meta.match_type == models::MatchType::Qualification {
           let conn = db::connection();
           for &team in &self.match_meta.blue_teams.0 {
             if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update( &blue, &red, &conn )?;
+              models::TeamRanking::get(team, &conn)?.update(&blue, &red, &conn)?;
             }
           }
           for &team in &self.match_meta.red_teams.0 {
             if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
+              models::TeamRanking::get(team, &conn)?.update(&red, &blue, &conn)?;
             }
           }
         } else if self.match_meta.match_type == models::MatchType::Playoff {
@@ -139,7 +148,10 @@ impl LoadedMatch {
 
         Ok(Some(self.match_meta.clone()))
       } else {
-        bail!(MatchWrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
+        bail!(MatchWrongState {
+          state: self.state,
+          why: "Can't commit score before Match is complete!".to_owned()
+        })
       }
     } else {
       Ok(None)

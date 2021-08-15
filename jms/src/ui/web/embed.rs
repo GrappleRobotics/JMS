@@ -1,10 +1,14 @@
 use std::{io::Cursor, marker::PhantomData, path::PathBuf};
 
-use rocket::{Data, Request, Response, Route, http::{ContentType, Method, Status}, route::{Handler, Outcome}};
+use rocket::{
+  http::{ContentType, Method, Status},
+  route::{Handler, Outcome},
+  Data, Request, Response, Route,
+};
 use rust_embed::RustEmbed;
 
 pub struct EmbedServer<T: RustEmbed> {
-  _phantom: PhantomData<T>
+  _phantom: PhantomData<T>,
 }
 
 impl<T: RustEmbed> Clone for EmbedServer<T> {
@@ -21,9 +25,7 @@ impl<T: RustEmbed + 'static + Send + Sync> EmbedServer<T> {
 
 impl<T: RustEmbed + 'static + Send + Sync> Into<Vec<Route>> for EmbedServer<T> {
   fn into(self) -> Vec<Route> {
-    vec![Route::ranked(
-      -2, Method::Get, "/<path..>", self.clone()
-    )]
+    vec![Route::ranked(-2, Method::Get, "/<path..>", self.clone())]
   }
 }
 
@@ -35,7 +37,8 @@ impl<T: RustEmbed + 'static + Send + Sync> Handler for EmbedServer<T> {
     match path {
       Some(path) => {
         let mut file = T::get(&path.to_string_lossy());
-        let mut content_type = path.extension()
+        let mut content_type = path
+          .extension()
           .map(|x| x.to_string_lossy())
           .and_then(|x| ContentType::from_extension(&x))
           .unwrap_or(ContentType::Plain);
@@ -47,19 +50,17 @@ impl<T: RustEmbed + 'static + Send + Sync> Handler for EmbedServer<T> {
 
         match file {
           Some(buf) => {
-            
             let response = Response::build()
               .header(content_type)
               .sized_body(buf.len(), Cursor::new(buf.into_owned()))
               .finalize();
 
             Outcome::Success(response)
-          },
+          }
           None => Outcome::Failure(Status::NotFound),
         }
-      },
+      }
       None => Outcome::Failure(Status::NotFound),
     }
-
   }
 }

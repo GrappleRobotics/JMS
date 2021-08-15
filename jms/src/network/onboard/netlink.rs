@@ -1,8 +1,12 @@
 use std::{io, net::Ipv4Addr};
 
-use futures::{TryStreamExt, future::try_join_all};
+use futures::{future::try_join_all, TryStreamExt};
 use ipnetwork::Ipv4Network;
-use rtnetlink::{Error, Handle, new_connection, packet::link::nlas::{self, Nla}};
+use rtnetlink::{
+  new_connection,
+  packet::link::nlas::{self, Nla},
+  Error, Handle,
+};
 
 use crate::{log_expect, utils::danger::danger_or_err};
 
@@ -46,7 +50,7 @@ where
 pub struct LinkMetadata {
   pub name: String,
   pub vlan: Option<u16>,
-  pub addrs: Vec<String>
+  pub addrs: Vec<String>,
 }
 
 impl std::fmt::Display for LinkMetadata {
@@ -73,18 +77,22 @@ pub async fn get_all_ifaces(handle: &Handle) -> Result<Vec<LinkMetadata>, Error>
     for nla in link.nlas {
       match nla {
         Nla::IfName(n) => name = Some(n),
-        Nla::Info(info) => for i in info {
-          match i {
-            nlas::Info::Data(nlas::InfoData::Vlan(vlans)) => for vl in vlans {
-              match vl {
-                nlas::InfoVlan::Id(id) => vlan = Some(id),
-                _ => ()
+        Nla::Info(info) => {
+          for i in info {
+            match i {
+              nlas::Info::Data(nlas::InfoData::Vlan(vlans)) => {
+                for vl in vlans {
+                  match vl {
+                    nlas::InfoVlan::Id(id) => vlan = Some(id),
+                    _ => (),
+                  }
+                }
               }
-            },
-            _ => ()
+              _ => (),
+            }
           }
-        },
-        _ => ()
+        }
+        _ => (),
       }
     }
 
@@ -93,22 +101,26 @@ pub async fn get_all_ifaces(handle: &Handle) -> Result<Vec<LinkMetadata>, Error>
       .get()
       .set_link_index_filter(link.header.index)
       .execute();
-    
+
     while let Some(addr) = link_addrs.try_next().await? {
       for nla in addr.nlas {
         match nla {
           rtnetlink::packet::address::Nla::Address(a) => {
             if a.len() == 4 {
-              addrs.push(Ipv4Addr::new( a[0], a[1], a[2], a[3] ).to_string())
+              addrs.push(Ipv4Addr::new(a[0], a[1], a[2], a[3]).to_string())
             }
-          },
-          _ => ()
+          }
+          _ => (),
         }
       }
     }
 
     if let Some(link_name) = name {
-      ifaces.push(LinkMetadata { name: link_name, vlan, addrs });
+      ifaces.push(LinkMetadata {
+        name: link_name,
+        vlan,
+        addrs,
+      });
     }
   }
   Ok(ifaces)

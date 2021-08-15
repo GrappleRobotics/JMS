@@ -1,4 +1,4 @@
-use handlebars::{Handlebars, handlebars_helper};
+use handlebars::{handlebars_helper, Handlebars};
 use ipnetwork::Ipv4Network;
 use serde_json::json;
 

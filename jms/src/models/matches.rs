@@ -1,6 +1,8 @@
-use crate::{db, models::SQLJson, schema::match_generation_records, schema::matches, scoring::scores::MatchScore, sql_mapped_enum};
+use crate::{
+  db, models::SQLJson, schema::match_generation_records, schema::matches, scoring::scores::MatchScore, sql_mapped_enum,
+};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
-use serde::{Serialize, Serializer, ser::SerializeStruct};
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use super::{SQLDatetime, SQLJsonVector};
 
@@ -15,7 +17,7 @@ sql_mapped_enum!(MatchType, Test, Qualification, Playoff);
 sql_mapped_enum!(MatchSubtype, Quarterfinal, Semifinal, Final);
 
 #[derive(Identifiable, Insertable, Queryable, Associations, AsChangeset, Debug, Clone)]
-#[belongs_to(MatchGenerationRecord, foreign_key="match_type")]
+#[belongs_to(MatchGenerationRecord, foreign_key = "match_type")]
 #[table_name = "matches"]
 pub struct Match {
   pub id: i32,
@@ -29,7 +31,7 @@ pub struct Match {
   pub red_teams: SQLJsonVector<Option<i32>>,
   pub played: bool,
   pub score: Option<SQLJson<MatchScore>>,
-  pub winner: Option<Alliance>,   // Will be None if tie, but means nothing if the match isn't played yet
+  pub winner: Option<Alliance>, // Will be None if tie, but means nothing if the match isn't played yet
   // Playoffs only
   pub match_subtype: Option<MatchSubtype>,
   pub red_alliance: Option<i32>,
@@ -53,7 +55,7 @@ impl Match {
       match_subtype: None,
       red_alliance: None,
       blue_alliance: None,
-      score_time: None
+      score_time: None,
     }
   }
 
@@ -65,21 +67,24 @@ impl Match {
         MatchSubtype::Quarterfinal => format!("Quarterfinal {}-{}", self.set_number, self.match_number),
         MatchSubtype::Semifinal => format!("Semifinal {}-{}", self.set_number, self.match_number),
         MatchSubtype::Final => format!("Final {}-{}", self.set_number, self.match_number),
-      }
+      },
     }
   }
 
   pub fn with_type(mtype: MatchType) -> Vec<Match> {
     use crate::schema::matches::dsl::*;
-    matches.filter(match_type.eq(mtype)).load::<Match>(&db::connection()).unwrap()
+    matches
+      .filter(match_type.eq(mtype))
+      .load::<Match>(&db::connection())
+      .unwrap()
   }
 }
 
 impl Serialize for Match {
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
-      S: Serializer,
-{
+    S: Serializer,
+  {
     let mut state = serializer.serialize_struct("Match", 15)?;
     state.serialize_field("id", &self.id)?;
     state.serialize_field("type", &self.match_type)?;
@@ -103,14 +108,14 @@ impl Serialize for Match {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum PlayoffMode {
   Bracket,
-  RoundRobin
+  RoundRobin,
 }
 
 #[derive(Identifiable, Insertable, Queryable, Debug, Clone, serde::Serialize)]
 #[primary_key(match_type)]
 pub struct MatchGenerationRecord {
   pub match_type: MatchType,
-  pub data: Option<SQLJson<MatchGenerationRecordData>>
+  pub data: Option<SQLJson<MatchGenerationRecordData>>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
@@ -122,8 +127,8 @@ pub enum MatchGenerationRecordData {
     station_dist: SQLJsonVector<Vec<usize>>,
   },
   Playoff {
-    mode: PlayoffMode
-  }
+    mode: PlayoffMode,
+  },
 }
 
 pub fn n_sets(level: MatchSubtype) -> usize {
@@ -151,7 +156,9 @@ impl PartialOrd for MatchSubtype {
 
 impl Ord for Match {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    self.start_time.cmp(&other.start_time)
+    self
+      .start_time
+      .cmp(&other.start_time)
       .then(self.match_subtype.cmp(&other.match_subtype))
       .then(self.match_number.cmp(&other.match_number))
       .then(self.set_number.cmp(&other.set_number))
@@ -164,7 +171,7 @@ impl PartialOrd for Match {
   }
 }
 
-impl Eq for Match { }
+impl Eq for Match {}
 
 impl PartialEq for Match {
   fn eq(&self, other: &Self) -> bool {

@@ -1,9 +1,9 @@
 use std::{io::Read, net::ToSocketAddrs};
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 
 pub struct SSHSession {
-  session: ssh2::Session
+  session: ssh2::Session,
 }
 
 impl SSHSession {
@@ -20,7 +20,8 @@ impl SSHSession {
       session.userauth_password(&user, &password)?;
 
       Ok::<SSHSession, anyhow::Error>(SSHSession { session })
-    }).await?
+    })
+    .await?
   }
 
   pub async fn run(&self, command: &str) -> Result<CommandResult> {
@@ -35,8 +36,12 @@ impl SSHSession {
       channel.read_to_string(&mut s)?;
       channel.wait_close()?;
 
-      Ok(CommandResult { output: s, code: Some(channel.exit_status()?) })
-    }).await?
+      Ok(CommandResult {
+        output: s,
+        code: Some(channel.exit_status()?),
+      })
+    })
+    .await?
   }
 }
 

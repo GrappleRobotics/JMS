@@ -1,13 +1,15 @@
-use diesel::{RunQueryDsl, QueryDsl, QueryResult, ExpressionMethods};
+use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use rand::Rng;
 
 use crate::db;
-use crate::schema::team_rankings;
 use crate::models::Team;
+use crate::schema::team_rankings;
 use crate::scoring::scores::DerivedScore;
 
-#[derive(Identifiable, Insertable, Queryable, Associations, AsChangeset, Debug, Clone, PartialEq, Eq, serde::Serialize)]
-#[belongs_to(Team, foreign_key="team")]
+#[derive(
+  Identifiable, Insertable, Queryable, Associations, AsChangeset, Debug, Clone, PartialEq, Eq, serde::Serialize,
+)]
+#[belongs_to(Team, foreign_key = "team")]
 #[primary_key(team)]
 pub struct TeamRanking {
   pub team: i32,
@@ -21,7 +23,7 @@ pub struct TeamRanking {
   pub win: i32,
   pub loss: i32,
   pub tie: i32,
-  pub played: i32
+  pub played: i32,
 }
 
 impl TeamRanking {
@@ -35,15 +37,22 @@ impl TeamRanking {
         let mut rng = rand::thread_rng();
 
         // Insert default
-        diesel::insert_into(team_rankings).values((team.eq(team_num), random_num.eq::<i32>(rng.gen()))).execute(conn)?;
+        diesel::insert_into(team_rankings)
+          .values((team.eq(team_num), random_num.eq::<i32>(rng.gen())))
+          .execute(conn)?;
 
         team_rankings.find(team_num).first::<TeamRanking>(conn)
-      },
-      Err(e) => Err(e)
+      }
+      Err(e) => Err(e),
     }
   }
 
-  pub fn update(&mut self, us_score: &DerivedScore, them_score: &DerivedScore, conn: &db::ConnectionT) -> QueryResult<()> {
+  pub fn update(
+    &mut self,
+    us_score: &DerivedScore,
+    them_score: &DerivedScore,
+    conn: &db::ConnectionT,
+  ) -> QueryResult<()> {
     if us_score.total_score > them_score.total_score {
       self.rp += 2;
       self.win += 1;
@@ -103,17 +112,22 @@ impl Ord for TeamRanking {
     if self == other {
       return std::cmp::Ordering::Equal;
     }
-    
+
     let n_self = self.played;
     let n_other = other.played;
-    
+
     // Game Manual Table 11-2
     cmp_f64(avg(self.rp, n_self), avg(other.rp, n_other))
       .then(cmp_f64(avg(self.auto_points, n_self), avg(other.auto_points, n_other)))
-      .then(cmp_f64(avg(self.endgame_points, n_self), avg(other.endgame_points, n_other)))
-      .then(cmp_f64(avg(self.teleop_points, n_self), avg(other.teleop_points, n_other)))
+      .then(cmp_f64(
+        avg(self.endgame_points, n_self),
+        avg(other.endgame_points, n_other),
+      ))
+      .then(cmp_f64(
+        avg(self.teleop_points, n_self),
+        avg(other.teleop_points, n_other),
+      ))
       .then(cmp_f64(self.random_num as f64, other.random_num as f64))
       .then(cmp_f64(self.team as f64, other.team as f64))
   }
 }
-

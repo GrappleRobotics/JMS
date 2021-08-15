@@ -4,7 +4,7 @@ use crate::{models::Alliance, utils::saturating_offset};
 
 // NOTE: WARP 2021 has some rule modifications.
 // - The Control Panel is not included in our tournament
-// - Stage capacities are absolute and do not depend on match state. 
+// - Stage capacities are absolute and do not depend on match state.
 //    - Stage 1: 9 Cells
 //    - Stage 2: 9+15 = 24 Cells
 //    - Stage 3: 9+15+15 = 39 Cells
@@ -12,11 +12,12 @@ use crate::{models::Alliance, utils::saturating_offset};
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ModeScore<T> {
   pub auto: T,
-  pub teleop: T
+  pub teleop: T,
 }
 
 impl<T> ModeScore<T>
-  where T: Add + Copy
+where
+  T: Add + Copy,
 {
   pub fn total(&self) -> T::Output {
     self.auto + self.teleop
@@ -27,7 +28,7 @@ impl<T> ModeScore<T>
 pub enum EndgamePointType {
   None,
   Hang,
-  Park
+  Park,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -50,7 +51,7 @@ pub struct LiveScore {
   // TODO: Control Panel (if we are about it)
   pub endgame: Vec<EndgamePointType>,
   pub rung_level: bool,
-  pub penalties: Penalties
+  pub penalties: Penalties,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -68,17 +69,17 @@ pub struct DerivedScore {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(into="MatchScoreSnapshot", from="MatchScoreSnapshot")]
+#[serde(into = "MatchScoreSnapshot", from = "MatchScoreSnapshot")]
 pub struct MatchScore {
   pub red: LiveScore,
-  pub blue: LiveScore
+  pub blue: LiveScore,
 }
 
 impl MatchScore {
   pub fn new(red_teams: usize, blue_teams: usize) -> MatchScore {
     MatchScore {
       red: LiveScore::new(red_teams),
-      blue: LiveScore::new(blue_teams)
+      blue: LiveScore::new(blue_teams),
     }
   }
 }
@@ -86,23 +87,29 @@ impl MatchScore {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct SnapshotScore {
   pub live: LiveScore,
-  pub derived: DerivedScore
+  pub derived: DerivedScore,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MatchScoreSnapshot {
   pub red: SnapshotScore,
-  pub blue: SnapshotScore
+  pub blue: SnapshotScore,
 }
 
 impl Into<MatchScoreSnapshot> for MatchScore {
   fn into(self) -> MatchScoreSnapshot {
     let derive_red = self.red.derive(&self.blue);
     let derive_blue = self.blue.derive(&self.red);
-    
+
     MatchScoreSnapshot {
-      red: SnapshotScore { live: self.red, derived: derive_red },
-      blue: SnapshotScore { live: self.blue, derived: derive_blue }
+      red: SnapshotScore {
+        live: self.red,
+        derived: derive_red,
+      },
+      blue: SnapshotScore {
+        live: self.blue,
+        derived: derive_blue,
+      },
     }
   }
 }
@@ -111,15 +118,18 @@ impl From<MatchScoreSnapshot> for MatchScore {
   fn from(snapshot: MatchScoreSnapshot) -> Self {
     Self {
       red: snapshot.red.live,
-      blue: snapshot.blue.live
+      blue: snapshot.blue.live,
     }
   }
 }
 
-// For updating from the frontend. 
+// For updating from the frontend.
 #[derive(Debug, Clone, serde::Deserialize)]
 pub enum ScoreUpdate {
-  Initiation { station: usize, crossed: bool },
+  Initiation {
+    station: usize,
+    crossed: bool,
+  },
   PowerCell {
     auto: bool,
     #[serde(default)]
@@ -129,14 +139,17 @@ pub enum ScoreUpdate {
     #[serde(default)]
     bottom: isize,
   },
-  Endgame { station: usize, endgame: EndgamePointType },
+  Endgame {
+    station: usize,
+    endgame: EndgamePointType,
+  },
   RungLevel(bool),
   Penalty {
     #[serde(default)]
     fouls: isize,
     #[serde(default)]
-    tech_fouls: isize
-  }
+    tech_fouls: isize,
+  },
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -151,12 +164,23 @@ impl LiveScore {
     Self {
       initiation_line_crossed: vec![false; num_teams],
       power_cells: ModeScore {
-        auto: PowerCellCounts { outer: 0, inner: 0, bottom: 0 },
-        teleop: PowerCellCounts { outer: 0, inner: 0, bottom: 0 },
+        auto: PowerCellCounts {
+          outer: 0,
+          inner: 0,
+          bottom: 0,
+        },
+        teleop: PowerCellCounts {
+          outer: 0,
+          inner: 0,
+          bottom: 0,
+        },
       },
       endgame: vec![EndgamePointType::None; num_teams],
       rung_level: false,
-      penalties: Penalties { fouls: 0, tech_fouls: 0 }
+      penalties: Penalties {
+        fouls: 0,
+        tech_fouls: 0,
+      },
     }
   }
 
@@ -183,19 +207,28 @@ impl LiveScore {
     match score_update {
       ScoreUpdate::Initiation { station, crossed } => {
         self.initiation_line_crossed[station] = crossed;
-      },
-      ScoreUpdate::PowerCell { auto, inner, outer, bottom } => {
-        let pc = if auto { &mut self.power_cells.auto } else { &mut self.power_cells.teleop };
+      }
+      ScoreUpdate::PowerCell {
+        auto,
+        inner,
+        outer,
+        bottom,
+      } => {
+        let pc = if auto {
+          &mut self.power_cells.auto
+        } else {
+          &mut self.power_cells.teleop
+        };
         pc.inner = saturating_offset(pc.inner, inner);
         pc.outer = saturating_offset(pc.outer, outer);
         pc.bottom = saturating_offset(pc.bottom, bottom);
-      },
+      }
       ScoreUpdate::Endgame { station, endgame } => {
         self.endgame[station] = endgame;
-      },
+      }
       ScoreUpdate::RungLevel(is_level) => {
         self.rung_level = is_level;
-      },
+      }
       ScoreUpdate::Penalty { fouls, tech_fouls } => {
         self.penalties.fouls = saturating_offset(self.penalties.fouls, fouls);
         self.penalties.tech_fouls = saturating_offset(self.penalties.tech_fouls, tech_fouls);
@@ -212,7 +245,7 @@ impl LiveScore {
     let teleop = &self.power_cells.teleop;
     ModeScore {
       auto: (auto.inner * 6 + auto.outer * 4 + auto.bottom * 2) as isize,
-      teleop: (teleop.inner * 3 + teleop.outer * 2 + teleop.bottom * 1) as isize
+      teleop: (teleop.inner * 3 + teleop.outer * 2 + teleop.bottom * 1) as isize,
     }
   }
 
@@ -238,8 +271,8 @@ impl LiveScore {
     match cell_count {
       _ if cell_count >= 39 => 3,
       _ if cell_count >= 24 => 2,
-      _ if cell_count >=  9 => 1,
-      _ => 0
+      _ if cell_count >= 9 => 1,
+      _ => 0,
     }
   }
 
@@ -255,7 +288,7 @@ impl LiveScore {
     let cell_points = self.cell_points();
     ModeScore {
       auto: self.initiation_points() + cell_points.auto,
-      teleop: cell_points.teleop + self.endgame_points()
+      teleop: cell_points.teleop + self.endgame_points(),
     }
   }
 

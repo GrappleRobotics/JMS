@@ -2,7 +2,10 @@ use std::net::SocketAddr;
 
 use anyhow::{bail, Result};
 
-use crate::{arena::station::AllianceStationId, utils::ssh::{CommandResult, SSHSession}};
+use crate::{
+  arena::station::AllianceStationId,
+  utils::ssh::{CommandResult, SSHSession},
+};
 
 use self::settings::FieldRadioSettings;
 
@@ -15,7 +18,7 @@ pub struct TeamRadioConfig {
 }
 
 pub struct FieldRadio {
-  pub settings: FieldRadioSettings
+  pub settings: FieldRadioSettings,
 }
 
 impl FieldRadio {
@@ -35,48 +38,84 @@ impl FieldRadio {
   }
 
   async fn configure_admin(&self, session: &SSHSession) -> Result<()> {
-    self.do_uci(session, &vec![
-      format!("set wireless.radio1.channel='{}'", self.settings.admin_channel.map_or("auto".to_owned(), |c| format!("{}", c))).as_str(),
-      format!("set wireless.radio1.disabled='{}'", self.settings.admin_ssid.is_none() as usize).as_str(),
-      format!("set wireless.@wifi-iface[0].ssid='{}'", self.settings.admin_ssid.as_ref().unwrap_or(&"no-admin".to_owned())).as_str(),
-      format!("set wireless.@wifi-iface[0].key='{}'", self.settings.admin_key.as_ref().unwrap_or(&"".to_owned())).as_str(),
-      "commit wireless"
-    ]).await?;
+    self
+      .do_uci(
+        session,
+        &vec![
+          format!(
+            "set wireless.radio1.channel='{}'",
+            self
+              .settings
+              .admin_channel
+              .map_or("auto".to_owned(), |c| format!("{}", c))
+          )
+          .as_str(),
+          format!(
+            "set wireless.radio1.disabled='{}'",
+            self.settings.admin_ssid.is_none() as usize
+          )
+          .as_str(),
+          format!(
+            "set wireless.@wifi-iface[0].ssid='{}'",
+            self.settings.admin_ssid.as_ref().unwrap_or(&"no-admin".to_owned())
+          )
+          .as_str(),
+          format!(
+            "set wireless.@wifi-iface[0].key='{}'",
+            self.settings.admin_key.as_ref().unwrap_or(&"".to_owned())
+          )
+          .as_str(),
+          "commit wireless",
+        ],
+      )
+      .await?;
     Ok(())
   }
 
   async fn configure_teams(&self, session: &SSHSession, teams: &[TeamRadioConfig]) -> Result<()> {
-    let mut cfgs: Vec<String> = teams.iter().flat_map(|x| {
-      let radio_num = 1 + x.station.to_station_idx();
+    let mut cfgs: Vec<String> = teams
+      .iter()
+      .flat_map(|x| {
+        let radio_num = 1 + x.station.to_station_idx();
 
-      match (x.team, x.wpakey.as_ref()) {
-        (Some(team), Some(wpakey)) if wpakey.len() > 8 && wpakey.len() < 60 => {
-          vec![
-            format!("set wireless.@wifi-iface[{}].disabled='0'", radio_num),
-            format!("set wireless.@wifi-iface[{}].ssid='{}'", radio_num, team),
-            format!("set wireless.@wifi-iface[{}].key='{}'", radio_num, wpakey),
-          ]
-        },
-        (Some(team), _) => {
-          error!("Team {} does not have a valid WPA Key! Disabling...", team);
-          vec![
-            format!("set wireless.@wifi-iface[{}].disabled='1'", radio_num),
-            format!("set wireless.@wifi-iface[{}].ssid='{}-no-key'", radio_num, team),
-            format!("set wireless.@wifi-iface[{}].key='{}-no-key'", radio_num, team),
-          ]
-        },
-        (None, _) => {
-          vec![
-            format!("set wireless.@wifi-iface[{}].disabled='1'", radio_num),
-            format!("set wireless.@wifi-iface[{}].ssid='unoccupied-{}'", radio_num, radio_num),
-            format!("set wireless.@wifi-iface[{}].key='unoccupied-{}'", radio_num, radio_num),
-          ]
+        match (x.team, x.wpakey.as_ref()) {
+          (Some(team), Some(wpakey)) if wpakey.len() > 8 && wpakey.len() < 60 => {
+            vec![
+              format!("set wireless.@wifi-iface[{}].disabled='0'", radio_num),
+              format!("set wireless.@wifi-iface[{}].ssid='{}'", radio_num, team),
+              format!("set wireless.@wifi-iface[{}].key='{}'", radio_num, wpakey),
+            ]
+          }
+          (Some(team), _) => {
+            error!("Team {} does not have a valid WPA Key! Disabling...", team);
+            vec![
+              format!("set wireless.@wifi-iface[{}].disabled='1'", radio_num),
+              format!("set wireless.@wifi-iface[{}].ssid='{}-no-key'", radio_num, team),
+              format!("set wireless.@wifi-iface[{}].key='{}-no-key'", radio_num, team),
+            ]
+          }
+          (None, _) => {
+            vec![
+              format!("set wireless.@wifi-iface[{}].disabled='1'", radio_num),
+              format!(
+                "set wireless.@wifi-iface[{}].ssid='unoccupied-{}'",
+                radio_num, radio_num
+              ),
+              format!("set wireless.@wifi-iface[{}].key='unoccupied-{}'", radio_num, radio_num),
+            ]
+          }
         }
-      }
-    }).collect();
+      })
+      .collect();
     cfgs.push("commit wireless".to_owned());
 
-    let chan_cfg = format!("set wireless.radio0.channel='{}'", self.settings.team_channel.map_or("auto".to_owned(), |c| format!("{}", c)));
+    let chan_cfg = format!(
+      "set wireless.radio0.channel='{}'",
+      self
+        .settings
+        .team_channel
+        .map_or("auto".to_owned(), |c| format!("{}", c))
+    );
     let mut cfgs: Vec<&str> = cfgs.iter().map(|x| x.as_str()).collect();
     cfgs.insert(0, chan_cfg.as_str());
 
@@ -98,6 +137,4 @@ impl FieldRadio {
 
     Ok(reply)
   }
-
-
 }
