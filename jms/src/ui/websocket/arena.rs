@@ -185,6 +185,15 @@ impl ArenaWebsocketHandler {
         }
       },
       ("AllianceSelection", None) => AudienceDisplay::AllianceSelection,
+      ("Award", Some(Value::Number(award_id))) => {
+        use crate::schema::awards::dsl::*;
+        if let Some(n) = award_id.as_i64() {
+          let award = awards.filter(id.eq(n as i32)).first::<models::Award>(&db::connection())?;
+          AudienceDisplay::Award(award)
+        } else {
+          bail!("{} is not an i64", award_id);
+        }
+      },
       ("CustomMessage", Some(Value::String(msg))) => {
         AudienceDisplay::CustomMessage(msg)
       },

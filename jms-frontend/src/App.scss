@@ -652,4 +652,18 @@ th {
   }
 }
 
+.timer {
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  text-align: center;
+  font-size: 40vw;
+  font-weight: bold;
+}
+
 @import "audience/Audience.scss";

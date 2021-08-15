@@ -401,5 +401,50 @@
 
   .btn {
     font-size: 2.5em;
+
+    &.award-btn {
+      font-size: 2em;
+    }
+  }
+}
+
+.audience-award {
+  .award-title {
+    font-size: 2em;
+    text-align: center;
+  }
+  
+  .trophy {
+    color: #ca8e00;
+  }
+
+  .recipients {
+    font-size: 1.5em;
+    height: 50vh;
+
+    .recipient {
+      .col {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+
+        .awardee {
+          font-weight: bold;
+          font-size: 1.5em;
+        }
+
+        .team-number {
+          font-size: 1.2em;
+          font-weight: bold;
+
+          &[data-has-awardee="true"] {
+            font-size: 0.8em;
+            font-weight: normal;
+            opacity: 0.8;
+          }
+        }
+      }
+    }
   }
 }
