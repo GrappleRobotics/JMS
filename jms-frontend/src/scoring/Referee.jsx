@@ -12,6 +12,7 @@ class RefereePanel extends React.PureComponent {
 
     props.ws.subscribe("arena", "match");
     props.ws.subscribe("arena", "stations");
+    props.ws.subscribe("arena", "access");
   }
 
   updateScore(alliance, field, data) {
@@ -176,22 +177,20 @@ export class HeadReferee extends RefereePanel {
   renderTopBar = () => {
     let match = this.props.arena?.match;
     let state = this.props.arena?.state?.state;
+    let access = this.props.arena?.access;
 
     return <React.Fragment>
       <Row className="mb-3">
         <Col>
           <h3 className="mb-0"> { this.props.arena?.match?.match?.name || "Waiting for Scorekeeper..." } </h3>
-          <i className="text-muted"> Head Referee </i>
-        </Col>
-        <Col className="text-center">
-          <h3 className="text-muted"> { match?.state || "--" } &nbsp; { match?.remaining_time?.secs }s </h3>
+          <h4 className="text-muted"> { match?.state || "--" } &nbsp; { match?.remaining_time?.secs }s </h4>
         </Col>
         <Col md="auto" className="head-ref-field-ax">
           <Button
             variant="purple"
             size="lg"
-            // TODO: PIPE THIS
-            disabled={state === "MatchArmed" || state === "MatchPlay"}
+            onClick={() => this.props.ws.send("arena", "access", "set", "ResetOnly")}
+            disabled={state === "MatchArmed" || state === "MatchPlay" || access === "ResetOnly"}
           >
             FIELD RESET
           </Button>
@@ -199,10 +198,19 @@ export class HeadReferee extends RefereePanel {
           <Button
             variant="success"
             size="lg"
-            // TODO: PIPE THIS
-            disabled={state === "MatchArmed" || state === "MatchPlay"}
+            onClick={() => this.props.ws.send("arena", "access", "set", "Teams")}
+            disabled={state === "MatchArmed" || state === "MatchPlay" || access === "Teams"}
           >
             TEAMS ON FIELD
+          </Button>
+
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => this.props.ws.send("arena", "access", "set", "NoRestriction")}
+            disabled={state === "MatchArmed" || state === "MatchPlay" || access === "NoRestriction"}
+          >
+            NORMAL
           </Button>
         </Col>
       </Row>

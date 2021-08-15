@@ -83,15 +83,12 @@ pub enum AudienceDisplay {
   CustomMessage(String)
 }
 
-// /**
-//  * Who's permitted on the field?
-//  */
-// pub enum ArenaEntryCondition {
-//   Locked,    // No one / FTA's discretion (no lights)
-//   ResetOnly, // Field reset crew (purple lights)
-//   Teams,     // Teams can collect robots (green lights)
-//   Any,       // Anyone (Idle only - awards etc)
-// }
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum ArenaAccessRestriction {
+  NoRestriction,
+  ResetOnly, // Field reset crew (purple lights)
+  Teams,     // Teams can collect robots (green lights)
+}
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct AllianceStationDSReport {
@@ -183,8 +180,9 @@ pub struct Arena {
   #[serde(rename = "match")]
   pub current_match: Option<LoadedMatch>,
   pub stations: Vec<AllianceStation>,
+  pub access: ArenaAccessRestriction,
 
-  pub audience_display: AudienceDisplay
+  pub audience_display: AudienceDisplay,
 }
 
 pub type SharedArena = Arc<Mutex<Arena>>;
@@ -202,6 +200,7 @@ impl Arena {
       pending_signal: Arc::new(Mutex::new(None)),
       current_match: None,
       stations: vec![],
+      access: ArenaAccessRestriction::NoRestriction,
       audience_display: AudienceDisplay::Field
     };
 
@@ -485,7 +484,11 @@ impl Arena {
       }
       (ArenaState::Prestart { ready: false }, ArenaState::Prestart { ready: true }, _) => Ok(()),
       (ArenaState::Prestart { ready: true }, ArenaState::MatchArmed, _) => {
-        // Prestart must be ready (true)
+        match self.access {
+          ArenaAccessRestriction::NoRestriction => (),
+          _ => bail!(illegal("Cannot Arm Match if there is an Arena Access Restriction. Talk to the Head Ref!"))
+        }
+        
         if self.stations.iter().all(|x| x.can_arm_match()) {
           Ok(())
         } else {

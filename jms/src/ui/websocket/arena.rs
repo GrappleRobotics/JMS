@@ -43,6 +43,10 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
       // Audience Display
       response.push(msg.noun("audience_display").to_data(&arena.audience_display)?);
     }
+    {
+      // Access
+      response.push(msg.noun("access").to_data(&arena.access)?); 
+    }
     // Ok(vec![ msg.to_data(&*arena)? ])
     Ok(response)
   }
@@ -102,6 +106,13 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
           let ad = self.audience_display_update(serde_json::from_value(data)?).await?;
           self.arena.lock().await.audience_display = ad;
         }
+        _ => bail!("Invalid verb or data")
+      },
+      "access" => match (msg.verb.as_str(), msg.data) {
+        ("set", Some(data)) => {
+          let v = serde_json::from_value(data)?;
+          self.arena.lock().await.access = v;
+        },
         _ => bail!("Invalid verb or data")
       }
       _ => bail!("Unknown noun"),
