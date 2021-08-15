@@ -20,7 +20,8 @@ class TeamEstop extends React.PureComponent {
           }
         })}
       >
-        EMERGENCY STOP
+        EMERGENCY STOP <br />
+        <span className="subtext"> AUTO + TELEOP </span>
       </Button>
 
       <Button
