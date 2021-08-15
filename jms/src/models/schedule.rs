@@ -1,4 +1,4 @@
-use chrono::{Duration, Local, NaiveTime, TimeZone};
+use chrono::{Date, Duration, Local, NaiveTime, TimeZone};
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 
 use crate::{db, schema::schedule_blocks, sql_mapped_enum};
@@ -77,9 +77,9 @@ impl ScheduleBlock {
     Ok(())
   }
 
-  pub fn generate_default_2day(conn: &db::ConnectionT) -> QueryResult<()> {
+  pub fn generate_default_2day(start_date: Date<Local>, conn: &db::ConnectionT) -> QueryResult<()> {
     use crate::schema::schedule_blocks::dsl::*;
-    let day1 = Local::today() + Duration::days(1);
+    let day1 = start_date;
     let day2 = day1 + Duration::days(1);
 
     // Clear any existing

@@ -1,5 +1,6 @@
 use anyhow::bail;
 
+use chrono::{Local, NaiveDateTime, TimeZone};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
 use crate::{
@@ -126,8 +127,13 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
             .values(&block)
             .execute(&db::connection())?;
         }
-        ("load_default", None) => {
-          ScheduleBlock::generate_default_2day(&db::connection())?;
+        ("load_default", Some(serde_json::Value::Number(data))) => {
+          if let Some(n) = data.as_i64() {
+            let date = Local.from_utc_datetime(&NaiveDateTime::from_timestamp(n, 0)).date();
+            ScheduleBlock::generate_default_2day(date, &db::connection())?;
+          } else {
+            bail!("Not an i64: {}", data);
+          }
         }
         _ => bail!("Invalid verb or data"),
       },

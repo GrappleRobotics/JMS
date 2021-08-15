@@ -1,4 +1,4 @@
-import { faCloudSun, faDownload, faHourglassHalf, faInfoCircle, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCloudSun, faDownload, faExclamationTriangle, faHourglassHalf, faInfoCircle, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import EditableFormControl from "components/elements/EditableFormControl";
@@ -6,7 +6,7 @@ import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import moment from "moment";
 import "moment-duration-format";
 import React from "react";
-import { Accordion, Button, Card, Col, Form, Row, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { Accordion, Button, Card, Col, Form, Row, ToggleButton, ToggleButtonGroup, Modal } from "react-bootstrap";
 import { confirm } from "react-bootstrap-confirmation";
 
 const ELEMENT_FORMAT = "YYYY-MM-DD[T]HH:mm";
@@ -14,8 +14,44 @@ const ELEMENT_FORMAT = "YYYY-MM-DD[T]HH:mm";
 const BLOCK_TYPES = [ "General", "Qualification", "Playoff" ];
 const MATCH_BLOCK_TYPES = [ "Qualification", "Playoff" ];
 
-class ScheduleBlock extends React.Component {
+class Load2DayDefault extends React.Component {
+  constructor(props) {
+    super(props);
 
+    this.state = {
+      start_date: moment()
+    };
+  }
+
+  render() {
+    let { show, onHide, onSubmit } = this.props;
+
+    return <Modal
+      centered
+      show={show}
+      onHide={onHide}
+    >
+      <Modal.Header> <h4> Load 2-day Default </h4> </Modal.Header>
+      <Modal.Body>
+        <p> <FontAwesomeIcon icon={faExclamationTriangle} /> &nbsp; This will override any existing schedule! </p>
+        <p> Start Date: </p>
+        <BufferedFormControl
+          auto
+          type="date"
+          value={ this.state.start_date.format("YYYY-MM-DD") }
+          onUpdate={ v => this.setState({ start_date: moment(v) }) }
+        />
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="primary" onClick={() => { onSubmit(this.state.start_date); onHide() }}>
+          Load
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  }
+}
+
+class ScheduleBlock extends React.Component {
   updateDate = (k, v) => {
     v = moment(v);
     if (moment.isMoment(v)) {
@@ -187,6 +223,14 @@ export default class ConfigureSchedule extends React.Component {
     return !!!d.schedule?.length;
   }
 
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      show2DayDefault: false
+    }
+  }
+
   editable = () => {
     let quals = this.props.matches?.quals;
     if (quals) {
@@ -225,18 +269,8 @@ export default class ConfigureSchedule extends React.Component {
     this.props.ws.send("event", "schedule", "delete_block", block.id);
   }
 
-  loadDefault = async () => {
-    if ((this.props.schedule?.length || 0) > 0) {
-      let result = await confirm("Are you sure? This will override the current schedule layout. This action cannot be undone.", {
-        title: "Load 2-day Schedule Defaults",
-        okButtonStyle: "success"
-      });
-
-      if (!result)
-        return;
-    }
-
-    this.props.ws.send("event", "schedule", "load_default");
+  loadDefault = v => {
+    this.props.ws.send("event", "schedule", "load_default", v.unix());
   }
 
   render() {
@@ -285,7 +319,9 @@ export default class ConfigureSchedule extends React.Component {
       
       <div>
         <Button disabled={!this.editable()} onClick={this.addBlock}> <FontAwesomeIcon icon={faPlus} /> &nbsp; Add Block </Button> &nbsp;
-        <Button disabled={!this.editable()} onClick={this.loadDefault} variant="info"> <FontAwesomeIcon icon={faDownload} /> &nbsp; Load 2-day Default </Button>
+        <Button disabled={!this.editable()} onClick={() => this.setState({ show2DayDefault: true })} variant="info">
+          <FontAwesomeIcon icon={faDownload} /> &nbsp; Load 2-day Default
+        </Button>
 
         <span className="mx-3 float-right">
           <i className="text-muted">Quals</i> &nbsp;
@@ -305,6 +341,12 @@ export default class ConfigureSchedule extends React.Component {
           blockarr
         }
       </React.Fragment>
+
+      <Load2DayDefault
+        show={this.state.show2DayDefault} 
+        onHide={() => this.setState({ show2DayDefault: false })}
+        onSubmit={this.loadDefault}
+      />
     </div>
   }
 }
