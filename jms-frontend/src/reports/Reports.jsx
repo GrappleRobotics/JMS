@@ -29,7 +29,7 @@ export const REPORT_MAP = [
   }
 ]
 
-export const REPORT_BASE_URL = "http://" + window.location.hostname + ":8000" + REPORTS;
+export const REPORT_BASE_URL = "http://" + window.location.host + REPORTS;
 
 export default function Reports() {
   return <Container>

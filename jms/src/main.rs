@@ -54,14 +54,12 @@ async fn main() -> anyhow::Result<()> {
 
   db::connection(); // Start connection
 
-
   let settings = JMSSettings::load_or_create_config(matches.is_present("new-cfg")).await?;
   if !matches.is_present("cfg-only") {
     let network = settings.network.create()?;
 
     let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, network)));
 
-    // Arena gets its own thread to keep timing strict
     let a2 = arena.clone();
     let arena_fut = async move {
       let mut interval = tokio::time::interval(Duration::from_millis(50));
