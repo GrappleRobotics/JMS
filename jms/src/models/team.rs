@@ -11,6 +11,7 @@ pub struct Team {
   pub location: Option<String>,
   pub notes: Option<String>,
   pub wpakey: Option<String>,
+  pub schedule: bool,
 }
 
 impl Team {

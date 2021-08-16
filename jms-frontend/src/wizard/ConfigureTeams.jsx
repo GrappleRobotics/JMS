@@ -2,7 +2,7 @@ import { faCheck, faCloudDownloadAlt, faInfoCircle, faTimes } from "@fortawesome
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditableFormControl from "components/elements/EditableFormControl";
 import React from "react";
-import { Accordion, Button, Card, FormControl, Table } from "react-bootstrap";
+import { Accordion, Button, Card, Form, FormControl, Table } from "react-bootstrap";
 import { nullIfEmpty } from "support/strings";
 import { confirm } from "react-bootstrap-confirmation";
 import { Importer, ImporterField } from "react-csv-importer";
@@ -66,7 +66,8 @@ export default class ConfigureTeams extends React.Component {
           id: id,
           name: nt.name,
           affiliation: nt.affiliation,
-          location: nt.location
+          location: nt.location,
+          schedule: true
         });
         this.setState({ newTeam: {} });
       }
@@ -80,7 +81,8 @@ export default class ConfigureTeams extends React.Component {
           id: parseInt(team.id),
           name: nullIfEmpty(team.name),
           affiliation: nullIfEmpty(team.affiliation),
-          location: nullIfEmpty(team.location)
+          location: nullIfEmpty(team.location),
+          schedule: true
         });
       }
     });
@@ -208,7 +210,7 @@ export default class ConfigureTeams extends React.Component {
             <th> Name </th>
             <th> Affiliation </th>
             <th> Location </th>
-            <th> WPA </th>
+            <th> Scheduled? </th>
             <th> Actions </th>
           </tr>
         </thead>
@@ -252,7 +254,12 @@ export default class ConfigureTeams extends React.Component {
               </td>
               <td>
                 {
-                  (t.wpakey || "").length > 0 ? <FontAwesomeIcon className="text-success" icon={faCheck} /> : <FontAwesomeIcon className="text-danger" icon={faTimes} />
+                  this.editable() ? 
+                    <Form.Check
+                      checked={t.schedule}
+                      onChange={(v) => this.updateTeam(t, "schedule", !t.schedule)}
+                    />
+                    : <FontAwesomeIcon icon={t.schedule ? faCheck : faTimes} className={`text-${t.schedule ? "success" : "warning"}`} />
                 }
               </td>
               <td>

@@ -17,7 +17,7 @@ pub fn teams_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 
   let mut doc = report_pdf("Team Report", &event_name, true);
 
-  let headers = vec!["Team", "Name", "Affiliation", "Location"];
+  let headers = vec!["Team", "Name", "Affiliation", "Location", "Sched"];
   let rows: Vec<Vec<String>> = teams
     .iter()
     .map(|t| {
@@ -26,10 +26,11 @@ pub fn teams_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         t.name.clone().unwrap_or("".to_owned()),
         t.affiliation.clone().unwrap_or("".to_owned()),
         t.location.clone().unwrap_or("".to_owned()),
+        if t.schedule { "TRUE".to_owned() } else { "FALSE".to_owned() }
       ]
     })
     .collect();
-  let table = pdf_table(vec![2, 5, 5, 5], headers, rows);
+  let table = pdf_table(vec![2, 5, 5, 5, 2], headers, rows);
 
   doc.push(table);
   doc.render(&mut buf)?;

@@ -306,7 +306,9 @@ export default class ConfigureSchedule extends React.Component {
       last = thisBlock;
     });
 
-    let matches_per_team = Math.floor((total_matches * 6) / (this.props.teams?.length || 1));
+    const num_teams = this.props.teams?.filter(t => t.schedule).length || 0;
+
+    let matches_per_team = Math.floor((total_matches * 6) / (num_teams || 1));
 
     return <div>
       <h4>Configure Schedule</h4>
@@ -326,10 +328,10 @@ export default class ConfigureSchedule extends React.Component {
           <i className="text-muted">Quals</i> &nbsp;
           <strong>{ total_matches }</strong> matches
           <span className="text-muted mx-2">•</span>
-          <strong>{ this.props.teams?.length > 6 ? matches_per_team : "--" }</strong> per team
+          <strong>{ num_teams > 6 ? matches_per_team : "--" }</strong> per team
           <span className="text-muted">
             &nbsp; <i>+ {
-              this.props.teams?.length > 6 ? ( (total_matches * 6) - (matches_per_team * this.props.teams?.length)) : "--"
+              num_teams > 6 ? ( (total_matches * 6) - (matches_per_team * num_teams)) : "--"
             } </i>
           </span>
         </span>

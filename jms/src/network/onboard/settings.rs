@@ -36,7 +36,7 @@ impl Interactive for OnboardNetworkSettings {
     let mut ifaces = netlink::get_all_ifaces(&handle).await?;
     ifaces.sort_by(|a, b| a.name.cmp(&b.name));
 
-    let iface_wan = select_iface("WAN Interface", 0, &ifaces)?.name.clone();
+    let iface_wan = select_iface("WAN Interface (VLAN 150)", 150, &ifaces)?.name.clone();
     let iface_admin = select_iface("Admin Interface (VLAN 100)", 100, &ifaces)?.name.clone();
 
     let ifaces_blue: Vec<String> = (1..=3)

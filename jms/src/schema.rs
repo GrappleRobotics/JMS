@@ -82,6 +82,7 @@ table! {
         location -> Nullable<Text>,
         notes -> Nullable<Text>,
         wpakey -> Nullable<Text>,
+        schedule -> Bool,
     }
 }
 

@@ -111,7 +111,7 @@ impl MatchGenerator for QualsMatchGenerator {
 
     let teams = {
       use crate::schema::teams::dsl::*;
-      teams.select(id).get_results::<i32>(&db::connection())?
+      teams.select(id).filter(schedule.eq(true)).get_results::<i32>(&db::connection())?
     };
 
     // Generate
