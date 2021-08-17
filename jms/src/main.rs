@@ -9,7 +9,7 @@ mod schedule;
 mod scoring;
 mod ui;
 mod utils;
-
+mod electronics;
 mod models;
 mod schema;
 
