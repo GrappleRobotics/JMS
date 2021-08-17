@@ -5,13 +5,7 @@ use anyhow::{bail, Result};
 use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{
-  arena::exceptions::MatchWrongState,
-  db,
-  models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson},
-  schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker},
-  scoring::scores::MatchScore,
-};
+use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus}};
 
 use serde::Serialize;
 
@@ -103,9 +97,9 @@ impl LoadedMatch {
       let blue = self.score.blue.derive(&self.score.red);
 
       let mut winner = None;
-      if blue.total_score > red.total_score {
+      if blue.win_status == WinStatus::WIN {
         winner = Some(Alliance::Blue);
-      } else if red.total_score > blue.total_score {
+      } else if red.win_status == WinStatus::WIN {
         winner = Some(Alliance::Red);
       }
 
@@ -127,12 +121,12 @@ impl LoadedMatch {
           let conn = db::connection();
           for &team in &self.match_meta.blue_teams.0 {
             if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update(&blue, &red, &conn)?;
+              models::TeamRanking::get(team, &conn)?.update(&blue, &conn)?;
             }
           }
           for &team in &self.match_meta.red_teams.0 {
             if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update(&red, &blue, &conn)?;
+              models::TeamRanking::get(team, &conn)?.update(&red, &conn)?;
             }
           }
         } else if self.match_meta.match_type == models::MatchType::Playoff {

@@ -4,7 +4,7 @@ use rand::Rng;
 use crate::db;
 use crate::models::Team;
 use crate::schema::team_rankings;
-use crate::scoring::scores::DerivedScore;
+use crate::scoring::scores::{DerivedScore, WinStatus};
 
 #[derive(
   Identifiable, Insertable, Queryable, Associations, AsChangeset, Debug, Clone, PartialEq, Eq, serde::Serialize,
@@ -50,13 +50,12 @@ impl TeamRanking {
   pub fn update(
     &mut self,
     us_score: &DerivedScore,
-    them_score: &DerivedScore,
     conn: &db::ConnectionT,
   ) -> QueryResult<()> {
-    if us_score.total_score > them_score.total_score {
+    if us_score.win_status == WinStatus::WIN {
       self.rp += 2;
       self.win += 1;
-    } else if us_score.total_score < them_score.total_score {
+    } else if us_score.win_status == WinStatus::LOSS {
       self.loss += 1;
     } else {
       self.rp += 1;

@@ -12,6 +12,7 @@ mod utils;
 mod electronics;
 mod models;
 mod schema;
+mod tba;
 
 #[macro_use]
 extern crate diesel_migrations;

@@ -31,7 +31,6 @@ class AllianceResult extends React.PureComponent {
   render() {
     const { reverse, colour, score, winner, teams, hasrp } = this.props;
     const matchWinner = nullIfEmpty(winner?.toLowerCase());
-    const win_rp = matchWinner ? ( matchWinner == colour ? 2 : 0 ) : 1;
 
     let top = [
       <Col>
@@ -74,7 +73,7 @@ class AllianceResult extends React.PureComponent {
           </Row>)
         }
       </Col>,
-      withVal((hasrp || undefined) && (win_rp + score.derived.total_bonus_rp), (rp) => <Col md="auto">
+      withVal((hasrp || undefined) && (score.derived.total_rp), (rp) => <Col md="auto">
         <div className="alliance-rp">
           { rp } RP
         </div>

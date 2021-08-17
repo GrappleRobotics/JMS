@@ -44,6 +44,13 @@ pub struct Penalties {
   pub tech_fouls: usize,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+pub enum WinStatus {
+  WIN,
+  LOSS,
+  TIE
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct LiveScore {
   pub initiation_line_crossed: Vec<bool>,
@@ -66,6 +73,9 @@ pub struct DerivedScore {
   pub penalty_score: usize,
   pub total_score: usize,
   pub total_bonus_rp: usize,
+  pub win_rp: usize,
+  pub total_rp: usize,
+  pub win_status: WinStatus,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -188,6 +198,15 @@ impl LiveScore {
     let penalty_points = other_alliance.penalty_points_other_alliance();
     let mode_score = self.mode_score();
 
+    let total_score = mode_score.total() as usize + penalty_points;
+    let other_total_score = other_alliance.mode_score().total() as usize + self.penalty_points_other_alliance();
+
+    let (win_status, win_rp) = match (total_score, other_total_score) {
+      (a, b) if a > b => ( WinStatus::WIN, 2 ),
+      (a, b) if a < b => ( WinStatus::LOSS, 0 ),
+      _ => ( WinStatus::TIE, 1 )
+    };
+
     DerivedScore {
       initiation_points: self.initiation_points(),
       cell_points: self.cell_points(),
@@ -196,9 +215,12 @@ impl LiveScore {
       stage3_rp: self.stage3_rp(),
       stage: self.shield_gen_stage(),
       penalty_score: penalty_points,
-      total_score: mode_score.total() as usize + penalty_points,
-      mode_score: mode_score,
+      total_score,
+      mode_score,
       total_bonus_rp: self.total_bonus_rp(),
+      win_rp,
+      total_rp: self.total_bonus_rp() + win_rp,
+      win_status,
     }
   }
 
