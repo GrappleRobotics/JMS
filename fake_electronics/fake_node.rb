@@ -8,8 +8,8 @@ PORT = 5333
 HOST = 'localhost'
 
 ROLE = NodeRole::NODE_BLUE
-DATA_TYPE = :alliance
-DATA = UpdateNode2Field::Alliance.new(estop1: false, estop2: false, estop3: false)
+
+estops = [ false, false, false ]
 
 s = TCPSocket.new HOST, PORT
 
@@ -17,7 +17,11 @@ s = TCPSocket.new HOST, PORT
 t1 = Thread.new do 
   loop do
     msg = UpdateNode2Field.new(ipv4: [10, 0, 100, 5].pack('c*'), role: ROLE)
-    msg[DATA_TYPE.to_s] = DATA
+    msg["alliance"] = UpdateNode2Field::Alliance.new(
+      estop1: estops[0],
+      estop2: estops[1],
+      estop3: estops[2]
+    )
 
     msg = UpdateNode2Field.encode msg
     s.write msg
@@ -28,9 +32,26 @@ end
 t2 = Thread.new do
   loop do
     recv = UpdateNode2Field.decode s.recv(128)
-    puts recv.inspect
+    puts "-> #{recv.inspect}"
+  end
+end
+
+go = true
+
+while go do
+  puts "What do you want to do?"
+  puts "EX: Estop station X, FX: Un-Estop station X"
+  msg = gets
+  if msg[0] == 'E'
+    stn = msg[1].to_i
+    estops[stn - 1] = true
+    puts estops.inspect
+  elsif msg[0] == 'F'
+    stn = msg[1].to_i
+    estops[stn - 1] = false
+    puts estops.inspect
   end
 end
 
 t1.join
-t2.join
+# t2.join

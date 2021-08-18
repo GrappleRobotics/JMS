@@ -293,6 +293,17 @@ impl Arena {
     self.stations.iter_mut().find(|stn| stn.station == station)
   }
 
+  pub fn estop_station(&mut self, station: AllianceStationId) {
+    let state = self.current_match.as_ref().map(|m| m.current_state());
+    
+    if let Some(stn) = self.station_mut(station) {
+      match state {
+        Some(MatchPlayState::Auto) => stn.astop = true,
+        _ => stn.estop = true,
+      }
+    }
+  }
+
   fn update_match_teams(&mut self) -> Result<()> {
     if let Some(m) = self.current_match.as_mut() {
       m.match_meta.blue_teams.resize(self.stations.len() / 2, None);

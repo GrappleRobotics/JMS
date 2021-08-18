@@ -32,6 +32,7 @@ use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
 use crate::config::JMSSettings;
+use crate::electronics::comms::FieldElectronicsService;
 use crate::ui::websocket::DebugWebsocketHandler;
 use crate::ui::websocket::EventWebsocketHandler;
 use crate::ui::websocket::MatchWebsocketHandler;
@@ -78,6 +79,9 @@ async fn main() -> anyhow::Result<()> {
     let mut ds_service = DSConnectionService::new(arena.clone()).await;
     let ds_fut = ds_service.run().map_err(|e| anyhow::anyhow!("DS Error: {}", e));
 
+    let electronics_service = FieldElectronicsService::new(arena.clone(), 5333).await;
+    let electronics_fut = electronics_service.begin();
+
     let mut ws = Websockets::new(Duration::from_millis(500));
     ws.register("arena", Box::new(ArenaWebsocketHandler::new(arena))).await;
     ws.register("event", Box::new(EventWebsocketHandler::new())).await;
@@ -92,9 +96,9 @@ async fn main() -> anyhow::Result<()> {
       let tba_worker = tba::TBAWorker::new(tba_client);
       let tba_fut = tba_worker.begin();
 
-      try_join!(arena_fut, ds_fut, ws_fut, web_fut, tba_fut)?;
+      try_join!(arena_fut, ds_fut, electronics_fut, ws_fut, web_fut, tba_fut)?;
     } else {
-      try_join!(arena_fut, ds_fut, ws_fut, web_fut)?;
+      try_join!(arena_fut, ds_fut, electronics_fut, ws_fut, web_fut)?;
     }
   }
 
