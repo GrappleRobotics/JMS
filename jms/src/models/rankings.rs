@@ -26,6 +26,10 @@ impl db::TableType for TeamRanking {
   fn id(&self) -> Option<Self::Id> {
     Some(self.team.into())
   }
+
+  fn set_id(&mut self, id: Self::Id) {
+    self.team = id.into()
+  }
 }
 
 impl TeamRanking {
@@ -36,7 +40,7 @@ impl TeamRanking {
       None => {
         let mut rng = rand::thread_rng();
         // Insert default
-        let tr = TeamRanking {
+        let mut tr = TeamRanking {
           team: team_num,
           rp: 0, auto_points: 0,
           endgame_points: 0, teleop_points: 0,

@@ -24,7 +24,7 @@ impl PlayoffMatchGenerator {
       })
       .collect();
 
-    let award = models::Award {
+    let mut award = models::Award {
       id: None,
       name: award_name.to_owned(),
       recipients: recipients_list
@@ -67,7 +67,7 @@ impl MatchGenerator for PlayoffMatchGenerator {
           let alliance_blue = alliances.iter().find(|a| a.id == pending.blue).unwrap();
           let alliance_red = alliances.iter().find(|a| a.id == pending.red).unwrap();
 
-          let m = models::Match {
+          let mut m = models::Match {
             start_time: None,
             match_type: models::MatchType::Playoff,
             match_subtype: Some(pending.playoff_type),
@@ -93,7 +93,7 @@ impl MatchGenerator for PlayoffMatchGenerator {
       }
     }
 
-    let mgr = MatchGenerationRecord {
+    let mut mgr = MatchGenerationRecord {
       match_type: models::MatchType::Playoff,
       data: Some(MatchGenerationRecordData::Playoff { mode })
     };

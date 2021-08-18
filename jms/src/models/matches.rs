@@ -103,6 +103,8 @@ impl db::TableType for Match {
       },
     })
   }
+
+  fn set_id(&mut self, _id: Self::Id) { }
 }
 
 impl From<Match> for SerializedMatch {
@@ -156,6 +158,8 @@ impl db::TableType for MatchGenerationRecord {
   fn id(&self) -> Option<Self::Id> {
     Some(self.match_type.to_string())
   }
+
+  fn set_id(&mut self, _id: Self::Id) { }
 }
 
 impl MatchGenerationRecord {
@@ -165,7 +169,7 @@ impl MatchGenerationRecord {
     match first {
       Some(mgr) => Ok(mgr),
       None => {
-        let mgr = MatchGenerationRecord { match_type, data: None };
+        let mut mgr = MatchGenerationRecord { match_type, data: None };
         mgr.insert(store)?;
         Ok(mgr)
       },

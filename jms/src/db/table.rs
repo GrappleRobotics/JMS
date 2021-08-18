@@ -8,12 +8,13 @@ pub trait TableType: serde::Serialize + serde::de::DeserializeOwned {
   type Id: types::Key;
 
   fn id(&self) -> Option<Self::Id>;
+  fn set_id(&mut self, id: Self::Id);
 
   fn table(db: &super::Store) -> super::Result<Table<Self>> {
     Table::<Self>::instance(db)
   }
 
-  fn insert<'a>(&'a self, db: &super::Store) -> super::Result<&'a Self> {
+  fn insert<'a>(&'a mut self, db: &super::Store) -> super::Result<&'a Self> {
     let t = Self::table(db)?;
     t.insert(db, self)?;
     Ok(self)
@@ -82,13 +83,18 @@ impl<'a, T: TableType> Table<T> {
     })
   }
 
-  pub fn insert<'v>(&self, db: &super::Store, value: &'v T) -> super::Result<&'v T> {
-    let bytes = serde_json::to_vec(&value)?;
-    let key: Vec<u8> = match value.id() {
-      Some(id) => id.as_ref().to_vec(),
-      None => types::Integer::from(db.generate_id()?).as_ref().to_vec(),
+  pub fn insert<'v>(&self, db: &super::Store, value: &'v mut T) -> super::Result<&'v T> {
+    let key = match value.id() {
+      Some(id) => id,
+      None => {
+        let new_id = T::Id::generate(db);
+        value.set_id(new_id.clone());
+        new_id
+      },
     };
-    self.0.insert(key, bytes)?;
+
+    let bytes = serde_json::to_vec(&value)?;
+    self.0.insert(key.as_ref(), bytes)?;
     Ok(value)
   }
 
@@ -221,13 +227,18 @@ impl<T: TableType> Batch<T> {
     Self(sled::Batch::default(), PhantomData)
   }
 
-  pub fn insert<'a>(&mut self, db: &super::Store, value: &'a T) -> super::Result<&'a T> {
-    let bytes = serde_json::to_vec(&value)?;
-    let key: Vec<u8> = match value.id() {
-      Some(id) => id.as_ref().to_vec(),
-      None => types::Integer::from(db.generate_id()?).as_ref().to_vec(),
+  pub fn insert<'a>(&mut self, db: &super::Store, value: &'a mut T) -> super::Result<&'a T> {
+    let key = match value.id() {
+      Some(id) => id,
+      None => {
+        let new_id = T::Id::generate(db);
+        value.set_id(new_id.clone());
+        new_id
+      },
     };
-    self.0.insert(key, bytes);
+
+    let bytes = serde_json::to_vec(&value)?;
+    self.0.insert(key.as_ref(), bytes);
     Ok(value)
   }
 

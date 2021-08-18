@@ -14,6 +14,10 @@ impl db::TableType for PlayoffAlliance {
   fn id(&self) -> Option<Self::Id> {
     Some(self.id.into())
   }
+
+  fn set_id(&mut self, id: Self::Id) {
+    self.id = id.into();
+  }
 }
 
 impl PlayoffAlliance {
@@ -26,7 +30,7 @@ impl PlayoffAlliance {
     let mut batch = db::Batch::new();
     for i in 1..=n {
       let team = rankings_it.next().map(|tr| tr.team);
-      batch.insert(store, &PlayoffAlliance {
+      batch.insert(store, &mut PlayoffAlliance {
         id: i,
         teams: vec![ team.clone(), None, None, None ],
         ready: false

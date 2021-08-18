@@ -60,7 +60,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
     match msg.noun.as_str() {
       "details" => match (msg.verb.as_str(), msg.data) {
         ("update", Some(data)) => {
-          let ed: models::EventDetails = serde_json::from_value(data)?;
+          let mut ed: models::EventDetails = serde_json::from_value(data)?;
           ed.insert(&db::database())?;
         }
         _ => bail!("Invalid verb or data"),
@@ -107,7 +107,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           }
         }
         ("update_block", Some(data)) => {
-          let block: models::ScheduleBlock = serde_json::from_value(data)?;
+          let mut block: models::ScheduleBlock = serde_json::from_value(data)?;
           block.insert(&db::database())?;
         }
         ("load_default", Some(serde_json::Value::Number(data))) => {
@@ -132,7 +132,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           PlayoffAlliance::clear(&db::database())?;
         }
         ("update", Some(data)) => {
-          let alliance: models::PlayoffAlliance = serde_json::from_value(data)?;
+          let mut alliance: models::PlayoffAlliance = serde_json::from_value(data)?;
           alliance.insert(&db::database())?;
         }
         ("promote", None) => {
@@ -142,7 +142,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       },
       "awards" => match (msg.verb.as_str(), msg.data) {
         ("create", Some(serde_json::Value::String(s))) => {
-          let award = models::Award {
+          let mut award = models::Award {
             id: None,
             name: s,
             recipients: vec![]
@@ -150,7 +150,7 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           award.insert(&db::database())?;
         }
         ("update", Some(data)) => {
-          let award: models::Award = serde_json::from_value(data)?;
+          let mut award: models::Award = serde_json::from_value(data)?;
           award.insert(&db::database())?;
         }
         ("delete", Some(serde_json::Value::Number(award_id))) => {

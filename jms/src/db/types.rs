@@ -1,18 +1,29 @@
 use std::{fmt::Display, mem};
 
-pub trait Key: Sized + std::fmt::Debug + AsRef<[u8]> {
+use uuid::Uuid;
+
+pub trait Key: Sized + std::fmt::Debug + AsRef<[u8]> + Clone {
   fn from_raw(r: &[u8]) -> Self;
+  fn generate(db: &super::Store) -> Self;
 }
 
 impl Key for Integer {
   fn from_raw(r: &[u8]) -> Self {
     Integer::from(r)
   }
+
+  fn generate(db: &super::Store) -> Self {
+    Integer::from(db.generate_id().unwrap())
+  }
 }
 
 impl Key for String {
   fn from_raw(r: &[u8]) -> Self {
     std::str::from_utf8(r).unwrap().to_string()
+  }
+
+  fn generate(_: &super::Store) -> Self {
+    Uuid::new_v4().to_string()
   }
 }
 

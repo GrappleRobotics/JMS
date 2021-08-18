@@ -12,7 +12,7 @@ class AwardRecipient extends React.PureComponent {
 
     return <Col>
       { awardee && <div className="awardee" data-has-team={!!team}> { awardee } </div> }
-      { team && <div className="team-number" data-has-awardee={!!awardee}> { team } - { theTeam.name } </div> }
+      { team && <div className="team-number" data-has-awardee={!!awardee}> { [team, theTeam?.name].filter(x => !!x).join(" - ") } </div> }
     </Col>
   }
 }

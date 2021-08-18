@@ -13,6 +13,8 @@ impl db::TableType for EventDetails {
   fn id(&self) -> Option<Self::Id> {
     Some(1.into())
   }
+
+  fn set_id(&mut self, _id: Self::Id) {}
 }
 
 impl EventDetails {
@@ -22,7 +24,7 @@ impl EventDetails {
     match first {
       Some(ed) => Ok(ed),
       None => {
-        let ed = EventDetails { code: None, event_name: None };
+        let mut ed = EventDetails { code: None, event_name: None };
         ed.insert(store)?;
         Ok(ed)
       },

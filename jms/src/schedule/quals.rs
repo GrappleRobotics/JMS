@@ -22,7 +22,7 @@ impl QualsMatchGenerator {
   }
 
   async fn commit_generation_record(&self, result: &GenerationResult) -> Result<(), Box<dyn Error>> {
-    let mgr = MatchGenerationRecord {
+    let mut mgr = MatchGenerationRecord {
       match_type: models::MatchType::Qualification,
       data: Some(MatchGenerationRecordData::Qualification {
         team_balance: result.team_balance_score,
@@ -60,7 +60,7 @@ impl QualsMatchGenerator {
         let red = teams[3..6].to_vec();
 
         let start = block.start_time.0 + (block.cycle_time.0 * (i as i32));
-        let m = models::Match {
+        let mut m = models::Match {
           start_time: Some(DBDateTime(start)),
           match_type: models::MatchType::Qualification,
           match_subtype: None,

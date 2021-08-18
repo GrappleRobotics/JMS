@@ -20,4 +20,8 @@ impl db::TableType for Award {
   fn id(&self) -> Option<Self::Id> {
     self.id.map(|id| id.into())
   }
+
+  fn set_id(&mut self, id: Self::Id) {
+    self.id = Some(id.into())
+  }
 }
