@@ -205,7 +205,7 @@ impl From<SnapshotScore> for TBA2021ScoreBreakdown {
 mod tests {
   use super::*;
   use std::convert::TryInto;
-  use crate::{db::DBDateTime, scoring::scores::{LiveScore, MatchScore, ModeScore, Penalties, PowerCellCounts}};
+  use crate::db::DBDateTime;
 
 
   #[test]

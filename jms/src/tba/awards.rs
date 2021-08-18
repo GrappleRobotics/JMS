@@ -28,6 +28,7 @@ impl From<Vec<models::Award>> for TBAAwards {
   }
 }
 
+#[allow(dead_code)]
 impl TBAAwards {
   pub async fn issue(&self, client: &TBAClient) -> anyhow::Result<()> {
     client.post("awards", "update", self).await
