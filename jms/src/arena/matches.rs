@@ -4,9 +4,9 @@ use anyhow::{bail, Result};
 
 use log::{info, warn};
 
-use crate::{arena::exceptions::MatchWrongState, db::{self, TableType}, models::{self, Alliance, MatchGenerationRecordData}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus}};
+use crate::{arena::exceptions::MatchWrongState, db, models, scoring::scores::MatchScore};
 
-use serde::Serialize;
+use serde::{Serialize, ser::SerializeStruct};
 
 use super::exceptions::MatchIllegalStateChange;
 
@@ -31,21 +31,34 @@ pub struct MatchConfig {
   endgame_time: Duration,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct LoadedMatch {
-  #[serde(rename = "match")]
   pub match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
   pub score: MatchScore,
 
-  #[serde(skip)]
   state_first: bool,
-  #[serde(skip)]
   state_start_time: Instant,
 
   config: MatchConfig,
   endgame: bool,
+}
+
+impl Serialize for LoadedMatch {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer
+  {
+    let mut state = serializer.serialize_struct("LoadedMatch", 6)?;
+    state.serialize_field("match", &models::SerializedMatch(self.match_meta.clone()))?;
+    state.serialize_field("state", &self.state)?;
+    state.serialize_field("remaining_time", &self.remaining_time)?;
+    state.serialize_field("score", &self.score)?;
+    state.serialize_field("config", &self.config)?;
+    state.serialize_field("endgame", &self.endgame)?;
+    state.end()
+  }
 }
 
 impl LoadedMatch {
@@ -89,53 +102,9 @@ impl LoadedMatch {
     }
   }
 
-  pub async fn commit_score(&mut self) -> Result<Option<models::Match>> {
-
+  pub async fn commit_score(&mut self) -> Result<models::Match> {
     if self.state == MatchPlayState::Complete {
-      let red = self.score.red.derive(&self.score.blue);
-      let blue = self.score.blue.derive(&self.score.red);
-
-      let mut winner = None;
-      if blue.win_status == WinStatus::WIN {
-        winner = Some(Alliance::Blue);
-      } else if red.win_status == WinStatus::WIN {
-        winner = Some(Alliance::Red);
-      }
-
-      self.match_meta.played = true;
-      self.match_meta.winner = winner;
-      self.match_meta.score = Some(self.score.clone());
-      self.match_meta.score_time = Some(chrono::Local::now().into());
-
-      if self.match_meta.match_type != models::MatchType::Test {
-        self.match_meta.insert(&db::database())?;
-
-        if self.match_meta.match_type == models::MatchType::Qualification {
-          let conn = db::database();
-          for &team in &self.match_meta.blue_teams {
-            if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update(&blue, &conn)?;
-            }
-          }
-          for &team in &self.match_meta.red_teams {
-            if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update(&red, &conn)?;
-            }
-          }
-        } else if self.match_meta.match_type == models::MatchType::Playoff {
-          // Update playoff generation
-          // TODO: We should use a global worker, but this will do for now.
-          let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
-          let record = worker.record();
-          if let Some(record) = record {
-            if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data {
-              worker.generate(mode).await;
-            }
-          }
-        }
-      }
-
-      Ok(Some(self.match_meta.clone()))
+      Ok(self.match_meta.commit(&self.score, &db::database()).await?.clone())
     } else {
       bail!(MatchWrongState {
         state: self.state,

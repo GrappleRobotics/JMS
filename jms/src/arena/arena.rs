@@ -83,7 +83,7 @@ pub enum AudienceDisplay {
   Field,
   MatchPreview,
   MatchPlay,
-  MatchResults(models::Match),
+  MatchResults(models::SerializedMatch),
   AllianceSelection,
   Award(models::Award),
   CustomMessage(String),
@@ -442,9 +442,7 @@ impl Arena {
           let m = self.current_match.as_mut().unwrap().commit_score().await?;
           self.prepare_state_change(ArenaState::Idle { ready: false })?;
 
-          if let Some(m) = m {
-            self.audience_display = AudienceDisplay::MatchResults(m);
-          }
+          self.audience_display = AudienceDisplay::MatchResults(models::SerializedMatch(m));
         }
       }
       (state, _) => Err(anyhow!("Unimplemented state: {:?}", state))?,

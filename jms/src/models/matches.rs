@@ -1,6 +1,8 @@
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 
-use crate::{db::{self, DBDateTime, TableType}, scoring::scores::MatchScore};
+use crate::{db::{self, DBDateTime, TableType}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus}};
+
+use super::TeamRanking;
 
 #[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Alliance {
@@ -85,6 +87,53 @@ impl Match {
     let mut v = Self::all(store)?;
     v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
     Ok(v)
+  }
+
+  pub async fn commit<'a>(&'a mut self, score: &MatchScore, db: &db::Store) -> db::Result<&'a Self> {
+    let red = score.red.derive(&score.blue);
+    let blue = score.blue.derive(&score.red);
+
+    let mut winner = None;
+    if blue.win_status == WinStatus::WIN {
+      winner = Some(Alliance::Blue);
+    } else if red.win_status == WinStatus::WIN {
+      winner = Some(Alliance::Red);
+    }
+
+    self.played = true;
+    self.winner = winner;
+    self.score = Some(score.clone());
+    self.score_time = Some(chrono::Local::now().into());
+
+    if self.match_type != MatchType::Test {
+      self.insert(db)?;
+
+      if self.match_type == MatchType::Qualification {
+        // Update rankings
+        for team in &self.blue_teams {
+          if let Some(team) = team {
+            TeamRanking::get(*team, &db)?.update(&blue, &db)?;
+          }
+        }
+
+        for team in &self.red_teams {
+          if let Some(team) = team {
+            TeamRanking::get(*team, &db)?.update(&red, &db)?;
+          }
+        }
+      } else if self.match_type == MatchType::Playoff {
+        // TODO: This should be event based
+        let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
+        let record = worker.record();
+        if let Some(record) = record {
+          if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data {
+            worker.generate(mode).await;
+          }
+        }
+      }
+    }
+
+    Ok(self)
   }
 }
 

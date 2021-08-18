@@ -65,7 +65,7 @@ impl QualsMatchGenerator {
           match_type: models::MatchType::Qualification,
           match_subtype: None,
           set_number: 1,
-          match_number: 1,
+          match_number: (match_i + 1),
           blue_teams: blue.iter().map(|&t| Some(t)).collect(),
           blue_alliance: None,
           red_teams: red.iter().map(|&t| Some(t)).collect(),

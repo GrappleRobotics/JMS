@@ -143,7 +143,7 @@ export default class ConfigureAlliances extends React.Component {
       return { id: r.team.toString(), rank: i + 1, disabled: chosen_teams.includes(r.team) }
     });
 
-    let editable = !!!this.props.matches?.playoffs?.record;
+    let editable = !!!this.props.matches?.playoffs?.record?.data;
 
     return <div>
       <Row className="my-3">

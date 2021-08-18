@@ -38,7 +38,7 @@ export default class ConfigureTeams extends React.Component {
   editable() {
     let quals = this.props.matches?.quals;
     if (quals) {
-      return !quals.record && !quals.running;
+      return !quals.record?.data && !quals.running;
     }
     return true;
   }

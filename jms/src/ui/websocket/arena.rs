@@ -173,14 +173,14 @@ impl ArenaWebsocketHandler {
         let last_match = models::Match::sorted(&db::database())?
           .iter().rev().filter(|&t| t.played).last().cloned();
         if let Some(last_match) = last_match {
-          AudienceDisplay::MatchResults(last_match)
+          AudienceDisplay::MatchResults(models::SerializedMatch(last_match))
         } else {
           bail!("Can't display results when no matches have been played!");
         }
       }
       ("MatchResults", Some(Value::String(match_id))) => {
         let m = models::Match::get_or_err(match_id, &db::database())?;
-        AudienceDisplay::MatchResults(m)
+        AudienceDisplay::MatchResults(models::SerializedMatch(m))
       }
       ("AllianceSelection", None) => AudienceDisplay::AllianceSelection,
       ("Award", Some(Value::Number(award_id))) => {

@@ -14,7 +14,7 @@ export default class PlayoffGenerator extends React.Component {
   }
 
   static needsAttention(d) {
-    return !!!d.matches?.playoffs?.record;
+    return !!!d.matches?.playoffs?.record?.data;
   }
 
   constructor(props) {
@@ -132,7 +132,7 @@ export default class PlayoffGenerator extends React.Component {
 
       <div>
         {
-          this.props.matches?.playoffs?.record ? this.renderPlayoffs() : this.renderNoPlayoffs()
+          this.props.matches?.playoffs?.record?.data ? this.renderPlayoffs() : this.renderNoPlayoffs()
         }
       </div>
     </div>
