@@ -1,2 +1,0 @@
--- Your SQL goes here
--- ALTER TABLE matches ADD COLUMN match_generation_record_id TEXT REFERENCES match_generation_records(id) ON DELETE CASCADE;

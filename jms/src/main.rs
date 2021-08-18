@@ -13,10 +13,6 @@ mod electronics;
 mod models;
 // mod tba;
 
-#[macro_use]
-extern crate diesel_migrations;
-#[macro_use]
-extern crate diesel;
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;

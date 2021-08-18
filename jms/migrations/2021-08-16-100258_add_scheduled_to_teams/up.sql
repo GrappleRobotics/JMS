@@ -1,2 +1,0 @@
--- Your SQL goes here
-ALTER TABLE teams ADD COLUMN schedule BOOLEAN NOT NULL DEFAULT TRUE;
