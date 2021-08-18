@@ -34,6 +34,10 @@ impl WebsocketMessageHandler for DebugWebsocketHandler {
             }
           }
         },
+        ("delete_all", None) => {
+          // Deletes all matches (DANGEROUS - ONLY FOR TESTING)
+          models::Match::table(&db::database())?.clear()?;
+        },
         _ => bail!("Invalid verb or data")
       },
       _ => bail!("Invalid verb or data")

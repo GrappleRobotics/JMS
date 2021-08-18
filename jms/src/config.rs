@@ -5,7 +5,7 @@ use std::{
   str::FromStr,
 };
 
-use crate::network::NetworkSettings;
+use crate::{network::NetworkSettings, tba};
 
 use log::warn;
 use strum::IntoEnumIterator;
@@ -15,13 +15,25 @@ const CONFIG_PATH: &'static str = "/etc/jms/jms.yml";
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct JMSSettings {
   pub network: NetworkSettings,
+  pub tba: Option<tba::TBAClient>,
 }
 
 #[async_trait::async_trait]
 impl Interactive for JMSSettings {
   async fn interactive() -> anyhow::Result<Self> {
+    let network = NetworkSettings::interactive().await?;
+
+    let do_tba = inquire::Confirm::new("Do you want to configure syncing to The Blue Alliance Trusted API? (Requires Trusted API Keys)")
+      .with_default(false).prompt()?;
+    
+    let tba = match do_tba {
+      true => Some(tba::TBAClient::interactive().await?),
+      false => None,
+    };
+
     Ok(Self {
-      network: NetworkSettings::interactive().await?,
+      network,
+      tba
     })
   }
 }

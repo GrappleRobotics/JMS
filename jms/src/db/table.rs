@@ -195,6 +195,25 @@ impl<T: TableType> DoubleEndedIterator for Iter<T> {
 
 pub struct Watch<T>(sled::Subscriber, PhantomData<T>);
 
+impl<T: TableType> Watch<T> {
+  pub async fn get(&mut self) -> super::Result<WatchEvent<T>> {
+    let i = (&mut self.0).await;
+    match i {
+      Some(sled::Event::Insert { key: _, value }) => {
+        match serde_json::from_slice(&value) {
+          Ok(dat) => Ok(WatchEvent::Insert(dat)),
+          Err(e) => Err(e.into()),
+        }
+      },
+      Some(sled::Event::Remove { key }) => {
+        let a: &[u8] = key.as_ref();
+        Ok(WatchEvent::Remove(T::Id::from_raw(a)))
+      },
+      None => Err(anyhow::anyhow!("No Data!")),
+    }
+  }
+}
+
 pub enum WatchEvent<T: TableType> {
   Insert(T),
   Remove(T::Id)
@@ -219,6 +238,7 @@ impl<T: TableType> Iterator for Watch<T> {
     }
   }
 }
+
 pub struct Batch<T>(sled::Batch, PhantomData<T>);
 
 #[allow(dead_code)]

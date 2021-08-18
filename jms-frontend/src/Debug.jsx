@@ -31,6 +31,14 @@ export default class Debug extends React.PureComponent {
           >
             Random Fill
           </Button>
+          <br />
+          <br />
+          <Button
+            onClick={() => this.props.ws.send("debug", "matches", "delete_all")}
+            variant="danger"
+          >
+            DELETE ALL (DANGER)
+          </Button>
         </Col>
       </Row>
     </Container>

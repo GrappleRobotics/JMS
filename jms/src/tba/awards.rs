@@ -1,6 +1,6 @@
 use crate::models;
 
-use super::teams::TBATeam;
+use super::{TBAClient, teams::TBATeam};
 
 #[derive(serde::Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct TBAAward {
@@ -25,6 +25,12 @@ impl From<models::Award> for Vec<TBAAward> {
 impl From<Vec<models::Award>> for TBAAwards {
   fn from(awards: Vec<models::Award>) -> Self {
     Self(awards.iter().flat_map(|award| Vec::<TBAAward>::from(award.clone())).collect())
+  }
+}
+
+impl TBAAwards {
+  pub async fn issue(&self, client: &TBAClient) -> anyhow::Result<()> {
+    client.post("awards", "update", self).await
   }
 }
 

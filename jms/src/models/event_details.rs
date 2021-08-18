@@ -4,6 +4,7 @@ use crate::db::{self, TableType};
 pub struct EventDetails {
   pub code: Option<String>,
   pub event_name: Option<String>,
+  pub webcasts: Vec<String>,
 }
 
 impl db::TableType for EventDetails {
@@ -24,7 +25,7 @@ impl EventDetails {
     match first {
       Some(ed) => Ok(ed),
       None => {
-        let mut ed = EventDetails { code: None, event_name: None };
+        let mut ed = EventDetails { code: None, event_name: None, webcasts: vec![] };
         ed.insert(store)?;
         Ok(ed)
       },

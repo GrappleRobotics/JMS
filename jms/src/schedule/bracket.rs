@@ -530,14 +530,36 @@ mod tests {
           }
         );
 
-        // Win match
-        existing.push(make_match(&matches[0], true, Some(Alliance::Red)));
+        // Need another tiebreaker
+        existing.push(make_match(&matches[0], true, Some(Alliance::Blue)));
         let results = bracket_update(&alliances, &Some(existing.clone()));
 
         println!("{:?}", results);
-        if let GenerationUpdate::TournamentWon(winner, finalist) = results {
-          assert_eq!(winner.id, 1);
-          assert_eq!(finalist.id, 2);
+        if let GenerationUpdate::NewMatches(matches) = results {
+
+          assert_eq!(matches.len(), 1);
+          assert_eq!(
+            matches[0],
+            IncompleteMatch {
+              red: 1, 
+              blue: 2,
+              playoff_type,
+              set: 1,
+              match_num: 4
+            }
+          );
+
+          // Win match
+          existing.push(make_match(&matches[0], true, Some(Alliance::Red)));
+          let results = bracket_update(&alliances, &Some(existing.clone()));
+
+          println!("{:?}", results);
+          if let GenerationUpdate::TournamentWon(winner, finalist) = results {
+            assert_eq!(winner.id, 1);
+            assert_eq!(finalist.id, 2);
+          } else {
+            assert!(false);
+          }
         } else {
           assert!(false);
         }

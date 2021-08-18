@@ -1,4 +1,6 @@
-use crate::models;
+use crate::{db::{self, TableType}, models};
+
+use super::TBAClient;
 
 #[derive(serde::Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(transparent)]
@@ -17,6 +19,15 @@ impl From<models::Team> for TBATeam {
 impl From<usize> for TBATeam {
   fn from(tn: usize) -> Self {
     TBATeam(format!("frc{}", tn))
+  }
+}
+
+impl TBATeams {
+  pub async fn issue(db: &db::Store, client: &TBAClient) -> anyhow::Result<()> {
+    let teams = models::Team::all(db)?;
+    let tba_teams = TBATeams(teams.iter().map(|t| TBATeam::from(t.clone())).collect());
+    client.post("team_list", "update", &tba_teams).await?;
+    Ok(())
   }
 }
 

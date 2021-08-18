@@ -1,10 +1,10 @@
 use crate::models;
 
-use super::teams::TBATeam;
+use super::{TBAClient, teams::TBATeam};
 
 #[derive(serde::Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(transparent)]
-pub struct TBAAlliance(Vec<Option<TBATeam>>);
+pub struct TBAAlliance(Vec<TBATeam>);
 
 #[derive(serde::Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(transparent)]
@@ -16,7 +16,11 @@ impl From<models::PlayoffAlliance> for TBAAlliance {
       return Self(vec![]);
     }
     
-    let teams = pa.teams.iter().map(|t| t.map(|t2| t2.into())).collect();
+    let teams = pa.teams
+      .iter()
+      .filter_map(|t| *t)
+      .map(|t| t.into())
+      .collect();
     Self(teams)
   }
 }
@@ -35,6 +39,12 @@ impl From<Vec<models::PlayoffAlliance>> for TBAAlliances {
   }
 }
 
+impl TBAAlliances {
+  pub async fn issue(&self, client: &TBAClient) -> anyhow::Result<()> {
+    client.post("alliance_selections", "update", self).await
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -49,9 +59,8 @@ mod tests {
     
     assert_eq!(
       TBAAlliance(vec![
-        Some(TBATeam("frc100".to_owned())), 
-        None, 
-        Some(TBATeam("frc120".to_owned()))
+        TBATeam("frc100".to_owned()), 
+        TBATeam("frc120".to_owned())
       ]),
       TBAAlliance::from(alliance)
     )

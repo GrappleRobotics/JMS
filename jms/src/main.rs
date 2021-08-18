@@ -11,7 +11,7 @@ mod ui;
 mod utils;
 mod electronics;
 mod models;
-// mod tba;
+mod tba;
 
 extern crate strum;
 #[macro_use]
@@ -87,7 +87,15 @@ async fn main() -> anyhow::Result<()> {
 
     let web_fut = ui::web::begin();
 
-    try_join!(arena_fut, ds_fut, ws_fut, web_fut)?;
+    if let Some(tba_client) = settings.tba {
+      info!("TBA Enabled");
+      let tba_worker = tba::TBAWorker::new(tba_client);
+      let tba_fut = tba_worker.begin();
+
+      try_join!(arena_fut, ds_fut, ws_fut, web_fut, tba_fut)?;
+    } else {
+      try_join!(arena_fut, ds_fut, ws_fut, web_fut)?;
+    }
   }
 
   Ok(())

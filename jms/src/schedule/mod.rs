@@ -36,13 +36,15 @@ fn create_tiebreaker(red: usize, blue: usize, matches: &Vec<Match>, playoff_type
     .unwrap();
 
   let set = last_match_for_this_pair.set_number;
-  let last_match_in_set = matches.iter().filter(|&m| m.set_number == set).last().unwrap();
+  // let last_match_in_set = matches.iter().filter(|&m| m.set_number == set).last().unwrap();
+  let highest_match_num = matches.iter().filter(|&m| m.set_number == set).map(|m| m.match_number).max();
 
   IncompleteMatch {
     red,
     blue,
     playoff_type,
     set,
-    match_num: last_match_in_set.match_number + 1,
+    // match_num: last_match_in_set.match_number + 1,
+    match_num: highest_match_num.unwrap() + 1
   }
 }

@@ -1,6 +1,6 @@
 use crate::models;
 
-use super::teams::TBATeam;
+use super::{TBAClient, teams::TBATeam};
 
 #[derive(serde::Serialize, Debug, Clone)]
 pub struct TBATeamRank {
@@ -45,5 +45,11 @@ impl From<Vec<models::TeamRanking>> for TBARankings {
     Self {
       breakdowns, rankings
     }
+  }
+}
+
+impl TBARankings {
+  pub async fn issue(&self, client: &TBAClient) -> anyhow::Result<()> {
+    client.post("rankings", "update", self).await
   }
 }
