@@ -1,5 +1,5 @@
 import React from "react";
-import { Col, Container, Row } from "react-bootstrap";
+import { Button, Col, Container, Row } from "react-bootstrap";
 
 export default class Debug extends React.PureComponent {
   render() {
@@ -20,6 +20,17 @@ export default class Debug extends React.PureComponent {
           <p> Device pixel ratio: { window.devicePixelRatio } </p>
           <p> Root Element Dimensions: { root.clientWidth } x { root.clientHeight } </p>
           <p> Window Inner Dimensions: { window.innerWidth } x { window.innerHeight } </p>
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          <h4> Matches </h4>
+          <Button
+            onClick={() => this.props.ws.send("debug", "matches", "fill_rand")}
+            variant="danger"
+          >
+            Random Fill
+          </Button>
         </Col>
       </Row>
     </Container>

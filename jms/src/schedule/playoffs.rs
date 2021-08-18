@@ -76,7 +76,7 @@ impl MatchGenerator for PlayoffMatchGenerator {
             blue_teams: alliance_blue.teams.clone(),
             blue_alliance: Some(alliance_blue.id),
             red_teams: alliance_red.teams.clone(),
-            red_alliance: Some(alliance_blue.id),
+            red_alliance: Some(alliance_red.id),
             score: None,
             score_time: None,
             winner: None,

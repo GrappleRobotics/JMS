@@ -194,7 +194,9 @@ export default class App extends React.Component {
       </Route>
       <Route path={DEBUG}>
         <this.wrapView navbar>
-          <Debug />
+          <Debug
+            ws={this.ws}
+          />
         </this.wrapView>
       </Route>
       <Route path="/">

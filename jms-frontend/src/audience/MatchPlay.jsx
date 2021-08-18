@@ -5,7 +5,7 @@ import { withVal } from "support/util";
 
 class MatchProgressBar extends React.Component {
   render() {
-    const { config, remaining, state } = this.props;
+    const { config, remaining, state, endgame } = this.props;
 
     let bars = [
       {
@@ -32,6 +32,7 @@ class MatchProgressBar extends React.Component {
             data-state={ bar.state }
             data-active={ bar.state == state }
             data-fault={ state == "Fault" }
+            data-endgame={ endgame }
             style={{
               width: `${bar.max / total * 100}vw`
             }}
@@ -102,6 +103,7 @@ export default class MatchPlay extends React.Component {
             config={match.config}
             remaining={match.remaining_time}
             state={match.state}
+            endgame={match.endgame}
           />
           <span className="progress-overlay">
             <Col>

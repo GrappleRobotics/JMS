@@ -86,7 +86,7 @@ export default class Audience extends React.PureComponent {
           />
         break;
       case "AllianceSelection":
-        if (event.alliances)
+        if (event.alliances && event.rankings)
           return <AllianceSelection
             event={event}
           />

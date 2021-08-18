@@ -1,5 +1,7 @@
 use std::ops::Add;
 
+use rand::{Rng, prelude::ThreadRng};
+
 use crate::{models::Alliance, utils::saturating_offset};
 
 // NOTE: WARP 2021 has some rule modifications.
@@ -316,5 +318,39 @@ impl LiveScore {
 
   fn total_bonus_rp(&self) -> usize {
     self.shield_gen_rp() as usize + self.stage3_rp() as usize
+  }
+
+  pub fn randomise() -> Self {
+    let mut rng = rand::thread_rng();
+
+    let rand_endgame = |rng: &mut ThreadRng| {
+      match rng.gen_range(0..=2) {
+        0 => EndgamePointType::None,
+        1 => EndgamePointType::Park,
+        _ => EndgamePointType::Hang
+      }
+    };
+
+    Self {
+      initiation_line_crossed: vec![ rng.gen(), rng.gen(), rng.gen() ],
+      power_cells: ModeScore {
+        auto: PowerCellCounts {
+          inner: rng.gen_range(0..=3),
+          outer: rng.gen_range(0..=5),
+          bottom: rng.gen_range(0..=5),
+        },
+        teleop: PowerCellCounts {
+          inner: rng.gen_range(0..=6),
+          outer: rng.gen_range(0..=15),
+          bottom: rng.gen_range(0..=20),
+        }
+      },
+      endgame: vec![ rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng) ],
+      rung_level: rng.gen(),
+      penalties: Penalties {
+        fouls: rng.gen_range(0..=10),
+        tech_fouls: rng.gen_range(0..=7)
+      }
+    }
   }
 }

@@ -1,10 +1,12 @@
 mod arena;
 mod event;
 mod matches;
+mod debug;
 
 pub use arena::ArenaWebsocketHandler;
 pub use event::EventWebsocketHandler;
 pub use matches::MatchWebsocketHandler;
+pub use debug::DebugWebsocketHandler;
 
 use anyhow::Result;
 

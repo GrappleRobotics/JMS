@@ -158,7 +158,14 @@
         > .progress-bar {
           background-color: theme-color("primary");
         }
+
+        &[data-endgame="true"] {
+          > .progress-bar {
+            background-color: theme-color("warning");
+          }
+        }
       }
+      
       &[data-fault="true"] {
         > .progress-bar {
           transition: width 0s;

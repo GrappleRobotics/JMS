@@ -36,6 +36,7 @@ use ui::websocket::ArenaWebsocketHandler;
 use ui::websocket::Websockets;
 
 use crate::config::JMSSettings;
+use crate::ui::websocket::DebugWebsocketHandler;
 use crate::ui::websocket::EventWebsocketHandler;
 use crate::ui::websocket::MatchWebsocketHandler;
 
@@ -85,6 +86,7 @@ async fn main() -> anyhow::Result<()> {
     ws.register("arena", Box::new(ArenaWebsocketHandler::new(arena))).await;
     ws.register("event", Box::new(EventWebsocketHandler::new())).await;
     ws.register("matches", Box::new(MatchWebsocketHandler::new())).await;
+    ws.register("debug", Box::new(DebugWebsocketHandler::new())).await;
     let ws_fut = ws.begin();
 
     let web_fut = ui::web::begin();
