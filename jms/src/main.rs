@@ -11,8 +11,7 @@ mod ui;
 mod utils;
 mod electronics;
 mod models;
-mod schema;
-mod tba;
+// mod tba;
 
 #[macro_use]
 extern crate diesel_migrations;
@@ -61,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
 
   logging::configure(matches.is_present("debug"));
 
-  db::connection(); // Start connection
+  db::database(); // Start connection
 
   let settings = JMSSettings::load_or_create_config(matches.is_present("new-cfg")).await?;
   if !matches.is_present("cfg-only") {

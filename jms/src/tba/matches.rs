@@ -56,16 +56,16 @@ impl TryFrom<models::Match> for TBAMatch {
 
   fn try_from(m: models::Match) -> anyhow::Result<TBAMatch> {
     let time = m.score_time.or(m.start_time).map(|t| t.0);
-    let score: Option<MatchScoreSnapshot> = m.score.map(|ms| ms.0.into());
+    let score: Option<MatchScoreSnapshot> = m.score.map(|ms| ms.into());
 
     let alliances = TBAMatchAlliances {
       red: TBAMatchAlliance {
         score: score.as_ref().map(|s| s.red.derived.total_score as isize).unwrap_or(0),
-        teams: m.red_teams.0.iter().map(|&t| t.map(|tn| TBATeam::from(tn as usize) )).collect()
+        teams: m.red_teams.iter().map(|&t| t.map(|tn| TBATeam::from(tn as usize) )).collect()
       },
       blue: TBAMatchAlliance {
         score: score.as_ref().map(|s| s.blue.derived.total_score as isize).unwrap_or(0),
-        teams: m.blue_teams.0.iter().map(|&t| t.map(|tn| TBATeam::from(tn as usize) )).collect()
+        teams: m.blue_teams.iter().map(|&t| t.map(|tn| TBATeam::from(tn as usize) )).collect()
       }
     };
 
@@ -198,7 +198,7 @@ impl From<SnapshotScore> for TBA2021ScoreBreakdown {
 mod tests {
   use super::*;
   use std::convert::TryInto;
-  use crate::{models::{SQLDatetime, SQLJson}, scoring::scores::{LiveScore, MatchScore, ModeScore, Penalties, PowerCellCounts}};
+  use crate::{db::DBDateTime, scoring::scores::{LiveScore, MatchScore, ModeScore, Penalties, PowerCellCounts}};
 
 
   #[test]
@@ -213,12 +213,12 @@ mod tests {
 
     for (match_type, match_subtype, comp_level) in test_cases {
       let m = models::Match {
-        id: 1, start_time: Some(SQLDatetime(dt.naive_utc())),
+        start_time: Some(DBDateTime(dt.naive_utc())),
         match_type,
         set_number: 1,
         match_number: 1,
-        blue_teams: SQLJson(vec![ Some(113), None, Some(112) ]),
-        red_teams: SQLJson(vec![None, Some(4788), None]),
+        blue_teams: vec![ Some(113), None, Some(112) ],
+        red_teams: vec![None, Some(4788), None],
         played: true,
         score: None,
         winner: None,
@@ -276,14 +276,14 @@ mod tests {
     let score_blue_d = score_blue.derive(&score_red);
 
     let m = models::Match {
-      id: 1, start_time: None,
+      start_time: None,
       match_type: models::MatchType::Qualification,
       set_number: 1,
       match_number: 1,
-      blue_teams: SQLJson(vec![None, None, None]),
-      red_teams: SQLJson(vec![None, None, None]),
+      blue_teams: vec![None, None, None],
+      red_teams: vec![None, None, None],
       played: true,
-      score: Some(SQLJson(MatchScore { red: score_red, blue: score_blue })),
+      score: Some(MatchScore { red: score_red, blue: score_blue }),
       winner: None,
       match_subtype: None,
       red_alliance: None,

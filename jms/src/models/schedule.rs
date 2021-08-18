@@ -1,21 +1,31 @@
 use chrono::{Date, Duration, Local, NaiveTime, TimeZone};
-use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 
-use crate::{db, schema::schedule_blocks, sql_mapped_enum};
+use crate::db::{self, DBDateTime, DBDuration, TableType};
 
-use super::{SQLDatetime, SQLDuration};
+#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum ScheduleBlockType {
+  General,
+  Qualification,
+  Playoff
+}
 
-sql_mapped_enum!(ScheduleBlockType, General, Qualification, Playoff);
-
-#[derive(Insertable, Queryable, Debug, Clone, AsChangeset, serde::Serialize, serde::Deserialize)]
-#[changeset_options(treat_none_as_null = "true")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ScheduleBlock {
-  pub id: i32,
+  pub id: Option<usize>,
   pub block_type: ScheduleBlockType,
   pub name: String,
-  pub start_time: SQLDatetime,
-  pub end_time: SQLDatetime,
-  pub cycle_time: SQLDuration,
+  pub start_time: DBDateTime,
+  pub end_time: DBDateTime,
+  pub cycle_time: DBDuration,
+}
+
+impl db::TableType for ScheduleBlock {
+  const TABLE: &'static str = "schedule_blocks";
+  type Id = db::Integer;
+
+  fn id(&self) -> Option<Self::Id> {
+    self.id.map(|id| id.into())
+  }
 }
 
 impl ScheduleBlock {
@@ -24,128 +34,142 @@ impl ScheduleBlock {
     (duration.num_seconds() / self.cycle_time.0.num_seconds()) as usize
   }
 
-  pub fn qual_blocks(conn: &db::ConnectionT) -> QueryResult<Vec<ScheduleBlock>> {
-    use crate::schema::schedule_blocks::dsl::*;
-    schedule_blocks
-      .filter(block_type.eq(ScheduleBlockType::Qualification))
-      .order_by(start_time.asc())
-      .load::<ScheduleBlock>(conn)
+  pub fn by_type(block_type: ScheduleBlockType, store: &db::Store) -> db::Result<Vec<ScheduleBlock>> {
+    let mut v: Vec<ScheduleBlock> = Self::table(store)?.iter().filter(|a| {
+      a.as_ref().map(|sb| sb.block_type == block_type ).unwrap_or(false)
+    }).collect::<db::Result<Vec<ScheduleBlock>>>()?;
+    v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+    Ok(v)
   }
 
-  pub fn playoff_blocks(conn: &db::ConnectionT) -> QueryResult<Vec<ScheduleBlock>> {
-    use crate::schema::schedule_blocks::dsl::*;
-    schedule_blocks
-      .filter(block_type.eq(ScheduleBlockType::Playoff))
-      .order_by(start_time.asc())
-      .load::<ScheduleBlock>(conn)
+  pub fn sorted(store: &db::Store) -> db::Result<Vec<ScheduleBlock>> {
+    let mut v = Self::all(store)?;
+    v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+    Ok(v)
   }
 
-  pub fn append_default(conn: &db::ConnectionT) -> QueryResult<()> {
+  pub fn qual_blocks(store: &db::Store) -> db::Result<Vec<ScheduleBlock>> {
+    Self::by_type(ScheduleBlockType::Qualification, store)
+  }
+
+  // pub fn playoff_blocks(store: &db::Store) -> db::Result<Vec<ScheduleBlock>> {
+  //   Self::by_type(ScheduleBlockType::Playoff, store)
+  // }
+
+  pub fn append_default(store: &db::Store) -> db::Result<()> {
     // TODO: Validate, can't do it if the schedule is locked in
-    use crate::schema::schedule_blocks::dsl::*;
     let mut start = Local::today().and_hms(9, 00, 00);
 
-    match schedule_blocks
-      .order(id.desc())
-      .first::<ScheduleBlock>(&db::connection())
-    {
-      Ok(sb) => {
-        let end = Local.from_utc_datetime(&sb.end_time.0);
-        let new_start = end + Duration::hours(1);
-        let new_end = new_start + Duration::hours(3);
+    let mut all = Self::table(store)?.all()?;
+    all.sort_by(|a, b| a.start_time.cmp(&b.start_time));
 
-        if new_end.time() >= NaiveTime::from_hms(17, 00, 00) {
-          // Automatically move to tomorrow
-          start = (end + Duration::days(1)).date().and_hms(9, 00, 00);
-        } else {
-          start = new_start;
-        }
+    if let Some(last) = all.last() {
+      let end = Local.from_utc_datetime(&last.end_time.0);
+      let new_start = end + Duration::hours(1);
+      let new_end = new_start + Duration::hours(3);
+
+      if new_end.time() >= NaiveTime::from_hms(17, 00, 00) {
+        // Automatically move to tomorrow
+        start = (end + Duration::days(1)).date().and_hms(9, 00, 00);
+      } else {
+        start = new_start;
       }
-      Err(diesel::NotFound) => (),
-      Err(e) => return Err(e),
     }
 
-    diesel::insert_into(schedule_blocks)
-      .values((
-        block_type.eq(ScheduleBlockType::General),
-        start_time.eq(SQLDatetime(start.naive_utc())),
-        end_time.eq(SQLDatetime((start + Duration::hours(3)).naive_utc())),
-        cycle_time.eq(SQLDuration(Duration::minutes(13))),
-      ))
-      .execute(conn)?;
+    let sb = ScheduleBlock {
+      id: None,
+      name: "Unnamed Block".to_owned(),
+      block_type: ScheduleBlockType::General,
+      start_time: start.into(),
+      end_time: (start + Duration::hours(3)).into(),
+      cycle_time: DBDuration(Duration::minutes(13))
+    };
+
+    sb.insert(store)?;
 
     Ok(())
   }
 
-  pub fn generate_default_2day(start_date: Date<Local>, conn: &db::ConnectionT) -> QueryResult<()> {
-    use crate::schema::schedule_blocks::dsl::*;
+  pub fn generate_default_2day(start_date: Date<Local>, store: &db::Store) -> db::Result<()> {
+    // use crate::schema::schedule_blocks::dsl::*;
     let day1 = start_date;
     let day2 = day1 + Duration::days(1);
 
     // Clear any existing
-    diesel::delete(schedule_blocks).execute(conn)?;
+    Self::table(store)?.clear()?;
+    // diesel::delete(schedule_blocks).execute(conn)?;
 
-    // Generate the new blocks
-    diesel::insert_into(schedule_blocks)
-      .values(&vec![
-        // Day 1
-        (
-          name.eq("Opening Ceremony"),
-          block_type.eq(ScheduleBlockType::General),
-          start_time.eq(SQLDatetime::from(day1.and_hms(08, 30, 00))),
-          end_time.eq(SQLDatetime::from(day1.and_hms(09, 00, 00))),
-        ),
-        (
-          name.eq("Field Tests & Practice"),
-          block_type.eq(ScheduleBlockType::General),
-          start_time.eq(SQLDatetime::from(day1.and_hms(09, 00, 00))),
-          end_time.eq(SQLDatetime::from(day1.and_hms(12, 00, 00))),
-        ),
-        (
-          name.eq("Qualifications"),
-          block_type.eq(ScheduleBlockType::Qualification),
-          start_time.eq(SQLDatetime::from(day1.and_hms(13, 00, 00))),
-          end_time.eq(SQLDatetime::from(day1.and_hms(17, 00, 00))),
-        ),
-        (
-          name.eq("Awards & Closing Ceremony"),
-          block_type.eq(ScheduleBlockType::General),
-          start_time.eq(SQLDatetime::from(day1.and_hms(17, 30, 00))),
-          end_time.eq(SQLDatetime::from(day1.and_hms(18, 00, 00))),
-        ),
-        // Day 2
-        (
-          name.eq("Opening Ceremony"),
-          block_type.eq(ScheduleBlockType::General),
-          start_time.eq(SQLDatetime::from(day2.and_hms(08, 30, 00))),
-          end_time.eq(SQLDatetime::from(day2.and_hms(09, 00, 00))),
-        ),
-        (
-          name.eq("Qualifications (cont.)"),
-          block_type.eq(ScheduleBlockType::Qualification),
-          start_time.eq(SQLDatetime::from(day2.and_hms(09, 00, 00))),
-          end_time.eq(SQLDatetime::from(day2.and_hms(12, 00, 00))),
-        ),
-        (
-          name.eq("Alliance Selection"),
-          block_type.eq(ScheduleBlockType::General),
-          start_time.eq(SQLDatetime::from(day2.and_hms(12, 00, 00))),
-          end_time.eq(SQLDatetime::from(day2.and_hms(12, 30, 00))),
-        ),
-        (
-          name.eq("Playoffs"),
-          block_type.eq(ScheduleBlockType::Playoff),
-          start_time.eq(SQLDatetime::from(day2.and_hms(13, 30, 00))),
-          end_time.eq(SQLDatetime::from(day2.and_hms(17, 00, 00))),
-        ),
-        (
-          name.eq("Awards & Closing Ceremony"),
-          block_type.eq(ScheduleBlockType::General),
-          start_time.eq(SQLDatetime::from(day2.and_hms(17, 30, 00))),
-          end_time.eq(SQLDatetime::from(day2.and_hms(18, 00, 00))),
-        ),
-      ])
-      .execute(conn)?;
+    let cycle_time = DBDuration(Duration::minutes(13));
+    
+    let mut batch = db::Batch::new();
+    // Day 1
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Opening Ceremony".to_owned(),
+      block_type: ScheduleBlockType::General,
+      start_time: day1.and_hms(08, 30, 00).into(),
+      end_time: day1.and_hms(09, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Field Tests & Practice".to_owned(),
+      block_type: ScheduleBlockType::General,
+      start_time: day1.and_hms(09, 00, 00).into(),
+      end_time: day1.and_hms(12, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Qualifications".to_owned(),
+      block_type: ScheduleBlockType::Qualification,
+      start_time: day1.and_hms(13, 00, 00).into(),
+      end_time: day1.and_hms(17, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Awards & Closing Ceremony".to_owned(),
+      block_type: ScheduleBlockType::General,
+      start_time: day1.and_hms(17, 30, 00).into(),
+      end_time: day1.and_hms(18, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+
+    // Day 2
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Opening Ceremony".to_owned(),
+      block_type: ScheduleBlockType::General,
+      start_time: day2.and_hms(08, 30, 00).into(),
+      end_time: day2.and_hms(09, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Qualifications (cont'd)".to_owned(),
+      block_type: ScheduleBlockType::Qualification,
+      start_time: day2.and_hms(09, 00, 00).into(),
+      end_time: day2.and_hms(12, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Alliance Selections".to_owned(),
+      block_type: ScheduleBlockType::General,
+      start_time: day2.and_hms(12, 00, 00).into(),
+      end_time: day2.and_hms(12, 30, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Playoffs".to_owned(),
+      block_type: ScheduleBlockType::Playoff,
+      start_time: day2.and_hms(13, 30, 00).into(),
+      end_time: day2.and_hms(17, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    batch.insert(store, &ScheduleBlock {
+      id: None, name: "Awards & Closing Ceremony".to_owned(),
+      block_type: ScheduleBlockType::General,
+      start_time: day2.and_hms(17, 30, 00).into(),
+      end_time: day2.and_hms(18, 00, 00).into(),
+      cycle_time: cycle_time.clone()
+    })?;
+    Self::table(store)?.apply_batch(batch)?;
+
     Ok(())
   }
 }

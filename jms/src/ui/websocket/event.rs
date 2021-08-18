@@ -1,12 +1,8 @@
 use anyhow::bail;
 
 use chrono::{Local, NaiveDateTime, TimeZone};
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 
-use crate::{
-  db,
-  models::{self, AwardRecipient, PlayoffAlliance, SQLJson, ScheduleBlock, TeamRanking},
-};
+use crate::{db::{self, TableType}, models::{self, PlayoffAlliance, ScheduleBlock}};
 
 use super::{JsonMessage, WebsocketMessageHandler};
 
@@ -25,38 +21,32 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
     let mut response = vec![];
     {
       // Details
-      let ed = models::EventDetails::get(&db::connection())?;
+      let ed = models::EventDetails::get(&db::database())?;
       response.push(msg.noun("details").to_data(&ed)?)
     }
     {
       // Teams
-      use crate::schema::teams::dsl::*;
-      let ts = teams.load::<models::Team>(&db::connection())?;
+      let ts = models::Team::all(&db::database())?;
       response.push(msg.noun("teams").to_data(&ts)?)
     }
     {
       // Schedule
-      use crate::schema::schedule_blocks::dsl::*;
-      let sbs = schedule_blocks
-        .order_by(start_time.asc())
-        .load::<models::ScheduleBlock>(&db::connection())?;
+      let sbs = models::ScheduleBlock::sorted(&db::database())?;
       response.push(msg.noun("schedule").to_data(&sbs)?)
     }
     {
       // Alliances
-      use crate::schema::playoff_alliances::dsl::*;
-      let als = playoff_alliances.load::<models::PlayoffAlliance>(&db::connection())?;
+      let als = models::PlayoffAlliance::all(&db::database())?;
       response.push(msg.noun("alliances").to_data(&als)?)
     }
     {
       // Rankings
-      let rs = TeamRanking::get_sorted(&db::connection())?;
+      let rs = models::TeamRanking::sorted(&db::database())?;
       response.push(msg.noun("rankings").to_data(&rs)?)
     }
     {
       // Awards
-      use crate::schema::awards::dsl::*;
-      let aws = awards.load::<models::Award>(&db::connection())?;
+      let aws = models::Award::all(&db::database())?;
       response.push(msg.noun("awards").to_data(&aws)?)
     }
     Ok(response)
@@ -70,15 +60,13 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
     match msg.noun.as_str() {
       "details" => match (msg.verb.as_str(), msg.data) {
         ("update", Some(data)) => {
-          use crate::schema::event_details::dsl::*;
           let ed: models::EventDetails = serde_json::from_value(data)?;
-          diesel::update(event_details).set(&ed).execute(&db::connection())?;
+          ed.insert(&db::database())?;
         }
         _ => bail!("Invalid verb or data"),
       },
       "teams" => match (msg.verb.as_str(), msg.data) {
         ("insert", Some(data)) => {
-          use crate::schema::teams::dsl::*;
           let mut team: models::Team = serde_json::from_value(data)?;
 
           if team.wpakey.is_none() {
@@ -95,14 +83,13 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
           }
 
           // TODO: Validate
-          diesel::replace_into(teams).values(&team).execute(&db::connection())?;
+          team.insert(&db::database())?;
         }
         ("delete", Some(serde_json::Value::Number(team_id))) => {
-          use crate::schema::teams::dsl::*;
-          if let Some(n) = team_id.as_i64() {
-            diesel::delete(teams.filter(id.eq(n as i32))).execute(&db::connection())?;
+          if let Some(n) = team_id.as_u64() {
+            models::Team::remove_by(n, &db::database())?;
           } else {
-            bail!("Not an i64: {}", team_id);
+            bail!("Not a u64: {}", team_id);
           }
         }
         _ => bail!("Invalid verb or data"),
@@ -110,27 +97,23 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       "schedule" => match (msg.verb.as_str(), msg.data) {
         ("new_block", None) => {
           // TODO: Validate, can't be done if the schedule is locked
-          ScheduleBlock::append_default(&db::connection())?;
+          ScheduleBlock::append_default(&db::database())?;
         }
         ("delete_block", Some(serde_json::Value::Number(block_id))) => {
-          use crate::schema::schedule_blocks::dsl::*;
-          if let Some(n) = block_id.as_i64() {
-            diesel::delete(schedule_blocks.filter(id.eq(n as i32))).execute(&db::connection())?;
+          if let Some(n) = block_id.as_u64() {
+            models::ScheduleBlock::remove_by(n, &db::database())?;
           } else {
-            bail!("Not an i64: {}", block_id);
+            bail!("Not a u64: {}", block_id);
           }
         }
         ("update_block", Some(data)) => {
-          use crate::schema::schedule_blocks::dsl::*;
           let block: models::ScheduleBlock = serde_json::from_value(data)?;
-          diesel::replace_into(schedule_blocks)
-            .values(&block)
-            .execute(&db::connection())?;
+          block.insert(&db::database())?;
         }
         ("load_default", Some(serde_json::Value::Number(data))) => {
           if let Some(n) = data.as_i64() {
             let date = Local.from_utc_datetime(&NaiveDateTime::from_timestamp(n, 0)).date();
-            ScheduleBlock::generate_default_2day(date, &db::connection())?;
+            ScheduleBlock::generate_default_2day(date, &db::database())?;
           } else {
             bail!("Not an i64: {}", data);
           }
@@ -140,44 +123,41 @@ impl WebsocketMessageHandler for EventWebsocketHandler {
       "alliances" => match (msg.verb.as_str(), msg.data) {
         ("create", Some(serde_json::Value::Number(n))) => {
           if let Some(n) = n.as_u64() {
-            PlayoffAlliance::create_all(n as usize, &db::connection())?;
+            PlayoffAlliance::create_all(n as usize, &db::database())?;
           } else {
             bail!("Not a u64: {}", n);
           }
         }
         ("clear", None) => {
-          PlayoffAlliance::clear(&db::connection())?;
+          PlayoffAlliance::clear(&db::database())?;
         }
         ("update", Some(data)) => {
-          use crate::schema::playoff_alliances::dsl::*;
           let alliance: models::PlayoffAlliance = serde_json::from_value(data)?;
-          diesel::replace_into(playoff_alliances)
-            .values(&alliance)
-            .execute(&db::connection())?;
+          alliance.insert(&db::database())?;
         }
         ("promote", None) => {
-          PlayoffAlliance::promote(&db::connection())?;
+          PlayoffAlliance::promote(&db::database())?;
         }
         _ => bail!("Invalid verb or data"),
       },
       "awards" => match (msg.verb.as_str(), msg.data) {
         ("create", Some(serde_json::Value::String(s))) => {
-          use crate::schema::awards::dsl::*;
-          diesel::insert_into(awards)
-            .values((name.eq(s), recipients.eq(SQLJson(Vec::<AwardRecipient>::new()))))
-            .execute(&db::connection())?;
+          let award = models::Award {
+            id: None,
+            name: s,
+            recipients: vec![]
+          };
+          award.insert(&db::database())?;
         }
         ("update", Some(data)) => {
-          use crate::schema::awards::dsl::*;
           let award: models::Award = serde_json::from_value(data)?;
-          diesel::replace_into(awards).values(&award).execute(&db::connection())?;
+          award.insert(&db::database())?;
         }
         ("delete", Some(serde_json::Value::Number(award_id))) => {
-          use crate::schema::awards::dsl::*;
-          if let Some(n) = award_id.as_i64() {
-            diesel::delete(awards.filter(id.eq(n as i32))).execute(&db::connection())?;
+          if let Some(n) = award_id.as_u64() {
+            models::Award::remove_by(n, &db::database())?;
           } else {
-            bail!("Not an i64: {}", award_id);
+            bail!("Not a u64: {}", award_id);
           }
         }
         _ => bail!("Invalid verb or data"),

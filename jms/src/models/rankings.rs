@@ -1,57 +1,60 @@
-use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use rand::Rng;
 
-use crate::db;
-use crate::models::Team;
-use crate::schema::team_rankings;
+use crate::db::{self, TableType};
 use crate::scoring::scores::{DerivedScore, WinStatus};
 
-#[derive(
-  Identifiable, Insertable, Queryable, Associations, AsChangeset, Debug, Clone, PartialEq, Eq, serde::Serialize,
-)]
-#[belongs_to(Team, foreign_key = "team")]
-#[primary_key(team)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TeamRanking {
-  pub team: i32,
+  pub team: usize,
 
-  pub rp: i32,
-  pub auto_points: i32,
-  pub endgame_points: i32,
-  pub teleop_points: i32,
-  pub random_num: i32,
+  pub rp: usize,
+  pub auto_points: isize,
+  pub endgame_points: isize,
+  pub teleop_points: isize,
+  pub random_num: usize,
 
-  pub win: i32,
-  pub loss: i32,
-  pub tie: i32,
-  pub played: i32,
+  pub win: usize,
+  pub loss: usize,
+  pub tie: usize,
+  pub played: usize,
+}
+
+impl db::TableType for TeamRanking {
+  const TABLE: &'static str = "rankings";
+  type Id = db::Integer;
+
+  fn id(&self) -> Option<Self::Id> {
+    Some(self.team.into())
+  }
 }
 
 impl TeamRanking {
-  pub fn get(team_num: i32, conn: &db::ConnectionT) -> QueryResult<TeamRanking> {
-    use crate::schema::team_rankings::dsl::*;
-
-    let record = team_rankings.find(team_num).first::<TeamRanking>(conn);
+  pub fn get(team_num: usize, store: &db::Store) -> db::Result<TeamRanking> {
+    let record = TeamRanking::table(store)?.get(team_num)?;
     match record {
-      Ok(rank) => Ok(rank),
-      Err(diesel::NotFound) => {
+      Some(rank) => Ok(rank),
+      None => {
         let mut rng = rand::thread_rng();
-
         // Insert default
-        diesel::insert_into(team_rankings)
-          .values((team.eq(team_num), random_num.eq::<i32>(rng.gen())))
-          .execute(conn)?;
+        let tr = TeamRanking {
+          team: team_num,
+          rp: 0, auto_points: 0,
+          endgame_points: 0, teleop_points: 0,
+          random_num: rng.gen(),
+          win: 0, loss: 0, tie: 0, played: 0
+        };
 
-        team_rankings.find(team_num).first::<TeamRanking>(conn)
-      }
-      Err(e) => Err(e),
+        tr.insert(store)?;
+        Ok(tr)
+      },
     }
   }
 
   pub fn update(
     &mut self,
     us_score: &DerivedScore,
-    conn: &db::ConnectionT,
-  ) -> QueryResult<()> {
+    store: &db::Store,
+  ) -> db::Result<()> {
     if us_score.win_status == WinStatus::WIN {
       self.rp += 2;
       self.win += 1;
@@ -62,29 +65,28 @@ impl TeamRanking {
       self.tie += 1;
     }
 
-    self.rp += us_score.total_bonus_rp as i32;
+    self.rp += us_score.total_bonus_rp;
 
-    self.auto_points += us_score.mode_score.auto as i32;
-    self.teleop_points += us_score.mode_score.teleop as i32;
-    self.endgame_points += us_score.endgame_points as i32;
+    self.auto_points += us_score.mode_score.auto;
+    self.teleop_points += us_score.mode_score.teleop;
+    self.endgame_points += us_score.endgame_points;
 
     self.played += 1;
 
-    self.commit(conn)
-  }
+    self.insert(store)?;
 
-  pub fn commit(&self, conn: &db::ConnectionT) -> QueryResult<()> {
-    use crate::schema::team_rankings::dsl::*;
-
-    diesel::replace_into(team_rankings).values(self).execute(conn)?;
     Ok(())
   }
 
-  pub fn get_sorted(conn: &db::ConnectionT) -> QueryResult<Vec<TeamRanking>> {
-    use crate::schema::team_rankings::dsl::*;
-    let mut all = team_rankings.load::<TeamRanking>(conn)?;
-    all.sort();
-    Ok(all)
+  pub fn sorted(store: &db::Store) -> db::Result<Vec<TeamRanking>> {
+    let all = Self::table(store)?.all();
+    match all {
+      Ok(mut als) => {
+        als.sort();
+        Ok(als)
+      },
+      Err(e) => Err(e),
+    }
   }
 }
 
@@ -96,9 +98,17 @@ fn cmp_f64(a: f64, b: f64) -> std::cmp::Ordering {
   }
 }
 
-fn avg(x: i32, n: i32) -> f64 {
+fn avg(x: isize, n: usize) -> f64 {
   (x as f64) / (n as f64)
 }
+
+impl PartialEq for TeamRanking {
+  fn eq(&self, other: &Self) -> bool {
+    self.team == other.team
+  }
+}
+
+impl Eq for TeamRanking { }
 
 impl PartialOrd for TeamRanking {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -116,7 +126,7 @@ impl Ord for TeamRanking {
     let n_other = other.played;
 
     // Game Manual Table 11-2
-    cmp_f64(avg(self.rp, n_self), avg(other.rp, n_other))
+    cmp_f64(avg(self.rp as isize, n_self), avg(other.rp as isize, n_other))
       .then(cmp_f64(avg(self.auto_points, n_self), avg(other.auto_points, n_other)))
       .then(cmp_f64(
         avg(self.endgame_points, n_self),
@@ -127,6 +137,5 @@ impl Ord for TeamRanking {
         avg(other.teleop_points, n_other),
       ))
       .then(cmp_f64(self.random_num as f64, other.random_num as f64))
-      .then(cmp_f64(self.team as f64, other.team as f64))
   }
 }

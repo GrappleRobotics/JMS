@@ -6,14 +6,10 @@ use std::{
   },
 };
 
-use diesel::{BelongingToDsl, ExpressionMethods, QueryDsl, RunQueryDsl};
 use log::error;
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 
-use crate::{
-  db,
-  models::{self, MatchGenerationRecord},
-};
+use crate::{db::{self, TableType}, models::{self, MatchGenerationRecord}};
 
 pub struct MatchGenerationWorker<T>
 where
@@ -45,47 +41,26 @@ where
   }
 
   pub fn record(&self) -> Option<MatchGenerationRecord> {
-    use crate::schema::match_generation_records::dsl::*;
-    match_generation_records
-      .find(self.match_type())
-      .first::<MatchGenerationRecord>(&db::connection())
-      .ok()
+    MatchGenerationRecord::get(self.match_type(), &db::database()).ok()
   }
 
   pub fn matches(&self) -> Vec<models::Match> {
-    models::Match::with_type(self.match_type())
-    // self.record().map(|record| {
-    //   models::Match::belonging_to(&record).load::<models::Match>(&db::connection()).unwrap()
-    // }).unwrap_or(vec![])
+    models::Match::by_type(self.match_type(), &db::database()).unwrap()
   }
 
   pub fn has_played(&self) -> bool {
-    self
-      .record()
-      .map(|record| {
-        use crate::schema::matches::dsl::*;
-        models::Match::belonging_to(&record)
-          .filter(played.eq(true))
-          .count()
-          .get_result::<i64>(&db::connection())
-          .unwrap()
-          > 0
-      })
-      .unwrap_or(false)
+    self.matches().iter().any(|t| t.played)
   }
 
   pub fn delete(&self) {
-    {
-      use crate::schema::match_generation_records::dsl::*;
-      diesel::delete(match_generation_records.find(self.match_type()))
-        .execute(&db::connection())
-        .unwrap();
+    #[allow(unused_must_use)]
+    if let Some(record) = self.record() {
+      record.remove(&db::database());
     }
-    {
-      use crate::schema::matches::dsl::*;
-      diesel::delete(matches.filter(match_type.eq(self.match_type())))
-        .execute(&db::connection())
-        .unwrap();
+
+    #[allow(unused_must_use)]
+    for m in self.matches() {
+      m.remove(&db::database());
     }
   }
 
@@ -115,9 +90,9 @@ where
   where
     S: Serializer,
   {
-    let mut state = serializer.serialize_struct("MatchGenerationWorker", 10)?;
+    let mut state = serializer.serialize_struct("MatchGenerationWorker", 3)?;
     state.serialize_field("running", &self.running())?;
-    state.serialize_field("matches", &self.matches())?;
+    state.serialize_field("matches", &self.matches().iter().map(|m| models::SerializedMatch(m.clone())).collect::<Vec<models::SerializedMatch>>())?;
     state.serialize_field("record", &self.record())?;
     state.end()
   }

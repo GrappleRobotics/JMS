@@ -1,14 +1,9 @@
 use anyhow::{anyhow, bail};
 
-use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::{
-  arena::{matches::LoadedMatch, station::AllianceStationId, ArenaSignal, ArenaState, AudienceDisplay, SharedArena},
-  db, models,
-  scoring::scores::ScoreUpdateData,
-};
+use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, ArenaSignal, ArenaState, AudienceDisplay, SharedArena}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
 
 use super::{JsonMessage, WebsocketMessageHandler};
 
@@ -80,16 +75,9 @@ impl WebsocketMessageHandler for ArenaWebsocketHandler {
             .await
             .load_match(LoadedMatch::new(models::Match::new_test()))?;
         }
-        ("load", Some(serde_json::Value::Number(match_id))) => {
-          use crate::schema::matches::dsl::*;
-          if let Some(n) = match_id.as_i64() {
-            let match_meta = matches
-              .filter(id.eq(n as i32))
-              .first::<models::Match>(&db::connection())?;
-            self.arena.lock().await.load_match(LoadedMatch::new(match_meta))?;
-          } else {
-            bail!("{} is not an i64", match_id);
-          }
+        ("load", Some(serde_json::Value::String(id))) => {
+          let m = models::Match::get_or_err(id, &db::database())?;
+          self.arena.lock().await.load_match(LoadedMatch::new(m))?;
         }
         ("unload", None) => {
           self.arena.lock().await.unload_match()?;
@@ -182,39 +170,25 @@ impl ArenaWebsocketHandler {
       ("MatchPreview", None) => AudienceDisplay::MatchPreview,
       ("MatchPlay", None) => AudienceDisplay::MatchPlay,
       ("MatchResults", None) => {
-        use crate::schema::matches::dsl::*;
-        let last_match = matches
-          .filter(played.eq(true))
-          .order_by(score_time.desc())
-          .first::<models::Match>(&db::connection())
-          .optional()?;
+        let last_match = models::Match::sorted(&db::database())?
+          .iter().rev().filter(|&t| t.played).last().cloned();
         if let Some(last_match) = last_match {
           AudienceDisplay::MatchResults(last_match)
         } else {
           bail!("Can't display results when no matches have been played!");
         }
       }
-      ("MatchResults", Some(Value::Number(match_id))) => {
-        use crate::schema::matches::dsl::*;
-        if let Some(n) = match_id.as_i64() {
-          let match_meta = matches
-            .filter(id.eq(n as i32))
-            .first::<models::Match>(&db::connection())?;
-          AudienceDisplay::MatchResults(match_meta)
-        } else {
-          bail!("{} is not an i64", match_id);
-        }
+      ("MatchResults", Some(Value::String(match_id))) => {
+        let m = models::Match::get_or_err(match_id, &db::database())?;
+        AudienceDisplay::MatchResults(m)
       }
       ("AllianceSelection", None) => AudienceDisplay::AllianceSelection,
       ("Award", Some(Value::Number(award_id))) => {
-        use crate::schema::awards::dsl::*;
-        if let Some(n) = award_id.as_i64() {
-          let award = awards
-            .filter(id.eq(n as i32))
-            .first::<models::Award>(&db::connection())?;
+        if let Some(n) = award_id.as_u64() {
+          let award = models::Award::get_or_err(n, &db::database())?;
           AudienceDisplay::Award(award)
         } else {
-          bail!("{} is not an i64", award_id);
+          bail!("{} is not a u64", award_id);
         }
       }
       ("CustomMessage", Some(Value::String(msg))) => AudienceDisplay::CustomMessage(msg),

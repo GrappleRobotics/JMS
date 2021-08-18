@@ -1,7 +1,5 @@
 use anyhow::bail;
 
-use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
-
 use crate::{
   db, models,
   schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker},
@@ -27,6 +25,7 @@ impl MatchWebsocketHandler {
 impl WebsocketMessageHandler for MatchWebsocketHandler {
   async fn update(&mut self) -> super::Result<Vec<JsonMessage>> {
     let msg = JsonMessage::update("matches", "");
+    let sorted = models::Match::sorted(&db::database())?;
     let mut response = vec![];
     {
       // Quals
@@ -38,21 +37,12 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
     }
     {
       // Next Match
-      use crate::schema::matches::dsl::*;
-      let next_match = matches
-        .filter(played.eq(false))
-        .first::<models::Match>(&db::connection())
-        .optional()?;
+      let next_match = sorted.iter().find(|&m| !m.played).map(|m| models::SerializedMatch(m.clone()));
       response.push(msg.noun("next").to_data(&next_match)?);
     }
     {
       // Last Match
-      use crate::schema::matches::dsl::*;
-      let last_match = matches
-        .filter(played.eq(true))
-        .order_by(score_time.desc())
-        .first::<models::Match>(&db::connection())
-        .optional()?;
+      let last_match = sorted.iter().rev().find(|&m| m.played).map(|m| models::SerializedMatch(m.clone()));
       response.push(msg.noun("last").to_data(&last_match)?);
     }
     Ok(response)

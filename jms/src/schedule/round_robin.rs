@@ -130,8 +130,8 @@ fn generate_initial(alliances: &Vec<PlayoffAlliance>) -> Vec<IncompleteMatch> {
             red: a.id,
             blue: b.id,
             playoff_type: MatchSubtype::Semifinal,
-            set: round as i32 + 1,
-            match_num: i as i32 + 1,
+            set: round + 1,
+            match_num: i + 1,
           });
         }
         (a, b) => {
@@ -148,7 +148,7 @@ fn generate_initial(alliances: &Vec<PlayoffAlliance>) -> Vec<IncompleteMatch> {
   match_pairings
 }
 
-fn standings(matches: &Vec<Match>) -> Vec<(i32, i32)> /* (Alliance, Score) */ {
+fn standings(matches: &Vec<Match>) -> Vec<(usize, usize)> /* (Alliance, Score) */ {
   let mut alliance_scores = HashMap::new();
   for m in matches {
     let red = m.red_alliance.unwrap();
@@ -171,7 +171,7 @@ fn standings(matches: &Vec<Match>) -> Vec<(i32, i32)> /* (Alliance, Score) */ {
   }
 
   // Sort by score first, then alliance number
-  let mut score_vec: Vec<(i32, i32)> = alliance_scores.iter().map(|p| (*p.0, *p.1)).collect();
+  let mut score_vec: Vec<(usize, usize)> = alliance_scores.iter().map(|p| (*p.0, *p.1)).collect();
   score_vec.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
   score_vec
 }
@@ -179,24 +179,24 @@ fn standings(matches: &Vec<Match>) -> Vec<(i32, i32)> /* (Alliance, Score) */ {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::models::{MatchType, SQLJson};
+  use crate::models::MatchType;
 
   #[test]
   fn test_rr_initial() {
     let alliances = vec![
       PlayoffAlliance {
         id: 1,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 2,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 3,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
     ];
@@ -222,17 +222,17 @@ mod tests {
     let alliances = vec![
       PlayoffAlliance {
         id: 1,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 2,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 3,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
     ];
@@ -273,17 +273,17 @@ mod tests {
     let alliances = vec![
       PlayoffAlliance {
         id: 1,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 2,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 3,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
     ];
@@ -319,22 +319,22 @@ mod tests {
     let alliances = vec![
       PlayoffAlliance {
         id: 1,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 2,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 3,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 4,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
     ];
@@ -375,17 +375,17 @@ mod tests {
     let alliances = vec![
       PlayoffAlliance {
         id: 1,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 2,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 3,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
     ];
@@ -423,12 +423,12 @@ mod tests {
     let alliances = vec![
       PlayoffAlliance {
         id: 1,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
       PlayoffAlliance {
         id: 2,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       },
     ];
@@ -454,11 +454,11 @@ mod tests {
   }
 
   fn make_rr_semi_match(
-    set: i32,
-    num: i32,
+    set: usize,
+    num: usize,
     played: bool,
-    blue_alliance: i32,
-    red_alliance: i32,
+    blue_alliance: usize,
+    red_alliance: usize,
     winner: Option<Alliance>,
   ) -> Match {
     let mut m = Match::new_test();
@@ -473,7 +473,7 @@ mod tests {
     m
   }
 
-  fn make_final_match(num: i32, played: bool, blue: i32, red: i32, winner: Option<Alliance>) -> Match {
+  fn make_final_match(num: usize, played: bool, blue: usize, red: usize, winner: Option<Alliance>) -> Match {
     let mut m = Match::new_test();
     m.set_number = 1;
     m.match_number = num;

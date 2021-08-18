@@ -5,7 +5,7 @@ use crate::{
 
 use super::{create_tiebreaker, GenerationUpdate};
 
-fn pairings(level: MatchSubtype) -> &'static [i32] {
+fn pairings(level: MatchSubtype) -> &'static [usize] {
   match level {
     MatchSubtype::Quarterfinal => &[1, 8, 4, 5, 2, 7, 3, 6],
     MatchSubtype::Semifinal => &[1, 4, 2, 3],
@@ -53,11 +53,11 @@ fn update_bracket_recursive(
     let red_alliance = pairs[(set - 1) * 2];
     let blue_alliance = pairs[(set - 1) * 2 + 1];
 
-    if red_alliance <= num_direct as i32 {
+    if red_alliance <= num_direct {
       red = alliances.iter().find(|&a| a.id == red_alliance).cloned();
     }
 
-    if blue_alliance <= num_direct as i32 {
+    if blue_alliance <= num_direct {
       blue = alliances.iter().find(|&a| a.id == blue_alliance).cloned();
     }
   }
@@ -113,7 +113,7 @@ fn process_queued_match(
 ) -> GenerationUpdate {
   let existing_matches = existing
     .iter()
-    .filter(|&m| m.match_subtype == Some(bracket) && m.set_number == set as i32);
+    .filter(|&m| m.match_subtype == Some(bracket) && m.set_number == set);
 
   let red_wins = existing_matches
     .clone()
@@ -137,14 +137,14 @@ fn process_queued_match(
         red: red.id,
         blue: blue.id,
         playoff_type: bracket,
-        set: set as i32,
+        set: set,
         match_num: 1,
       },
       IncompleteMatch {
         red: red.id,
         blue: blue.id,
         playoff_type: bracket,
-        set: set as i32,
+        set: set,
         match_num: 2,
       },
     ])
@@ -160,7 +160,7 @@ fn process_queued_match(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::models::{MatchType, SQLJson};
+  use crate::models::MatchType;
 
   #[test]
   #[should_panic]
@@ -168,7 +168,7 @@ mod tests {
     let alliances: Vec<PlayoffAlliance> = (1..=9)
       .map(|i| PlayoffAlliance {
         id: i,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       })
       .collect();
@@ -181,7 +181,7 @@ mod tests {
     let alliances: Vec<PlayoffAlliance> = (1..=8)
       .map(|i| PlayoffAlliance {
         id: i,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       })
       .collect();
@@ -281,7 +281,7 @@ mod tests {
     let alliances: Vec<PlayoffAlliance> = (1..=5)
       .map(|i| PlayoffAlliance {
         id: i,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       })
       .collect();
@@ -341,7 +341,7 @@ mod tests {
     let alliances: Vec<PlayoffAlliance> = (1..=4)
       .map(|i| PlayoffAlliance {
         id: i,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       })
       .collect();
@@ -478,7 +478,7 @@ mod tests {
     let alliances: Vec<PlayoffAlliance> = (1..=2)
       .map(|i| PlayoffAlliance {
         id: i,
-        teams: SQLJson(vec![]),
+        teams: vec![],
         ready: true,
       })
       .collect();

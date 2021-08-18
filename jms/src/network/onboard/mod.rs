@@ -6,7 +6,7 @@ use tokio::try_join;
 
 use crate::arena::station::AllianceStationId;
 use crate::arena::AllianceStation;
-use crate::db;
+use crate::db::{self, TableType};
 use crate::models::{self, Alliance};
 use crate::network::radio::TeamRadioConfig;
 
@@ -166,7 +166,11 @@ impl NetworkProvider for OnboardNetwork {
       .map(|s| TeamRadioConfig {
         station: s.station,
         team: s.team.map(|t| t as usize),
-        wpakey: s.team.and_then(|t| models::Team::wpakey(t as usize, &db::connection())),
+        wpakey: s.team.and_then(|t| {
+          models::Team::get(t as usize, &db::database())
+            .ok()
+            .and_then(|ot| ot.and_then(|tt| tt.wpakey))
+        }),
       })
       .collect();
 

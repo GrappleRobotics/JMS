@@ -1,32 +1,31 @@
-use diesel::{ExpressionMethods, QueryResult, RunQueryDsl};
+use crate::db::{self, TableType};
 
-use crate::{db, schema::event_details};
-
-#[derive(Insertable, Queryable, Debug, Clone, AsChangeset, serde::Serialize, serde::Deserialize)]
-#[table_name = "event_details"]
-#[changeset_options(treat_none_as_null = "true")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct EventDetails {
-  pub id: i32,
   pub code: Option<String>,
   pub event_name: Option<String>,
 }
 
+impl db::TableType for EventDetails {
+  const TABLE: &'static str = "event_details";
+  type Id = db::Integer;
+
+  fn id(&self) -> Option<Self::Id> {
+    Some(1.into())
+  }
+}
+
 impl EventDetails {
-  pub fn get(conn: &db::ConnectionT) -> QueryResult<EventDetails> {
-    use crate::schema::event_details::dsl::*;
+  pub fn get(store: &db::Store) -> db::Result<EventDetails> {
+    let first = Self::table(store)?.first()?;
 
-    let record = event_details.first::<EventDetails>(conn);
-    match record {
-      Ok(details) => Ok(details),
-      Err(diesel::NotFound) => {
-        // Insert the default
-        diesel::insert_into(event_details)
-          .values((code.eq::<Option<String>>(None), event_name.eq::<Option<String>>(None)))
-          .execute(conn)?;
-
-        event_details.first::<EventDetails>(conn)
-      }
-      Err(e) => Err(e),
+    match first {
+      Some(ed) => Ok(ed),
+      None => {
+        let ed = EventDetails { code: None, event_name: None };
+        ed.insert(store)?;
+        Ok(ed)
+      },
     }
   }
 }

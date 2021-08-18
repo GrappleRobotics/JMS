@@ -14,7 +14,7 @@ pub struct TBAAwards(Vec<TBAAward>);
 
 impl From<models::Award> for Vec<TBAAward> {
   fn from(award: models::Award) -> Self {
-    award.recipients.0.iter().map(|recip| TBAAward { 
+    award.recipients.iter().map(|recip| TBAAward { 
       name_str: award.name.clone(), 
       team_key: recip.team.map(|t| TBATeam::from(t)), 
       awardee: recip.awardee.clone() 
@@ -31,19 +31,18 @@ impl From<Vec<models::Award>> for TBAAwards {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::models::SQLJson;
 
   #[test]
   pub fn from_award() {
     let name = "My Cool Award".to_owned();
     let award = models::Award {
-      id: 1,
+      id: None,
       name: name.clone(),
-      recipients: SQLJson(vec![
+      recipients: vec![
         models::AwardRecipient { team: Some(5333), awardee: Some("Cool Person".to_owned()) },
         models::AwardRecipient { team: Some(4788), awardee: None },
         models::AwardRecipient { team: None, awardee: Some("Cooler Person".to_owned()) },
-      ])
+      ]
     };
 
     assert_eq!(
@@ -63,17 +62,17 @@ mod tests {
 
     let awards = vec![
       models::Award {
-        id: 1, name: name1.clone(),
-        recipients: SQLJson(vec![
+        id: None, name: name1.clone(),
+        recipients: vec![
           models::AwardRecipient { team: Some(5333), awardee: Some("Cool Person".to_owned()) },
           models::AwardRecipient { team: Some(4788), awardee: None },
-        ])
+        ]
       },
       models::Award {
-        id: 1, name: name2.clone(),
-        recipients: SQLJson(vec![
+        id: None, name: name2.clone(),
+        recipients: vec![
           models::AwardRecipient { team: None, awardee: Some("Cooler Person".to_owned()) },
-        ])
+        ]
       },
     ];
 

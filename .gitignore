@@ -5,6 +5,8 @@
 *.so
 *.dylib
 
+jms-test/
+
 # Test binary, built with `go test -c`
 *.test
 

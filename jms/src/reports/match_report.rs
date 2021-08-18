@@ -1,16 +1,12 @@
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
-use diesel::RunQueryDsl;
 use genpdf::{
   elements::{PageBreak, TableLayout},
   style,
 };
 
-use crate::{
-  db, models,
-  reports::{pdf_table, render_header, report_pdf},
-};
+use crate::{db::{self, TableType}, models, reports::{pdf_table, render_header, report_pdf}};
 
-fn render_team(team: Option<&Option<i32>>, highlight: Option<i32>, alliance: models::Alliance) -> style::StyledString {
+fn render_team(team: Option<&Option<usize>>, highlight: Option<usize>, alliance: models::Alliance) -> style::StyledString {
   let team = team.and_then(|t| t.clone());
   let t_string = team.map_or("".to_owned(), |t| format!("{}", t));
 
@@ -30,7 +26,7 @@ fn to_local(dt: NaiveDateTime) -> DateTime<Local> {
   Local.from_utc_datetime(&dt)
 }
 
-fn render_match_table(matches: &Vec<models::Match>, team_highlight: Option<i32>) -> TableLayout {
+fn render_match_table(matches: &Vec<models::Match>, team_highlight: Option<usize>) -> TableLayout {
   let weights = vec![3, 3, 2, 2, 2, 2, 2, 2];
   let headers = vec!["Time", "Match", "Blue 1", "Blue 2", "Blue 3", "Red 1", "Red 2", "Red 3"];
   let rows: Vec<Vec<style::StyledString>> = matches
@@ -45,12 +41,12 @@ fn render_match_table(matches: &Vec<models::Match>, team_highlight: Option<i32>)
           style::Style::new(),
         ),
         style::StyledString::new(m.name(), style::Style::new()),
-        render_team(m.blue_teams.0.get(0), team_highlight, models::Alliance::Blue),
-        render_team(m.blue_teams.0.get(1), team_highlight, models::Alliance::Blue),
-        render_team(m.blue_teams.0.get(2), team_highlight, models::Alliance::Blue),
-        render_team(m.red_teams.0.get(0), team_highlight, models::Alliance::Red),
-        render_team(m.red_teams.0.get(1), team_highlight, models::Alliance::Red),
-        render_team(m.red_teams.0.get(2), team_highlight, models::Alliance::Red),
+        render_team(m.blue_teams.get(0), team_highlight, models::Alliance::Blue),
+        render_team(m.blue_teams.get(1), team_highlight, models::Alliance::Blue),
+        render_team(m.blue_teams.get(2), team_highlight, models::Alliance::Blue),
+        render_team(m.red_teams.get(0), team_highlight, models::Alliance::Red),
+        render_team(m.red_teams.get(1), team_highlight, models::Alliance::Red),
+        render_team(m.red_teams.get(2), team_highlight, models::Alliance::Red),
       ]
     })
     .collect();
@@ -60,9 +56,9 @@ fn render_match_table(matches: &Vec<models::Match>, team_highlight: Option<i32>)
 pub fn match_report(mtype: models::MatchType) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];
 
-  let event_details = models::EventDetails::get(&db::connection())?;
+  let event_details = models::EventDetails::get(&db::database())?;
   let event_name = event_details.event_name.unwrap_or("Unnamed Event".to_owned());
-  let mut matches = models::Match::with_type(mtype);
+  let mut matches = models::Match::by_type(mtype, &db::database())?;
 
   matches.sort();
 
@@ -78,14 +74,11 @@ pub fn match_report(mtype: models::MatchType) -> Result<Vec<u8>, Box<dyn std::er
 pub fn match_report_per_team(mtype: models::MatchType) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];
 
-  let event_details = models::EventDetails::get(&db::connection())?;
+  let event_details = models::EventDetails::get(&db::database())?;
   let event_name = event_details.event_name.unwrap_or("Unnamed Event".to_owned());
-  let mut matches = models::Match::with_type(mtype);
+  let mut matches = models::Match::by_type(mtype, &db::database())?;
 
-  let teams = {
-    use crate::schema::teams::dsl::*;
-    teams.load::<models::Team>(&db::connection())?
-  };
+  let teams = models::Team::all(&db::database())?;
 
   matches.sort();
 

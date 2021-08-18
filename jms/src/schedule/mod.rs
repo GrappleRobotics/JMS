@@ -17,14 +17,14 @@ pub enum GenerationUpdate {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct IncompleteMatch {
-  red: i32,
-  blue: i32,
+  red: usize,
+  blue: usize,
   playoff_type: MatchSubtype,
-  set: i32,
-  match_num: i32,
+  set: usize,
+  match_num: usize,
 }
 
-fn create_tiebreaker(red: i32, blue: i32, matches: &Vec<Match>, playoff_type: MatchSubtype) -> IncompleteMatch {
+fn create_tiebreaker(red: usize, blue: usize, matches: &Vec<Match>, playoff_type: MatchSubtype) -> IncompleteMatch {
   let last_match_for_this_pair = matches
     .iter()
     .filter(|&m| {

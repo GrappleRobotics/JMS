@@ -1,21 +1,13 @@
 use std::io::Write;
 
-use diesel::RunQueryDsl;
-
-use crate::{
-  db, models,
-  reports::{pdf_table, report_pdf},
-};
+use crate::{db::{self, TableType}, models, reports::{pdf_table, report_pdf}};
 
 pub fn wpa_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];
 
-  let event_details = models::EventDetails::get(&db::connection())?;
+  let event_details = models::EventDetails::get(&db::database())?;
   let event_name = event_details.event_name.unwrap_or("Unnamed Event".to_owned());
-  let teams = {
-    use crate::schema::teams::dsl::*;
-    teams.load::<models::Team>(&db::connection())?
-  };
+  let teams = models::Team::all(&db::database())?;
 
   let mut doc = report_pdf("WPA Key Report (FTA ONLY)", &event_name, true);
 
@@ -35,10 +27,7 @@ pub fn wpa_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 pub fn wpa_report_csv() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];
 
-  let teams = {
-    use crate::schema::teams::dsl::*;
-    teams.load::<models::Team>(&db::connection())?
-  };
+  let teams = models::Team::all(&db::database())?;
 
   for ref team in teams {
     buf.write(format!("{},{}\n", team.id, team.wpakey.as_ref().map_or("", |s| s.as_str())).as_bytes())?;

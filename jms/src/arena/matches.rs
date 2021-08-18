@@ -2,10 +2,9 @@ use std::time::{Duration, Instant};
 
 use anyhow::{bail, Result};
 
-use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus}};
+use crate::{arena::exceptions::MatchWrongState, db::{self, TableType}, models::{self, Alliance, MatchGenerationRecordData}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus}};
 
 use serde::Serialize;
 
@@ -53,7 +52,7 @@ impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
       state: MatchPlayState::Waiting,
-      score: MatchScore::new(m.red_teams.0.len(), m.blue_teams.0.len()),
+      score: MatchScore::new(m.red_teams.len(), m.blue_teams.len()),
       match_meta: m,
       state_first: true,
       state_start_time: Instant::now(),
@@ -105,26 +104,20 @@ impl LoadedMatch {
 
       self.match_meta.played = true;
       self.match_meta.winner = winner;
-      self.match_meta.score = Some(SQLJson(self.score.clone()));
-      self.match_meta.score_time = Some(SQLDatetime(chrono::Local::now().naive_utc()));
+      self.match_meta.score = Some(self.score.clone());
+      self.match_meta.score_time = Some(chrono::Local::now().into());
 
       if self.match_meta.match_type != models::MatchType::Test {
-        {
-          use crate::schema::matches::dsl::*;
-          diesel::replace_into(matches)
-            .values(&self.match_meta)
-            .execute(&db::connection())
-            .unwrap();
-        }
+        self.match_meta.insert(&db::database())?;
 
         if self.match_meta.match_type == models::MatchType::Qualification {
-          let conn = db::connection();
-          for &team in &self.match_meta.blue_teams.0 {
+          let conn = db::database();
+          for &team in &self.match_meta.blue_teams {
             if let Some(team) = team {
               models::TeamRanking::get(team, &conn)?.update(&blue, &conn)?;
             }
           }
-          for &team in &self.match_meta.red_teams.0 {
+          for &team in &self.match_meta.red_teams {
             if let Some(team) = team {
               models::TeamRanking::get(team, &conn)?.update(&red, &conn)?;
             }
@@ -135,7 +128,7 @@ impl LoadedMatch {
           let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
           let record = worker.record();
           if let Some(record) = record {
-            if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data.map(|x| x.0) {
+            if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data {
               worker.generate(mode).await;
             }
           }

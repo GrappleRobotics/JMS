@@ -16,7 +16,7 @@ impl From<models::PlayoffAlliance> for TBAAlliance {
       return Self(vec![]);
     }
     
-    let teams = pa.teams.0.iter().map(|t| t.map(|t2| t2.into())).collect();
+    let teams = pa.teams.iter().map(|t| t.map(|t2| t2.into())).collect();
     Self(teams)
   }
 }
@@ -38,13 +38,12 @@ impl From<Vec<models::PlayoffAlliance>> for TBAAlliances {
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::models::SQLJson;
 
   #[test]
   fn test_from_ready_alliance() {
     let alliance = models::PlayoffAlliance {
       id: 1,
-      teams: SQLJson(vec![ Some(100), None, Some(120) ]),
+      teams: vec![ Some(100), None, Some(120) ],
       ready: true
     };
     
@@ -62,7 +61,7 @@ mod tests {
   fn test_from_not_ready_alliance() {
     let alliance = models::PlayoffAlliance {
       id: 1,
-      teams: SQLJson(vec![ Some(100), None, Some(120) ]),
+      teams: vec![ Some(100), None, Some(120) ],
       ready: false
     };
     
@@ -75,8 +74,8 @@ mod tests {
   #[test]
   fn test_from_alliances_all_ready() {
     let alliances = vec![
-      models::PlayoffAlliance { id: 1, ready: true, teams: SQLJson(vec![ Some(100), None, Some(120) ]) },
-      models::PlayoffAlliance { id: 2, ready: true, teams: SQLJson(vec![ Some(4788), Some(5333), Some(5663) ]) },
+      models::PlayoffAlliance { id: 1, ready: true, teams: vec![ Some(100), None, Some(120) ] },
+      models::PlayoffAlliance { id: 2, ready: true, teams: vec![ Some(4788), Some(5333), Some(5663) ] },
     ];
 
     assert_eq!(
@@ -91,8 +90,8 @@ mod tests {
   #[test]
   fn test_from_alliances_some_not_ready() {
     let alliances = vec![
-      models::PlayoffAlliance { id: 1, ready: true, teams: SQLJson(vec![ Some(100), None, Some(120) ]) },
-      models::PlayoffAlliance { id: 2, ready: false, teams: SQLJson(vec![ Some(4788), Some(5333), Some(5663) ]) },
+      models::PlayoffAlliance { id: 1, ready: true, teams: vec![ Some(100), None, Some(120) ] },
+      models::PlayoffAlliance { id: 2, ready: false, teams: vec![ Some(4788), Some(5333), Some(5663) ] },
     ];
 
     assert_eq!(

@@ -256,7 +256,7 @@ impl Arena {
       stn.reset();
 
       let i = (stn.station.station - 1) as usize;
-      if let Some(&t) = v.0.get(i) {
+      if let Some(&t) = v.get(i) {
         stn.team = t.map(|team| team as u16);
       } else {
         // Test matches are an exception - they start off blank
@@ -295,16 +295,16 @@ impl Arena {
 
   fn update_match_teams(&mut self) -> Result<()> {
     if let Some(m) = self.current_match.as_mut() {
-      m.match_meta.blue_teams.0.resize(self.stations.len() / 2, None);
-      m.match_meta.red_teams.0.resize(self.stations.len() / 2, None);
+      m.match_meta.blue_teams.resize(self.stations.len() / 2, None);
+      m.match_meta.red_teams.resize(self.stations.len() / 2, None);
 
       for s in &self.stations {
         match s.station.alliance {
           Alliance::Blue => {
-            m.match_meta.blue_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
+            m.match_meta.blue_teams[(s.station.station - 1) as usize] = s.team.map(|x| x as usize);
           }
           Alliance::Red => {
-            m.match_meta.red_teams.0[(s.station.station - 1) as usize] = s.team.map(|x| x as i32);
+            m.match_meta.red_teams[(s.station.station - 1) as usize] = s.team.map(|x| x as usize);
           }
         }
       }

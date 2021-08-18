@@ -6,9 +6,9 @@ use crate::{
 pub fn rankings_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];
 
-  let event_details = models::EventDetails::get(&db::connection())?;
+  let event_details = models::EventDetails::get(&db::database())?;
   let event_name = event_details.event_name.unwrap_or("Unnamed Event".to_owned());
-  let rankings = models::TeamRanking::get_sorted(&db::connection())?;
+  let rankings = models::TeamRanking::sorted(&db::database())?;
 
   let mut doc = report_pdf("Qualification Rankings Report", &event_name, true);
 

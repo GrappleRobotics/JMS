@@ -1,11 +1,8 @@
-use diesel::{QueryDsl, RunQueryDsl};
+use crate::db;
 
-use crate::{db, schema::teams};
-
-#[derive(Insertable, Queryable, Debug, Clone, AsChangeset, serde::Serialize, serde::Deserialize)]
-#[changeset_options(treat_none_as_null = "true")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Team {
-  pub id: i32,
+  pub id: usize,
   pub name: Option<String>,
   pub affiliation: Option<String>,
   pub location: Option<String>,
@@ -14,13 +11,22 @@ pub struct Team {
   pub schedule: bool,
 }
 
-impl Team {
-  pub fn wpakey(team_id: usize, conn: &db::ConnectionT) -> Option<String> {
-    use crate::schema::teams::dsl::*;
+impl db::TableType for Team {
+  const TABLE: &'static str = "teams";
+  type Id = db::Integer;
 
-    match teams.find(team_id as i32).first::<Team>(conn) {
-      Ok(t) => t.wpakey,
-      Err(_) => None,
-    }
+  fn id(&self) -> Option<Self::Id> {
+    Some(self.id.into())
   }
 }
+
+// impl Team {
+//   pub fn wpakey(team_id: usize, conn: &db::ConnectionT) -> Option<String> {
+//     use crate::schema::teams::dsl::*;
+
+//     match teams.find(team_id as i32).first::<Team>(conn) {
+//       Ok(t) => t.wpakey,
+//       Err(_) => None,
+//     }
+//   }
+// }
