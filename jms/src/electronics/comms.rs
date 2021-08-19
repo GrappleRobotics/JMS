@@ -16,9 +16,9 @@ pub struct FieldElectronicsConnection {
 
 impl FieldElectronicsConnection {
   pub async fn process(&mut self) -> anyhow::Result<()> {
-    let mut buf_read = vec![0u8; 256];
-
+    
     loop {
+      let mut buf_read = vec![0u8; 256];
       tokio::select! {
         result = self.update_rx.recv() => {
           // Send an update

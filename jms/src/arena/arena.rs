@@ -511,10 +511,10 @@ impl Arena {
             Alliance::Red => self.lighting.settings.red,
           };
 
-          if stn.bypass {
-            self.lighting.set_team(stn.station, LightMode::Off);
-          } else if stn.astop || stn.estop || stn.ds_report.map(|ref ds| ds.estop).unwrap_or(false) {
+          if stn.astop || stn.estop || stn.ds_report.map(|ref ds| ds.estop).unwrap_or(false) {
             self.lighting.set_team(stn.station, self.lighting.settings.team_estop);
+          } else if stn.bypass {
+            self.lighting.set_team(stn.station, LightMode::Off);
           } else if !stn.connection_ok() {
             self.lighting.set_team(stn.station, LightMode::Pulse(
               colour, Duration::seconds(1)
