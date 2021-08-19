@@ -98,17 +98,17 @@ impl Default for ArenaLightingSettings {
         Colour::new(255, 145, 0)
       ),
       field_reset: LightMode::Constant(
-        Colour::new(0, 0, 255)
+        Colour::new(255, 0, 255)
       ),
       field_reset_teams: LightMode::Constant(
-        Colour::new(255, 0, 255)
+        Colour::new(0, 255, 0)
       ),
       match_armed_red: LightMode::Pulse(
         Colour::new(255, 0, 0),
         chrono::Duration::seconds(1)
       ),
       match_armed_blue: LightMode::Pulse(
-        Colour::new(255, 0, 0),
+        Colour::new(0, 0, 255),
         chrono::Duration::seconds(1)
       )
     }

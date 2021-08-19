@@ -1,41 +1,11 @@
-mod arena;
-mod config;
-mod db;
-mod ds;
-mod logging;
-mod network;
-mod reports;
-mod schedule;
-mod scoring;
-mod ui;
-mod utils;
-mod electronics;
-mod models;
-mod tba;
-
-extern crate strum;
-#[macro_use]
-extern crate strum_macros;
-#[macro_use]
-extern crate rocket;
-
 use std::{sync::Arc, time::Duration};
 
-use arena::SharedArena;
 use clap::{App, Arg};
 use dotenv::dotenv;
-use ds::connector::DSConnectionService;
 use futures::TryFutureExt;
+use jms::{arena::{self, SharedArena}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::comms::FieldElectronicsService, logging, tba, ui::{self, websocket::{ArenaWebsocketHandler, DebugWebsocketHandler, EventWebsocketHandler, MatchWebsocketHandler, Websockets}}};
+use log::info;
 use tokio::{sync::Mutex, try_join};
-
-use ui::websocket::ArenaWebsocketHandler;
-use ui::websocket::Websockets;
-
-use crate::config::JMSSettings;
-use crate::electronics::comms::FieldElectronicsService;
-use crate::ui::websocket::DebugWebsocketHandler;
-use crate::ui::websocket::EventWebsocketHandler;
-use crate::ui::websocket::MatchWebsocketHandler;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

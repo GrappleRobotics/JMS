@@ -26,7 +26,6 @@ impl FieldElectronicsConnection {
           for msg in msgs {
             if Some(msg.role()) == self.role {
               let out = msg.encode_to_vec();
-              info!("Field electronics update: {:?} {:?}", self.role, out);
               self.socket.write(&out).await?;
             }
           }

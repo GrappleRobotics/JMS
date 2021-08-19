@@ -497,8 +497,8 @@ impl Arena {
         self.lighting.set_all(self.lighting.settings.field_estop);
       },
       ArenaState::MatchArmed => {
-        self.lighting.set_alliance(Alliance::Blue, self.lighting.settings.match_armed_red);
-        self.lighting.set_alliance(Alliance::Red, self.lighting.settings.match_armed_blue);
+        self.lighting.set_alliance(Alliance::Blue, self.lighting.settings.match_armed_blue);
+        self.lighting.set_alliance(Alliance::Red, self.lighting.settings.match_armed_red);
       },
       ArenaState::MatchPlay => {
         // Based on team connection status
