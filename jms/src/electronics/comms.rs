@@ -1,26 +1,43 @@
-use std::io::Cursor;
+use std::{io::Cursor, time::Duration};
 
 use prost::Message;
-use tokio::{io::AsyncReadExt, net::{TcpListener, TcpStream}};
+use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::{TcpListener, TcpStream}, sync::broadcast, time};
 
-use crate::{arena::{ArenaSignal, SharedArena, station::AllianceStationId}, models};
+use crate::{arena::{ArenaSignal, SharedArena, lighting::{ArenaLighting, LightMode}, station::AllianceStationId}, models};
 
 use super::protos;
 
 pub struct FieldElectronicsConnection {
   arena: SharedArena,
   socket: TcpStream,
-  role: Option<protos::NodeRole>
+  role: Option<protos::NodeRole>,
+  update_rx: broadcast::Receiver<Vec<protos::UpdateField2Node>>
 }
 
 impl FieldElectronicsConnection {
   pub async fn process(&mut self) -> anyhow::Result<()> {
-    loop {
-      let mut buf = vec![0; 256];
-      let n_bytes = self.socket.read(&mut buf).await?;
+    let mut buf_read = vec![0u8; 256];
 
-      if n_bytes > 0 {
-        self.process_msg(&buf[0..n_bytes]).await?;
+    loop {
+      tokio::select! {
+        result = self.update_rx.recv() => {
+          // Send an update
+          let msgs = result?;
+          for msg in msgs {
+            if Some(msg.role()) == self.role {
+              let out = msg.encode_to_vec();
+              info!("Field electronics update: {:?} {:?}", self.role, out);
+              self.socket.write(&out).await?;
+            }
+          }
+        },
+        result = self.socket.read(&mut buf_read) => {
+          // Process the incoming message
+          let n_bytes = result?;
+          if n_bytes > 0 {
+            self.process_msg(&buf_read[0..n_bytes]).await?;
+          }
+        }
       }
     }
   }
@@ -67,33 +84,95 @@ impl FieldElectronicsConnection {
 pub struct FieldElectronicsService {
   arena: SharedArena,
   port: usize,
+  tx: broadcast::Sender<Vec<protos::UpdateField2Node>>
 }
 
 impl FieldElectronicsService {
   pub async fn new(arena: SharedArena, port: usize) -> Self {
-    FieldElectronicsService { arena, port }
+    let (tx, _) = broadcast::channel(16);
+    FieldElectronicsService {
+      arena,
+      port,
+      tx
+    }
   }
 
   pub async fn begin(&self) -> anyhow::Result<()> {
     info!("Starting Field Electronics Server");
     let server = TcpListener::bind(format!("0.0.0.0:{}", self.port).as_str()).await?;
+    let mut send_interval = time::interval(Duration::from_millis(1000));
 
     loop {
-      let (socket, addr) = server.accept().await?;
-      info!("Field Electronics Connected: {}", addr);
-
-      let mut conn = FieldElectronicsConnection { 
-        arena: self.arena.clone(), 
-        socket,
-        role: None
-      };
-      
-      tokio::spawn(async move {
-        match conn.process().await {
-          Ok(_) => println!("Field Electronics Conn Stopped Gracefully"),
-          Err(e) => error!("Field Electronics Conn Stopped: {}", e),
+      tokio::select! {
+        _ = send_interval.tick() => {
+          // Send an update. Issuing updates from here means we only have to lock the arena once
+          // instead of N times where N = number of nodes
+          let msgs = self.create_update().await?;
+          match self.tx.send(msgs) {
+            Ok(_) => (),
+            Err(e) => debug!("No Field Electronics available! {}", e),
+          }
         }
-      });
+        result = server.accept() => {
+          // Accept a connection 
+          let (socket, addr) = result?;
+          info!("Field Electronics Connected: {}", addr);
+          let mut conn = FieldElectronicsConnection { 
+            arena: self.arena.clone(), 
+            socket,
+            role: None,
+            update_rx: self.tx.subscribe()
+          };
+          
+          tokio::spawn(async move {
+            match conn.process().await {
+              Ok(_) => println!("Field Electronics Conn Stopped Gracefully"),
+              Err(e) => error!("Field Electronics Conn Stopped: {}", e),
+            }
+          });
+        }
+      }
     }
+  }
+
+  async fn create_update(&self) -> anyhow::Result<Vec<protos::UpdateField2Node>> {
+    let lighting = self.arena.lock().await.lighting.clone();
+
+    Ok(vec![
+      Self::create_update_for_alliance(&lighting, protos::NodeRole::NodeBlue)?,
+      Self::create_update_for_alliance(&lighting, protos::NodeRole::NodeRed)?,
+      Self::create_update_for_scoring_table(&lighting)?
+    ])
+  }
+
+  fn create_update_for_alliance(lighting: &ArenaLighting, role: protos::NodeRole) -> anyhow::Result<protos::UpdateField2Node> {
+    let alliance: Option<models::Alliance> = role.into();
+    let teams = match alliance {
+      Some(models::Alliance::Blue) => &lighting.teams[&models::Alliance::Blue],
+      Some(models::Alliance::Red) => &lighting.teams[&models::Alliance::Red],
+      None => anyhow::bail!("Role {:?} does not have an alliance!", role),
+    };
+
+    Ok(protos::UpdateField2Node {
+      role: role.into(),
+      data: Some(protos::update_field2_node::Data::Alliance(protos::update_field2_node::Alliance {
+        lights1: Some(teams.get(0).unwrap_or(&LightMode::Off).clone().into()),
+        lights2: Some(teams.get(1).unwrap_or(&LightMode::Off).clone().into()),
+        lights3: Some(teams.get(2).unwrap_or(&LightMode::Off).clone().into()),
+      })),
+    })
+  }
+
+  fn create_update_for_scoring_table(lighting: &ArenaLighting) -> anyhow::Result<protos::UpdateField2Node> {
+    let red = &lighting.scoring_table[&models::Alliance::Red];
+    let blue = &lighting.scoring_table[&models::Alliance::Blue];
+
+    Ok(protos::UpdateField2Node {
+      role: protos::NodeRole::NodeScoringTable.into(),
+      data: Some(protos::update_field2_node::Data::ScoringTable(protos::update_field2_node::ScoringTable {
+        lights1: Some(red.clone().into()),
+        lights2: Some(blue.clone().into()),
+      }))
+    })
   }
 }

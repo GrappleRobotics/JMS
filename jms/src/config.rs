@@ -15,7 +15,7 @@ const CONFIG_PATH: &'static str = "/etc/jms/jms.yml";
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct JMSSettings {
   pub network: NetworkSettings,
-  pub tba: Option<tba::TBAClient>,
+  pub tba: Option<tba::TBAClient>
 }
 
 #[async_trait::async_trait]
@@ -103,4 +103,8 @@ where
   let options_ref: Vec<&str> = options.iter().map(|s| s.as_str()).collect();
   let result = inquire::Select::new(message, &options_ref[..]).prompt()?.value;
   Ok(T::from_str(result.as_str()).unwrap())
+}
+
+pub trait Inquirable where Self: Sized {
+  fn inquire(msg: &'static str, default: Option<&Self>) -> inquire::CustomType<'static, Self>;
 }

@@ -4,7 +4,7 @@ use crate::{db::{self, DBDateTime, TableType}, schedule::{playoffs::PlayoffMatch
 
 use super::TeamRanking;
 
-#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Alliance {
   Blue, Red
 }

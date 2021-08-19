@@ -8,19 +8,14 @@ use std::{
 
 use anyhow::{anyhow, bail, Result};
 
+use chrono::Duration;
 use enum_as_inner::EnumAsInner;
 use log::{error, info};
 use tokio::sync::Mutex;
 
-use super::{exceptions::ArenaIllegalStateChange, matches::MatchPlayState, station::AllianceStationId};
+use super::{exceptions::ArenaIllegalStateChange, lighting::{ArenaLighting, LightMode}, matches::MatchPlayState, station::AllianceStationId};
 
-use crate::{
-  arena::exceptions::CannotLoadMatchError,
-  ds::DSMode,
-  log_expect,
-  models::{self, Alliance, MatchType},
-  network::{NetworkProvider, NetworkResult},
-};
+use crate::{arena::{exceptions::CannotLoadMatchError, lighting::ArenaLightingSettings}, ds::DSMode, log_expect, models::{self, Alliance, MatchType}, network::{NetworkProvider, NetworkResult}};
 
 use serde::{Deserialize, Serialize};
 
@@ -171,6 +166,19 @@ impl AllianceStation {
   pub fn can_arm_match(&self) -> bool {
     self.bypass || self.estop || (self.occupancy == AllianceStationOccupancy::Occupied)
   }
+
+  pub fn connection_ok(&self) -> bool {
+    let mut ok = true;
+    match &self.ds_report {
+      Some(ds) => {
+        if !ds.robot_ping || !ds.rio_ping || !ds.radio_ping {
+          ok = false;
+        }
+      },
+      None => ok = false
+    }
+    ok
+  }
 }
 
 #[derive(Serialize)]
@@ -187,6 +195,8 @@ pub struct Arena {
   pub current_match: Option<LoadedMatch>,
   pub stations: Vec<AllianceStation>,
   pub access: ArenaAccessRestriction,
+  #[serde(skip)]
+  pub lighting: ArenaLighting,
 
   pub audience_display: AudienceDisplay,
 }
@@ -207,6 +217,7 @@ impl Arena {
       current_match: None,
       stations: vec![],
       access: ArenaAccessRestriction::NoRestriction,
+      lighting: ArenaLighting::new(ArenaLightingSettings::default()),
       audience_display: AudienceDisplay::Field,
     };
 
@@ -420,6 +431,7 @@ impl Arena {
         if first {
           info!("Match Armed!")
         }
+
         if let Some(ArenaSignal::MatchPlay) = signal {
           self.prepare_state_change(ArenaState::MatchPlay)?;
         }
@@ -431,6 +443,7 @@ impl Arena {
           self.audience_display = AudienceDisplay::MatchPlay;
           m.start()?;
         }
+
         match m.current_state() {
           MatchPlayState::Pause | MatchPlayState::Teleop => for stn in self.stations.iter_mut() {
             stn.astop = false;
@@ -458,7 +471,81 @@ impl Arena {
       }
       (state, _) => Err(anyhow!("Unimplemented state: {:?}", state))?,
     };
+
+    self.update_lighting().await;
+
     Ok(())
+  }
+
+  pub async fn update_lighting(&mut self) {
+    match self.state.state {
+      ArenaState::Init => (),
+      ArenaState::Idle { ready: _ } | ArenaState::Prestart { ready: _ } | ArenaState::MatchComplete | ArenaState::MatchCommit => {
+        match self.access {
+          ArenaAccessRestriction::NoRestriction => {
+            self.lighting.set_all(self.lighting.settings.idle)
+          },
+          ArenaAccessRestriction::ResetOnly => {
+            self.lighting.set_all(self.lighting.settings.field_reset)
+          },
+          ArenaAccessRestriction::Teams => {
+            self.lighting.set_all(self.lighting.settings.field_reset_teams)
+          },
+        }
+      },
+      ArenaState::Estop | ArenaState::EstopReset => {
+        self.lighting.set_all(self.lighting.settings.field_estop);
+      },
+      ArenaState::MatchArmed => {
+        self.lighting.set_alliance(Alliance::Blue, self.lighting.settings.match_armed_red);
+        self.lighting.set_alliance(Alliance::Red, self.lighting.settings.match_armed_blue);
+      },
+      ArenaState::MatchPlay => {
+        // Based on team connection status
+        let mut any_red = false;
+        let mut any_blue = false;
+
+        for stn in &self.stations {
+          let colour = match stn.station.alliance {
+            Alliance::Blue => self.lighting.settings.blue,
+            Alliance::Red => self.lighting.settings.red,
+          };
+
+          if stn.bypass {
+            self.lighting.set_team(stn.station, LightMode::Off);
+          } else if stn.astop || stn.estop || stn.ds_report.map(|ref ds| ds.estop).unwrap_or(false) {
+            self.lighting.set_team(stn.station, self.lighting.settings.team_estop);
+          } else if !stn.connection_ok() {
+            self.lighting.set_team(stn.station, LightMode::Pulse(
+              colour, Duration::seconds(1)
+            ));
+
+            match stn.station.alliance {
+              Alliance::Blue => any_blue = true,
+              Alliance::Red => any_red = true,
+            }
+          } else {
+            self.lighting.set_team(stn.station, LightMode::Constant(colour));
+          }
+        }
+
+        if any_red {
+          self.lighting.set_table(Alliance::Red, LightMode::Pulse(
+            self.lighting.settings.red, Duration::seconds(1)
+          ))
+        } else {
+          self.lighting.set_table(Alliance::Red, LightMode::Constant(self.lighting.settings.red))
+        }
+
+        if any_blue {
+          self.lighting.set_table(Alliance::Blue, LightMode::Pulse(
+            self.lighting.settings.blue, Duration::seconds(1)
+          ))
+        } else {
+          self.lighting.set_table(Alliance::Blue, LightMode::Constant(self.lighting.settings.blue))
+        }
+      },
+    }
   }
 
   pub fn can_change_state_to(&self, desired: ArenaState) -> Result<()> {

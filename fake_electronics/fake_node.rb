@@ -31,8 +31,9 @@ end
 
 t2 = Thread.new do
   loop do
-    recv = UpdateNode2Field.decode s.recv(128)
-    puts "-> #{recv.inspect}"
+    recv = s.recv(256)
+    msg = UpdateField2Node.decode recv
+    puts "-> #{msg.inspect}"
   end
 end
 
@@ -54,4 +55,4 @@ while go do
 end
 
 t1.join
-# t2.join
+t2.join
