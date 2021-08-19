@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Jaci Brunning <jaci.brunning@gmail.com>"]
 edition = "2018"
 
+
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -55,6 +57,7 @@ md5 = "0.7.0"
 sled = "0.34.6"
 uuid = { version = "0.8.2", features = ["v4"] }
 palette = "0.6.0"
+cursive = "0.16.3"
 
 [build-dependencies]
 prost-build = { version = "0.8.0" }
