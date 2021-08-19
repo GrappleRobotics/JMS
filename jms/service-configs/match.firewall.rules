@@ -1,6 +1,6 @@
 *nat
 
--A POSTROUTING -o ens18 -j MASQUERADE
+-A POSTROUTING -o {{ wan }} -j MASQUERADE
 
 COMMIT
 
