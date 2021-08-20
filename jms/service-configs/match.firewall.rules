@@ -22,6 +22,8 @@ COMMIT
 -A INPUT -i {{ admin.iface }} -d {{ network admin.router }}/{{ netmask admin.router }} -j ACCEPT
 -A FORWARD -i {{ admin.iface }} -o {{ wan }} -j ACCEPT
 -A FORWARD -i {{ wan }} -o {{ admin.iface }} -j ACCEPT
+# -A FORWARD -o {{ wan }} -j ACCEPT
+# -A FORWARD -m state --state ESTABLISHED,RELATED -i {{ wan }} -j ACCEPT
 
 # Robot Networks - Router and Server access ONLY
 {{ #each stations }}
@@ -42,6 +44,7 @@ COMMIT
 # Default deny
 -A INPUT -j LOG --log-prefix "dropped"
 -A INPUT -j DROP
+-A FORWARD -j LOG --log-prefix "dropFwd"
 -A FORWARD -j DROP
 
 # Allow outgoing by default
