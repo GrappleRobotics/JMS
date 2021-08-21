@@ -171,7 +171,7 @@ impl ArenaWebsocketHandler {
       ("MatchPlay", None) => AudienceDisplay::MatchPlay,
       ("MatchResults", None) => {
         let last_match = models::Match::sorted(&db::database())?
-          .iter().rev().filter(|&t| t.played).last().cloned();
+          .iter().filter(|&t| t.played).last().cloned();
         if let Some(last_match) = last_match {
           AudienceDisplay::MatchResults(models::SerializedMatch(last_match))
         } else {

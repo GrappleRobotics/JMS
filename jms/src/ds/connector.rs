@@ -109,7 +109,7 @@ impl DSConnection {
             }
 
             // Check timeout
-            if self.last_packet_time.elapsed() > Duration::from_millis(2000) {
+            if self.last_packet_time.elapsed() > Duration::from_millis(5000) {
               self.state = DSConnectionState::Disconnected(DSDisconnectionReason::Timeout);
               break;
             }
