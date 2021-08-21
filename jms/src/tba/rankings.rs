@@ -30,7 +30,7 @@ impl From<Vec<models::TeamRanking>> for TBARankings {
     let breakdowns = vec!["wins", "losses", "ties", "rp", "auto", "endgame", "teleop"];
     let rankings = ranks.iter().enumerate().map(|(i, r)| TBATeamRank {
       team_key: TBATeam::from(r.team as usize),
-      rank: i,
+      rank: i + 1,
       wins: r.win as usize,
       losses: r.loss as usize,
       ties: r.tie as usize,
