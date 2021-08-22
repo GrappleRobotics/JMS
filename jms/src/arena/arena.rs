@@ -425,6 +425,8 @@ impl Arena {
         }
         if let Some(ArenaSignal::MatchArm) = signal {
           self.prepare_state_change(ArenaState::MatchArmed)?;
+        } else if let Some(ArenaSignal::Prestart) = signal {
+          self.prepare_state_change(ArenaState::Prestart { ready: false })?;
         }
       }
       (ArenaState::MatchArmed, _) => {
@@ -612,6 +614,7 @@ impl Arena {
         }
       }
       (ArenaState::Prestart { ready: false }, ArenaState::Prestart { ready: true }, _) => Ok(()),
+      (ArenaState::Prestart { ready: true }, ArenaState::Prestart { ready: false }, _) => Ok(()),
       (ArenaState::Prestart { ready: true }, ArenaState::MatchArmed, _) => {
         match self.access {
           ArenaAccessRestriction::NoRestriction => (),

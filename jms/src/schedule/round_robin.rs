@@ -130,8 +130,8 @@ fn generate_initial(alliances: &Vec<PlayoffAlliance>) -> Vec<IncompleteMatch> {
             red: a.id,
             blue: b.id,
             playoff_type: MatchSubtype::Semifinal,
-            set: round + 1,
-            match_num: i + 1,
+            set: i + 1,
+            match_num: round + 1,
           });
         }
         (a, b) => {

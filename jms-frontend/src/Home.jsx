@@ -1,6 +1,6 @@
 import { faBan, faCalculator, faClipboard, faExclamationTriangle, faFlagCheckered, faGamepad, faHeartbeat, faHourglassHalf, faMagic, faRobot, faTrophy, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { AUDIENCE, AUDIENCE_CONTROL, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING, TIMER } from "paths";
+import { AUDIENCE, AUDIENCE_CONTROL, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
 import React from "react";
 import { Container } from "react-bootstrap";
 
@@ -47,7 +47,8 @@ export default class Home extends React.PureComponent {
           <ul>
             <li className="h5" > <a href={ AUDIENCE }> <FontAwesomeIcon icon={faUsers} /> &nbsp; Audience Display </a></li>
             <li className="h5" > <a href={ AUDIENCE_CONTROL }> <FontAwesomeIcon icon={faGamepad} /> &nbsp; Audience Display Control </a></li>
-            <li className="h5" > <a href={ RANKINGS }> <FontAwesomeIcon icon={faTrophy} /> &nbsp; Rankings (PIT) Display </a></li>
+            <li className="h5" > <a href={ RANKINGS }> <FontAwesomeIcon icon={faTrophy} /> &nbsp; Rankings Display </a></li>
+            <li className="h5" > <a href={ RANKINGS_NO_SCROLL }> <FontAwesomeIcon icon={faTrophy} /> &nbsp; Rankings Display (No Scroll) </a></li>
             <li className="h5" > <a href={ TIMER }> <FontAwesomeIcon icon={faHourglassHalf} /> &nbsp; Match Timer </a></li>
           </ul>
         </li>

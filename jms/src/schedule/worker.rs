@@ -45,7 +45,9 @@ where
   }
 
   pub fn matches(&self) -> Vec<models::Match> {
-    models::Match::by_type(self.match_type(), &db::database()).unwrap()
+    let mut matches = models::Match::by_type(self.match_type(), &db::database()).unwrap();
+    matches.sort();
+    matches
   }
 
   pub fn has_played(&self) -> bool {
