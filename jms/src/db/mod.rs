@@ -1,40 +1,29 @@
-use crate::log_expect;
-use diesel::{Connection, r2d2::{ConnectionManager, Pool, PooledConnection}};
-use log::info;
-use std::env;
-use diesel::sqlite::SqliteConnection;
-//use diesel::pg::PgConnection;
+// Based on rust-kv: https://github.com/zshipko/rust-kv
+mod store;
+mod table;
+mod types;
+mod bindings;
+
+pub use store::*;
+pub use table::*;
+pub use types::Integer;
+pub use bindings::*;
+
+pub type Result<T> = anyhow::Result<T>;
+
 use lazy_static::lazy_static;
 
-embed_migrations!("migrations");
+lazy_static! {
+  static ref STORE: Store = {
+    let cfg = sled::Config::new()
+      .path("event.kvdb".to_owned())
+      .flush_every_ms(Some(1000));
 
-pub type ConnectionT = SqliteConnection;
-pub type DbPool = Pool<ConnectionManager<ConnectionT>>;
-pub type DbPooledConnection = PooledConnection<ConnectionManager<ConnectionT>>;
-
-fn pool() -> DbPool {
-  lazy_static! {
-    static ref POOL: DbPool = {
-      info!("DB Pool Starting...");
-      let uri = log_expect!(env::var("DATABASE_URL"), "DATABASE_URL is not set: {}");
-      let mgr = ConnectionManager::<ConnectionT>::new(uri);
-      let p = log_expect!(Pool::builder().build(mgr), "Could not start DB connection pool! {}");
-      info!("DB Pool Ready!");
-      p
-    };
-  }
-  POOL.clone()
+    Store::new(cfg).expect("Sled Store Could Not Open!")
+  };
 }
 
-pub fn connection() -> DbPooledConnection {
-  let conn = log_expect!(
-    pool().get(),
-    "Could not get a DB connection from the connection pool! {}"
-  );
-
-  conn.execute("PRAGMA busy_timeout=5000;").unwrap();
-
-  embedded_migrations::run_with_output(&conn, &mut std::io::stdout()).unwrap();
-
-  conn
+#[allow(dead_code)]
+pub fn database() -> &'static Store {
+  &STORE
 }

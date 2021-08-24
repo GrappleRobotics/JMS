@@ -1,10 +1,12 @@
 mod arena;
 mod event;
 mod matches;
+mod debug;
 
 pub use arena::ArenaWebsocketHandler;
 pub use event::EventWebsocketHandler;
 pub use matches::MatchWebsocketHandler;
+pub use debug::DebugWebsocketHandler;
 
 use anyhow::Result;
 
@@ -13,8 +15,11 @@ use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::{net::{TcpListener, TcpStream}, sync::broadcast};
-use tokio_tungstenite::{WebSocketStream, accept_async, tungstenite};
+use tokio::{
+  net::{TcpListener, TcpStream},
+  sync::broadcast,
+};
+use tokio_tungstenite::{accept_async, tungstenite, WebSocketStream};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JsonMessage {
@@ -67,7 +72,8 @@ impl JsonMessage {
   }
 
   pub fn to_data<T>(&self, data: &T) -> Result<JsonMessage>
-    where T: serde::Serialize 
+  where
+    T: serde::Serialize,
   {
     Ok(self.data(serde_json::to_value(data)?))
   }
@@ -98,7 +104,7 @@ pub trait WebsocketMessageHandler {
 #[derive(Hash, PartialEq, Eq)]
 pub struct TopicSubscription {
   pub object: String,
-  pub noun: String
+  pub noun: String,
 }
 
 pub struct Websockets {
@@ -114,7 +120,7 @@ impl Websockets {
     Websockets {
       loop_duration,
       handlers: Arc::new(Mutex::new(HashMap::new())),
-      broadcast: tx
+      broadcast: tx,
     }
   }
 
@@ -135,7 +141,7 @@ impl Websockets {
             let h = self.handlers.clone();
             let tx = self.broadcast.clone();
             let rx = self.broadcast.subscribe();
-      
+
             tokio::spawn(async move {
               if let Err(e) = connection_handler(stream, tx, rx, h).await {
                 match e.downcast_ref::<tungstenite::Error>() {
@@ -167,7 +173,7 @@ impl Websockets {
 
 async fn do_broadcast_update(
   handler: &mut Box<dyn WebsocketMessageHandler + Send>,
-  broadcast: &broadcast::Sender<Vec<JsonMessage>>
+  broadcast: &broadcast::Sender<Vec<JsonMessage>>,
 ) -> Result<()> {
   match handler.update().await {
     Ok(msgs) => {
@@ -177,8 +183,8 @@ async fn do_broadcast_update(
           Err(e) => error!("Error in broadcast: {}", e),
         }
       }
-    },
-    Err(e) => error!("Error in handler tick: {}", e)
+    }
+    Err(e) => error!("Error in handler tick: {}", e),
   }
   Ok(())
 }
@@ -239,7 +245,7 @@ async fn process_incoming(
   ws: &mut WebSocketStream<TcpStream>,
   msg: JsonMessage,
   handlers: &Arc<Mutex<HashMap<String, Box<dyn WebsocketMessageHandler + Send>>>>,
-  broadcast: &broadcast::Sender<Vec<JsonMessage>>
+  broadcast: &broadcast::Sender<Vec<JsonMessage>>,
 ) -> Result<()> {
   let mut hs = handlers.lock().await;
 
@@ -247,13 +253,15 @@ async fn process_incoming(
     Some(h) => {
       let response = h.handle(msg.clone()).await;
       match response {
-        Ok(msgs) => if msgs.len() > 0 {
-          let response_msg = serde_json::to_string(&msgs)?;
-          ws.send(tungstenite::Message::Text(response_msg)).await?;
+        Ok(msgs) => {
+          if msgs.len() > 0 {
+            let response_msg = serde_json::to_string(&msgs)?;
+            ws.send(tungstenite::Message::Text(response_msg)).await?;
+          }
         }
         Err(e) => {
           error!("WS Error: {}", e);
-          
+
           let err = msg.response().error(&e.to_string());
           let response_msg = serde_json::to_string(&vec![err])?;
           ws.send(tungstenite::Message::Text(response_msg)).await?;

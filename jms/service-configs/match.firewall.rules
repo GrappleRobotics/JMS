@@ -1,6 +1,6 @@
 *nat
 
--A POSTROUTING -o ens18 -j MASQUERADE
+-A POSTROUTING -o {{ wan }} -j MASQUERADE
 
 COMMIT
 
@@ -15,10 +15,6 @@ COMMIT
 
 # Enable SSH on WAN
 -A INPUT -p tcp -m state --state NEW --dport 22 -i {{ wan }} -j ACCEPT
-# Enable JMS on WAN (temporary) TODO: Remove
--A INPUT -p tcp -m state --state NEW --dport 3000 -i {{ wan }} -j ACCEPT
--A INPUT -p tcp -m state --state NEW --dport 9000 -i {{ wan }} -j ACCEPT
-
 
 # ADMIN Network Rules
 #   Allow access to whole admin network (as multiple addresses are served by this host)
@@ -26,6 +22,8 @@ COMMIT
 -A INPUT -i {{ admin.iface }} -d {{ network admin.router }}/{{ netmask admin.router }} -j ACCEPT
 -A FORWARD -i {{ admin.iface }} -o {{ wan }} -j ACCEPT
 -A FORWARD -i {{ wan }} -o {{ admin.iface }} -j ACCEPT
+# -A FORWARD -o {{ wan }} -j ACCEPT
+# -A FORWARD -m state --state ESTABLISHED,RELATED -i {{ wan }} -j ACCEPT
 
 # Robot Networks - Router and Server access ONLY
 {{ #each stations }}
@@ -46,6 +44,7 @@ COMMIT
 # Default deny
 -A INPUT -j LOG --log-prefix "dropped"
 -A INPUT -j DROP
+-A FORWARD -j LOG --log-prefix "dropFwd"
 -A FORWARD -j DROP
 
 # Allow outgoing by default

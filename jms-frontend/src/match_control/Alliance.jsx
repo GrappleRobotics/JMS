@@ -47,6 +47,7 @@ class AllianceStation extends React.Component {
     let cname = ["alliance-station"];
     let can_bypass = match_loaded && (this.props.state?.state === "Prestart" || this.props.state?.state === "Idle");
     let can_change_team = match_loaded && this.props.state?.state === "Idle";
+    let is_estoppable = match_loaded && (this.props.state?.state === "MatchPlay");
 
     if (s.astop)
       cname.push("bg-hazard-dark-active");
@@ -62,14 +63,24 @@ class AllianceStation extends React.Component {
         <i>{ s.station.station }</i>
       </Col>
       <Col sm="1" className="p-0">
-        <Button
-          size="sm"
-          variant={s.bypass ? "success" : (can_bypass ? "danger" : "dark")}
-          disabled={ !can_bypass }
-          onClick={() => this.props.onUpdate({ bypass: !s.bypass })}
-        >
-            BY
-        </Button>
+        {
+          is_estoppable ? <Button
+            size="sm"
+            variant="hazard-red-dark"
+            disabled={ s.estop }
+            onClick={() => this.props.onUpdate({ estop: true })}
+          >
+            E
+          </Button> 
+          : <Button
+            size="sm"
+            variant={s.bypass ? "success" : (can_bypass ? "danger" : "dark")}
+            disabled={ !can_bypass }
+            onClick={() => this.props.onUpdate({ bypass: !s.bypass })}
+          >
+              BY
+          </Button>
+        }
       </Col>
       <Col sm="2">
         {/* { s.team || "-" } */}

@@ -71,9 +71,11 @@ export class ScoringAlliance extends React.Component {
 
     const power_cells_scores = live.power_cells[mode.toLowerCase()];
 
+    const that = this;
+
     return <Col className="scorer-col">
       <h4> { mode.toUpperCase() } </h4>
-      <this.ButtonPair
+      <that.ButtonPair
         value={power_cells_scores.inner}
         name="Inner"
         variant="success"
@@ -81,7 +83,7 @@ export class ScoringAlliance extends React.Component {
         onChange={(offset) => this.updateScore("PowerCell", { auto: mode == "Auto", inner: offset })}
       />
       <br />
-      <this.ButtonPair
+      <that.ButtonPair
         value={power_cells_scores.outer}
         name="Outer"
         variant="primary"
@@ -89,7 +91,7 @@ export class ScoringAlliance extends React.Component {
         onChange={(offset) => this.updateScore("PowerCell", { auto: mode == "Auto", outer: offset })}
       />
       <Row className="grow"> <Col /> </Row>
-      <this.ButtonPair
+      <that.ButtonPair
         value={power_cells_scores.bottom}
         name="Bottom"
         variant="danger"

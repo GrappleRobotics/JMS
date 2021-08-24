@@ -1,4 +1,4 @@
-use std::{convert::TryInto};
+use std::convert::TryInto;
 
 use bytes::{Buf, BufMut};
 use chrono::{DateTime, Datelike, Local, Timelike};

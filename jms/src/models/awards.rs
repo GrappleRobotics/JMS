@@ -1,16 +1,27 @@
-use crate::schema::awards;
+use crate::db;
 
-use super::SQLJsonVector;
-
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct AwardRecipient {
   pub team: Option<usize>,
-  pub awardee: Option<String>
+  pub awardee: Option<String>,
 }
 
-#[derive(Identifiable, Insertable, Queryable, Associations, AsChangeset, Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Award {
-  pub id: i32,
+  pub id: Option<usize>,
   pub name: String,
-  pub recipients: SQLJsonVector<AwardRecipient>
+  pub recipients: Vec<AwardRecipient>,
+}
+
+impl db::TableType for Award {
+  const TABLE: &'static str = "awards";
+  type Id = db::Integer;
+
+  fn id(&self) -> Option<Self::Id> {
+    self.id.map(|id| id.into())
+  }
+
+  fn set_id(&mut self, id: Self::Id) {
+    self.id = Some(id.into())
+  }
 }

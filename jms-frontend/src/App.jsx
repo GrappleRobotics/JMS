@@ -3,7 +3,7 @@ import { Route, Switch } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
-import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, REFEREE, REPORTS, SCORING } from 'paths';
+import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
 import TopNavbar from 'TopNavbar';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
@@ -17,6 +17,8 @@ import Audience from 'audience/Audience';
 import AudienceDisplayControl from 'audience/AudienceDisplayControl';
 import { RefereeRouter } from 'scoring/Referee';
 import Debug from 'Debug';
+import Timer from 'Timer';
+import { TeamEstops } from 'TeamEstop';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -130,6 +132,17 @@ export default class App extends React.Component {
           />
         </this.wrapView>
       </Route>
+      <Route path={RANKINGS_NO_SCROLL}>
+        <this.wrapView fullscreen>
+          <Rankings
+            ws={this.ws}
+            rankings={event?.rankings}
+            details={event?.details}
+            next_match={matches?.next}
+            scroll={false}
+          />
+        </this.wrapView>
+      </Route>
       <Route path={RANKINGS}>
         <this.wrapView fullscreen>
           <Rankings
@@ -137,6 +150,7 @@ export default class App extends React.Component {
             rankings={event?.rankings}
             details={event?.details}
             next_match={matches?.next}
+            scroll={true}
           />
         </this.wrapView>
       </Route>
@@ -144,6 +158,7 @@ export default class App extends React.Component {
         <this.wrapView>
           <AudienceDisplayControl
             ws={this.ws}
+            event={event}
           />
         </this.wrapView>
       </Route>
@@ -173,9 +188,27 @@ export default class App extends React.Component {
           />
         </this.wrapView>
       </Route>
+      <Route path={TIMER}>
+        <this.wrapView fullscreen nopad>
+          <Timer
+            ws={this.ws}
+            arena={arena}
+          />
+        </this.wrapView>
+      </Route>
+      <Route path={ESTOPS}>
+        <this.wrapView fullscreen>
+          <TeamEstops
+            ws={this.ws}
+            arena={arena}
+          />
+        </this.wrapView>
+      </Route>
       <Route path={DEBUG}>
         <this.wrapView navbar>
-          <Debug />
+          <Debug
+            ws={this.ws}
+          />
         </this.wrapView>
       </Route>
       <Route path="/">

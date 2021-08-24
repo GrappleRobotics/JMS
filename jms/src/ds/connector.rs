@@ -109,7 +109,7 @@ impl DSConnection {
             }
 
             // Check timeout
-            if self.last_packet_time.elapsed() > Duration::from_millis(2000) {
+            if self.last_packet_time.elapsed() > Duration::from_millis(5000) {
               self.state = DSConnectionState::Disconnected(DSDisconnectionReason::Timeout);
               break;
             }
@@ -219,7 +219,7 @@ impl DSConnection {
 
       let match_state = arena.current_match.as_ref().map(|m| m.current_state());
       let estop = station.estop || (arena.current_state() == ArenaState::Estop);
-      let astop = station.astop;
+      let astop = station.astop && match_state == Some(MatchPlayState::Auto);
 
       let (mode, robots_enabled) = match match_state {
         Some(MatchPlayState::Auto) => (ds::DSMode::Auto, true),
@@ -235,7 +235,7 @@ impl DSConnection {
         .unwrap_or(0f32);
 
       let match_meta = arena.current_match.as_ref().map(|x| x.metadata());
-      
+
       let mut pkt = Fms2DsUDP {
         estop: estop,
         enabled: (!station.bypass) && !(estop || astop) && robots_enabled,
@@ -254,10 +254,10 @@ impl DSConnection {
         // XYZ, where X = final bracket (Q=4, S=2, F=1), Y = set number, Z = match number
         pkt.match_number = match m.match_type {
           models::MatchType::Playoff => match m.match_subtype.unwrap() {
-            models::MatchSubtype::Quarterfinal => (400 + 10*m.set_number + m.match_number) as u16,
-            models::MatchSubtype::Semifinal => (200 + 10*m.set_number + m.match_number) as u16,
-            models::MatchSubtype::Final => (100 + 10*m.set_number + m.match_number) as u16,
-          }
+            models::MatchSubtype::Quarterfinal => (400 + 10 * m.set_number + m.match_number) as u16,
+            models::MatchSubtype::Semifinal => (200 + 10 * m.set_number + m.match_number) as u16,
+            models::MatchSubtype::Final => (100 + 10 * m.set_number + m.match_number) as u16,
+          },
           _ => m.match_number as u16,
         };
       }

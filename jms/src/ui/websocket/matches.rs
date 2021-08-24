@@ -1,20 +1,22 @@
 use anyhow::bail;
 
-use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl};
-
-use crate::{db, models, schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker}, ui::websocket::JsonMessage};
+use crate::{
+  db, models,
+  schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker},
+  ui::websocket::JsonMessage,
+};
 
 use super::WebsocketMessageHandler;
 pub struct MatchWebsocketHandler {
   quals: MatchGenerationWorker<QualsMatchGenerator>,
-  playoffs: MatchGenerationWorker<PlayoffMatchGenerator>
+  playoffs: MatchGenerationWorker<PlayoffMatchGenerator>,
 }
 
 impl MatchWebsocketHandler {
   pub fn new() -> Self {
     MatchWebsocketHandler {
       quals: MatchGenerationWorker::new(QualsMatchGenerator::new()),
-      playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new())
+      playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new()),
     }
   }
 }
@@ -23,6 +25,7 @@ impl MatchWebsocketHandler {
 impl WebsocketMessageHandler for MatchWebsocketHandler {
   async fn update(&mut self) -> super::Result<Vec<JsonMessage>> {
     let msg = JsonMessage::update("matches", "");
+    let sorted = models::Match::sorted(&db::database())?;
     let mut response = vec![];
     {
       // Quals
@@ -34,14 +37,12 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
     }
     {
       // Next Match
-      use crate::schema::matches::dsl::*;
-      let next_match = matches.filter(played.eq(false)).first::<models::Match>(&db::connection()).optional()?;
+      let next_match = sorted.iter().find(|&m| !m.played).map(|m| models::SerializedMatch(m.clone()));
       response.push(msg.noun("next").to_data(&next_match)?);
     }
     {
       // Last Match
-      use crate::schema::matches::dsl::*;
-      let last_match = matches.filter(played.eq(true)).order_by(score_time.desc()).first::<models::Match>(&db::connection()).optional()?;
+      let last_match = sorted.iter().rev().find(|&m| m.played).map(|m| models::SerializedMatch(m.clone()));
       response.push(msg.noun("last").to_data(&last_match)?);
     }
     Ok(response)
@@ -58,28 +59,28 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
           } else {
             self.quals.delete();
           }
-        },
+        }
         ("generate", Some(data)) => {
           let params = serde_json::from_value(data)?;
           self.quals.generate(params).await;
-        },
-        _ => bail!("Invalid verb or data")
+        }
+        _ => bail!("Invalid verb or data"),
       },
-      "playoffs" => match(msg.verb.as_str(), msg.data) {
+      "playoffs" => match (msg.verb.as_str(), msg.data) {
         ("clear", None) => {
           if self.playoffs.has_played() {
             bail!("Cannot delete after matches have started")
           } else {
             self.playoffs.delete();
           }
-        },
+        }
         ("generate", Some(data)) => {
           let params = serde_json::from_value(data)?;
           self.playoffs.generate(params).await;
-        },
-        _ => bail!("Invalid verb or data")
-      }
-      _ => bail!("Unknown noun")
+        }
+        _ => bail!("Invalid verb or data"),
+      },
+      _ => bail!("Unknown noun"),
     }
     Ok(vec![])
   }

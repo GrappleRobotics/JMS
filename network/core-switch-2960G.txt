@@ -1,0 +1,271 @@
+no service password-encryption
+!
+hostname JMS-Core-Switch
+!
+boot-start-marker
+boot-end-marker
+!
+enable password jmsR0cks
+!
+username root password 0 jmsR0cks
+no aaa new-model
+system mtu routing 1500
+ip subnet-zero
+!
+!
+ip domain-name frc-field
+!
+!
+crypto pki trustpoint TP-self-signed-3648561664
+ enrollment selfsigned
+ subject-name cn=IOS-Self-Signed-Certificate-3648561664
+ revocation-check none
+ rsakeypair TP-self-signed-3648561664
+!
+!
+crypto pki certificate chain TP-self-signed-3648561664
+ certificate self-signed 01
+  30820251 308201BA A0030201 02020101 300D0609 2A864886 F70D0101 04050030 
+  31312F30 2D060355 04031326 494F532D 53656C66 2D536967 6E65642D 43657274 
+  69666963 6174652D 33363438 35363136 3634301E 170D3933 30333031 30303032 
+  31345A17 0D323030 31303130 30303030 305A3031 312F302D 06035504 03132649 
+  4F532D53 656C662D 5369676E 65642D43 65727469 66696361 74652D33 36343835 
+  36313636 3430819F 300D0609 2A864886 F70D0101 01050003 818D0030 81890281 
+  8100C9EC 4A5CE9D8 81B34871 B6718E94 9A98721B 080FD628 951D648F 98DCB724 
+  04FCF001 6DDEF872 AA402B1F EE7CA1B1 2AC9D835 E24FD985 9C93FC5D 13F9D87D 
+  FD6B1A66 6C2E68E5 34273347 B7E5B0E0 3486EDBC 40B0553B 08F118F6 24D016F8 
+  741F7AF0 57C6E62B 9201FC8C 80053FBE 8626A047 E1725235 98CE260D B78F5A27 
+  3FF70203 010001A3 79307730 0F060355 1D130101 FF040530 030101FF 30240603 
+  551D1104 1D301B82 194A4D53 2D436F72 652D5377 69746368 2E667263 2D666965 
+  6C64301F 0603551D 23041830 16801421 2AB4E6CA D302AE19 292A68C3 7F00D8FC 
+  E7E24630 1D060355 1D0E0416 0414212A B4E6CAD3 02AE1929 2A68C37F 00D8FCE7 
+  E246300D 06092A86 4886F70D 01010405 00038181 009CBBC3 ABF3A2D3 BBA0E447 
+  9C135360 0DC0A6CA D47B2ABB E16A719E EF3B3418 53507E8F 11CAA57C DD634AC5 
+  2DB669A5 74453982 568CB07F 97B41792 7B9BAA54 B4343317 8F471EB0 AF07941B 
+  E9B34FA3 46772660 31011DF9 02FE489B 4FFA1ECB E4E53DBA 03A12B13 10E8AB39 
+  2FC33CBC 890C0926 315E2C05 0AD7EB3B 9DD10497 94
+  quit
+!         
+!
+!
+!
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
+vlan internal allocation policy ascending
+!
+ip ssh version 2
+!
+!
+interface GigabitEthernet0/1
+!
+interface GigabitEthernet0/2
+ switchport access vlan 60
+ switchport mode access
+!         
+interface GigabitEthernet0/3
+ switchport access vlan 150
+ switchport mode access
+!
+interface GigabitEthernet0/4
+ switchport access vlan 50
+ switchport mode access
+!
+interface GigabitEthernet0/5
+ switchport mode trunk
+!
+interface GigabitEthernet0/6
+ switchport access vlan 40
+ switchport mode access
+!
+interface GigabitEthernet0/7
+ switchport mode trunk
+!         
+interface GigabitEthernet0/8
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/9
+ switchport mode trunk
+!
+interface GigabitEthernet0/10
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/11
+ switchport mode trunk
+!
+interface GigabitEthernet0/12
+ switchport access vlan 10
+ switchport mode access
+!         
+interface GigabitEthernet0/13
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/14
+ switchport access vlan 20
+ switchport mode access
+!
+interface GigabitEthernet0/15
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/16
+ switchport access vlan 30
+ switchport mode access
+!
+interface GigabitEthernet0/17
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/18
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/19
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/20
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/21
+ switchport access vlan 100
+ switchport mode access
+!         
+interface GigabitEthernet0/22
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/23
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/24
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/25
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/26
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/27
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/28
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/29
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/30
+ switchport access vlan 100
+ switchport mode access
+!         
+interface GigabitEthernet0/31
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/32
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/33
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/34
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/35
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/36
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/37
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/38
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/39
+ switchport access vlan 100
+ switchport mode access
+!         
+interface GigabitEthernet0/40
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/41
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/42
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/43
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/44
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/45
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/46
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/47
+ switchport access vlan 100
+ switchport mode access
+!
+interface GigabitEthernet0/48
+ switchport access vlan 100
+ switchport mode access
+!         
+interface Vlan1
+ no ip address
+ no ip route-cache
+ shutdown
+!
+interface Vlan100
+ ip address 10.0.100.3 255.255.255.0
+ no ip route-cache
+!
+ip http server
+ip http secure-server
+!
+control-plane
+!
+!
+line con 0
+line vty 0 4
+ password jmsR0cks
+ login local
+ transport input ssh
+line vty 5 15
+ password jmsR0cks
+ login
+!
+end

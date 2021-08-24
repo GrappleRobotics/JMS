@@ -2,33 +2,38 @@ use std::{fs::File, io::Write, path::Path};
 
 use handlebars::Handlebars;
 use ipnetwork::Ipv4Network;
-use sysctl::Sysctl;
-use tempfile::NamedTempFile;
 use log::{error, info};
 use serde::Serialize;
 use serde_json::json;
+use sysctl::Sysctl;
+use tempfile::NamedTempFile;
 use tokio::process::Command;
 
-use crate::{arena::station::AllianceStationId, log_expect, network::NetworkResult, utils::{danger::danger_or_err, service_configs::ServiceConfigs, templates}};
+use crate::{
+  arena::station::AllianceStationId,
+  log_expect,
+  network::NetworkResult,
+  utils::{danger::danger_or_err, service_configs::ServiceConfigs, templates},
+};
 
 #[derive(Serialize)]
 pub struct FirewallConfig {
   pub iface: String,
   pub router: Option<Ipv4Network>,
-  pub server: Option<Ipv4Network>
+  pub server: Option<Ipv4Network>,
 }
 
 #[derive(Serialize)]
 pub struct TeamFirewallConfig {
   pub station: AllianceStationId,
   pub team: Option<u16>,
-  pub cfg: FirewallConfig
+  pub cfg: FirewallConfig,
 }
 
 pub async fn configure_firewall(
   wan_iface: String,
   admin_cfg: FirewallConfig,
-  stn_cfgs: &[TeamFirewallConfig]
+  stn_cfgs: &[TeamFirewallConfig],
 ) -> NetworkResult<()> {
   log_expect!(danger_or_err());
   let mut file = NamedTempFile::new()?;
@@ -47,7 +52,7 @@ async fn generate_firewall_rules(
   file: &mut File,
   wan_iface: String,
   admin_cfg: FirewallConfig,
-  stn_cfgs: &[TeamFirewallConfig]
+  stn_cfgs: &[TeamFirewallConfig],
 ) -> NetworkResult<()> {
   log_expect!(danger_or_err());
 
@@ -63,7 +68,7 @@ async fn generate_firewall_rules(
           "wan": wan_iface,
           "admin": admin_cfg,
           "stations": stn_cfgs
-        })
+        }),
       )?;
 
       file.write_all(result.as_bytes())?;
@@ -72,7 +77,7 @@ async fn generate_firewall_rules(
       error!("No ServiceConfig exists: match.firewall.conf");
       // TODO: Return Err
     }
-}
+  }
   Ok(())
 }
 

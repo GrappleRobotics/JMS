@@ -4,6 +4,9 @@
 *.dll
 *.so
 *.dylib
+*.kvdb
+
+jms-test/
 
 # Test binary, built with `go test -c`
 *.test

@@ -1,5 +1,6 @@
 import React from "react";
 import AllianceSelection from "./AllianceSelection";
+import AudienceAward from "./Award";
 import CustomMessage from "./CustomMessage";
 import MatchPlay from "./MatchPlay";
 import MatchPreview from "./MatchPreview";
@@ -85,7 +86,7 @@ export default class Audience extends React.PureComponent {
           />
         break;
       case "AllianceSelection":
-        if (event.alliances)
+        if (event.alliances && event.rankings)
           return <AllianceSelection
             event={event}
           />
@@ -97,6 +98,12 @@ export default class Audience extends React.PureComponent {
             msg={display.params}
           />
         break;
+      case "Award":
+        if (display.params)
+          return <AudienceAward
+            event={event}
+            award={display.params}
+          />
       case "Field":
       default:
         break;

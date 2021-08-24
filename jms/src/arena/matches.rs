@@ -1,13 +1,12 @@
 use std::time::{Duration, Instant};
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
-use diesel::RunQueryDsl;
 use log::{info, warn};
 
-use crate::{arena::exceptions::MatchWrongState, db, models::{self, Alliance, MatchGenerationRecordData, SQLDatetime, SQLJson}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::MatchScore};
+use crate::{arena::exceptions::MatchWrongState, db, models, scoring::scores::MatchScore};
 
-use serde::Serialize;
+use serde::{Serialize, ser::SerializeStruct};
 
 use super::exceptions::MatchIllegalStateChange;
 
@@ -32,28 +31,41 @@ pub struct MatchConfig {
   endgame_time: Duration,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
 pub struct LoadedMatch {
-  #[serde(rename = "match")]
   pub match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
   pub score: MatchScore,
 
-  #[serde(skip)]
   state_first: bool,
-  #[serde(skip)]
   state_start_time: Instant,
 
   config: MatchConfig,
-  endgame: bool
+  endgame: bool,
+}
+
+impl Serialize for LoadedMatch {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer
+  {
+    let mut state = serializer.serialize_struct("LoadedMatch", 6)?;
+    state.serialize_field("match", &models::SerializedMatch(self.match_meta.clone()))?;
+    state.serialize_field("state", &self.state)?;
+    state.serialize_field("remaining_time", &self.remaining_time)?;
+    state.serialize_field("score", &self.score)?;
+    state.serialize_field("config", &self.config)?;
+    state.serialize_field("endgame", &self.endgame)?;
+    state.end()
+  }
 }
 
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
       state: MatchPlayState::Waiting,
-      score: MatchScore::new( m.red_teams.0.len(), m.blue_teams.0.len() ),
+      score: MatchScore::new(m.red_teams.len(), m.blue_teams.len()),
       match_meta: m,
       state_first: true,
       state_start_time: Instant::now(),
@@ -62,10 +74,10 @@ impl LoadedMatch {
         warmup_cooldown_time: Duration::from_secs(3),
         auto_time: Duration::from_secs(15),
         pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(2*60 + 15),
-        endgame_time: Duration::from_secs(30)
+        teleop_time: Duration::from_secs(2 * 60 + 15),
+        endgame_time: Duration::from_secs(30),
       },
-      endgame: false
+      endgame: false,
     }
   }
 
@@ -90,59 +102,14 @@ impl LoadedMatch {
     }
   }
 
-  pub async fn commit_score(&mut self) -> Result<Option<models::Match>> {
-    if self.match_meta.match_type != models::MatchType::Test {
-      if self.state == MatchPlayState::Complete {
-        let red = self.score.red.derive(&self.score.blue);
-        let blue = self.score.blue.derive(&self.score.red);
-
-        let mut winner = None;
-        if blue.total_score > red.total_score {
-          winner = Some(Alliance::Blue);
-        } else if red.total_score > blue.total_score {
-          winner = Some(Alliance::Red);
-        }
-
-        self.match_meta.played = true;
-        self.match_meta.winner = winner;
-        self.match_meta.score = Some(SQLJson(self.score.clone()));
-        self.match_meta.score_time = Some(SQLDatetime(chrono::Local::now().naive_utc()));
-
-        {
-          use crate::schema::matches::dsl::*;
-          diesel::replace_into(matches).values(&self.match_meta).execute(&db::connection()).unwrap();
-        }
-
-        if self.match_meta.match_type == models::MatchType::Qualification {
-          let conn = db::connection();
-          for &team in &self.match_meta.blue_teams.0 {
-            if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update( &blue, &red, &conn )?;
-            }
-          }
-          for &team in &self.match_meta.red_teams.0 {
-            if let Some(team) = team {
-              models::TeamRanking::get(team, &conn)?.update( &red, &blue, &conn )?;
-            }
-          }
-        } else if self.match_meta.match_type == models::MatchType::Playoff {
-          // Update playoff generation
-          // TODO: We should use a global worker, but this will do for now.
-          let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
-          let record = worker.record();
-          if let Some(record) = record {
-            if let Some(MatchGenerationRecordData::Playoff { mode }) = record.data.map(|x| x.0) {
-              worker.generate(mode).await;
-            }
-          }
-        }
-
-        Ok(Some(self.match_meta.clone()))
-      } else {
-        bail!(MatchWrongState { state: self.state, why: "Can't commit score before Match is complete!".to_owned() })
-      }
+  pub async fn commit_score(&mut self) -> Result<models::Match> {
+    if self.state == MatchPlayState::Complete {
+      Ok(self.match_meta.commit(&self.score, &db::database()).await?.clone())
     } else {
-      Ok(None)
+      bail!(MatchWrongState {
+        state: self.state,
+        why: "Can't commit score before Match is complete!".to_owned()
+      })
     }
   }
 

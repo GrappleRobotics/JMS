@@ -9,6 +9,8 @@ export default class AudienceDisplayControl extends React.Component {
       showCustomMessage: false,
       customMessage: ""
     };
+
+    props.ws.subscribe("event", "awards");
   }
   
   send = (scene, params) => {
@@ -113,6 +115,25 @@ export default class AudienceDisplayControl extends React.Component {
           </Col>
         </Row>)
       }
+
+      <Row className="mb-4">
+        <Col>
+          <h3> Awards </h3>
+          <div className="ml-4">
+            {
+              this.props.event?.awards?.map(award => <React.Fragment>
+                <Button
+                  className="m-1 px-5 award-btn"
+                  onClick={() => this.send("Award", award.id)}
+                  disabled={award.recipients.length == 0}
+                >
+                  { award.name }
+                </Button>
+              </React.Fragment>)
+            }
+          </div>
+        </Col>
+      </Row>
 
       { this.customMessageModal() }
 

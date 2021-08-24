@@ -87,7 +87,7 @@ export default class TopNavbar extends React.Component {
             return [match.state, "primary"];
         }
       case "MatchComplete":
-        return ["Match Complete", "success"];
+        return state.ready ? ["Match Complete", "success"] : ["Match Completing...", "warning"];
       case "MatchCommit":
         return ["Scores Commited", "success"];
       case "Estop":

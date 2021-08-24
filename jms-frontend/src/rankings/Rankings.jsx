@@ -10,7 +10,8 @@ export default class Rankings extends React.PureComponent {
   constructor(props) {
     super(props);
 
-    this.scrollDown();
+    if (this.props.scroll)
+      this.scrollDown();
     
     props.ws.subscribe("event", "rankings");
     props.ws.subscribe("event", "details");

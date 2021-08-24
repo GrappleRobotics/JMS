@@ -26,7 +26,7 @@ export default class MatchFlow extends React.Component {
               state={this.props.state}
               stateName="Prestart"
               onClick={() => this.props.onSignal({ signal: "Prestart" })}
-              disabled={!( this.props.match != null && this.props.state?.state === "Idle" )}
+              disabled={!( this.props.match != null && (this.props.state?.state === "Idle" || this.props.state?.state === "Prestart") )}
             >
               Prestart
             </MatchFlowButton>

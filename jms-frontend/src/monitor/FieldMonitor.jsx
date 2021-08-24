@@ -124,11 +124,11 @@ export default class FieldMonitor extends React.PureComponent {
 
   renderAvailable = () => {
     return <Row>
-      <Col className="col-full monitor-alliance" data-alliance="blue">
-        { this.renderAlliance( this.props.arena.stations.filter(s => s.station.alliance == "Blue") ) }
-      </Col>
       <Col className="col-full monitor-alliance" data-alliance="red">
-        { this.renderAlliance( this.props.arena.stations.filter(s => s.station.alliance == "Red").reverse() ) }
+        { this.renderAlliance( this.props.arena.stations.filter(s => s.station.alliance == "Red") ) }
+      </Col>
+      <Col className="col-full monitor-alliance" data-alliance="blue">
+        { this.renderAlliance( this.props.arena.stations.filter(s => s.station.alliance == "Blue").reverse() ) }
       </Col>
     </Row>
   }

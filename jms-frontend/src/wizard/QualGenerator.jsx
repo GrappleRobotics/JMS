@@ -14,7 +14,7 @@ export default class QualGenerator extends React.Component {
   }
 
   static needsAttention(d) {
-    return !!!d.matches?.quals?.record;
+    return !!!d.matches?.quals?.record?.data;
   }
 
   constructor (props) {
@@ -198,7 +198,7 @@ export default class QualGenerator extends React.Component {
 
       <div>
         {
-          this.props.matches?.quals?.record ? this.renderSchedule() : this.renderNoSchedule()
+          this.props.matches?.quals?.record?.data ? this.renderSchedule() : this.renderNoSchedule()
         }
       </div>
     </div>

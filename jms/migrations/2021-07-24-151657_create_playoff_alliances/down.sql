@@ -1,1 +1,0 @@
-DROP TABLE playoff_alliances;

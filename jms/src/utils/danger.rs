@@ -57,7 +57,7 @@ fn eval_danger_zone() -> bool {
     }
     _ => (),
   }
-  
+
   // Parse env var
   match env::var(JMS_DANGER_ENV_VAR) {
     Ok(s) => match LexicalBool::from_str(&s.to_lowercase()) {
