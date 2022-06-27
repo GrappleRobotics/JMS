@@ -43,6 +43,7 @@ async fn main() -> anyhow::Result<()> {
         interval.tick().await;
         a2.lock().await.update().await;
       }
+      #[allow(unreachable_code)]
       Ok(())
     };
 

@@ -14,6 +14,7 @@ pub async fn begin() -> anyhow::Result<()> {
   default.address = IpAddr::V4("0.0.0.0".parse()?);
   default.shutdown.ctrlc = false;
 
+  #[allow(unused_must_use)] {
   rocket::custom(&default)
     .mount("/", embed::EmbedServer::<WebRoot>::new())
     .mount(
@@ -29,5 +30,6 @@ pub async fn begin() -> anyhow::Result<()> {
     )
     .launch()
     .await?;
+  }
   Ok(())
 }
