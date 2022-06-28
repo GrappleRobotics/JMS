@@ -6,6 +6,7 @@ import App from 'App';
 import './App.scss';
 
 ReactDOM.render(
+  // @ts-ignore
   <BrowserRouter>
     <App />
   </BrowserRouter>, 

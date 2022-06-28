@@ -5,7 +5,6 @@ import React from "react";
 import { Button, Col, Form, Row, Table, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import RangeSlider from "react-bootstrap-range-slider";
 import { confirm } from "react-bootstrap-confirmation";
-import Buffered from "components/elements/Buffered";
 import { Menu, MenuItem, Typeahead, TypeaheadMenu } from "react-bootstrap-typeahead";
 
 export default class ConfigureAlliances extends React.Component {

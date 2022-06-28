@@ -1,15 +1,11 @@
 import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
-import BufferedFormControl from "./BufferedFormControl";
+import BufferedFormControl, { BufferedProps } from "./BufferedFormControl";
 
-export default class EditableFormControl extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      editing: false
-    }
+export default class EditableFormControl extends React.Component<BufferedProps, { editing: boolean }> {
+  readonly state = {
+    editing: false
   }
 
   render() {
