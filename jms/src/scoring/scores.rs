@@ -11,7 +11,7 @@ use crate::{models::Alliance, utils::saturating_offset};
 //    - Stage 2: 9+15 = 24 Cells
 //    - Stage 3: 9+15+15 = 39 Cells
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ModeScore<T> {
   pub auto: T,
   pub teleop: T,
@@ -26,34 +26,34 @@ where
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq, Eq)]
 pub enum EndgamePointType {
   None,
   Hang,
   Park,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct PowerCellCounts {
   pub inner: usize,
   pub outer: usize,
   pub bottom: usize,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Penalties {
   pub fouls: usize,
   pub tech_fouls: usize,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq, Eq)]
 pub enum WinStatus {
   WIN,
   LOSS,
   TIE
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LiveScore {
   pub initiation_line_crossed: Vec<bool>,
   pub power_cells: ModeScore<PowerCellCounts>,
@@ -63,7 +63,7 @@ pub struct LiveScore {
   pub penalties: Penalties,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DerivedScore {
   pub initiation_points: isize,
   pub cell_points: ModeScore<isize>,
@@ -80,7 +80,7 @@ pub struct DerivedScore {
   pub win_status: WinStatus,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(into = "MatchScoreSnapshot", from = "MatchScoreSnapshot")]
 pub struct MatchScore {
   pub red: LiveScore,

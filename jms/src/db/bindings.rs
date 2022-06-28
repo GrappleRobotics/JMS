@@ -64,6 +64,20 @@ impl serde::Serialize for DBDateTime {
   }
 }
 
+impl schemars::JsonSchema for DBDateTime {
+  fn schema_name() -> String {
+    "DBDatetime".to_owned()
+  }
+
+  fn is_referenceable() -> bool {
+    false
+  }
+
+  fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+    i64::json_schema(gen).into()
+  }
+}
+
 impl<'de> serde::Deserialize<'de> for DBDateTime {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
   where
@@ -89,6 +103,20 @@ impl serde::Serialize for DBDuration {
     S: serde::Serializer,
   {
     serializer.serialize_i64(self.0.num_milliseconds())
+  }
+}
+
+impl schemars::JsonSchema for DBDuration {
+  fn schema_name() -> String {
+    "DBDuration".to_owned()
+  }
+
+  fn is_referenceable() -> bool {
+    false
+  }
+
+  fn json_schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+    i64::json_schema(gen).into()
   }
 }
 

@@ -3,7 +3,7 @@ use rand::Rng;
 use crate::db::{self, TableType};
 use crate::scoring::scores::{DerivedScore, WinStatus};
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TeamRanking {
   pub team: usize,
 

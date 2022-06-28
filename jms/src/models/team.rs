@@ -1,6 +1,6 @@
 use crate::db;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Team {
   pub id: usize,
   pub name: Option<String>,

@@ -1,8 +1,9 @@
 use crate::models::Alliance;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{convert::TryInto, fmt::Display};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize, Hash, JsonSchema)]
 pub struct AllianceStationId {
   pub alliance: Alliance,
   pub station: u32,

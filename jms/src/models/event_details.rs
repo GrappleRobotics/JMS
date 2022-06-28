@@ -1,6 +1,6 @@
 use crate::db::{self, TableType};
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct EventDetails {
   pub code: Option<String>,
   pub event_name: Option<String>,

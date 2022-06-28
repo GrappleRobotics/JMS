@@ -37,12 +37,12 @@ impl WebsocketMessageHandler for MatchWebsocketHandler {
     }
     {
       // Next Match
-      let next_match = sorted.iter().find(|&m| !m.played).map(|m| models::SerializedMatch(m.clone()));
+      let next_match = sorted.iter().find(|&m| !m.played).map(|m| models::SerializedMatch::from(m.clone()));
       response.push(msg.noun("next").to_data(&next_match)?);
     }
     {
       // Last Match
-      let last_match = sorted.iter().rev().find(|&m| m.played).map(|m| models::SerializedMatch(m.clone()));
+      let last_match = sorted.iter().rev().find(|&m| m.played).map(|m| models::SerializedMatch::from(m.clone()));
       response.push(msg.noun("last").to_data(&last_match)?);
     }
     Ok(response)

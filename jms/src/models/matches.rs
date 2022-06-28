@@ -1,25 +1,23 @@
-use serde::{Serialize, Serializer, ser::SerializeStruct};
-
 use crate::{db::{self, DBDateTime, TableType}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus}};
 
 use super::TeamRanking;
 
-#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum Alliance {
   Blue, Red
 }
 
-#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum MatchType {
   Test, Qualification, Playoff
 }
 
-#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum MatchSubtype {
   Quarterfinal, Semifinal, Final
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Match {
   pub start_time: Option<DBDateTime>,
   pub match_type: MatchType,
@@ -41,8 +39,13 @@ pub struct Match {
 
 // To send to frontend, as the impls of serde::Serialize are for DB storage and not
 // transport to frontend (which requires name() and id()) to be called.
-#[derive(Debug, Clone)]
-pub struct SerializedMatch(pub Match);
+#[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
+pub struct SerializedMatch {
+  #[serde(flatten)]
+  pub match_meta: Match,
+  pub id: Option<String>,
+  pub name: String
+}
 
 impl Match {
   pub fn new_test() -> Self {
@@ -158,43 +161,21 @@ impl db::TableType for Match {
 
 impl From<Match> for SerializedMatch {
   fn from(m: Match) -> Self {
-    Self(m)
+    Self {
+      id: m.id(),
+      name: m.name(),
+      match_meta: m
+    }
   }
 }
 
-impl Serialize for SerializedMatch {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: Serializer,
-  {
-    let m = &self.0;
-    let mut state = serializer.serialize_struct("Match", 15)?;
-    state.serialize_field("id", &m.id())?;
-    state.serialize_field("type", &m.match_type)?;
-    state.serialize_field("subtype", &m.match_subtype)?;
-    state.serialize_field("time", &m.start_time)?;
-    state.serialize_field("score_time", &m.score_time)?;
-    state.serialize_field("name", &m.name())?;
-    state.serialize_field("set_number", &m.set_number)?;
-    state.serialize_field("match_number", &m.match_number)?;
-    state.serialize_field("blue", &m.blue_teams)?;
-    state.serialize_field("blue_alliance", &m.blue_alliance)?;
-    state.serialize_field("red", &m.red_teams)?;
-    state.serialize_field("red_alliance", &m.red_alliance)?;
-    state.serialize_field("played", &m.played)?;
-    state.serialize_field("score", &m.score)?;
-    state.serialize_field("winner", &m.winner)?;
-    state.end()
-  }
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum PlayoffMode {
   Bracket,
   RoundRobin,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MatchGenerationRecord {
   pub match_type: MatchType,
   pub data: Option<MatchGenerationRecordData>,
@@ -226,7 +207,7 @@ impl MatchGenerationRecord {
   }
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 pub enum MatchGenerationRecordData {
   Qualification {
     team_balance: f64,

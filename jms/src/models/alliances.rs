@@ -1,6 +1,6 @@
 use crate::{db::{self, TableType}, models::TeamRanking};
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct PlayoffAlliance {
   pub id: usize,
   pub teams: Vec<Option<usize>>,

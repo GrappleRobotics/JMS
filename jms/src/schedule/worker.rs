@@ -94,7 +94,7 @@ where
   {
     let mut state = serializer.serialize_struct("MatchGenerationWorker", 3)?;
     state.serialize_field("running", &self.running())?;
-    state.serialize_field("matches", &self.matches().iter().map(|m| models::SerializedMatch(m.clone())).collect::<Vec<models::SerializedMatch>>())?;
+    state.serialize_field("matches", &self.matches().iter().map(|m| models::SerializedMatch::from(m.clone())).collect::<Vec<models::SerializedMatch>>())?;
     state.serialize_field("record", &self.record())?;
     state.end()
   }
