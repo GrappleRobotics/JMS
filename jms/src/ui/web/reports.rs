@@ -1,4 +1,4 @@
-use rocket::{http::ContentType, response::content::Custom};
+use rocket::http::ContentType;
 
 use crate::{
   models,
@@ -11,46 +11,48 @@ use crate::{
   },
 };
 
+type RawContentResponse = (ContentType, Vec<u8>);
+
 #[get("/teams")]
-pub fn teams() -> Custom<Vec<u8>> {
-  Custom(ContentType::PDF, teams_report().unwrap())
+pub fn teams() -> RawContentResponse {
+  (ContentType::PDF, teams_report().unwrap())
 }
 
 #[get("/wpa/<format>")]
-pub fn wpa(format: String) -> Custom<Vec<u8>> {
+pub fn wpa(format: String) -> RawContentResponse {
   match format.as_str() {
-    "csv" => Custom(ContentType::CSV, wpa_report_csv().unwrap()),
-    "pdf" => Custom(ContentType::PDF, wpa_report().unwrap()),
-    _ => return Custom(ContentType::Text, "Invalid format".as_bytes().to_vec()),
+    "csv" => (ContentType::CSV, wpa_report_csv().unwrap()),
+    "pdf" => (ContentType::PDF, wpa_report().unwrap()),
+    _ => return (ContentType::Text, "Invalid format".as_bytes().to_vec()),
   }
 }
 
 #[get("/rankings")]
-pub fn rankings() -> Custom<Vec<u8>> {
-  Custom(ContentType::PDF, rankings_report().unwrap())
+pub fn rankings() -> RawContentResponse {
+  (ContentType::PDF, rankings_report().unwrap())
 }
 
 #[get("/awards")]
-pub fn awards() -> Custom<Vec<u8>> {
-  Custom(ContentType::PDF, awards_report().unwrap())
+pub fn awards() -> RawContentResponse {
+  (ContentType::PDF, awards_report().unwrap())
 }
 
 #[get("/matches/<match_type>/individual")]
-pub fn matches_per_team(match_type: String) -> Custom<Vec<u8>> {
+pub fn matches_per_team(match_type: String) -> RawContentResponse {
   let match_type = match match_type.as_str() {
     "quals" => models::MatchType::Qualification,
     "playoffs" => models::MatchType::Playoff,
-    _ => return Custom(ContentType::Text, "Invalid match type!".as_bytes().to_vec()),
+    _ => return (ContentType::Text, "Invalid match type!".as_bytes().to_vec()),
   };
-  Custom(ContentType::PDF, match_report_per_team(match_type).unwrap())
+  (ContentType::PDF, match_report_per_team(match_type).unwrap())
 }
 
 #[get("/matches/<match_type>")]
-pub fn matches(match_type: String) -> Custom<Vec<u8>> {
+pub fn matches(match_type: String) -> RawContentResponse {
   let match_type = match match_type.as_str() {
     "quals" => models::MatchType::Qualification,
     "playoffs" => models::MatchType::Playoff,
-    _ => return Custom(ContentType::Text, "Invalid match type!".as_bytes().to_vec()),
+    _ => return (ContentType::Text, "Invalid match type!".as_bytes().to_vec()),
   };
-  Custom(ContentType::PDF, match_report(match_type).unwrap())
+  (ContentType::PDF, match_report(match_type).unwrap())
 }

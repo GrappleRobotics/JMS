@@ -25,7 +25,9 @@ pub enum Ds2FmsTCPTags {
 
 #[derive(Debug)]
 pub struct TimestampedMessage {
+  #[allow(dead_code)]
   timestamp: DateTime<Utc>,
+  #[allow(dead_code)]
   message: String,
 }
 
