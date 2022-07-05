@@ -62,7 +62,7 @@ pub struct BoundState {
   data: StateData,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, Deserialize, JsonSchema)]
 #[serde(tag = "signal")]
 pub enum ArenaSignal {
   Estop,

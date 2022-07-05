@@ -1,8 +1,29 @@
 use anyhow::bail;
+use jms_macros::define_websocket_msg;
+use schemars::JsonSchema;
+use serde::{Serialize, Deserialize};
 
 use crate::{db::{self, TableType}, models, scoring::scores::{LiveScore, MatchScore}};
 
 use super::WebsocketMessageHandler;
+
+define_websocket_msg!($DebugMessage {
+  recv $Match {
+    FillRandomScores,
+    DeleteAll
+  }
+});
+
+// #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+// pub enum MatchDebugMessage {
+//   FillRandom,
+//   DeleteAll
+// }
+
+// #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+// pub enum DebugMessage {
+//   Matches(MatchDebugMessage)
+// }
 
 pub struct DebugWebsocketHandler {}
 

@@ -1,0 +1,494 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AllWebsocketMessages",
+  "type": "object",
+  "required": [
+    "ui2jms"
+  ],
+  "properties": {
+    "ui2jms": {
+      "$ref": "#/definitions/WebsocketMessage2JMS"
+    }
+  },
+  "definitions": {
+    "Award": {
+      "type": "object",
+      "required": [
+        "name",
+        "recipients"
+      ],
+      "properties": {
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "name": {
+          "type": "string"
+        },
+        "recipients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AwardRecipient"
+          }
+        }
+      }
+    },
+    "AwardRecipient": {
+      "type": "object",
+      "properties": {
+        "awardee": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "EventDetails": {
+      "type": "object",
+      "required": [
+        "webcasts"
+      ],
+      "properties": {
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "webcasts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EventMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Details"
+          ],
+          "properties": {
+            "Details": {
+              "$ref": "#/definitions/EventMessageDetails2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Team"
+          ],
+          "properties": {
+            "Team": {
+              "$ref": "#/definitions/EventMessageTeam2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Schedule"
+          ],
+          "properties": {
+            "Schedule": {
+              "$ref": "#/definitions/EventMessageSchedule2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "$ref": "#/definitions/EventMessageAlliance2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Ranking"
+          ],
+          "properties": {
+            "Ranking": {
+              "$ref": "#/definitions/EventMessageRanking2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Award"
+          ],
+          "properties": {
+            "Award": {
+              "$ref": "#/definitions/EventMessageAward2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageAlliance2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Clear",
+            "Promote"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Create"
+          ],
+          "properties": {
+            "Create": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Update"
+          ],
+          "properties": {
+            "Update": {
+              "$ref": "#/definitions/PlayoffAlliance"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageAward2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Create"
+          ],
+          "properties": {
+            "Create": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Update"
+          ],
+          "properties": {
+            "Update": {
+              "$ref": "#/definitions/Award"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Delete"
+          ],
+          "properties": {
+            "Delete": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageDetails2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Update"
+          ],
+          "properties": {
+            "Update": {
+              "$ref": "#/definitions/EventDetails"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageRanking2JMS": {
+      "type": "string",
+      "enum": []
+    },
+    "EventMessageSchedule2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "NewBlock"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "DeleteBlock"
+          ],
+          "properties": {
+            "DeleteBlock": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "UpdateBlock"
+          ],
+          "properties": {
+            "UpdateBlock": {
+              "$ref": "#/definitions/ScheduleBlock"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "LoadDefault"
+          ],
+          "properties": {
+            "LoadDefault": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageTeam2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Insert"
+          ],
+          "properties": {
+            "Insert": {
+              "$ref": "#/definitions/Team"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Delete"
+          ],
+          "properties": {
+            "Delete": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "PlayoffAlliance": {
+      "type": "object",
+      "required": [
+        "id",
+        "ready",
+        "teams"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    "ScheduleBlock": {
+      "type": "object",
+      "required": [
+        "block_type",
+        "cycle_time",
+        "end_time",
+        "name",
+        "start_time"
+      ],
+      "properties": {
+        "block_type": {
+          "$ref": "#/definitions/ScheduleBlockType"
+        },
+        "cycle_time": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "end_time": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "name": {
+          "type": "string"
+        },
+        "start_time": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "ScheduleBlockType": {
+      "type": "string",
+      "enum": [
+        "General",
+        "Qualification",
+        "Playoff"
+      ]
+    },
+    "Team": {
+      "type": "object",
+      "required": [
+        "id",
+        "schedule"
+      ],
+      "properties": {
+        "affiliation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "location": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schedule": {
+          "type": "boolean"
+        },
+        "wpakey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "WebsocketMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Subscribe"
+          ],
+          "properties": {
+            "Subscribe": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Event"
+          ],
+          "properties": {
+            "Event": {
+              "$ref": "#/definitions/EventMessage2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

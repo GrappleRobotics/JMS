@@ -11,6 +11,7 @@ use serde::{ser::SerializeStruct, Serialize, Serializer};
 
 use crate::{db::{self, TableType}, models::{self, MatchGenerationRecord}};
 
+#[derive(Debug, Clone)]
 pub struct MatchGenerationWorker<T>
 where
   T: MatchGenerator + Send + Sync + 'static,

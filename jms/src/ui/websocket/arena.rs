@@ -1,11 +1,73 @@
 use anyhow::{anyhow, bail};
 
-use serde::Deserialize;
+use jms_macros::define_websocket_msg;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, ArenaSignal, ArenaState, AudienceDisplay, SharedArena}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, ArenaSignal, ArenaState, AudienceDisplay, SharedArena, AllianceStation, ArenaAccessRestriction}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
 
 use super::{JsonMessage, WebsocketMessageHandler};
+
+// #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+// pub enum ArenaMessageState {
+//   #[serde(skip_deserializing)]
+//   Update(ArenaState),
+//   #[serde(skip_serializing)]
+//   Signal(ArenaSignal)
+// }
+
+// // TODO: Split into direction? Serialize / Deserialize - To/From. Maybe a macro is the better
+// // way to go
+// #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+// pub enum ArenaMessageAlliances {
+//   #[serde(skip_deserializing)]
+//   Update(Vec<AllianceStation>),
+  
+// }
+
+// #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+// pub enum ArenaMessage {
+//   State(ArenaMessageState),
+//   Alliances(),
+//   Match(),
+//   AudienceDisplay(),
+//   Access()
+// }
+
+define_websocket_msg!($ArenaMessage {
+  $State {
+    send Current(ArenaState),
+    recv Signal(ArenaSignal)
+  },
+  $Alliance {
+    send CurrentStations(Vec<AllianceStation>),
+    recv UpdateAlliance(AllianceStationUpdate)
+  },
+  $Match {
+    send Current(Option<LoadedMatch>),
+    recv LoadTest,
+    recv Unload,
+    recv Load(String),
+    recv ScoreUpdate(ScoreUpdateData)
+  },
+  $AudienceDisplay {
+    send Current(AudienceDisplay),
+    recv $Set {
+      Field,
+      MatchPreview,
+      MatchPlay,
+      MatchResults(Option<String>),
+      AllianceSelection,
+      Award(usize),
+      CustomMessage(String)
+    }
+  },
+  $Access {
+    send Current(ArenaAccessRestriction),
+    recv Set(ArenaAccessRestriction)
+  }
+});
 
 pub struct ArenaWebsocketHandler {
   pub arena: SharedArena,

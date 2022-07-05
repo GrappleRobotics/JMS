@@ -9,6 +9,7 @@ build = "build/main.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+jms-macros = { path = "jms-macros" }
 rtnetlink = "0.7.0"
 log = "0.4.14"
 env_logger = "0.8.3"

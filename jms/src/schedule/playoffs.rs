@@ -4,7 +4,7 @@ use crate::{db::{self, TableType}, models::{self, AwardRecipient, MatchGeneratio
 
 use super::{bracket::bracket_update, worker::MatchGenerator, GenerationUpdate};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PlayoffMatchGenerator;
 
 impl PlayoffMatchGenerator {

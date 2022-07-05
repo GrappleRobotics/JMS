@@ -18,3 +18,5 @@ extern crate strum;
 extern crate strum_macros;
 #[macro_use]
 extern crate rocket;
+
+extern crate jms_macros;

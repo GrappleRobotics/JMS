@@ -24,6 +24,27 @@ impl db::TableType for Team {
   }
 }
 
+impl Team {
+  pub fn maybe_gen_wpa(&self) -> Team {
+    if self.wpakey.is_some() {
+      return self.clone()
+    } else {
+      use rand::distributions::Alphanumeric;
+      use rand::{thread_rng, Rng};
+      
+      let mut new_team = self.clone();
+      new_team.wpakey = Some(
+        thread_rng()
+          .sample_iter(&Alphanumeric)
+          .take(30)
+          .map(char::from)
+          .collect()
+      );
+      return new_team
+    }
+  }
+}
+
 // impl Team {
 //   pub fn wpakey(team_id: usize, conn: &db::ConnectionT) -> Option<String> {
 //     use crate::schema::teams::dsl::*;

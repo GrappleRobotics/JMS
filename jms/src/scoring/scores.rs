@@ -136,7 +136,7 @@ impl From<MatchScoreSnapshot> for MatchScore {
 }
 
 // For updating from the frontend.
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize, schemars::JsonSchema)]
 pub enum ScoreUpdate {
   Initiation {
     station: usize,
@@ -164,7 +164,7 @@ pub enum ScoreUpdate {
   },
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize, schemars::JsonSchema)]
 pub struct ScoreUpdateData {
   pub alliance: Alliance,
   pub update: ScoreUpdate,

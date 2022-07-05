@@ -1,4 +1,5 @@
 use anyhow::bail;
+use jms_macros::define_websocket_msg;
 
 use crate::{
   db, models,
@@ -7,6 +8,16 @@ use crate::{
 };
 
 use super::WebsocketMessageHandler;
+
+define_websocket_msg!($MatchMessage {
+  send $Generator {
+    send Quals(MatchGenerationWorker<QualsMatchGenerator>),
+    send Playoffs(MatchGenerationWorker<PlayoffMatchGenerator>),
+  },
+  send Next(models::SerializedMatch),
+  send Last(models::SerializedMatch)
+});
+
 pub struct MatchWebsocketHandler {
   quals: MatchGenerationWorker<QualsMatchGenerator>,
   playoffs: MatchGenerationWorker<PlayoffMatchGenerator>,

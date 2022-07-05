@@ -7,7 +7,7 @@ use super::{
   worker::MatchGenerator,
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct QualsMatchGenerator;
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]

@@ -1,170 +1,106 @@
-use anyhow::bail;
+use chrono::{Local, TimeZone, NaiveDateTime};
+use jms_macros::define_websocket_msg;
 
-use chrono::{Local, NaiveDateTime, TimeZone};
+use crate::{db::{self, TableType}, models};
 
-use crate::{db::{self, TableType}, models::{self, PlayoffAlliance, ScheduleBlock}};
-
-use super::{JsonMessage, WebsocketMessageHandler};
-
-pub struct EventWebsocketHandler {}
-
-impl EventWebsocketHandler {
-  pub fn new() -> Self {
-    EventWebsocketHandler {}
+define_websocket_msg!($EventMessage {
+  $Details {
+    send Current(models::EventDetails),
+    recv Update(models::EventDetails)
+  },
+  $Team {
+    send CurrentAll(Vec<models::Team>),
+    recv Insert(models::Team),
+    recv Delete(usize)
+  },
+  $Schedule {
+    send CurrentBlocks(Vec<models::ScheduleBlock>),
+    recv NewBlock,
+    recv DeleteBlock(usize),
+    recv UpdateBlock(models::ScheduleBlock),
+    recv LoadDefault(usize)   // Time since unix epoch, on the starting day of the event
+  },
+  $Alliance {
+    send CurrentAll(Vec<models::PlayoffAlliance>),
+    recv Create(usize),
+    recv Clear,
+    recv Update(models::PlayoffAlliance),
+    recv Promote
+  },
+  $Ranking {
+    send CurrentAll(Vec<models::TeamRanking>)
+  },
+  $Award {
+    send CurrentAll(Vec<models::Award>),
+    recv Create(String),
+    recv Update(models::Award),
+    recv Delete(usize)
   }
+});
+
+pub async fn ws_periodic_event() -> super::Result<Vec<EventMessage2UI>> {
+  let mut data: Vec<EventMessage2UI> = vec![];
+  {
+    // Details
+    let ed = models::EventDetails::get(&db::database())?;
+    data.push(EventMessageDetails2UI::Current(ed).into())
+  } {
+    // Teams
+    let ts = models::Team::all(&db::database())?;
+    data.push(EventMessageTeam2UI::CurrentAll(ts).into())
+  } {
+    // Schedule
+    let sbs = models::ScheduleBlock::sorted(&db::database())?;
+    data.push(EventMessageSchedule2UI::CurrentBlocks(sbs).into())
+  } {
+    // Alliances
+    let als = models::PlayoffAlliance::all(&db::database())?;
+    data.push(EventMessageAlliance2UI::CurrentAll(als).into())
+  } {
+    // Rankings
+    let rs = models::TeamRanking::sorted(&db::database())?;
+    data.push(EventMessageRanking2UI::CurrentAll(rs).into())
+  } {
+    // Awards
+    let aws = models::Award::all(&db::database())?;
+    data.push(EventMessageAward2UI::CurrentAll(aws).into())
+  }
+  return Ok(data);
 }
 
-#[async_trait::async_trait]
-impl WebsocketMessageHandler for EventWebsocketHandler {
-  async fn update(&mut self) -> super::Result<Vec<JsonMessage>> {
-    let msg = JsonMessage::update("event", "");
-    let mut response = vec![];
-    {
-      // Details
-      let ed = models::EventDetails::get(&db::database())?;
-      response.push(msg.noun("details").to_data(&ed)?)
-    }
-    {
-      // Teams
-      let ts = models::Team::all(&db::database())?;
-      response.push(msg.noun("teams").to_data(&ts)?)
-    }
-    {
-      // Schedule
-      let sbs = models::ScheduleBlock::sorted(&db::database())?;
-      response.push(msg.noun("schedule").to_data(&sbs)?)
-    }
-    {
-      // Alliances
-      let als = models::PlayoffAlliance::all(&db::database())?;
-      response.push(msg.noun("alliances").to_data(&als)?)
-    }
-    {
-      // Rankings
-      let rs = models::TeamRanking::sorted(&db::database())?;
-      response.push(msg.noun("rankings").to_data(&rs)?)
-    }
-    {
-      // Awards
-      let aws = models::Award::all(&db::database())?;
-      response.push(msg.noun("awards").to_data(&aws)?)
-    }
-    Ok(response)
-  }
+pub async fn ws_recv_event(data: &EventMessage2JMS) -> super::Result<Vec<super::WebsocketMessage2UI>> {
+  let responses = vec![];
 
-  async fn handle(&mut self, msg: super::JsonMessage) -> super::Result<Vec<super::JsonMessage>> {
-    // let response_msg = msg.response();
+  match data.clone() {
+    EventMessage2JMS::Details(msg) => match msg {
+      EventMessageDetails2JMS::Update(mut details) => { details.insert(&db::database())?; },
+    },
+    EventMessage2JMS::Team(msg) => match msg {
+        EventMessageTeam2JMS::Insert(team) => { team.maybe_gen_wpa().insert(&db::database())?; },
+        EventMessageTeam2JMS::Delete(team_id) => { models::Team::remove_by(team_id, &db::database())?; },
+    },
+    EventMessage2JMS::Schedule(msg) => match msg {
+        EventMessageSchedule2JMS::NewBlock => { models::ScheduleBlock::append_default(&db::database())?; },
+        EventMessageSchedule2JMS::DeleteBlock(block_id) => { models::ScheduleBlock::remove_by(block_id, &db::database())?; },
+        EventMessageSchedule2JMS::UpdateBlock(mut block) => { block.insert(&db::database())?; },
+        EventMessageSchedule2JMS::LoadDefault(timestamp) => { 
+          let start_day = Local.from_utc_datetime(&NaiveDateTime::from_timestamp((timestamp).try_into()?, 0)).date();
+          models::ScheduleBlock::generate_default_2day(start_day, &db::database())?;
+        },
+    },
+    EventMessage2JMS::Alliance(msg) => match msg {
+        EventMessageAlliance2JMS::Create(count) => { models::PlayoffAlliance::create_all(count, &db::database())?; },
+        EventMessageAlliance2JMS::Clear => { models::PlayoffAlliance::clear(&db::database())?; },
+        EventMessageAlliance2JMS::Update(mut alliance) => { alliance.insert(&db::database())?; },
+        EventMessageAlliance2JMS::Promote => { models::PlayoffAlliance::promote(&db::database())?; },
+    },
+    EventMessage2JMS::Ranking(msg) => (),
+    EventMessage2JMS::Award(msg) => match msg {
+        EventMessageAward2JMS::Create(name) => { models::Award { id: None, name: name.clone(), recipients: vec![] }.insert(&db::database())?; },
+        EventMessageAward2JMS::Update(mut award) => { award.insert(&db::database())?; },
+        EventMessageAward2JMS::Delete(award_id) => { models::Award::remove_by(award_id, &db::database())?; },
+    },
+  };
 
-    let response = vec![];
-
-    match msg.noun.as_str() {
-      "details" => match (msg.verb.as_str(), msg.data) {
-        ("update", Some(data)) => {
-          let mut ed: models::EventDetails = serde_json::from_value(data)?;
-          ed.insert(&db::database())?;
-        }
-        _ => bail!("Invalid verb or data"),
-      },
-      "teams" => match (msg.verb.as_str(), msg.data) {
-        ("insert", Some(data)) => {
-          let mut team: models::Team = serde_json::from_value(data)?;
-
-          if team.wpakey.is_none() {
-            use rand::distributions::Alphanumeric;
-            use rand::{thread_rng, Rng};
-
-            team.wpakey = Some(
-              thread_rng()
-                .sample_iter(&Alphanumeric)
-                .take(30)
-                .map(char::from)
-                .collect(),
-            )
-          }
-
-          // TODO: Validate
-          team.insert(&db::database())?;
-        }
-        ("delete", Some(serde_json::Value::Number(team_id))) => {
-          if let Some(n) = team_id.as_u64() {
-            models::Team::remove_by(n, &db::database())?;
-          } else {
-            bail!("Not a u64: {}", team_id);
-          }
-        }
-        _ => bail!("Invalid verb or data"),
-      },
-      "schedule" => match (msg.verb.as_str(), msg.data) {
-        ("new_block", None) => {
-          // TODO: Validate, can't be done if the schedule is locked
-          ScheduleBlock::append_default(&db::database())?;
-        }
-        ("delete_block", Some(serde_json::Value::Number(block_id))) => {
-          if let Some(n) = block_id.as_u64() {
-            models::ScheduleBlock::remove_by(n, &db::database())?;
-          } else {
-            bail!("Not a u64: {}", block_id);
-          }
-        }
-        ("update_block", Some(data)) => {
-          let mut block: models::ScheduleBlock = serde_json::from_value(data)?;
-          block.insert(&db::database())?;
-        }
-        ("load_default", Some(serde_json::Value::Number(data))) => {
-          if let Some(n) = data.as_i64() {
-            let date = Local.from_utc_datetime(&NaiveDateTime::from_timestamp(n, 0)).date();
-            ScheduleBlock::generate_default_2day(date, &db::database())?;
-          } else {
-            bail!("Not an i64: {}", data);
-          }
-        }
-        _ => bail!("Invalid verb or data"),
-      },
-      "alliances" => match (msg.verb.as_str(), msg.data) {
-        ("create", Some(serde_json::Value::Number(n))) => {
-          if let Some(n) = n.as_u64() {
-            PlayoffAlliance::create_all(n as usize, &db::database())?;
-          } else {
-            bail!("Not a u64: {}", n);
-          }
-        }
-        ("clear", None) => {
-          PlayoffAlliance::clear(&db::database())?;
-        }
-        ("update", Some(data)) => {
-          let mut alliance: models::PlayoffAlliance = serde_json::from_value(data)?;
-          alliance.insert(&db::database())?;
-        }
-        ("promote", None) => {
-          PlayoffAlliance::promote(&db::database())?;
-        }
-        _ => bail!("Invalid verb or data"),
-      },
-      "awards" => match (msg.verb.as_str(), msg.data) {
-        ("create", Some(serde_json::Value::String(s))) => {
-          let mut award = models::Award {
-            id: None,
-            name: s,
-            recipients: vec![]
-          };
-          award.insert(&db::database())?;
-        }
-        ("update", Some(data)) => {
-          let mut award: models::Award = serde_json::from_value(data)?;
-          award.insert(&db::database())?;
-        }
-        ("delete", Some(serde_json::Value::Number(award_id))) => {
-          if let Some(n) = award_id.as_u64() {
-            models::Award::remove_by(n, &db::database())?;
-          } else {
-            bail!("Not a u64: {}", award_id);
-          }
-        }
-        _ => bail!("Invalid verb or data"),
-      },
-      _ => bail!("Unknown noun"),
-    };
-
-    Ok(response)
-  }
+  return Ok(responses);
 }
