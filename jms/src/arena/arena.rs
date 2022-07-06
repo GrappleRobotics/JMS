@@ -57,7 +57,7 @@ enum StateData {
 pub struct BoundState {
   #[serde(skip)]
   first: bool, // First run?
-  state: ArenaState,
+  pub state: ArenaState,
   #[serde(skip)]
   data: StateData,
 }
