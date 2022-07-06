@@ -4,10 +4,7 @@ use jms_macros::define_websocket_msg;
 use crate::{
   db, models,
   schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::MatchGenerationWorker},
-  ui::websocket::JsonMessage,
 };
-
-use super::WebsocketMessageHandler;
 
 define_websocket_msg!($MatchMessage {
   send $Generator {

@@ -74,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
     let electronics_service = FieldElectronicsService::new(arena.clone(), 5333).await;
     let electronics_fut = electronics_service.begin();
 
-    let ws = Websockets::new(Duration::from_millis(500));
+    let ws = Websockets::new(arena.clone(), Duration::from_millis(500));
     let ws_fut = ws.begin();
 
     let web_fut = ui::web::begin();

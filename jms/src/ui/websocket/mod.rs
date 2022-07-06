@@ -1,7 +1,7 @@
-// mod arena;
+mod arena;
 mod event;
 // mod matches;
-// mod debug;
+mod debug;
 
 use jms_macros::define_websocket_msg;
 
@@ -21,10 +21,10 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::ui::websocket::event::ws_recv_event;
+use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena}, arena::SharedArena};
 
 // use self::debug::{DebugMessage2UI, DebugMessage2JMS};
-use self::event::{EventMessage2UI, EventMessage2JMS};
+use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}};
 // use self::arena::{ArenaMessage2UI, ArenaMessage2JMS};
 // use self::matches::{MatchMessage2UI, MatchMessage2JMS};
 
@@ -33,13 +33,13 @@ define_websocket_msg!($WebsocketMessage {
   recv Subscribe(Vec<String>),
 
   // send Debug(DebugMessage2UI),
-  // recv Debug(DebugMessage2JMS),
+  recv Debug(DebugMessage2JMS),
 
   send Event(EventMessage2UI),
   recv Event(EventMessage2JMS),
 
-  // send Arena(ArenaMessage2UI),
-  // recv Arena(ArenaMessage2JMS),
+  send Arena(ArenaMessage2UI),
+  recv Arena(ArenaMessage2JMS),
 
   // send Match(MatchMessage2UI),
   // recv Match(MatchMessage2JMS),
@@ -51,18 +51,26 @@ impl From<EventMessage2UI> for WebsocketMessage2UI {
   }
 }
 
+impl From<ArenaMessage2UI> for WebsocketMessage2UI {
+  fn from(msg: ArenaMessage2UI) -> Self {
+    WebsocketMessage2UI::Arena(msg)
+  }
+}
+
 pub struct Websockets {
   loop_duration: Duration,
   broadcast: broadcast::Sender<Vec<WebsocketMessage2UI>>,
+  arena: SharedArena
 }
 
 impl Websockets {
-  pub fn new(loop_duration: Duration) -> Self {
+  pub fn new(arena: SharedArena, loop_duration: Duration) -> Self {
     let (tx, _) = broadcast::channel(16);
 
     Websockets {
       loop_duration,
       broadcast: tx,
+      arena
     }
   }
 
@@ -77,9 +85,10 @@ impl Websockets {
           Ok((stream, _addr)) => {
             let tx = self.broadcast.clone();
             let rx = self.broadcast.subscribe();
+            let arena = self.arena.clone();
 
             tokio::spawn(async move {
-              if let Err(e) = connection_handler(stream, tx, rx).await {
+              if let Err(e) = connection_handler(stream, tx, rx, arena).await {
                 match e.downcast_ref::<tungstenite::Error>() {
                   Some(tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8) => (),
                   _ => error!("Websocket Error: {}", e),
@@ -92,6 +101,7 @@ impl Websockets {
 
         _ = update_interval.tick() => {
           do_broadcast_update(&self.broadcast, event::ws_periodic_event().await).await?;
+          do_broadcast_update(&self.broadcast, arena::ws_periodic_arena(self.arena.clone()).await).await?;
         }
       }
     }
@@ -124,6 +134,7 @@ async fn connection_handler(
   stream: TcpStream,
   broadcast_tx: broadcast::Sender<Vec<WebsocketMessage2UI>>,
   mut broadcast_rx: broadcast::Receiver<Vec<WebsocketMessage2UI>>,
+  arena: SharedArena
 ) -> Result<()> {
   let mut ws = accept_async(stream).await?;
   let mut subscribed_to = HashSet::<Vec<String>>::new();
@@ -142,7 +153,9 @@ async fn connection_handler(
                   subscribed_to.insert(schema_names);
                   Ok(vec![])
                 },
-                WebsocketMessage2JMS::Event(msg) => ws_recv_event(&msg).await
+                WebsocketMessage2JMS::Event(msg) => ws_recv_event(&msg).await,
+                WebsocketMessage2JMS::Debug(msg) => ws_recv_debug(&msg).await,
+                WebsocketMessage2JMS::Arena(msg) => ws_recv_arena(&msg, arena.clone()).await
               };
               
               match response {
@@ -196,6 +209,7 @@ fn is_subscribed_for_message(subscriptions: &HashSet<Vec<String>>, msg: &Websock
   let actual_path = match msg {
     WebsocketMessage2UI::Error(_) => todo!(),
     WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
+    WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
   };
 
   subscriptions.into_iter().any(|sub| {
