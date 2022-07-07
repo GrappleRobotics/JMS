@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, token, Ident, Variant, parse::{Parse, discouraged::Speculative}, punctuated::Punctuated, Path, braced};
@@ -88,6 +90,16 @@ struct WebsocketMessage {
   children: Punctuated<WebsocketMessageField, token::Comma>
 }
 
+enum StructuredWebsocketMessageField {
+  Msg(Ident, Ident),  // variant name, class name
+  Data(Variant)
+}
+
+struct StructuredWebsocketMessage {
+  full_name: Ident,
+  children: Vec<StructuredWebsocketMessageField>
+}
+
 impl Parse for WebsocketMessage {
   fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
     let content;
@@ -103,55 +115,78 @@ impl Parse for WebsocketMessage {
 
 fn build_messages_vec<'a>(root: &'a WebsocketMessage, prefix: &str, v: &mut Vec<(String, &'a WebsocketMessage)>) {
   let name = format!("{}{}", prefix, root.name.to_string());
-  v.push((name.clone(), root));
+  // Depth first
   for child in root.children.iter() {
     if let WebsocketMessageField::Msg(m) = child {
       build_messages_vec(m, &name, v);
     }
   }
+  v.push((name.clone(), root));
 }
 
 fn define_websocket_msg_inner(target_dir: WebsocketMessageDirection, msg: &WebsocketMessage) -> proc_macro2::TokenStream {
   let mut all_messages = vec![];
   build_messages_vec(msg, "",&mut all_messages);
-
   
-  let enums = all_messages.into_iter().filter(|(_, m)| target_dir.applies(&m.dir)).map(|(name, msg)| {
+  let mut valid_messages = HashMap::<String, StructuredWebsocketMessage>::new();
+
+  // Filter out empty children and assign names
+  for (name, m) in all_messages {
+    if target_dir.applies(&m.dir) {
+      let fullname = format!("{}{}", name, target_dir.suffix());
+
+      let children = m.children.iter().filter_map(|child| match child {
+        WebsocketMessageField::Msg(child_msg) if target_dir.applies(&child_msg.dir) => {
+          let child_msg_full_name = format!("{}{}{}", name, child_msg.name.to_string(), target_dir.suffix());
+          valid_messages.get(&child_msg_full_name).map(|_| {
+            StructuredWebsocketMessageField::Msg(child_msg.name.clone(), Ident::new(&child_msg_full_name, child_msg.name.span()))
+          })
+        },
+        WebsocketMessageField::Data { dir, var } if target_dir.applies(&dir) => {
+          Some(StructuredWebsocketMessageField::Data(var.clone()))
+        },
+        _ => None
+      }).collect::<Vec<StructuredWebsocketMessageField>>();
+
+      if children.len() > 0 {
+        valid_messages.insert(fullname.clone(), StructuredWebsocketMessage { 
+          full_name: Ident::new(&fullname, msg.name.span()), 
+          children
+        });
+      }
+    }
+  }
+
+  let enums = valid_messages.iter().map(|(_, msg)| {
     // Each entry: (To, From, ToVariant)
     let mut froms = vec![];
     let mut path_maps = vec![];
 
-    let name_ident = Ident::new(&format!("{}{}", name, target_dir.suffix()), msg.name.span());
+    // let root_name = &msg.name;
+    let root_cls = &msg.full_name;
+
     let derives = target_dir.to_derives();
     let derive_str = derives.iter().map(|&s| syn::parse_str::<Path>(s).unwrap());
     
     let fields = msg.children.iter().filter_map(|child| {
       match child {
-        WebsocketMessageField::Msg(submsg) if target_dir.applies(&submsg.dir) => {
-          let subname = &submsg.name;
-          let subname_str = subname.to_string();
-          let subname_full = Ident::new(&format!("{}{}{}", name, submsg.name, target_dir.suffix()), subname.span());
-          froms.push( (name_ident.clone(), subname_full.clone(), subname.clone()) );
+        StructuredWebsocketMessageField::Msg(var_name, cls_name) => {
+          let var_name_str = var_name.to_string();
+
+          froms.push( (root_cls.clone(), cls_name.clone(), var_name.clone()) );
           path_maps.push(quote! {
-            #name_ident::#subname(submsg) => [vec![#subname_str].as_slice(), submsg.ws_path().as_slice()].concat()
+            #root_cls::#var_name(submsg) => [vec![#var_name_str].as_slice(), submsg.ws_path().as_slice()].concat()
           });
 
           Some(quote! {
-            #subname(#subname_full)
+            #var_name(#cls_name)
           })
         },
-        WebsocketMessageField::Data { dir, var } if target_dir.applies(dir) => {
-          // let variant_name = &var.ident;
-          // let variant_name_str = variant_name.to_string();
-          // path_maps.push(quote! {
-          //   #name_ident::#variant_name(_) => vec![#variant_name_str]
-          // });
-          
+        StructuredWebsocketMessageField::Data(var) => {
           Some(quote! {
             #var
           })
-        },
-        _ => None
+        }
       }
     }).collect::<Vec<proc_macro2::TokenStream>>();
 
@@ -169,11 +204,11 @@ fn define_websocket_msg_inner(target_dir: WebsocketMessageDirection, msg: &Webso
 
     quote! {
       #[derive(#(#derive_str),*)]
-      pub enum #name_ident {
+      pub enum #root_cls {
         #(#fields),*
       }
 
-      impl #name_ident {
+      impl #root_cls {
         pub fn ws_path(&self) -> Vec<&str> {
           match self {
             #(#path_maps),*

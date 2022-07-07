@@ -10,7 +10,7 @@ use super::{
 #[derive(Debug, Clone)]
 pub struct QualsMatchGenerator;
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct QualsMatchGeneratorParams {
   pub team_anneal_steps: usize,
   pub station_anneal_steps: usize,

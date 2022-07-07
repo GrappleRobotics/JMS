@@ -46,6 +46,9 @@ define_websocket_msg!($ArenaMessage {
     send Update(Vec<AllianceStation>),
     recv SomethingElse
   },
+  $SendOnly {
+    send Abcd
+  }
 });
 
 #[test]

@@ -1,6 +1,6 @@
 mod arena;
 mod event;
-// mod matches;
+mod matches;
 mod debug;
 
 use jms_macros::define_websocket_msg;
@@ -21,12 +21,9 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena}, arena::SharedArena};
+use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena, matches::ws_recv_match}, arena::SharedArena, schedule::worker::SharedMatchGenerators};
 
-// use self::debug::{DebugMessage2UI, DebugMessage2JMS};
-use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}};
-// use self::arena::{ArenaMessage2UI, ArenaMessage2JMS};
-// use self::matches::{MatchMessage2UI, MatchMessage2JMS};
+use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}};
 
 define_websocket_msg!($WebsocketMessage {
   send Error(String),
@@ -41,8 +38,8 @@ define_websocket_msg!($WebsocketMessage {
   send Arena(ArenaMessage2UI),
   recv Arena(ArenaMessage2JMS),
 
-  // send Match(MatchMessage2UI),
-  // recv Match(MatchMessage2JMS),
+  send Match(MatchMessage2UI),
+  recv Match(MatchMessage2JMS),
 });
 
 impl From<EventMessage2UI> for WebsocketMessage2UI {
@@ -57,20 +54,32 @@ impl From<ArenaMessage2UI> for WebsocketMessage2UI {
   }
 }
 
+impl From<MatchMessage2UI> for WebsocketMessage2UI {
+  fn from(msg: MatchMessage2UI) -> Self {
+    WebsocketMessage2UI::Match(msg)
+  }
+}
+
+#[derive(Clone)]
+pub struct WebsocketParams {
+  pub arena: SharedArena,
+  pub matches: SharedMatchGenerators
+}
+
 pub struct Websockets {
   loop_duration: Duration,
   broadcast: broadcast::Sender<Vec<WebsocketMessage2UI>>,
-  arena: SharedArena
+  params: WebsocketParams
 }
 
 impl Websockets {
-  pub fn new(arena: SharedArena, loop_duration: Duration) -> Self {
+  pub fn new(params: WebsocketParams, loop_duration: Duration) -> Self {
     let (tx, _) = broadcast::channel(16);
 
     Websockets {
       loop_duration,
       broadcast: tx,
-      arena
+      params
     }
   }
 
@@ -85,10 +94,10 @@ impl Websockets {
           Ok((stream, _addr)) => {
             let tx = self.broadcast.clone();
             let rx = self.broadcast.subscribe();
-            let arena = self.arena.clone();
+            let params = self.params.clone();
 
             tokio::spawn(async move {
-              if let Err(e) = connection_handler(stream, tx, rx, arena).await {
+              if let Err(e) = connection_handler(stream, tx, rx, params).await {
                 match e.downcast_ref::<tungstenite::Error>() {
                   Some(tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8) => (),
                   _ => error!("Websocket Error: {}", e),
@@ -101,7 +110,8 @@ impl Websockets {
 
         _ = update_interval.tick() => {
           do_broadcast_update(&self.broadcast, event::ws_periodic_event().await).await?;
-          do_broadcast_update(&self.broadcast, arena::ws_periodic_arena(self.arena.clone()).await).await?;
+          do_broadcast_update(&self.broadcast, arena::ws_periodic_arena(self.params.arena.clone()).await).await?;
+          do_broadcast_update(&self.broadcast, matches::ws_periodic_match(self.params.matches.clone()).await).await?;
         }
       }
     }
@@ -132,9 +142,9 @@ where
 // Can't be a self method as tokio::spawn may outlive the object itself, unless we constrain to be 'static lifetime
 async fn connection_handler(
   stream: TcpStream,
-  broadcast_tx: broadcast::Sender<Vec<WebsocketMessage2UI>>,
+  _broadcast_tx: broadcast::Sender<Vec<WebsocketMessage2UI>>,
   mut broadcast_rx: broadcast::Receiver<Vec<WebsocketMessage2UI>>,
-  arena: SharedArena
+  params: WebsocketParams
 ) -> Result<()> {
   let mut ws = accept_async(stream).await?;
   let mut subscribed_to = HashSet::<Vec<String>>::new();
@@ -155,7 +165,8 @@ async fn connection_handler(
                 },
                 WebsocketMessage2JMS::Event(msg) => ws_recv_event(&msg).await,
                 WebsocketMessage2JMS::Debug(msg) => ws_recv_debug(&msg).await,
-                WebsocketMessage2JMS::Arena(msg) => ws_recv_arena(&msg, arena.clone()).await
+                WebsocketMessage2JMS::Arena(msg) => ws_recv_arena(&msg, params.arena.clone()).await,
+                WebsocketMessage2JMS::Match(msg) => ws_recv_match(&msg, params.matches.clone()).await
               };
               
               match response {
@@ -210,6 +221,7 @@ fn is_subscribed_for_message(subscriptions: &HashSet<Vec<String>>, msg: &Websock
     WebsocketMessage2UI::Error(_) => todo!(),
     WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
+    WebsocketMessage2UI::Match(match_msg) => [ &["Match"], match_msg.ws_path().as_slice() ].concat(),
   };
 
   subscriptions.into_iter().any(|sub| {

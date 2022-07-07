@@ -7,7 +7,8 @@ use std::{
 };
 
 use log::error;
-use serde::{ser::SerializeStruct, Serialize, Serializer};
+use schemars::JsonSchema;
+use serde::Serialize;
 
 use crate::{db::{self, TableType}, models::{self, MatchGenerationRecord}};
 
@@ -84,20 +85,24 @@ where
   }
 }
 
-impl<T> Serialize for MatchGenerationWorker<T>
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+pub struct SerialisedMatchGeneration {
+  running: bool,
+  matches: Vec<models::SerializedMatch>,
+  record: Option<MatchGenerationRecord>
+}
+
+impl<T> From<&MatchGenerationWorker<T>> for SerialisedMatchGeneration
 where
-  T: MatchGenerator + Send + Sync + Clone + 'static,
-  <T as MatchGenerator>::ParamType: Send,
+  T: MatchGenerator + Send + Sync + Clone,
+  <T as MatchGenerator>::ParamType: Send
 {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: Serializer,
-  {
-    let mut state = serializer.serialize_struct("MatchGenerationWorker", 3)?;
-    state.serialize_field("running", &self.running())?;
-    state.serialize_field("matches", &self.matches().iter().map(|m| models::SerializedMatch::from(m.clone())).collect::<Vec<models::SerializedMatch>>())?;
-    state.serialize_field("record", &self.record())?;
-    state.end()
+  fn from(worker: &MatchGenerationWorker<T>) -> Self {
+    SerialisedMatchGeneration { 
+      running: worker.running(), 
+      matches: worker.matches().iter().map(|m| models::SerializedMatch::from(m.clone())).collect::<Vec<models::SerializedMatch>>(),
+      record: worker.record()
+    }
   }
 }
 
@@ -112,3 +117,10 @@ pub trait MatchGenerator {
     record: Option<MatchGenerationRecord>,
   ) -> Result<(), Box<dyn Error>>;
 }
+
+pub struct MatchGenerators {
+  pub quals: MatchGenerationWorker<super::quals::QualsMatchGenerator>,
+  pub playoffs: MatchGenerationWorker<super::playoffs::PlayoffMatchGenerator>,
+}
+
+pub type SharedMatchGenerators = std::sync::Arc<tokio::sync::Mutex<MatchGenerators>>;

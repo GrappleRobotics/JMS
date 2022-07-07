@@ -94,12 +94,11 @@ pub async fn ws_recv_event(data: &EventMessage2JMS) -> super::Result<Vec<super::
         EventMessageAlliance2JMS::Update(mut alliance) => { alliance.insert(&db::database())?; },
         EventMessageAlliance2JMS::Promote => { models::PlayoffAlliance::promote(&db::database())?; },
     },
-    EventMessage2JMS::Ranking(msg) => (),
     EventMessage2JMS::Award(msg) => match msg {
         EventMessageAward2JMS::Create(name) => { models::Award { id: None, name: name.clone(), recipients: vec![] }.insert(&db::database())?; },
         EventMessageAward2JMS::Update(mut award) => { award.insert(&db::database())?; },
         EventMessageAward2JMS::Delete(award_id) => { models::Award::remove_by(award_id, &db::database())?; },
-    },
+    }
   };
 
   return Ok(responses);

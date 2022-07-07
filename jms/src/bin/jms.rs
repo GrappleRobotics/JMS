@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::comms::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS}}};
+use jms::{arena::{self, SharedArena}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::comms::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -12,7 +12,7 @@ struct AllWebsocketMessages {
   #[allow(dead_code)]
   jms2ui: WebsocketMessage2UI,
   #[allow(dead_code)]
-  ui2jms: WebsocketMessage2JMS    // TODO: Why does this generate a broken schema?
+  ui2jms: WebsocketMessage2JMS
 }
 
 #[tokio::main]
@@ -56,6 +56,10 @@ async fn main() -> anyhow::Result<()> {
     let network = settings.network.create()?;
 
     let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, network)));
+    let match_workers = Arc::new(Mutex::new(MatchGenerators { 
+      quals: MatchGenerationWorker::new(QualsMatchGenerator::new()), 
+      playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new()) 
+    }));
 
     let a2 = arena.clone();
     let arena_fut = async move {
@@ -74,7 +78,12 @@ async fn main() -> anyhow::Result<()> {
     let electronics_service = FieldElectronicsService::new(arena.clone(), 5333).await;
     let electronics_fut = electronics_service.begin();
 
-    let ws = Websockets::new(arena.clone(), Duration::from_millis(500));
+    let ws_params = WebsocketParams {
+      arena: arena.clone(),
+      matches: match_workers.clone()
+    };
+
+    let ws = Websockets::new(ws_params, Duration::from_millis(500));
     let ws_fut = ws.begin();
 
     let web_fut = ui::web::begin();
