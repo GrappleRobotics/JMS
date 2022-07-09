@@ -1,42 +1,28 @@
-interface Subscription {
-  object: string,
-  noun: string
-}
+import { WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
 
-export interface Message<T> {
-  object: string,
-  noun: string,
-  verb: string,
-  data?: T,
-  error?: string
-}
-
-type MessageCallbackFn<T> = (msg: Message<T>) => void;
-interface MessageCallback<T> {
-  o: string,
-  n: string,
-  v: string,
-  c: MessageCallbackFn<T>
-}
-
+type CallbackFn<T> = (msg: T, fullMessage: WebsocketMessage2UI) => void;
 type ConnectCallback = (isOpen: boolean) => void;
-type ErrorCallback = (msg: Message<any>) => void;
+type Callback<T> = {
+  path: string[],
+  fn: CallbackFn<T>
+};
 
 export default class JmsWebsocket {
   url: string;
   timeout: number;
-  callbacks: MessageCallback<any>[];
-  connectCallbacks: ConnectCallback[];
-  errorCallbacks: ErrorCallback[];
+  // callbacks: MessageCallback<any>[];
+  // connectCallbacks: ConnectCallback[];
+  // errorCallbacks: ErrorCallback[];
   ws?: WebSocket;
-  subscriptions: Subscription[];
+  // subscriptions: Subscription[];
+  connectCallbacks: ConnectCallback[];
+  callbacks: Callback<any>[];
 
   constructor(url="ws://" + window.location.hostname + ":9000", timeout=250) {
     this.url = url;
     this.timeout = timeout;
     this.callbacks = [];
     this.connectCallbacks = [];
-    this.errorCallbacks = [];
 
     this.connect = this.connect.bind(this);
     this.dead = this.dead.bind(this);
@@ -45,9 +31,6 @@ export default class JmsWebsocket {
     this.send = this.send.bind(this);
     this.onMessage = this.onMessage.bind(this);
     this.onConnectChange = this.onConnectChange.bind(this);
-    this.onError = this.onError.bind(this);
-
-    this.subscriptions = [];
   }
 
   connect() {
@@ -59,7 +42,7 @@ export default class JmsWebsocket {
       console.log("WS Connected");
       setTimeout(() => {
         this.connectCallbacks.forEach(cb => cb(true));
-        this.subscriptions.forEach(s => ws.send(JSON.stringify({ object: s.object, noun: s.noun, verb: "__subscribe__" })));
+        this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
       }, 100);
       that.ws = ws;
       clearTimeout(timer);
@@ -79,22 +62,41 @@ export default class JmsWebsocket {
 
     ws.onmessage = msg => {
       if (msg.data !== "ping") {
-        let messages = JSON.parse(msg.data) as Message<any>[];
+        let messages = JSON.parse(msg.data) as WebsocketMessage2UI[];
 
         messages.forEach(message => {
-          if (message.error !== null) {
-            console.error("WS Error: ", message);
-            this.errorCallbacks.forEach(cb => cb(message));
-          } else {
-            this.callbacks.forEach(cbobj => {
-              let obj_ok = (cbobj.o === "*") || (cbobj.o === message.object);
-              let noun_ok = (cbobj.n === "*") || (cbobj.n === message.noun);
-              let verb_ok = (cbobj.v === "*") || (cbobj.v === message.verb);
+          this.callbacks.forEach(cb => {
+            // Check variant tree
+            let path = cb.path;
+            let valid = true;
+            let child_msg: any = message;
+            for (let i = 0; i < path.length && valid; i++) {
+              if (path[i] in child_msg) {
+                child_msg = child_msg[path[i]];
+              } else {
+                valid = false;
+              }
+            }
+
+            // Dispatch
+            if (valid) {
+              cb.fn(child_msg, message);
+            }
+          });
+
+          // if (message.error !== null) {
+          //   console.error("WS Error: ", message);
+          //   this.errorCallbacks.forEach(cb => cb(message));
+          // } else {
+          //   this.callbacks.forEach(cbobj => {
+          //     let obj_ok = (cbobj.o === "*") || (cbobj.o === message.object);
+          //     let noun_ok = (cbobj.n === "*") || (cbobj.n === message.noun);
+          //     let verb_ok = (cbobj.v === "*") || (cbobj.v === message.verb);
     
-              if (obj_ok && noun_ok && verb_ok)
-                cbobj.c(message)
-            });
-          }
+          //     if (obj_ok && noun_ok && verb_ok)
+          //       cbobj.c(message)
+          //   });
+          // }
         });
       }
     };
@@ -113,7 +115,7 @@ export default class JmsWebsocket {
       this.connect();
   }
 
-  send<T>(msg: Message<T>) {
+  send(msg: WebsocketMessage2JMS) {
     if (this.alive()) {
       this.ws!.send(JSON.stringify(msg));
     } else {
@@ -121,27 +123,30 @@ export default class JmsWebsocket {
     }
   }
 
-  subscribe(obj: string, noun: string) {
-    let s = { object: obj, noun: noun };
-    if (!this.subscriptions.some(el => el.object === s.object && el.noun === s.noun)) {
-      this.subscriptions.push(s);
-      if (this.alive()) {
-        this.ws!.send(JSON.stringify({ object: obj, noun: noun, verb: "__subscribe__" }));
-      }
-    } else {
-      console.log("Already subscribed: " + JSON.stringify(s));
-    }
-  }
+  // subscribe(obj: string, noun: string) {
+  //   let s = { object: obj, noun: noun };
+  //   if (!this.subscriptions.some(el => el.object === s.object && el.noun === s.noun)) {
+  //     this.subscriptions.push(s);
+  //     if (this.alive()) {
+  //       this.ws!.send(JSON.stringify({ object: obj, noun: noun, verb: "__subscribe__" }));
+  //     }
+  //   } else {
+  //     console.log("Already subscribed: " + JSON.stringify(s));
+  //   }
+  // }
 
-  onMessage<T>(obj: string, noun: string, verb: string, cb: MessageCallbackFn<T>) {
-    this.callbacks.push({o: obj, n: noun, v: verb, c: cb as MessageCallbackFn<any>});
+  onMessage<T>(path: string[], callback: CallbackFn<T>) {
+    this.callbacks.push({
+      path: path,
+      fn: callback
+    });
+
+    if (this.alive()) {
+      this.send({ Subscribe: path });
+    }
   }
 
   onConnectChange(cb: ConnectCallback) {
     this.connectCallbacks.push(cb);
-  }
-
-  onError(cb: ErrorCallback) {
-    this.errorCallbacks.push(cb);
   }
 }
