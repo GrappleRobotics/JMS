@@ -1,4 +1,4 @@
-import { faBan, faCalculator, faClipboard, faExclamationTriangle, faFlagCheckered, faGamepad, faHeartbeat, faHourglassHalf, faMagic, faRobot, faTrophy, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faBan, faCalculator, faClipboard, faFlagCheckered, faGamepad, faHeartbeat, faHourglassHalf, faMagic, faRobot, faTrophy, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { AUDIENCE, AUDIENCE_CONTROL, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
 import React from "react";

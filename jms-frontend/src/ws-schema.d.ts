@@ -279,25 +279,7 @@ export type ArenaMessage2JMS =
 export type ArenaMessageState2JMS = {
   Signal: ArenaSignal;
 };
-export type ArenaSignal =
-  | {
-      signal: "Estop";
-    }
-  | {
-      signal: "EstopReset";
-    }
-  | {
-      signal: "Prestart";
-    }
-  | {
-      signal: "MatchArm";
-    }
-  | {
-      signal: "MatchPlay";
-    }
-  | {
-      signal: "MatchCommit";
-    };
+export type ArenaSignal = "Estop" | "EstopReset" | "Prestart" | "MatchArm" | "MatchPlay" | "MatchCommit";
 export type ArenaMessageAlliance2JMS = {
   UpdateAlliance: {
     astop?: boolean | null;

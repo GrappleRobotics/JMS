@@ -183,6 +183,22 @@ fn define_websocket_msg_inner(target_dir: WebsocketMessageDirection, msg: &Webso
           })
         },
         StructuredWebsocketMessageField::Data(var) => {
+          let var_name = &var.ident;
+          let var_name_str = var_name.to_string();
+
+          let inner = match &var.fields {
+            syn::Fields::Named(_) => "{ .. }",
+            syn::Fields::Unnamed(_) => "( .. )",
+            syn::Fields::Unit => "",
+          };
+
+          let field_tokens: proc_macro2::TokenStream = inner.parse().unwrap();
+
+          // let field_tokens = var.fields.to_token_stream();
+          path_maps.push(quote! {
+            #root_cls::#var_name #field_tokens => vec![#var_name_str]
+          });
+
           Some(quote! {
             #var
           })

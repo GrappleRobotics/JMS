@@ -2,18 +2,36 @@ import React from 'react';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import { Button, Modal } from 'react-bootstrap';
-import { faCompressArrowsAlt, faExpand, faHome, faMagic } from '@fortawesome/free-solid-svg-icons';
+import { faCompressArrowsAlt, faExpand, faHome } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { ArenaState, LoadedMatch } from 'ws-schema';
+import JmsWebsocket from 'support/ws';
 
-export default class TopNavbar extends React.Component {
-  constructor(props) {
-    super(props);
+type TopNavbarState = {
+  estop_modal: boolean,
+  arena_state?: ArenaState,
+  match?: LoadedMatch
+};
 
-    this.state = {
-      estop_modal: false
-    }
+export default class TopNavbar extends React.Component<{ ws: JmsWebsocket, connected: boolean }, TopNavbarState> {
+  readonly state: TopNavbarState = {
+    estop_modal: false,
+  };
+  handles: string[] = [];
 
-    props.ws.subscribe("arena", "state");
+  componentDidMount = () => {
+    this.handles = [
+      this.props.ws.onMessage<ArenaState>(["Arena", "State", "Current"], msg => {
+        this.setState({ arena_state: msg })
+      }),
+      this.props.ws.onMessage<LoadedMatch | null | undefined>(["Arena", "Match", "Current"], msg => {
+        this.setState({ match: msg || undefined })
+      })
+    ]
+  }
+
+  componentWillUnmount = () => {
+    this.props.ws.removeHandles(this.handles);
   }
 
   estopShow = () => {
@@ -22,6 +40,11 @@ export default class TopNavbar extends React.Component {
   
   estopHide = () => {
     this.setState({ estop_modal: false });
+  }
+
+  triggerEstop = () => {
+    this.props.ws.send({ Arena: { State: { Signal: "Estop" } } });
+    this.estopHide();
   }
 
   estopModal = () => {
@@ -46,7 +69,7 @@ export default class TopNavbar extends React.Component {
             className="estop-big"
             block
             variant="hazard-red-dark"
-            onClick={() => { this.props.onEstop(); this.estopHide() }}
+            onClick={this.triggerEstop}
           >
             EMERGENCY STOP
           </Button>
@@ -56,61 +79,50 @@ export default class TopNavbar extends React.Component {
       </Modal>);
   }
 
-  decodeArenaState = () => {
-    let connected = this.props.connected;
-    let state = this.props.state;
-    let match = this.props.match;
-
-    if (!connected || state == null)
-      return ["DISCONNECTED", "danger"];
-    
-    switch (state.state) {
+  arenaStateText = (connected: boolean, state?: ArenaState, match?: LoadedMatch) => {
+    if (!connected) return "DISCONNECTED";
+    switch (state?.state) {
       case "Idle":
-        return state.ready ? ["Idle", "dark"] : ["Idle (working)...", "warning"];
+        return state.ready ? "Idle" : "Idle (working...)";
       case "Prestart":
-        return state.ready ? ["Prestarted", "success"] : ["Prestarting...", "warning"];
+        return state.ready ? "Prestart Ready" : "Prestarting...";
       case "MatchArmed":
-        return [<strong>ARMED</strong>, "hazard-dark-active"];
+        return "ARMED";
       case "MatchPlay":
-        switch (match.state) {
-          case "Warmup":
-          case "Pause":
-          case "Cooldown":
-            return [match.state, "dark"];
+        switch (match?.state) {
           case "Auto":
-            return ["Autonomous (T- " + match.remaining_time.secs + "s)", "info"]
+            return `Auto (T- ${match.remaining_time.secs}s)`;
           case "Teleop":
-            return ["Teleop (T- " + match.remaining_time.secs + "s)", "info"];
-          case "Fault":
-            return [<strong>FAULT</strong>, "danger"];
+            return `Teleop (T- ${match.remaining_time.secs}s)`;
           default:
-            return [match.state, "primary"];
+            return match?.state;
         }
       case "MatchComplete":
-        return state.ready ? ["Match Complete", "success"] : ["Match Completing...", "warning"];
+        return state.ready ? "Match Complete" : "Match Completed (score wait)";
       case "MatchCommit":
-        return ["Scores Commited", "success"];
+        return "Scores Committed";
       case "Estop":
-        return [<strong>// EMERGENCY STOP //</strong>, "hazard-red-dark-active"]
+        return "// EMERGENCY STOP //";
       default:
-        return [state.state, "dark"];
+        return state?.state;
     }
-  };
+  }
 
   render() {
-    const [arenaState, navbarColour] = this.decodeArenaState();
     let fullscreen = document.fullscreenElement != null;
+    const { connected } = this.props;
+    const { arena_state, match } = this.state;
 
-    return <Navbar bg={navbarColour} variant="dark" fixed="top">
-      <Button variant="hazard-red-dark" disabled={!this.props.connected || this.props.state?.state == "Estop"} onClick={this.estopShow}>
+    return <Navbar variant="dark" fixed="top">
+      <Button variant="hazard-red-dark" disabled={!connected || arena_state?.state === "Estop"} onClick={this.estopShow}>
         E-STOP
       </Button>
       <div className="mr-3" />
       <Navbar.Brand>
         <strong>JMS</strong>
       </Navbar.Brand>
-      <Navbar.Brand>
-        { arenaState }
+      <Navbar.Brand data-connected={ connected } data-arena-state={ arena_state?.state } data-match-state={ match?.state }>
+        { this.arenaStateText(connected, arena_state, match) }
       </Navbar.Brand>
       <Navbar.Toggle />
       <Navbar.Collapse className="justify-content-end">
@@ -119,10 +131,10 @@ export default class TopNavbar extends React.Component {
             <FontAwesomeIcon icon={faHome} /> &nbsp;
             Home
           </Nav.Link>
-          <Nav.Link className="mx-3" onClick={ e => {
+          <Nav.Link className="mx-3" onClick={ (e: any) => {
             if (fullscreen) document.exitFullscreen();
             else document.body.requestFullscreen();
-            e.preventDefault();
+            e?.preventDefault();
           }}>
             <FontAwesomeIcon icon={fullscreen ? faCompressArrowsAlt : faExpand} size="lg" />
           </Nav.Link>

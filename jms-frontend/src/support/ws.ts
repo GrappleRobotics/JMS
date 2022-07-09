@@ -1,4 +1,5 @@
 import { WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
+import { v4 as uuid } from 'uuid';
 
 type CallbackFn<T> = (msg: T, fullMessage: WebsocketMessage2UI) => void;
 type ConnectCallback = (isOpen: boolean) => void;
@@ -10,19 +11,15 @@ type Callback<T> = {
 export default class JmsWebsocket {
   url: string;
   timeout: number;
-  // callbacks: MessageCallback<any>[];
-  // connectCallbacks: ConnectCallback[];
-  // errorCallbacks: ErrorCallback[];
   ws?: WebSocket;
-  // subscriptions: Subscription[];
-  connectCallbacks: ConnectCallback[];
-  callbacks: Callback<any>[];
+  connectCallbacks: Map<string, ConnectCallback>;
+  callbacks: Map<string, Callback<any>>;
 
   constructor(url="ws://" + window.location.hostname + ":9000", timeout=250) {
     this.url = url;
     this.timeout = timeout;
-    this.callbacks = [];
-    this.connectCallbacks = [];
+    this.callbacks = new Map<string, Callback<any>>();
+    this.connectCallbacks = new Map<string, ConnectCallback>();
 
     this.connect = this.connect.bind(this);
     this.dead = this.dead.bind(this);
@@ -73,6 +70,9 @@ export default class JmsWebsocket {
             for (let i = 0; i < path.length && valid; i++) {
               if (path[i] in child_msg) {
                 child_msg = child_msg[path[i]];
+              } else if (path[i] === child_msg) {
+                // Special case for unit variants
+                child_msg = {};
               } else {
                 valid = false;
               }
@@ -83,20 +83,6 @@ export default class JmsWebsocket {
               cb.fn(child_msg, message);
             }
           });
-
-          // if (message.error !== null) {
-          //   console.error("WS Error: ", message);
-          //   this.errorCallbacks.forEach(cb => cb(message));
-          // } else {
-          //   this.callbacks.forEach(cbobj => {
-          //     let obj_ok = (cbobj.o === "*") || (cbobj.o === message.object);
-          //     let noun_ok = (cbobj.n === "*") || (cbobj.n === message.noun);
-          //     let verb_ok = (cbobj.v === "*") || (cbobj.v === message.verb);
-    
-          //     if (obj_ok && noun_ok && verb_ok)
-          //       cbobj.c(message)
-          //   });
-          // }
         });
       }
     };
@@ -118,25 +104,15 @@ export default class JmsWebsocket {
   send(msg: WebsocketMessage2JMS) {
     if (this.alive()) {
       this.ws!.send(JSON.stringify(msg));
+      console.log("WS SEND", msg);
     } else {
       console.log("Can't send message, WS dead :X", msg);
     }
   }
 
-  // subscribe(obj: string, noun: string) {
-  //   let s = { object: obj, noun: noun };
-  //   if (!this.subscriptions.some(el => el.object === s.object && el.noun === s.noun)) {
-  //     this.subscriptions.push(s);
-  //     if (this.alive()) {
-  //       this.ws!.send(JSON.stringify({ object: obj, noun: noun, verb: "__subscribe__" }));
-  //     }
-  //   } else {
-  //     console.log("Already subscribed: " + JSON.stringify(s));
-  //   }
-  // }
-
-  onMessage<T>(path: string[], callback: CallbackFn<T>) {
-    this.callbacks.push({
+  onMessage<T>(path: string[], callback: CallbackFn<T>): string {
+    let id = uuid();
+    this.callbacks.set(id, {
       path: path,
       fn: callback
     });
@@ -144,9 +120,26 @@ export default class JmsWebsocket {
     if (this.alive()) {
       this.send({ Subscribe: path });
     }
+
+    return id;
   }
 
-  onConnectChange(cb: ConnectCallback) {
-    this.connectCallbacks.push(cb);
+  removeHandle(id: string) {
+    if (this.callbacks.has(id))
+      this.callbacks.delete(id);
+    if (this.connectCallbacks.has(id))
+      this.connectCallbacks.delete(id);
+  }
+
+  removeHandles(ids: string[]) {
+    ids.forEach(this.removeHandle);
+  }
+
+  onConnectChange(cb: ConnectCallback): string {
+    let id = uuid();
+    this.connectCallbacks.set(id, cb);
+    cb(this.alive());
+    return id;
+    // this.connectCallbacks.push(cb);
   }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import JmsWebsocket from 'support/ws';
 import MatchControl from 'match_control/MatchControl';
 import EventWizard from 'wizard/EventWizard';
@@ -20,59 +20,33 @@ import Debug from 'Debug';
 import Timer from 'Timer';
 import { TeamEstops } from 'TeamEstop';
 
-export default class App extends React.Component {
-  constructor(props) {
-    super(props);
+type AppState = {
+  connected: boolean
+};
 
-    this.state = {
-      connected: false,
-    }
+export default class App extends React.Component< { ws: JmsWebsocket }, AppState > {
+  readonly state: AppState = {
+    connected: false
+  };
 
-    this.ws = new JmsWebsocket();
-    this.ws.onMessage("*", "*", "__update__", msg => {
-      if (!!nullIfEmpty(msg.noun)) {
-        this.setState({
-          [msg.object]: {
-            ...this.state[msg.object],
-            [msg.noun]: msg.data
-          }
-        });
-      } else {
-        this.setState({ [msg.object]: msg.data });
-      }
-    });
-
-    this.ws.onConnectChange(connected => {
-      this.setState({ connected });
-    });
-
-    this.ws.onError((err) => {
-      alert(err.object + ":" + err.noun + ":" + err.verb + " - " + err.error);
-    });
-
-    this.ws.connect();
-
-    window['ws'] = this.ws;
+  componentDidMount = () => {
+    this.props.ws.onConnectChange(connected => this.setState({ connected }))
   }
 
   renderNoNavbar = () => {
     return this.state.connected ? <React.Fragment /> : <Navbar bg="danger" variant="dark"> <Navbar.Brand className="ml-5"> DISCONNECTED </Navbar.Brand> </Navbar>
   }
 
-  wrapView = (props) => {
-    let { navbar, children, fullscreen, nopad } = props;
-    let { arena, event, matches } = this.state;
+  wrapView = (children: any, props: { navbar?: boolean, fullscreen?: boolean, nopad?: boolean }) => {
+    let { navbar, fullscreen, nopad } = props;
 
     return <div className="wrapper">
       {
         navbar ? <Row className="navbar-padding">
           <Col>
             <TopNavbar
-              ws={this.ws}
+              ws={this.props.ws}
               connected={this.state.connected}
-              state={arena?.state}
-              match={arena?.match}
-              onEstop={() => this.ws.send("arena", "state", "signal", { signal: "Estop" })}
             />
           </Col>
         </Row> : this.renderNoNavbar()
@@ -86,11 +60,8 @@ export default class App extends React.Component {
         navbar ? <Row className="navbar-padding">
           <Col>
             <BottomNavbar
-              ws={this.ws}
-              arena={arena}
-              next_match={matches?.next}
-              event={event?.details}
-            />s
+              ws={this.props.ws}
+            />
           </Col>
         </Row> : <React.Fragment />
       }
@@ -98,10 +69,9 @@ export default class App extends React.Component {
   }
 
   render() {
-    let { arena, event, matches } = this.state;
+    // let { arena, event, matches } = this.state;
 
-    return <Switch>
-      <Route path={EVENT_WIZARD}>
+      {/* <Route path={EVENT_WIZARD}>
         <this.wrapView navbar>
           <EventWizard
             ws={this.ws}
@@ -210,12 +180,10 @@ export default class App extends React.Component {
             ws={this.ws}
           />
         </this.wrapView>
-      </Route>
-      <Route path="/">
-        <this.wrapView navbar>
-          <Home />
-        </this.wrapView>
-      </Route>
-    </Switch>
+      </Route> */}
+    return <Routes>
+      <Route path={TIMER} element={ this.wrapView(<Timer ws={this.props.ws} />, { fullscreen: true, nopad: true }) } />
+      <Route path="/" element={ this.wrapView(<Home />, { navbar: true }) } />
+    </Routes>
   }
 };

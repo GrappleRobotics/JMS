@@ -198,7 +198,7 @@ async fn connection_handler(
         // New broadcast 
         Ok(msgs) => {
           let msgs_filtered: Vec<&WebsocketMessage2UI> = msgs.iter().filter(|m| {
-            is_subscribed_for_message(&subscribed_to, m)
+            matches!(m, WebsocketMessage2UI::Error(_)) || is_subscribed_for_message(&subscribed_to, m)
             // let ts_specific = TopicSubscription { object: m.object.clone(), noun: m.noun.clone() };
             // let ts_generic = TopicSubscription { object: m.object.clone(), noun: "*".to_owned() };
             // subscriptions.contains_key(&ts_specific) || subscriptions.contains_key(&ts_generic)

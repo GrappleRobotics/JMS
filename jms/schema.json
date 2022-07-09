@@ -563,91 +563,14 @@
       ]
     },
     "ArenaSignal": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "signal"
-          ],
-          "properties": {
-            "signal": {
-              "type": "string",
-              "enum": [
-                "Estop"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "signal"
-          ],
-          "properties": {
-            "signal": {
-              "type": "string",
-              "enum": [
-                "EstopReset"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "signal"
-          ],
-          "properties": {
-            "signal": {
-              "type": "string",
-              "enum": [
-                "Prestart"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "signal"
-          ],
-          "properties": {
-            "signal": {
-              "type": "string",
-              "enum": [
-                "MatchArm"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "signal"
-          ],
-          "properties": {
-            "signal": {
-              "type": "string",
-              "enum": [
-                "MatchPlay"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "signal"
-          ],
-          "properties": {
-            "signal": {
-              "type": "string",
-              "enum": [
-                "MatchCommit"
-              ]
-            }
-          }
-        }
+      "type": "string",
+      "enum": [
+        "Estop",
+        "EstopReset",
+        "Prestart",
+        "MatchArm",
+        "MatchPlay",
+        "MatchCommit"
       ]
     },
     "ArenaState": {

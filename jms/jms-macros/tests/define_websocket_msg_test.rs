@@ -40,7 +40,8 @@ define_websocket_msg!($ArenaMessage {
     recv Signal(ArenaSignal),
     send $AnotherMsg{
       Something(u16),
-    }
+    },
+    send IHaveNoFields
   },
   $Alliances{
     send Update(Vec<AllianceStation>),
@@ -53,7 +54,8 @@ define_websocket_msg!($ArenaMessage {
 
 #[test]
 pub fn test_schema_gen() {
-  let msg = ArenaMessage2UI::State(ArenaMessageState2UI::AnotherMsg(ArenaMessageStateAnotherMsg2UI::Something(128)));
+  // let msg = ArenaMessage2UI::State(ArenaMessageState2UI::AnotherMsg(ArenaMessageStateAnotherMsg2UI::Something(128)));
+  let msg = ArenaMessage2UI::State(ArenaMessageState2UI::IHaveNoFields);
   println!("{:?}", msg.ws_path());
 
   println!("{}", serde_json::to_string_pretty(&msg).unwrap());

@@ -43,8 +43,6 @@ async fn main() -> anyhow::Result<()> {
 
   logging::configure(matches.is_present("debug"));
 
-  db::database(); // Start connection
-
   let settings = JMSSettings::load_or_create_config(matches.is_present("new-cfg")).await?;
 
   if let Some(v) = matches.value_of("gen-schema") {
@@ -53,6 +51,8 @@ async fn main() -> anyhow::Result<()> {
 
     fs::write(file, serde_json::to_string_pretty(&schema)?)?;
   } else if !matches.is_present("cfg-only") {
+    db::database(); // Start connection
+
     let network = settings.network.create()?;
 
     let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, network)));
