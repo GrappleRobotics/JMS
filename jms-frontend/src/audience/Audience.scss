@@ -232,7 +232,7 @@
         }
       }
 
-      @each $alliance in $alliance {
+      @each $alliance in $alliances {
         $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 25%), 40%);
@@ -249,7 +249,7 @@
       justify-content: center;
       align-items: center;
 
-      @each $alliance in $alliance {
+      @each $alliance in $alliances {
         $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 15%), 20%);

@@ -113,9 +113,12 @@ export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, 
       <Row>
         <Col>
           <MatchScheduleView
-            arena={arena}
-            matches={matches}
-            // onLoad={(match) => ws.send("arena", "match", "load", match.id)}
+            arenaState={arena.state}
+            currentMatch={arena.match}
+            quals={matches.quals || []}
+            playoffs={matches.playoffs || []}
+            nextMatch={matches.next}
+            onLoadMatch={match_id => ws.send({ Arena: { Match: { Load: match_id } } })}
           />
         </Col>
       </Row>
