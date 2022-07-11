@@ -182,6 +182,7 @@ export default class App extends React.Component< { ws: JmsWebsocket }, AppState
         </this.wrapView>
       </Route> */}
     return <Routes>
+      <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard ws={this.props.ws} />) } />
       <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl ws={this.props.ws} />) } />
       <Route path={ESTOPS} element={ this.wrapView(<TeamEstops ws={this.props.ws} />, { fullscreen: true }) } />
       <Route path={DEBUG} element={ this.wrapView(<Debug ws={this.props.ws} />) } />

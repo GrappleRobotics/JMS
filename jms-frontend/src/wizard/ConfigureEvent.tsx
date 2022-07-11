@@ -5,41 +5,41 @@ import EditableFormControl from "components/elements/EditableFormControl";
 import React from "react";
 import { Row, Col, Form, Button } from "react-bootstrap";
 import { nullIfEmpty } from "support/strings";
+import JmsWebsocket from "support/ws";
+import { EventDetails } from "ws-schema";
+import { EventWizardPageContent } from "./EventWizard";
 
-export default class ConfigureEvent extends React.Component {
-  static eventKey() { return "configure_event"; }
-  static tabName() { return "Configure Event"; }
+type ConfigureEventState = {
+  details: EventDetails
+}
 
-  static needsAttention(d) {
-    return d.details?.event_name === null;
+export default class ConfigureEvent extends React.Component<{ ws: JmsWebsocket }, ConfigureEventState> {
+  readonly state: ConfigureEventState = { details: { webcasts: [] } };
+  handles: string[] = [];
+
+  componentDidMount = () => {
+    this.handles = [
+      this.props.ws.onMessage<EventDetails>(["Event", "Details", "Current"], details => this.setState({ details: details }))
+    ]
   }
 
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      newWebcast: null
-    }
+  componentWillUnmount = () => {
+    this.props.ws.removeHandles(this.handles);
   }
 
-  changeEventDetails = (changes) => {
-    let newDetails = {
-      ...this.props.details,
-      ...changes
-    };
-    this.props.ws.send("event", "details", "update", newDetails);
+  changeEventDetails = (changes: Partial<EventDetails>) => {
+    let details = this.state.details;
+    this.props.ws.send({ Event: { Details: { Update: { ...details, ...changes } } } });
   }
 
-  submitNewWebcast = () => {
+  submitNewWebcast = (webcast: string) => {
     this.changeEventDetails({
-      webcasts: [ ...this.props.details.webcasts, this.state.newWebcast ]
+      webcasts: [ ...this.state.details.webcasts, webcast ]
     });
-
-    this.setState({ newWebcast: null })
   }
 
-  deleteWebcast = (i) => {
-    let webcasts = this.props.details.webcasts;
+  deleteWebcast = (i: number) => {
+    let webcasts = this.state.details.webcasts;
     webcasts.splice(i, 1);
     this.changeEventDetails({
       webcasts: webcasts
@@ -47,7 +47,8 @@ export default class ConfigureEvent extends React.Component {
   }
 
   render() {
-    return <div>
+    let { details } = this.state;
+    return <EventWizardPageContent tabLabel="Configure Event Details" attention={!this.state.details?.event_name}>
       <h4> Configure Event Details </h4>
       <br />
 
@@ -58,8 +59,8 @@ export default class ConfigureEvent extends React.Component {
             <BufferedFormControl 
               type="text"
               placeholder="2021myevent"
-              value={this.props.details?.code}
-              onUpdate={v => this.changeEventDetails({ code: nullIfEmpty(v) })}
+              value={details.code || ""}
+              onUpdate={v => this.changeEventDetails({ code: nullIfEmpty(String(v)) })}
             />
             <Form.Text className="text-muted">
               <FontAwesomeIcon icon={faInfoCircle} /> The event code is usually provided by <i>FIRST</i>
@@ -70,27 +71,23 @@ export default class ConfigureEvent extends React.Component {
             <BufferedFormControl
               type="text"
               placeholder="My Really Groovy Robotics Event"
-              value={this.props.details?.event_name}
-              onUpdate={v => this.changeEventDetails({ event_name: nullIfEmpty(v) })}
+              value={details.event_name || ""}
+              onUpdate={v => this.changeEventDetails({ event_name: nullIfEmpty(String(v)) })}
             />
           </Col>
         </Row>
         <Row className="my-3">
           <Col>
             <Form.Label> Webcast URLs (TBA) <span className="text-muted">(Optional)</span> </Form.Label>
-            <Form.Control
+            <BufferedFormControl
               type="text"
-              size="sm"
-              value={ this.state.newWebcast || "" }
               placeholder="New Webcast URL, e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-              onChange={e => this.setState({ newWebcast: nullIfEmpty(e.target.value) })}
-              onKeyDown={e => {
-                if (e.key === 'Enter')
-                  this.submitNewWebcast()
-              }}
+              value=""
+              onUpdate={ v => this.submitNewWebcast(String(v)) }
+              resetOnEnter
             />
             {
-              this.props.details?.webcasts?.map((wc, i) => <Row className="my-2">
+              details.webcasts?.map((wc, i) => <Row key={i} className="my-2">
                 <Col md="auto">
                   <Button
                     size="sm"
@@ -108,6 +105,6 @@ export default class ConfigureEvent extends React.Component {
           </Col>
         </Row>
       </Form>
-    </div>
+    </EventWizardPageContent>
   }
 }
