@@ -115,9 +115,10 @@ export type Alliance = "Blue" | "Red";
 export type ArenaMessageMatch2UI = {
   Current: LoadedMatch | null;
 };
+export type WinStatus = "WIN" | "LOSS" | "TIE";
+export type EndgamePointType = "None" | "Hang" | "Park";
 export type MatchSubtype = "Quarterfinal" | "Semifinal" | "Final";
 export type MatchType = "Test" | "Qualification" | "Playoff";
-export type EndgamePointType = "None" | "Hang" | "Park";
 export type MatchPlayState = "Waiting" | "Warmup" | "Auto" | "Pause" | "Teleop" | "Cooldown" | "Complete" | "Fault";
 export type ArenaMessageAudienceDisplay2UI = {
   Current: AudienceDisplay;
@@ -443,7 +444,7 @@ export interface LoadedMatch {
   endgame: boolean;
   match_meta: SerializedMatch;
   remaining_time: Duration;
-  score: MatchScore;
+  score: MatchScoreSnapshot;
   state: MatchPlayState;
 }
 export interface MatchConfig {
@@ -460,6 +461,7 @@ export interface Duration {
 export interface SerializedMatch {
   blue_alliance?: number | null;
   blue_teams: (number | null)[];
+  full_score?: MatchScoreSnapshot | null;
   id?: string | null;
   match_number: number;
   match_subtype?: MatchSubtype | null;
@@ -474,9 +476,32 @@ export interface SerializedMatch {
   start_time?: number | null;
   winner?: Alliance | null;
 }
-export interface MatchScore {
-  blue: LiveScore;
-  red: LiveScore;
+export interface MatchScoreSnapshot {
+  blue: SnapshotScore;
+  red: SnapshotScore;
+}
+export interface SnapshotScore {
+  derived: DerivedScore;
+  live: LiveScore;
+}
+export interface DerivedScore {
+  cell_points: ModeScoreForInt;
+  endgame_points: number;
+  initiation_points: number;
+  mode_score: ModeScoreForInt;
+  penalty_score: number;
+  shield_gen_rp: boolean;
+  stage: number;
+  stage3_rp: boolean;
+  total_bonus_rp: number;
+  total_rp: number;
+  total_score: number;
+  win_rp: number;
+  win_status: WinStatus;
+}
+export interface ModeScoreForInt {
+  auto: number;
+  teleop: number;
 }
 export interface LiveScore {
   endgame: EndgamePointType[];
@@ -497,6 +522,10 @@ export interface PowerCellCounts {
   bottom: number;
   inner: number;
   outer: number;
+}
+export interface MatchScore {
+  blue: LiveScore;
+  red: LiveScore;
 }
 export interface SerialisedMatchGeneration {
   matches: SerializedMatch[];

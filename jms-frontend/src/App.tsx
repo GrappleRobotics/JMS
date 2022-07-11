@@ -37,19 +37,19 @@ export default class App extends React.Component< { ws: JmsWebsocket }, AppState
     return this.state.connected ? <React.Fragment /> : <Navbar bg="danger" variant="dark"> <Navbar.Brand className="ml-5"> DISCONNECTED </Navbar.Brand> </Navbar>
   }
 
-  wrapView = (children: any, props: { navbar?: boolean, fullscreen?: boolean, nopad?: boolean }) => {
-    let { navbar, fullscreen, nopad } = props;
+  wrapView = (children: any, props: { nonav?: boolean, fullscreen?: boolean, nopad?: boolean } = {}) => {
+    let { nonav, fullscreen, nopad } = props;
 
     return <div className="wrapper">
       {
-        navbar ? <Row className="navbar-padding">
+        nonav ? this.renderNoNavbar() : <Row className="navbar-padding">
           <Col>
             <TopNavbar
               ws={this.props.ws}
               connected={this.state.connected}
             />
           </Col>
-        </Row> : this.renderNoNavbar()
+        </Row>
       }
       <Row className={"app-viewport " + (fullscreen ? "fullscreen " : "") + (nopad ? "p-0 " : "")} data-connected={this.state.connected}>
         {/* <Col> */}
@@ -57,13 +57,13 @@ export default class App extends React.Component< { ws: JmsWebsocket }, AppState
         {/* </Col> */}
       </Row>
       {
-        navbar ? <Row className="navbar-padding">
+        nonav ? <React.Fragment /> : <Row className="navbar-padding">
           <Col>
             <BottomNavbar
               ws={this.props.ws}
             />
           </Col>
-        </Row> : <React.Fragment />
+        </Row>
       }
     </div>
   }
@@ -182,8 +182,12 @@ export default class App extends React.Component< { ws: JmsWebsocket }, AppState
         </this.wrapView>
       </Route> */}
     return <Routes>
-      <Route path={TIMER} element={ this.wrapView(<Timer ws={this.props.ws} />, { fullscreen: true, nopad: true }) } />
-      <Route path="/" element={ this.wrapView(<Home />, { navbar: true }) } />
+      <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl ws={this.props.ws} />) } />
+      <Route path={ESTOPS} element={ this.wrapView(<TeamEstops ws={this.props.ws} />, { fullscreen: true }) } />
+      <Route path={DEBUG} element={ this.wrapView(<Debug ws={this.props.ws} />) } />
+      <Route path={REPORTS} element={ this.wrapView(<Reports />) } />
+      <Route path={TIMER} element={ this.wrapView(<Timer ws={this.props.ws} />, { nonav: true, fullscreen: true, nopad: true }) } />
+      <Route path="/" element={ this.wrapView(<Home />) } />
     </Routes>
   }
 };

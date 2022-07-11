@@ -11,7 +11,7 @@ export type BufferedProps = Combine<{
   value: number | string,
   onUpdate: (val: number | string) => void,
   className: string,
-}, FormControlProps>;
+}, FormControlProps & React.HTMLAttributes<HTMLInputElement>>;
 
 type BufferedState = {
   value: number | string
@@ -78,7 +78,7 @@ export default class BufferedFormControl extends React.Component<BufferedProps, 
   }
 
   render() {
-    let { className, onUpdate, ...props } = this.props;
+    let { className, onUpdate, autofocus, auto, autoMillis, instant, enter, ...props } = this.props;
 
     return <FormControl
       {...props}

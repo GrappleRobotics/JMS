@@ -81,7 +81,7 @@ pub struct DerivedScore {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-#[serde(into = "MatchScoreSnapshot", from = "MatchScoreSnapshot")]
+// #[serde(into = "MatchScoreSnapshot", from = "MatchScoreSnapshot")]
 pub struct MatchScore {
   pub red: LiveScore,
   pub blue: LiveScore,
@@ -96,13 +96,13 @@ impl MatchScore {
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct SnapshotScore {
   pub live: LiveScore,
   pub derived: DerivedScore,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct MatchScoreSnapshot {
   pub red: SnapshotScore,
   pub blue: SnapshotScore,

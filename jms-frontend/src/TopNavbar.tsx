@@ -60,15 +60,15 @@ export default class TopNavbar extends React.Component<{ ws: JmsWebsocket, conne
         <Modal.Body>
           <p className="estop-subtitle text-muted">
             Anyone can E-Stop the match. <br />
-            E-Stop if there is a safety threat, field fault / broken, or instructed by the FTA. <br />
+            E-Stop if there is a safety threat or as instructed by the FTA. <br />
             <strong className="text-danger"> Robot Faults are NOT Field E-Stop conditions. </strong>
           </p>
           <div className="my-5" />
           <Button
             size="lg"
+            variant="estop"
             className="estop-big"
             block
-            variant="hazard-red-dark"
             onClick={this.triggerEstop}
           >
             EMERGENCY STOP
@@ -114,7 +114,7 @@ export default class TopNavbar extends React.Component<{ ws: JmsWebsocket, conne
     const { arena_state, match } = this.state;
 
     return <Navbar variant="dark" fixed="top">
-      <Button variant="hazard-red-dark" disabled={!connected || arena_state?.state === "Estop"} onClick={this.estopShow}>
+      <Button variant="estop" disabled={!connected || arena_state?.state === "Estop"} onClick={this.estopShow}>
         E-STOP
       </Button>
       <div className="mr-3" />

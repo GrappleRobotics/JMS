@@ -5,7 +5,7 @@ use anyhow::{bail, Result};
 use log::{info, warn};
 use schemars::JsonSchema;
 
-use crate::{arena::exceptions::MatchWrongState, db, models, scoring::scores::MatchScore};
+use crate::{arena::exceptions::MatchWrongState, db, models, scoring::scores::{MatchScore, MatchScoreSnapshot}};
 
 use serde::{Serialize, Serializer};
 
@@ -35,14 +35,15 @@ pub struct MatchConfig {
 // TODO: Abstract out the loaded parts of the match
 
 #[derive(Clone, Debug, Serialize, JsonSchema)]
-// #[serde(into = "SerializedLoadedMatch")]
-// #[schemars(schema_with = "SerializedLoadedMatch::")]
 pub struct LoadedMatch {
   #[serde(serialize_with = "serialize_match")]
   #[schemars(with = "models::SerializedMatch")]
   pub match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
+
+  #[serde(serialize_with = "serialize_match_score")]
+  #[schemars(with = "MatchScoreSnapshot")]
   pub score: MatchScore,
 
   #[serde(skip)]
@@ -59,6 +60,14 @@ where
   S: Serializer
 {
   models::SerializedMatch::from(m.clone()).serialize(s)
+}
+
+fn serialize_match_score<S>(m: &MatchScore, s: S) -> Result<S::Ok, S::Error>
+where
+  S: Serializer
+{
+  let snapshot: MatchScoreSnapshot = m.clone().into();
+  snapshot.serialize(s)
 }
 
 // mod serialised_loaded_match {

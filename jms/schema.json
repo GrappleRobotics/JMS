@@ -905,6 +905,79 @@
         "DeleteAll"
       ]
     },
+    "DerivedScore": {
+      "type": "object",
+      "required": [
+        "cell_points",
+        "endgame_points",
+        "initiation_points",
+        "mode_score",
+        "penalty_score",
+        "shield_gen_rp",
+        "stage",
+        "stage3_rp",
+        "total_bonus_rp",
+        "total_rp",
+        "total_score",
+        "win_rp",
+        "win_status"
+      ],
+      "properties": {
+        "cell_points": {
+          "$ref": "#/definitions/ModeScore_for_int"
+        },
+        "endgame_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "initiation_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "mode_score": {
+          "$ref": "#/definitions/ModeScore_for_int"
+        },
+        "penalty_score": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "shield_gen_rp": {
+          "type": "boolean"
+        },
+        "stage": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "stage3_rp": {
+          "type": "boolean"
+        },
+        "total_bonus_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "total_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "total_score": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "win_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "win_status": {
+          "$ref": "#/definitions/WinStatus"
+        }
+      }
+    },
     "Duration": {
       "type": "object",
       "required": [
@@ -1441,7 +1514,7 @@
           "$ref": "#/definitions/Duration"
         },
         "score": {
-          "$ref": "#/definitions/MatchScore"
+          "$ref": "#/definitions/MatchScoreSnapshot"
         },
         "state": {
           "$ref": "#/definitions/MatchPlayState"
@@ -1768,6 +1841,21 @@
         }
       }
     },
+    "MatchScoreSnapshot": {
+      "type": "object",
+      "required": [
+        "blue",
+        "red"
+      ],
+      "properties": {
+        "blue": {
+          "$ref": "#/definitions/SnapshotScore"
+        },
+        "red": {
+          "$ref": "#/definitions/SnapshotScore"
+        }
+      }
+    },
     "MatchSubtype": {
       "type": "string",
       "enum": [
@@ -1796,6 +1884,23 @@
         },
         "teleop": {
           "$ref": "#/definitions/PowerCellCounts"
+        }
+      }
+    },
+    "ModeScore_for_int": {
+      "type": "object",
+      "required": [
+        "auto",
+        "teleop"
+      ],
+      "properties": {
+        "auto": {
+          "type": "integer",
+          "format": "int"
+        },
+        "teleop": {
+          "type": "integer",
+          "format": "int"
         }
       }
     },
@@ -2145,6 +2250,16 @@
             "minimum": 0.0
           }
         },
+        "full_score": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchScoreSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "id": {
           "type": [
             "string",
@@ -2232,6 +2347,21 @@
               "type": "null"
             }
           ]
+        }
+      }
+    },
+    "SnapshotScore": {
+      "type": "object",
+      "required": [
+        "derived",
+        "live"
+      ],
+      "properties": {
+        "derived": {
+          "$ref": "#/definitions/DerivedScore"
+        },
+        "live": {
+          "$ref": "#/definitions/LiveScore"
         }
       }
     },
@@ -2463,6 +2593,14 @@
           },
           "additionalProperties": false
         }
+      ]
+    },
+    "WinStatus": {
+      "type": "string",
+      "enum": [
+        "WIN",
+        "LOSS",
+        "TIE"
       ]
     }
   }

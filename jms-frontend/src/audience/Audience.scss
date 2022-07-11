@@ -223,7 +223,7 @@
         }
 
         &[data-estop="true"] {
-          @extend .bg-hazard-dark-active;
+          // @extend .bg-hazard-dark-active;
         }
 
         &[data-alive="false"] {
@@ -232,8 +232,8 @@
         }
       }
 
-      @each $alliance in blue, red {
-        $tc: theme-color("alliance-#{$alliance}");
+      @each $alliance in $alliance {
+        $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 25%), 40%);
         }
@@ -249,8 +249,8 @@
       justify-content: center;
       align-items: center;
 
-      @each $alliance in blue, red {
-        $tc: theme-color("alliance-#{$alliance}");
+      @each $alliance in $alliance {
+        $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 15%), 20%);
         }
@@ -344,8 +344,8 @@
       display: flex;
       flex-direction: column;
 
-      @each $alliance in blue, red {
-        $tc: theme-color("alliance-#{$alliance}");
+      @each $alliance in $alliances {
+        $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 25%), 40%);
         }

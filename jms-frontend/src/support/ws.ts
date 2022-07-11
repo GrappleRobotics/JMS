@@ -104,7 +104,6 @@ export default class JmsWebsocket {
   send(msg: WebsocketMessage2JMS) {
     if (this.alive()) {
       this.ws!.send(JSON.stringify(msg));
-      console.log("WS SEND", msg);
     } else {
       console.log("Can't send message, WS dead :X", msg);
     }
@@ -140,6 +139,5 @@ export default class JmsWebsocket {
     this.connectCallbacks.set(id, cb);
     cb(this.alive());
     return id;
-    // this.connectCallbacks.push(cb);
   }
 }

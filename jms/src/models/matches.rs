@@ -1,4 +1,4 @@
-use crate::{db::{self, DBDateTime, TableType}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus}};
+use crate::{db::{self, DBDateTime, TableType}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
 
 use super::TeamRanking;
 
@@ -44,7 +44,8 @@ pub struct SerializedMatch {
   #[serde(flatten)]
   pub match_meta: Match,
   pub id: Option<String>,
-  pub name: String
+  pub name: String,
+  pub full_score: Option<MatchScoreSnapshot>
 }
 
 impl Match {
@@ -164,6 +165,7 @@ impl From<Match> for SerializedMatch {
     Self {
       id: m.id(),
       name: m.name(),
+      full_score: m.score.clone().map(Into::into),
       match_meta: m
     }
   }
