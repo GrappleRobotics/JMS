@@ -21,7 +21,7 @@ impl QualsMatchGenerator {
     Self {}
   }
 
-  async fn commit_generation_record(&self, result: &GenerationResult) -> Result<(), Box<dyn Error>> {
+  fn commit_generation_record(&self, result: &GenerationResult) -> Result<(), Box<dyn Error>> {
     let mut mgr = MatchGenerationRecord {
       match_type: models::MatchType::Qualification,
       data: Some(MatchGenerationRecordData::Qualification {
@@ -45,7 +45,7 @@ impl QualsMatchGenerator {
     Ok(())
   }
 
-  async fn commit_matches(&self, schedule: &TeamSchedule) -> Result<(), Box<dyn Error>> {
+  fn commit_matches(&self, schedule: &TeamSchedule) -> Result<(), Box<dyn Error>> {
     let blocks = ScheduleBlock::qual_blocks(&db::database())?;
 
     models::Match::table(&db::database())?.clear()?;
@@ -84,7 +84,6 @@ impl QualsMatchGenerator {
   }
 }
 
-#[async_trait::async_trait]
 impl MatchGenerator for QualsMatchGenerator {
   type ParamType = QualsMatchGeneratorParams;
 
@@ -92,7 +91,7 @@ impl MatchGenerator for QualsMatchGenerator {
     models::MatchType::Qualification
   }
 
-  async fn generate(
+  fn generate(
     &self,
     params: QualsMatchGeneratorParams,
     _: Option<MatchGenerationRecord>,
@@ -116,8 +115,8 @@ impl MatchGenerator for QualsMatchGenerator {
       .contextualise(&teams);
 
     // Commit
-    self.commit_generation_record(&generation_result).await?;
-    self.commit_matches(&team_sched).await?;
+    self.commit_generation_record(&generation_result)?;
+    self.commit_matches(&team_sched)?;
 
     Ok(())
   }

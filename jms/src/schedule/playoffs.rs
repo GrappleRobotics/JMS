@@ -35,7 +35,6 @@ impl PlayoffMatchGenerator {
   }
 }
 
-#[async_trait::async_trait]
 impl MatchGenerator for PlayoffMatchGenerator {
   type ParamType = models::PlayoffMode;
 
@@ -43,7 +42,7 @@ impl MatchGenerator for PlayoffMatchGenerator {
     models::MatchType::Playoff
   }
 
-  async fn generate(
+  fn generate(
     &self,
     mode: Self::ParamType,
     record: Option<MatchGenerationRecord>,

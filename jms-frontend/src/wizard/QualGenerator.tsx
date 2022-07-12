@@ -133,8 +133,8 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
           <tr>
             <th> Time </th>
             <th> Match </th>
-            { [1,2,3].map(t => <th className="schedule-blue"> Blue {t} </th>) }
-            { [1,2,3].map(t => <th className="schedule-red"> Red {t} </th>) }
+            { [1,2,3].map(t => <th className="schedule-row" data-alliance="blue"> Blue {t} </th>) }
+            { [1,2,3].map(t => <th className="schedule-row" data-alliance="red"> Red {t} </th>) }
           </tr>
         </thead>
         <tbody>
@@ -142,8 +142,8 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
             matches?.map(match => <tr>
               <td> &nbsp; { match.start_time ? moment.unix(match.start_time).format("ddd HH:mm:ss") : "Unknown" } </td>
               <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
-              { match.blue_teams.map(t => <td className="schedule-blue"> { t } </td>) }
-              { match.red_teams.map(t =>  <td className="schedule-red"> { t } </td>) }
+              { match.blue_teams.map(t => <td className="schedule-row" data-alliance="blue"> { t } </td>) }
+              { match.red_teams.map(t =>  <td className="schedule-row" data-alliance="red"> { t } </td>) }
             </tr>)
           }
         </tbody>

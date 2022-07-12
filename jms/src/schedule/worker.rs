@@ -72,10 +72,10 @@ where
     let running = self.running.clone();
     let gen = self.generator.clone();
     let record = self.record();
-    tokio::spawn(async move {
+    std::thread::spawn(move || {
       // *running.get_mut() = true;
       running.swap(true, Ordering::Relaxed);
-      match gen.generate(params, record).await {
+      match gen.generate(params, record) {
         Ok(_) => (),
         Err(e) => error!("Match Generation Error: {}", e),
       }
@@ -106,12 +106,11 @@ where
   }
 }
 
-#[async_trait::async_trait]
 pub trait MatchGenerator {
   type ParamType;
 
   fn match_type(&self) -> models::MatchType;
-  async fn generate(
+  fn generate(
     &self,
     params: Self::ParamType,
     record: Option<MatchGenerationRecord>,

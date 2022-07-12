@@ -19,7 +19,7 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
   // Only show this as the next match if there isn't a currently loaded match
   isNextMatch = (match: SerializedMatch) => {
     let currentMatch = this.props.currentMatch?.match_meta;
-    if (currentMatch && (currentMatch.match_type == "Test" || currentMatch.played))
+    if (currentMatch == null || currentMatch.match_type == "Test" || currentMatch.played)
       return !match.played && (match.id === this.props.nextMatch?.id);
     return false;
   }
@@ -62,8 +62,8 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
         <tr>
           <th> Time </th>
           <th> Match </th>
-          <th colSpan={max_teams}> Blue </th>
-          <th colSpan={max_teams}> Red </th>
+          <th className="schedule-row" data-alliance="blue" colSpan={max_teams}> Blue </th>
+          <th className="schedule-row" data-alliance="red" colSpan={max_teams}> Red </th>
           <th>Action</th>
         </tr>
       </thead>
@@ -93,8 +93,8 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
                 } &nbsp; { match.name }
               </td>
               {/* Teams */}
-              { Array.from({...match.blue_teams, length: max_teams}).map(t => <td className="team" data-alliance="blue"> { t } </td>) }
-              { Array.from({...match.red_teams, length: max_teams}).map(t =>  <td className="team" data-alliance="red"> { t } </td>) }
+              { Array.from({...match.blue_teams, length: max_teams}).map(t => <td className="schedule-row" data-alliance="blue"> { t } </td>) }
+              { Array.from({...match.red_teams, length: max_teams}).map(t =>  <td className="schedule-row" data-alliance="red"> { t } </td>) }
               {/* Load buttons */}
               <td>
                 {
