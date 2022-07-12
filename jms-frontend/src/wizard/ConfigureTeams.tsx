@@ -1,4 +1,4 @@
-import { faCheck, faCloudDownloadAlt, faInfoCircle, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCloudDownloadAlt, faInfoCircle, faSpinner, faSquareCheck, faSquareXmark, faTimes, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditableFormControl from "components/elements/EditableFormControl";
 import React from "react";
@@ -10,6 +10,7 @@ import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 import { EventWizardPageContent } from "./EventWizard";
 import confirmBool, { withConfirm } from "components/elements/Confirm";
 import { BufferedProps } from "components/elements/BufferedFormControl";
+import SimpleTooltip from "components/elements/SimpleTooltip";
 
 // This is a well-known public key I've created. It may be cancelled at any time.
 const TBA_AUTH_KEY = "19iOXH0VVxCvYQTlmIRpXyx2xoUQuZoWEPECGitvJcFxEY6itgqDP7A4awVL2CJn";
@@ -243,16 +244,17 @@ export default class ConfigureTeams extends React.Component {
                 />
               </td>
               <td>
-                {
-                  editable ? 
-                    <Form.Check
-                      checked={t.schedule}
-                      onChange={() => this.updateTeam({ ...t, schedule: !t.schedule })}
-                    />
-                    : <FontAwesomeIcon icon={t.schedule ? faCheck : faTimes} className={`text-${t.schedule ? "good" : "bad"}`} />
-                }
+                <SimpleTooltip id="sched-tt" tip="Is this team to be included in the Qualification Match Schedule?">
+                  <a
+                    className={ `text-${t.schedule ? "good" : "bad"}` }
+                    onClick={ () => editable ? this.updateTeam({ ...t, schedule: !t.schedule }) : {} }
+                  >
+                    <FontAwesomeIcon icon={t.schedule ? faSquareCheck : faSquareXmark} />
+                  </a>
+                </SimpleTooltip>
               </td>
               <td>
+                &nbsp;
                 {
                   editable ?
                     <a 
@@ -265,7 +267,7 @@ export default class ConfigureTeams extends React.Component {
                         );
                       }}
                     > 
-                      <FontAwesomeIcon icon={faTimes} />
+                      <FontAwesomeIcon icon={faTrashCan} />
                     </a>
                     : <React.Fragment />
                 }
