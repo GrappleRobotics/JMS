@@ -140,7 +140,6 @@ export default class ConfigureTeams extends React.Component {
     return <EditableFormControl 
       autofocus
       type="text"
-      size="sm"
       { ...props }
       value={ team[field] || "" }
       onUpdate={ v => this.updateTeam({ ...team, [field]: nullIfEmpty(v as string) }) }

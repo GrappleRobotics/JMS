@@ -18,15 +18,27 @@ type ConfirmModalOptions<T> = {
   cancelText?: React.ReactNode,
   okVariant?: string,
   cancelVariant?: string,
+
+  renderInner?: (data: T, onUpdate: (data: T) => void) => React.ReactNode,
+  data?: T
 } & Omit<React.ComponentProps<Modal>, "show" | "onHide">;
 
 type ConfirmModalProps<T> = ReactConfirmProps & ConfirmModalOptions<T>;
 
-export class ConfirmModal extends React.PureComponent<ConfirmModalProps<any>> {
-  render() {
-    const { className, title, confirmation, show, proceed, cancel, dismiss, render, okBtn, cancelBtn, okText, cancelText, okVariant, cancelVariant, ...props } = this.props;
+export class ConfirmModal extends React.Component<ConfirmModalProps<any>, { data: any }> {
+  readonly state: { data: any } = { data: this.props.data };
 
-    const okFn = (data?: any) => proceed(JSON.stringify(data === undefined ? {} : data));
+  componentDidUpdate = (prevProps: ConfirmModalProps<any>) => {
+    if (prevProps.data !== this.props.data) {
+      this.setState({ data: this.props.data });
+    }
+  }
+
+  render() {
+    const { className, title, confirmation, show, proceed, cancel, dismiss, render, renderInner, okBtn, cancelBtn, okText, cancelText, okVariant, cancelVariant, ...props } = this.props;
+
+    // @ts-ignore
+    const okFn = (data?: any) => proceed(data);
     const cancelFn = () => cancel();
 
     return <Modal
@@ -41,12 +53,17 @@ export class ConfirmModal extends React.PureComponent<ConfirmModalProps<any>> {
       }
       {
         render ? render(okFn, cancelFn) : <React.Fragment>
-          <Modal.Body> { confirmation || "Are you sure?" } </Modal.Body>
+          <Modal.Body> 
+            {
+              renderInner ? renderInner(this.state.data, (data: any) => this.setState({ data: data }))
+                : (confirmation || "Are you sure?")
+            }
+          </Modal.Body>
           <Modal.Footer>
             {
-              okBtn ? <Button {...okBtn} onClick={() => okFn()} /> : 
+              okBtn ? <Button {...okBtn} onClick={() => okFn(this.state.data)} /> : 
               <Button
-                onClick={() => okFn()}
+                onClick={() => okFn(this.state.data)}
                 variant={okVariant || "success"}
               >
                 { okText || "OK" }
@@ -72,8 +89,8 @@ export class ConfirmModal extends React.PureComponent<ConfirmModalProps<any>> {
 const confirmBackend = createConfirmation(confirmable(ConfirmModal));
 
 export async function confirmModal<T>(confirmation: ReactConfirmProps["confirmation"], options?: ConfirmModalOptions<T>) {
-  let data = await confirmBackend({ confirmation, ...(options || {}) });
-  return JSON.parse(data) as T;
+  let data: any = await confirmBackend({ confirmation, ...(options || {}) });
+  return data as T;
 }
 
 export default async function confirmBool(confirmation: ReactConfirmProps["confirmation"], options?: ConfirmModalOptions<{}>) {

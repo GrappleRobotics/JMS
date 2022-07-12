@@ -12,7 +12,7 @@ export type BufferedProps = Combine<{
   onUpdate: (val: number | string) => void,
   className?: string,
   resetOnEnter?: boolean
-}, FormControlProps & React.HTMLAttributes<HTMLInputElement>>;
+}, FormControlProps & React.InputHTMLAttributes<HTMLInputElement>>;
 
 type BufferedState = {
   value: number | string

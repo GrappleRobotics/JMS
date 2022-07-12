@@ -12,6 +12,7 @@
     "@testing-library/user-event": "^12.8.3",
     "@types/jquery": "^3.5.14",
     "@types/moment": "^2.13.0",
+    "@types/moment-duration-format": "^2.2.3",
     "@types/node": "^18.0.0",
     "@types/react": "^18.0.15",
     "@types/react-confirm": "^0.1.4",

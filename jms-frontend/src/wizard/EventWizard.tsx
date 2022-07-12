@@ -76,6 +76,7 @@ type EventWizardMetaState = {
   welcome?: EventWizardPageMeta,
   configEvent?: EventWizardPageMeta,
   configTeams?: EventWizardPageMeta
+  configSchedule?: EventWizardPageMeta
 }
 
 type EventWizardState = {
@@ -125,6 +126,7 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               <br /> <h6 className="text-muted">Pre-Event Config</h6>
               { this.navFor("configEvent") }
               { this.navFor("configTeams") }
+              { this.navFor("configSchedule") }
               <br /> <h6 className="text-muted">Qualifications</h6>
               
               <br /> <h6 className="text-muted">Playoffs</h6>
@@ -137,6 +139,7 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.paneFor("welcome", <Welcome />) }
               { this.paneFor("configEvent", <ConfigureEvent />) }
               { this.paneFor("configTeams", <ConfigureTeams />) }
+              { this.paneFor("configSchedule", <ConfigureSchedule />) }
             </Tab.Content>
           </Col>
         </Row>
