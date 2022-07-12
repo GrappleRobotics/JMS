@@ -15,43 +15,6 @@ import { EventWizardPageContent } from "./EventWizard";
 
 const ELEMENT_FORMAT = "YYYY-MM-DD[T]HH:mm";
 
-// class Load2DayDefault extends React.Component {
-//   constructor(props) {
-//     super(props);
-
-//     this.state = {
-//       start_date: moment()
-//     };
-//   }
-
-//   render() {
-//     let { show, onHide, onSubmit } = this.props;
-
-//     return <Modal
-//       centered
-//       show={show}
-//       onHide={onHide}
-//     >
-//       <Modal.Header> <h4> Load 2-day Default </h4> </Modal.Header>
-//       <Modal.Body>
-//         <p> <FontAwesomeIcon icon={faExclamationTriangle} /> &nbsp; This will override any existing schedule! </p>
-//         <p> Start Date: </p>
-//         <BufferedFormControl
-//           auto
-//           type="date"
-//           value={ this.state.start_date.format("YYYY-MM-DD") }
-//           onUpdate={ v => this.setState({ start_date: moment(v) }) }
-//         />
-//       </Modal.Body>
-//       <Modal.Footer>
-//         <Button variant="primary" onClick={() => { onSubmit(this.state.start_date); onHide() }}>
-//           Load
-//         </Button>
-//       </Modal.Footer>
-//     </Modal>
-//   }
-// }
-
 type MappedScheduleBlock = Combine<{
   start_time: moment.Moment,
   end_time: moment.Moment,
@@ -274,18 +237,6 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
     teams: []
   }
 
-  // static needsAttention(d) {
-  //   return !!!d.schedule?.length;
-  // }
-
-  // constructor(props) {
-  //   super(props);
-
-  //   this.state = {
-  //     show2DayDefault: false
-  //   }
-  // }
-
   componentDidMount = () => {
     this.handles = [
       this.context.listen<ScheduleBlock[]>([ "Event", "Schedule", "CurrentBlocks" ], msg => {
@@ -299,35 +250,6 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
   }
 
   componentWillUnmount = () => this.context.unlisten(this.handles);
-
-  // editable = () => {
-    
-  //   // let quals = this.props.matches?.quals;
-  //   // if (quals) {
-  //   //   return !quals.record?.data && !quals.running;
-  //   // }
-  //   // return true;
-  // }
-
-  
-  // addBlock = () => {
-    //   this.props.ws.send("event", "schedule", "new_block");
-    // }
-    
-    // update = (block, dict) => {
-  //   this.props.ws.send("event", "schedule", "update_block", {
-  //     ...block,
-  //     ...dict
-  //   });
-  // }
-  
-  // deleteBlock = (block) => {
-    //   this.props.ws.send("event", "schedule", "delete_block", block.id);
-    // }
-    
-    // loadDefault = v => {
-      //   this.props.ws.send("event", "schedule", "load_default", v.unix());
-      // }
     
   genListElements = (schedule: MappedScheduleBlock[], editable: boolean) => {
     let total_matches = 0;
@@ -441,15 +363,7 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
 
       <br />
 
-      <React.Fragment>
-        { elements }
-      </React.Fragment>
-
-      {/* <Load2DayDefault
-        show={this.state.show2DayDefault} 
-        onHide={() => this.setState({ show2DayDefault: false })}
-        onSubmit={this.loadDefault}
-      /> */}
+      { elements }
     </EventWizardPageContent>
   }
 }
