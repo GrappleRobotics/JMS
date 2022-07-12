@@ -39,6 +39,13 @@ async fn main() -> anyhow::Result<()> {
         .takes_value(true)
         .help("Only generate the JSON schema for websocket communication")
     )
+    .arg(
+      Arg::with_name("port")
+        .long("port")
+        .value_name("PORT")
+        .takes_value(true)
+        .help("Set the primary web server port")
+    )
     .get_matches();
 
   logging::configure(matches.is_present("debug"));
@@ -86,7 +93,11 @@ async fn main() -> anyhow::Result<()> {
     let ws = Websockets::new(ws_params, Duration::from_millis(500));
     let ws_fut = ws.begin();
 
-    let web_fut = ui::web::begin();
+    let port = match matches.value_of("port") {
+      Some(str) => str.parse::<u16>()?,
+      None => 80,
+    };
+    let web_fut = ui::web::begin(port);
 
     if let Some(tba_client) = settings.tba {
       info!("TBA Enabled");

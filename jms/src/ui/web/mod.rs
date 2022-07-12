@@ -8,9 +8,9 @@ mod reports;
 #[folder = "../jms-frontend/build"]
 struct WebRoot;
 
-pub async fn begin() -> anyhow::Result<()> {
+pub async fn begin(port: u16) -> anyhow::Result<()> {
   let mut default = rocket::config::Config::default();
-  default.port = 80;
+  default.port = port;
   default.address = IpAddr::V4("0.0.0.0".parse()?);
   default.shutdown.ctrlc = false;
 

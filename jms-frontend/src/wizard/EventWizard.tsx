@@ -77,6 +77,7 @@ type EventWizardMetaState = {
   configEvent?: EventWizardPageMeta,
   configTeams?: EventWizardPageMeta
   configSchedule?: EventWizardPageMeta
+  qualGen?: EventWizardPageMeta
 }
 
 type EventWizardState = {
@@ -99,8 +100,8 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
   navFor = (key: keyof EventWizardMetaState) => {
     let { tabLabel, attention, disabled } = this.state.metas[key] || { tabLabel: "Unknown", attention: false, disabled: false };
     return <Nav.Item>
-      <Nav.Link className="wizard-tab-link" eventKey={key} disabled={disabled} data-attention={attention}>
-        { attention ? <FontAwesomeIcon icon={faExclamationTriangle} /> : "" } &nbsp;
+      <Nav.Link className="wizard-tab-link" eventKey={key} disabled={disabled} data-attention={!disabled && attention}>
+        { (attention && !disabled) ? <FontAwesomeIcon icon={faExclamationTriangle} /> : "" } &nbsp;
         { tabLabel }
       </Nav.Link>
     </Nav.Item>
@@ -128,7 +129,7 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.navFor("configTeams") }
               { this.navFor("configSchedule") }
               <br /> <h6 className="text-muted">Qualifications</h6>
-              
+              { this.navFor("qualGen") }
               <br /> <h6 className="text-muted">Playoffs</h6>
               <br /> <h6 className="text-muted">Awards</h6>
             </Nav>
@@ -140,6 +141,7 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.paneFor("configEvent", <ConfigureEvent />) }
               { this.paneFor("configTeams", <ConfigureTeams />) }
               { this.paneFor("configSchedule", <ConfigureSchedule />) }
+              { this.paneFor("qualGen", <QualGenerator />) }
             </Tab.Content>
           </Col>
         </Row>

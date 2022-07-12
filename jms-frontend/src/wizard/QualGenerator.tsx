@@ -1,46 +1,58 @@
 import { faCheck, faCircleNotch, faCog, faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import confirmBool from "components/elements/Confirm";
+import _ from "lodash";
 import moment from "moment";
 import React from "react";
 import { Accordion, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
-import { confirm } from "react-bootstrap-confirmation";
+import { WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { MatchGenerationRecord, MatchGenerationRecordData, ScheduleBlock, SerialisedMatchGeneration, Team } from "ws-schema";
+import { EventWizardPageContent } from "./EventWizard";
 
-export default class QualGenerator extends React.Component {
-  static eventKey() { return "qual_gen"; }
-  static tabName() { return "Generate Qual Matches" }
+type QualGeneratorState = {
+  gen?: SerialisedMatchGeneration,
+  team_anneal_steps: number,
+  station_anneal_steps: number,
+  teams: Team[],
+  schedule: ScheduleBlock[]
+};
 
-  static isDisabled(d) {
-    return ( d.teams?.length || 0 ) < 6 || (d.schedule?.filter(x => x.block_type == "Qualification")?.length || 0) < 1;
+type QualGenRecord = Extract<MatchGenerationRecordData, { Qualification: any }>["Qualification"];
+
+export default class QualGenerator extends React.Component<{}, QualGeneratorState> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+  handles: string[] = [];
+
+  readonly state: QualGeneratorState = {
+    team_anneal_steps: 100_000,
+    station_anneal_steps: 50_000,
+    teams: [],
+    schedule: []
+  };
+
+  componentDidMount = () => {
+    this.handles = [
+      this.context.listen<Team[]>(["Event", "Team", "CurrentAll"], msg => this.setState({ teams: msg })),
+      this.context.listen<SerialisedMatchGeneration>(["Match", "Quals", "Generation"], msg => this.setState({ gen: msg })),
+      this.context.listen<ScheduleBlock[]>(["Event", "Schedule", "CurrentBlocks"], msg => this.setState({ schedule: msg }))
+    ]
   }
 
-  static needsAttention(d) {
-    return !!!d.matches?.quals?.record?.data;
-  }
-
-  constructor (props) {
-    super(props);
-
-    this.state = {
-      gen_config: {
-        team_anneal_steps: 100_000,
-        station_anneal_steps: 50_000
-      }
-    };
-  }
+  componentWillUnmount = () => this.context.unlisten(this.handles);
 
   clearSchedule = async () => {
-    let result = await confirm("Are you sure? This will clear the entire Qualification schedule", {
+    let result = await confirmBool("Are you sure? This will clear the entire Qualification schedule", {
       title: "Clear Qualification Schedule?",
-      okButtonStyle: "success"
+      okVariant: "danger",
+      okText: "Clear Quals Matches"
     });
 
     if (result)
-      this.props.ws.send("matches", "quals", "clear");
+      this.context.send({ Match: { Quals: "Clear" } });
   }
 
-  renderStatsForNerds = () => {
-    let record = this.props.matches?.quals?.record?.data?.Qualification;
-
+  renderStatsForNerds = (record: QualGenRecord) => {
     return <div>
       <Row>
         <Col>
@@ -86,12 +98,15 @@ export default class QualGenerator extends React.Component {
   }
 
   renderSchedule = () => {
-    let matches = this.props.matches?.quals?.matches;
+    const { gen } = this.state;
+    const matches = gen?.matches;
+    const record = gen?.record?.data;
+
     return <div>
       <Button
         variant="danger"
         onClick={this.clearSchedule}
-        disabled={matches?.find(x => x.played)}
+        disabled={matches?.find(x => x.played) != null}
       >
         Clear Qualification Schedule
       </Button>
@@ -105,7 +120,7 @@ export default class QualGenerator extends React.Component {
           </Accordion.Toggle>
           <Accordion.Collapse eventKey="0">
             <Card.Body>
-              { this.renderStatsForNerds() }
+              { (record && "Qualification" in record) ? this.renderStatsForNerds(record.Qualification) : undefined }
             </Card.Body>
           </Accordion.Collapse>
         </Card>
@@ -125,10 +140,10 @@ export default class QualGenerator extends React.Component {
         <tbody>
           {
             matches?.map(match => <tr>
-              <td> &nbsp; { moment.unix(match.time).format("ddd HH:mm:ss") } </td>
+              <td> &nbsp; { match.start_time ? moment.unix(match.start_time).format("ddd HH:mm:ss") : "Unknown" } </td>
               <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
-              { match.blue.map(t => <td className="schedule-blue"> { t } </td>) }
-              { match.red.map(t =>  <td className="schedule-red"> { t } </td>) }
+              { match.blue_teams.map(t => <td className="schedule-blue"> { t } </td>) }
+              { match.red_teams.map(t =>  <td className="schedule-red"> { t } </td>) }
             </tr>)
           }
         </tbody>
@@ -137,7 +152,9 @@ export default class QualGenerator extends React.Component {
   }
 
   renderNoSchedule = () => {
-    let running = this.props.matches?.quals?.running;
+    const { team_anneal_steps, station_anneal_steps } = this.state;
+    const running = this.state.gen?.running || false;
+
     return <div>
       <Accordion>
         <Card>
@@ -151,19 +168,19 @@ export default class QualGenerator extends React.Component {
                   <Form.Label> Team Balance Annealer Steps </Form.Label>
                   <Form.Control
                     type="number"
-                    value={this.state.gen_config.team_anneal_steps}
-                    onChange={e => this.setState({ gen_config: { ...this.state.gen_config, team_anneal_steps: parseInt(e.target.value) } })}
+                    value={this.state.team_anneal_steps}
+                    onChange={e => this.setState({ team_anneal_steps: parseInt(e.target.value) })}
                   />
-                  <Form.Text> { this.state.gen_config.team_anneal_steps.toLocaleString() } </Form.Text>
+                  <Form.Text> { this.state.team_anneal_steps.toLocaleString() } </Form.Text>
                 </Col>
                 <Col>
                   <Form.Label> Station Balance Annealer Steps </Form.Label>
                   <Form.Control
                     type="number"
-                    value={this.state.gen_config.station_anneal_steps}
-                    onChange={e => this.setState({ gen_config: { ...this.state.gen_config, station_anneal_steps: parseInt(e.target.value) } })}
+                    value={this.state.station_anneal_steps}
+                    onChange={e => this.setState({ station_anneal_steps: parseInt(e.target.value) })}
                   />
-                  <Form.Text> { this.state.gen_config.station_anneal_steps.toLocaleString() } </Form.Text>
+                  <Form.Text> { this.state.station_anneal_steps.toLocaleString() } </Form.Text>
                 </Col>
               </Row>
             </Card.Body>
@@ -175,7 +192,7 @@ export default class QualGenerator extends React.Component {
       <Button 
         size="lg"
         variant="success" 
-        onClick={ () => this.props.ws.send("matches", "quals", "generate", this.state.gen_config) }
+        onClick={ () => this.context.send({ Match: { Quals: { Generate: { team_anneal_steps, station_anneal_steps } } } }) }
         disabled={running}
       >
         <FontAwesomeIcon icon={running ? faCircleNotch : faCog} spin={running} />
@@ -186,7 +203,10 @@ export default class QualGenerator extends React.Component {
   }
 
   render() {
-    return <div>
+    const has_generated = this.state.gen?.record?.data;
+    const prereq = this.state.teams.length > 6 && _.some(this.state.schedule, s => s.block_type === "Qualification");
+    
+    return <EventWizardPageContent tabLabel="Generate Qualification Matches" attention={!has_generated} disabled={!prereq}>
       <h4>Generate Qualification Match Schedule</h4>
       <p className="text-muted">
         <FontAwesomeIcon icon={faInfoCircle} /> &nbsp;
@@ -198,9 +218,9 @@ export default class QualGenerator extends React.Component {
 
       <div>
         {
-          this.props.matches?.quals?.record?.data ? this.renderSchedule() : this.renderNoSchedule()
+          has_generated ? this.renderSchedule() : this.renderNoSchedule()
         }
       </div>
-    </div>
+    </EventWizardPageContent>
   }
 }
