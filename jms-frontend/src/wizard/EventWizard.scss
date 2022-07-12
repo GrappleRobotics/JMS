@@ -1,0 +1,43 @@
+.CSVImporter_Importer {
+  color: gray("700");
+}
+
+.CSVImporter_FileSelector {
+  background-color: gray("700");
+  color: gray("400");
+}
+
+.wizard-tabs {
+  max-width: 300px;
+}
+
+.wizard-tab-link {
+  &[data-attention=true] {
+    &.active {
+      @extend .bg-danger;
+    }
+    &:not(.active) {
+      color: theme-color("danger");
+    }
+  }
+}
+
+// Configure Teams
+.wizard-team-list {
+  .wizard-team-row {
+    > [data-field="id"] {
+      width: 15%;
+      padding-right: 2px;
+      text-align: right;
+    }
+  }
+  
+  thead > tr {
+    background-color: lighten(theme-color("dark"), 5%);
+    text-align: center;
+  }
+
+  tbody > tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+}

@@ -5,7 +5,7 @@ import { Button, Modal } from 'react-bootstrap';
 import { faCompressArrowsAlt, faExpand, faHome } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ArenaState, LoadedMatch } from 'ws-schema';
-import JmsWebsocket from 'support/ws';
+import { WebsocketContext, WebsocketContextT } from 'support/ws-component';
 
 type TopNavbarState = {
   estop_modal: boolean,
@@ -13,7 +13,10 @@ type TopNavbarState = {
   match?: LoadedMatch
 };
 
-export default class TopNavbar extends React.Component<{ ws: JmsWebsocket, connected: boolean }, TopNavbarState> {
+export default class TopNavbar extends React.Component<{}, TopNavbarState> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+
   readonly state: TopNavbarState = {
     estop_modal: false,
   };
@@ -21,17 +24,17 @@ export default class TopNavbar extends React.Component<{ ws: JmsWebsocket, conne
 
   componentDidMount = () => {
     this.handles = [
-      this.props.ws.onMessage<ArenaState>(["Arena", "State", "Current"], msg => {
+      this.context.listen<ArenaState>(["Arena", "State", "Current"], msg => {
         this.setState({ arena_state: msg })
       }),
-      this.props.ws.onMessage<LoadedMatch | null | undefined>(["Arena", "Match", "Current"], msg => {
+      this.context.listen<LoadedMatch | null | undefined>(["Arena", "Match", "Current"], msg => {
         this.setState({ match: msg || undefined })
       })
     ]
   }
 
   componentWillUnmount = () => {
-    this.props.ws.removeHandles(this.handles);
+    this.context.unlisten(this.handles);
   }
 
   estopShow = () => {
@@ -43,7 +46,7 @@ export default class TopNavbar extends React.Component<{ ws: JmsWebsocket, conne
   }
 
   triggerEstop = () => {
-    this.props.ws.send({ Arena: { State: { Signal: "Estop" } } });
+    this.context.send({ Arena: { State: { Signal: "Estop" } } });
     this.estopHide();
   }
 
@@ -110,7 +113,7 @@ export default class TopNavbar extends React.Component<{ ws: JmsWebsocket, conne
 
   render() {
     let fullscreen = document.fullscreenElement != null;
-    const { connected } = this.props;
+    const { connected } = this.context;
     const { arena_state, match } = this.state;
 
     return <Navbar variant="dark" fixed="top">

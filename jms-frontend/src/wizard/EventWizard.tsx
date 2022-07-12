@@ -2,7 +2,6 @@ import { faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { Button, Col, Container, Nav, Row, Tab, TabProps, Tabs } from "react-bootstrap";
-import JmsWebsocket from "support/ws";
 import { EventDetails, Team, ScheduleBlock, PlayoffAlliance, TeamRanking, Award } from "ws-schema";
 import ConfigureAlliances from "./ConfigureAlliances";
 import ConfigureAwards from "./ConfigureAwards";
@@ -11,48 +10,6 @@ import ConfigureSchedule from "./ConfigureSchedule";
 import ConfigureTeams from "./ConfigureTeams";
 import PlayoffGenerator from "./PlayoffGenerator";
 import QualGenerator from "./QualGenerator";
-
-const EK_WELCOME = 'welcome';
-
-// type EventWizardTabProps = {
-//   name: string
-//   attention?: boolean,
-//   disabled?: boolean,
-//   children: React.ReactNode
-// }
-
-// export class EventWizardTab extends React.PureComponent<EventWizardTabProps> {
-//   render() {
-
-//   }
-// }
-
-// interface EventWizardPageProps {
-//   key: string,
-//   attention: boolean,
-//   disabled: boolean,
-//   tab: React.ReactNode,
-//   children: React.ReactNode
-// }
-
-// export class EventWizardPage extends React.PureComponent<EventWizardPageProps> {
-//   class Content extends React.PureComponent<> {
-
-//   }
-
-//   render() {
-//     return <div className="event-wizard-page">
-//       { this.props.children }
-//     </div>
-//   }
-// }
-
-// interface EventWizardPageType {
-//   tabName: string,
-//   needsAttention: boolean
-//   isDisabled: boolean
-// }
-
 
 interface EventWizardPageMeta {
   tabLabel: React.ReactNode,
@@ -117,7 +74,8 @@ export class Welcome extends React.PureComponent {
 
 type EventWizardMetaState = {
   welcome?: EventWizardPageMeta,
-  configEvent?: EventWizardPageMeta
+  configEvent?: EventWizardPageMeta,
+  configTeams?: EventWizardPageMeta
 }
 
 type EventWizardState = {
@@ -125,7 +83,7 @@ type EventWizardState = {
   metas: EventWizardMetaState
 }
 
-export default class EventWizard extends React.Component<{ ws: JmsWebsocket }, EventWizardState> {
+export default class EventWizard extends React.Component<{}, EventWizardState> {
   readonly state: EventWizardState = {
     active: "welcome",
     metas: {}
@@ -156,8 +114,6 @@ export default class EventWizard extends React.Component<{ ws: JmsWebsocket }, E
   }
 
   render() {
-    let { ws } = this.props;
-
     return <Container fluid className="px-5">
       <h3>Event Wizard</h3>
       <hr />
@@ -166,14 +122,21 @@ export default class EventWizard extends React.Component<{ ws: JmsWebsocket }, E
           <Col md={3} className="vr-right wizard-tabs">
             <Nav variant="pills" className="flex-column">
               { this.navFor("welcome") }  
-              { this.navFor("configEvent") }  
+              <br /> <h6 className="text-muted">Pre-Event Config</h6>
+              { this.navFor("configEvent") }
+              { this.navFor("configTeams") }
+              <br /> <h6 className="text-muted">Qualifications</h6>
+              
+              <br /> <h6 className="text-muted">Playoffs</h6>
+              <br /> <h6 className="text-muted">Awards</h6>
             </Nav>
           </Col>
           <Col md>
             <Tab.Content>
               <br />
               { this.paneFor("welcome", <Welcome />) }
-              { this.paneFor("configEvent", <ConfigureEvent ws={ws} />) }
+              { this.paneFor("configEvent", <ConfigureEvent />) }
+              { this.paneFor("configTeams", <ConfigureTeams />) }
             </Tab.Content>
           </Col>
         </Row>

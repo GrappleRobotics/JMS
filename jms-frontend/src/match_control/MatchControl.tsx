@@ -3,9 +3,9 @@ import MatchFlow from "./MatchFlow";
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import MatchScheduleView from "./MatchScheduleView";
-import JmsWebsocket from "support/ws";
 import { AllianceStation, ArenaState, LoadedMatch, SerialisedMatchGeneration, SerializedMatch } from "ws-schema";
 import update from 'immutability-helper';
+import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 
 type FullArena = {
   state?: ArenaState,
@@ -24,33 +24,40 @@ type MatchControlState = {
   matches: FullMatches
 }
 
-export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, MatchControlState> {
+export default class MatchControl extends React.Component<{}, MatchControlState> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+
   readonly state: MatchControlState = { arena: {}, matches: {} };
   handles: string[] = [];
 
   componentDidMount = () => {
     this.handles = [
-      this.props.ws.onMessage<ArenaState>(["Arena", "State", "Current"], 
-        msg => this.setState(update(this.state, { arena: { state: { $set: msg } } }))),
-      this.props.ws.onMessage<AllianceStation[]>(["Arena", "Alliance", "CurrentStations"], 
-        msg => this.setState(update(this.state, { arena: { stations: { $set: msg } } }))),
-      this.props.ws.onMessage<LoadedMatch | null>(["Arena", "Match", "Current"], 
-        msg => this.setState(update(this.state, { arena: { match: { $set: msg || undefined } } }))),
-      this.props.ws.onMessage<SerialisedMatchGeneration>(["Match", "Quals", "Generation"], 
-        msg => this.setState(update(this.state, { matches: { quals: { $set: msg.matches } } }))),
-      this.props.ws.onMessage<SerialisedMatchGeneration>(["Match", "Playoffs", "Generation"], 
-        msg => this.setState(update(this.state, { matches: { playoffs: { $set: msg.matches } } }))),
-      this.props.ws.onMessage<SerializedMatch | null>(["Match", "Next"], 
-        msg => this.setState(update(this.state, { matches: { next: { $set: msg || undefined } } })))
+      // Arena State
+      this.context.listen<ArenaState>(["Arena", "State", "Current"], 
+        msg => this.setState(state => update(state, { arena: { state: { $set: msg } } }))),
+      // Alliances
+      this.context.listen<AllianceStation[]>(["Arena", "Alliance", "CurrentStations"], 
+        msg => this.setState(state => update(state, { arena: { stations: { $set: msg } } }))),
+      // Current Match
+      this.context.listen<LoadedMatch | null>(["Arena", "Match", "Current"], 
+        msg => this.setState(state => update(state, { arena: { match: { $set: msg || undefined } } }))),
+      // Other Matches
+      this.context.listen<SerialisedMatchGeneration>(["Match", "Quals", "Generation"], 
+        msg => this.setState(state => update(state, { matches: { quals: { $set: msg.matches } } }))),
+      this.context.listen<SerialisedMatchGeneration>(["Match", "Playoffs", "Generation"], 
+        msg => this.setState(state => update(state, { matches: { playoffs: { $set: msg.matches } } }))),
+      this.context.listen<SerializedMatch | null>(["Match", "Next"], 
+        msg => this.setState(state => update(state, { matches: { next: { $set: msg || undefined } } })))
     ]
   }
 
-  componentWillUnmount = () => this.props.ws.removeHandles(this.handles)
+  componentWillUnmount = () => this.context.unlisten(this.handles)
 
   render() {
-    let { ws } = this.props;
-    let { arena, matches } = this.state;
-    let has_match = !!arena.match;
+    const { arena, matches } = this.state;
+    const { send } = this.context;
+    const has_match = !!arena.match;
 
     return <Container>
       <Row>
@@ -60,7 +67,7 @@ export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, 
         <Col md="auto">
           <Button
             variant="danger"
-            onClick={() => ws.send({ Arena: { Match: "Unload" } })}
+            onClick={() => send({ Arena: { Match: "Unload" } })}
             disabled={arena.state?.state !== "Idle" || !has_match}
           >
             Unload Match
@@ -68,7 +75,7 @@ export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, 
           &nbsp;
           <Button
             variant="warning"
-            onClick={() => ws.send({ Arena: { Match: "LoadTest" } })}
+            onClick={() => send({ Arena: { Match: "LoadTest" } })}
             disabled={arena.state?.state !== "Idle"}
           >
             Load Test Match
@@ -86,7 +93,7 @@ export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, 
                 arenaState={arena.state}
                 matchScore={arena.match?.score?.blue}
                 stations={arena.stations?.filter(x => x.station.alliance === "Blue") || []}
-                onStationUpdate={ update => ws.send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
+                onStationUpdate={ update => send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
               />
             </Col>
             <Col>
@@ -96,7 +103,7 @@ export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, 
                 arenaState={arena.state}
                 matchScore={arena.match?.score?.red}
                 stations={arena.stations?.filter(x => x.station.alliance === "Red").reverse() || []}  // Red teams go 3-2-1 to order how they're seen from the scoring table
-                onStationUpdate={ update => ws.send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
+                onStationUpdate={ update => send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
               />
             </Col>
           </Row>
@@ -104,8 +111,8 @@ export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, 
           <MatchFlow
             state={arena.state}
             matchLoaded={has_match}
-            onSignal={sig => ws.send({ Arena: { State: { Signal: sig } } })}
-            onAudienceDisplay={scene => ws.send({ Arena: { AudienceDisplay: { Set: scene } } })}
+            onSignal={sig => send({ Arena: { State: { Signal: sig } } })}
+            onAudienceDisplay={scene => send({ Arena: { AudienceDisplay: { Set: scene } } })}
           />
         </Col>
       </Row>
@@ -118,7 +125,7 @@ export default class MatchControl extends React.Component<{ ws: JmsWebsocket }, 
             quals={matches.quals || []}
             playoffs={matches.playoffs || []}
             nextMatch={matches.next}
-            onLoadMatch={match_id => ws.send({ Arena: { Match: { Load: match_id } } })}
+            onLoadMatch={match_id => send({ Arena: { Match: { Load: match_id } } })}
           />
         </Col>
       </Row>

@@ -1,17 +1,21 @@
 import React from "react";
 import JmsWebsocket from "support/ws";
+import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 import { ArenaMessageMatch2UI } from "ws-schema";
 
-export default class Timer extends React.PureComponent<{ ws: JmsWebsocket }, ArenaMessageMatch2UI> {
+export default class Timer extends React.PureComponent<{}, ArenaMessageMatch2UI> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+
   readonly state: ArenaMessageMatch2UI = { Current: null };
   handle: string = "";
 
   componentDidMount = () => {
-    this.handle = this.props.ws.onMessage<ArenaMessageMatch2UI>(["Arena", "Match", "Current"], msg => this.setState(msg))
+    this.handle = this.context.listen<ArenaMessageMatch2UI>(["Arena", "Match", "Current"], msg => this.setState(msg))
   }
 
   componentWillUnmount = () => {
-    this.props.ws.removeHandle(this.handle)
+    this.context.unlisten([this.handle])
   }
 
   render() {

@@ -19,22 +19,14 @@ import { RefereeRouter } from 'scoring/Referee';
 import Debug from 'Debug';
 import Timer from 'Timer';
 import { TeamEstops } from 'TeamEstop';
+import { WebsocketContext, WebsocketContextT } from 'support/ws-component';
 
-type AppState = {
-  connected: boolean
-};
-
-export default class App extends React.Component< { ws: JmsWebsocket }, AppState > {
-  readonly state: AppState = {
-    connected: false
-  };
-
-  componentDidMount = () => {
-    this.props.ws.onConnectChange(connected => this.setState({ connected }))
-  }
+export default class App extends React.Component {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
 
   renderNoNavbar = () => {
-    return this.state.connected ? <React.Fragment /> : <Navbar bg="danger" variant="dark"> <Navbar.Brand className="ml-5"> DISCONNECTED </Navbar.Brand> </Navbar>
+    return this.context.connected ? <React.Fragment /> : <Navbar bg="danger" variant="dark"> <Navbar.Brand className="ml-5"> DISCONNECTED </Navbar.Brand> </Navbar>
   }
 
   wrapView = (children: any, props: { nonav?: boolean, fullscreen?: boolean, nopad?: boolean } = {}) => {
@@ -44,14 +36,11 @@ export default class App extends React.Component< { ws: JmsWebsocket }, AppState
       {
         nonav ? this.renderNoNavbar() : <Row className="navbar-padding">
           <Col>
-            <TopNavbar
-              ws={this.props.ws}
-              connected={this.state.connected}
-            />
+            <TopNavbar />
           </Col>
         </Row>
       }
-      <Row className={"app-viewport " + (fullscreen ? "fullscreen " : "") + (nopad ? "p-0 " : "")} data-connected={this.state.connected}>
+      <Row className={"app-viewport " + (fullscreen ? "fullscreen " : "") + (nopad ? "p-0 " : "")} data-connected={this.context.connected}>
         {/* <Col> */}
         { children }
         {/* </Col> */}
@@ -59,9 +48,7 @@ export default class App extends React.Component< { ws: JmsWebsocket }, AppState
       {
         nonav ? <React.Fragment /> : <Row className="navbar-padding">
           <Col>
-            <BottomNavbar
-              ws={this.props.ws}
-            />
+            <BottomNavbar />
           </Col>
         </Row>
       }
@@ -182,12 +169,12 @@ export default class App extends React.Component< { ws: JmsWebsocket }, AppState
         </this.wrapView>
       </Route> */}
     return <Routes>
-      <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard ws={this.props.ws} />) } />
-      <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl ws={this.props.ws} />) } />
-      <Route path={ESTOPS} element={ this.wrapView(<TeamEstops ws={this.props.ws} />, { fullscreen: true }) } />
-      <Route path={DEBUG} element={ this.wrapView(<Debug ws={this.props.ws} />) } />
+      <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
+      <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl />) } />
+      <Route path={ESTOPS} element={ this.wrapView(<TeamEstops />, { fullscreen: true }) } />
+      <Route path={DEBUG} element={ this.wrapView(<Debug />) } />
       <Route path={REPORTS} element={ this.wrapView(<Reports />) } />
-      <Route path={TIMER} element={ this.wrapView(<Timer ws={this.props.ws} />, { nonav: true, fullscreen: true, nopad: true }) } />
+      <Route path={TIMER} element={ this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true }) } />
       <Route path="/" element={ this.wrapView(<Home />) } />
     </Routes>
   }

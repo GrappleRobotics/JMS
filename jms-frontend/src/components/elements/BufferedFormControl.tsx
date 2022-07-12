@@ -3,15 +3,15 @@ import { FormControl, FormControlProps } from "react-bootstrap";
 import { Combine } from "support/util";
 
 export type BufferedProps = Combine<{
-  autofocus: boolean,
-  auto: boolean,
-  autoMillis: number,
-  instant: boolean,
-  enter: boolean,
+  autofocus?: boolean,
+  auto?: boolean,
+  autoMillis?: number,
+  instant?: boolean,
+  enter?: boolean,
   value: number | string,
   onUpdate: (val: number | string) => void,
   className?: string,
-  resetOnEnter: boolean
+  resetOnEnter?: boolean
 }, FormControlProps & React.HTMLAttributes<HTMLInputElement>>;
 
 type BufferedState = {

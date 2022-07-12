@@ -1,7 +1,7 @@
 import moment from "moment";
 import React from "react";
 import { Col, Navbar } from "react-bootstrap";
-import JmsWebsocket from "support/ws";
+import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 import { EventDetails, LoadedMatch, SerializedMatch } from "ws-schema";
 
 type BottomNavbarState = {
@@ -10,26 +10,29 @@ type BottomNavbarState = {
   next_match?: SerializedMatch
 }
 
-export default class BottomNavbar extends React.Component<{ws: JmsWebsocket}, BottomNavbarState> {
+export default class BottomNavbar extends React.Component<{}, BottomNavbarState> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+
   readonly state: BottomNavbarState = { };
   handles: string[] = [];
 
   componentDidMount = () => {
     this.handles = [
-      this.props.ws.onMessage<LoadedMatch | null>(["Arena", "Match", "Current"], msg => {
+      this.context.listen<LoadedMatch | null>(["Arena", "Match", "Current"], msg => {
         this.setState({ current_match: msg || undefined })
       }),
-      this.props.ws.onMessage<EventDetails>(["Event", "Details", "Current"], msg => {
+      this.context.listen<EventDetails>(["Event", "Details", "Current"], msg => {
         this.setState({ event_details: msg })
       }),
-      this.props.ws.onMessage<SerializedMatch | null>([ "Match", "Next" ], msg => {
+      this.context.listen<SerializedMatch | null>([ "Match", "Next" ], msg => {
         this.setState({ next_match: msg || undefined })
       })
     ]
   }
 
   componentWillUnmount = () => {
-    this.props.ws.removeHandles(this.handles);
+    this.context.unlisten(this.handles);
   }
 
 

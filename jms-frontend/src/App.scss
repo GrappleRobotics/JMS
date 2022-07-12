@@ -21,15 +21,6 @@ $alliances: ( "red", "blue" );
 @import "~react-csv-importer/dist/index.css";
 @import "~bootswatch/dist/darkly/bootswatch";
 
-.CSVImporter_Importer {
-  color: gray("700");
-}
-
-.CSVImporter_FileSelector {
-  background-color: gray("700");
-  color: gray("400");
-}
-
 .nav-link.disabled {
   color: $gray-600;
 }
@@ -221,21 +212,8 @@ input[type=number] {
   }
 }
 
-.wizard-attention {
-  &:not(.active) {
-    @extend .text-danger;
-  }
-  &.active {
-    @extend .bg-danger;
-  }
-}
-
 .w-15 {
   width: 15%;
-}
-
-.wizard-tabs {
-  max-width: 250px;
 }
 
 .table-striped > tbody > tr:nth-child(odd) {
@@ -658,3 +636,4 @@ th {
 
 @import "audience/Audience.scss";
 @import "match_control/MatchControl.scss";
+@import "wizard/EventWizard.scss";

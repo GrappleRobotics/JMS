@@ -1,8 +1,12 @@
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import JmsWebsocket from "support/ws";
+import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 
-export default class Debug extends React.PureComponent<{ws: JmsWebsocket}> {
+export default class Debug extends React.PureComponent<{}> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+
   render() {
     let screen = window.screen;
     let root = document.documentElement;
@@ -27,7 +31,7 @@ export default class Debug extends React.PureComponent<{ws: JmsWebsocket}> {
         <Col>
           <h4> Matches </h4>
           <Button
-            onClick={() => this.props.ws.send({ Debug: { Match: "FillRandomScores" } })}
+            onClick={() => this.context.send({ Debug: { Match: "FillRandomScores" } })}
             variant="danger"
           >
             Random Fill
@@ -35,7 +39,7 @@ export default class Debug extends React.PureComponent<{ws: JmsWebsocket}> {
           <br />
           <br />
           <Button
-            onClick={() => this.props.ws.send({ Debug: { Match: "DeleteAll" } })}
+            onClick={() => this.context.send({ Debug: { Match: "DeleteAll" } })}
             variant="danger"
           >
             DELETE ALL (DANGER)

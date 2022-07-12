@@ -1,8 +1,8 @@
 import { WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
 import { v4 as uuid } from 'uuid';
 
-type CallbackFn<T> = (msg: T, fullMessage: WebsocketMessage2UI) => void;
-type ConnectCallback = (isOpen: boolean) => void;
+export type CallbackFn<T> = (msg: T, fullMessage: WebsocketMessage2UI) => void;
+export type ConnectCallback = (isOpen: boolean) => void;
 type Callback<T> = {
   path: string[],
   fn: CallbackFn<T>
@@ -88,6 +88,10 @@ export default class JmsWebsocket {
     };
   }
 
+  close() {
+    this.ws?.close();
+  }
+
   dead() {
     return !this.ws || this.ws.readyState === WebSocket.CLOSED;
   }
@@ -130,8 +134,10 @@ export default class JmsWebsocket {
       this.connectCallbacks.delete(id);
   }
 
-  removeHandles(ids: string[]) {
-    ids.forEach(this.removeHandle);
+  removeHandles(ids?: string[]) {
+    // Sometimes set as undefined when live-reloading in dev
+    if (ids !== undefined && this !== undefined && this.removeHandle !== undefined)
+      ids.forEach(this.removeHandle);
   }
 
   onConnectChange(cb: ConnectCallback): string {

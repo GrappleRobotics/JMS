@@ -1,16 +1,18 @@
 import React from "react";
 import { Button, Container } from "react-bootstrap";
 import JmsWebsocket from "support/ws";
+import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 import { AllianceStation } from "ws-schema";
 
 type TeamEstopProps = {
-  ws: JmsWebsocket,
-  station: AllianceStation
+  station: AllianceStation,
+  onTrigger: (which: "astop" | "estop") => void
 }
 
+// TODO: Guard with an "ARE YOU SURE?"
 class TeamEstop extends React.PureComponent<TeamEstopProps> {  
   render() {
-    let { station, ws } = this.props;
+    let { station, onTrigger } = this.props;
     return <div className="team-estop">
       <h3> { station.station.alliance } { station.station.station } - { station.team || "No Team" } </h3>
       <br />
@@ -20,7 +22,7 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
         block
         variant="hazard-red-dark"
         disabled={station.estop}
-        onClick={() => ws.send({ Arena: { Alliance: { UpdateAlliance: { station: station.station, estop: true } } } })}
+        onClick={() => onTrigger("estop")}
       >
         EMERGENCY STOP <br />
         <span className="subtext"> AUTO + TELEOP </span>
@@ -31,7 +33,7 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
         block
         variant="hazard-dark"
         disabled={station.astop || station.estop}
-        onClick={() => ws.send({ Arena: { Alliance: { UpdateAlliance: { station: station.station, astop: true } } } })}
+        onClick={() => onTrigger("astop")}
       >
         EMERGENCY STOP <br />
         <span className="subtext">AUTO ONLY</span>
@@ -44,15 +46,18 @@ type TeamEstopsState = {
   stations: AllianceStation[]
 };
 
-export class TeamEstops extends React.PureComponent<{ ws: JmsWebsocket }, TeamEstopsState> {
+export class TeamEstops extends React.PureComponent<{}, TeamEstopsState> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+
   readonly state: TeamEstopsState = { stations: [] };
   handle: string = "";
 
   componentDidMount = () => {
-    this.handle = this.props.ws.onMessage<AllianceStation[]>(["Arena", "Alliance", "CurrentStations"], msg => this.setState({ stations: msg }))
+    this.handle = this.context.listen<AllianceStation[]>(["Arena", "Alliance", "CurrentStations"], msg => this.setState({ stations: msg }))
   }
 
-  componentWillUnmount = () => this.props.ws.removeHandle(this.handle);
+  componentWillUnmount = () => this.context.unlisten([this.handle]);
 
   render() {
     let stationIdx = parseInt(window.location.hash.substr(1));
@@ -60,7 +65,15 @@ export class TeamEstops extends React.PureComponent<{ ws: JmsWebsocket }, TeamEs
     return <Container fluid>
       {
         (!isNaN(stationIdx) ? 
-          <TeamEstop ws={this.props.ws} station={this.state.stations[stationIdx]} />
+          <TeamEstop 
+            station={this.state.stations[stationIdx]}
+            onTrigger={which => this.context.send({
+              Arena: { Alliance: { UpdateAlliance: {
+                [which]: true,
+                station: this.state.stations[stationIdx].station
+              } } }
+            })}
+          />
           : this.state.stations.map( (s, i) => (
             <Button 
               className="my-3" 

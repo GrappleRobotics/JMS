@@ -1,19 +1,16 @@
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from 'App';
-import JmsWebsocket from 'support/ws';
 
 import './App.scss';
+import { WebsocketManagerComponent } from 'support/ws-component';
 
-let ws = new JmsWebsocket();
-ws.connect();
-// @ts-ignore
-window['ws'] = ws;
+const root = ReactDOM.createRoot(document.getElementById('root')!);
 
-ReactDOM.render(
-  // @ts-ignore
-  <BrowserRouter>
-    <App ws={ws} />
-  </BrowserRouter>, 
-  document.getElementById("root")
+root.render(
+  <WebsocketManagerComponent>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </WebsocketManagerComponent>
 );

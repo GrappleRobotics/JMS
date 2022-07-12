@@ -6,6 +6,7 @@ import React from "react";
 import { Row, Col, Form, Button } from "react-bootstrap";
 import { nullIfEmpty } from "support/strings";
 import JmsWebsocket from "support/ws";
+import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 import { EventDetails } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 
@@ -13,23 +14,26 @@ type ConfigureEventState = {
   details: EventDetails
 }
 
-export default class ConfigureEvent extends React.Component<{ ws: JmsWebsocket }, ConfigureEventState> {
+export default class ConfigureEvent extends React.Component<{ }, ConfigureEventState> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+
   readonly state: ConfigureEventState = { details: { webcasts: [] } };
   handles: string[] = [];
 
   componentDidMount = () => {
     this.handles = [
-      this.props.ws.onMessage<EventDetails>(["Event", "Details", "Current"], details => this.setState({ details: details }))
+      this.context.listen<EventDetails>(["Event", "Details", "Current"], details => this.setState({ details: details }))
     ]
   }
 
   componentWillUnmount = () => {
-    this.props.ws.removeHandles(this.handles);
+    this.context.unlisten(this.handles);
   }
 
   changeEventDetails = (changes: Partial<EventDetails>) => {
     let details = this.state.details;
-    this.props.ws.send({ Event: { Details: { Update: { ...details, ...changes } } } });
+    this.context.send({ Event: { Details: { Update: { ...details, ...changes } } } });
   }
 
   submitNewWebcast = (webcast: string) => {
@@ -58,7 +62,7 @@ export default class ConfigureEvent extends React.Component<{ ws: JmsWebsocket }
             <Form.Label>Event Code <span className="text-muted">(Optional)</span></Form.Label>
             <BufferedFormControl 
               type="text"
-              placeholder="2021myevent"
+              placeholder="2022myevent"
               value={details.code || ""}
               onUpdate={v => this.changeEventDetails({ code: nullIfEmpty(String(v)) })}
             />
