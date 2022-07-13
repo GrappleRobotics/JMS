@@ -19,7 +19,6 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
       <Button
         size="lg"
         className="estop-all"
-        block
         variant="hazard-red-dark"
         disabled={station.estop}
         onClick={() => onTrigger("estop")}
@@ -30,7 +29,6 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
 
       <Button
         className="estop-auto"
-        block
         variant="hazard-dark"
         disabled={station.astop || station.estop}
         onClick={() => onTrigger("astop")}
@@ -76,9 +74,8 @@ export class TeamEstops extends React.PureComponent<{}, TeamEstopsState> {
           />
           : this.state.stations.map( (s, i) => (
             <Button 
-              className="my-3" 
+              className="my-3 btn-block" 
               size="lg" 
-              block 
               data-alliance={s.station.alliance.toLowerCase()}
               onClick={() => window.location.hash = "#" + i}
             >

@@ -72,7 +72,7 @@ export default class BottomNavbar extends React.Component<{}, BottomNavbarState>
           { this.getScheduleTimings() }
         </Navbar.Brand>
       </Col>
-      <Col className="text-right">
+      <Col className="text-end">
         <Navbar.Brand>
           <i>
             { this.state.event_details?.event_name }

@@ -68,7 +68,7 @@ class FieldMonitorStation extends React.PureComponent {
               <Col className="monitor-team">
                 { s.team || "" }
               </Col>
-              <Col className="text-right" data-ok={ this.lostPktPercent(report?.pkts_lost, report?.pkts_sent) < 10 }>
+              <Col className="text-end" data-ok={ this.lostPktPercent(report?.pkts_lost, report?.pkts_sent) < 10 }>
                 { this.renderSent(s.ds_report?.pkts_lost, s.ds_report?.pkts_sent) }%
               </Col>
             </Row>

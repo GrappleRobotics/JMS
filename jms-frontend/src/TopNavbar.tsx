@@ -71,13 +71,12 @@ export default class TopNavbar extends React.Component<{}, TopNavbarState> {
             size="lg"
             variant="estop"
             className="estop-big"
-            block
             onClick={this.triggerEstop}
           >
             EMERGENCY STOP
           </Button>
           <div className="my-5" />
-          <Button block variant="secondary" onClick={this.estopHide}> CANCEL </Button>
+          <Button className="estop-cancel" variant="secondary" onClick={this.estopHide}> CANCEL </Button>
         </Modal.Body>
       </Modal>);
   }

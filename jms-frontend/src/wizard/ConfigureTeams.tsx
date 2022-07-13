@@ -160,27 +160,23 @@ export default class ConfigureTeams extends React.Component {
       </p>
 
       <Accordion>
-        <Card>
-          <Accordion.Toggle as={Card.Header} eventKey="0">
-            Import Data
-          </Accordion.Toggle>
-          <Accordion.Collapse eventKey="0">
-            <Card.Body>
-              {
-                !editable ? <p> Teams are LOCKED (matches generated)... </p> :
-                  <Importer
-                    restartable={true}
-                    processChunk={this.importCSV}
-                  >
-                    <ImporterField name="id" label="Team Number" />
-                    <ImporterField name="name" label="Team Name" optional />
-                    <ImporterField name="affiliation" label="Team Affiliation (School)" optional />
-                    <ImporterField name="location" label="Team Location" optional />
-                  </Importer>
-              }
-            </Card.Body>
-          </Accordion.Collapse>
-        </Card>
+        <Accordion.Item eventKey="0">
+          <Accordion.Header> Import Data </Accordion.Header>
+          <Accordion.Body>
+            {
+              !editable ? <p> Teams are LOCKED (matches generated)... </p> :
+                <Importer
+                  restartable={true}
+                  processChunk={this.importCSV}
+                >
+                  <ImporterField name="id" label="Team Number" />
+                  <ImporterField name="name" label="Team Name" optional />
+                  <ImporterField name="affiliation" label="Team Affiliation (School)" optional />
+                  <ImporterField name="location" label="Team Location" optional />
+                </Importer>
+            }
+          </Accordion.Body>
+        </Accordion.Item>
       </Accordion>
 
       <br />

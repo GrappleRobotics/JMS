@@ -1,16 +1,35 @@
+@use "sass:color";
+
 @import "~bootswatch/dist/darkly/variables";
 
+$primary: #005fc4;
+$success: #28a745;
+
 $theme-colors: (
-  "primary": #007bff,
-  "success": #28a745,
+  "primary": $primary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "light": $light,
+  "dark": $dark,
+
   "good": #28a745,
   "bad": #e74c3c,
   "red": #f53e31,
   "blue": #3152f5,
   "purple": #9300e9,
   "hazard-yellow": #735a00,
-  "hazard-red": #730000
+  "hazard-red": #730000,
+  "gold": #daa520,
+  "silver": #c0c0c0
 );
+
+$accordion-bg: $dark;
+$accordion-color: white;
+$accordion-button-active-bg: $secondary;
+$accordion-button-active-color: white;
 
 $alliances: ( "red", "blue" );
 
@@ -21,8 +40,21 @@ $alliances: ( "red", "blue" );
 @import "~react-csv-importer/dist/index.css";
 @import "~bootswatch/dist/darkly/bootswatch";
 
+@function theme-color($key) {
+  @return map-get($theme-colors, $key);
+}
+
+a {
+  text-decoration: none;
+}
+
 .nav-link.disabled {
   color: $gray-600;
+}
+
+.btn-block {
+  width: 100%;
+  display: block;
 }
 
 html, body, #root {
@@ -127,6 +159,8 @@ html, body, #root {
 }
 
 .estop-big {
+  display: block;
+  width: 100%;
   padding: 2rem;
   font-size: 3rem;
   font-weight: bold;
@@ -135,6 +169,11 @@ html, body, #root {
 .estop-subtitle {
   font-size: 1.25rem;
   text-align: center;
+}
+
+.estop-cancel {
+  display: block;
+  width: 100%;
 }
 
 // .bg-hazard-dark {
@@ -353,11 +392,6 @@ th {
       background-color: #865320;
     }
   }
-}
-
-.award {
-  min-width: 315px;
-  max-width: 400px;
 }
 
 .grow {
@@ -611,12 +645,16 @@ th {
   text-align: center;
   
   .estop-all {
+    display: block;
+    width: 100%;
     height: 50vh;
     font-weight: bold;
     font-size: 5em;
   }
 
   .estop-auto {
+    display: block;
+    width: 100%;
     height: 30vh;
     font-weight: bold;
     font-size: 4em;

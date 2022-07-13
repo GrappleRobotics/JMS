@@ -9,7 +9,6 @@ class MatchFlowButton extends React.PureComponent<ButtonProps & { arenaState?: A
     return <Button
       className={`match-flow-btn ${className || ""}`}
       data-target={targetState}
-      block
       active={arenaState?.state === targetState}
       {...props}
     />
@@ -44,7 +43,6 @@ export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
               className="match-flow-btn"
               data-target="MatchPreview"
               variant="warning"
-              block
               disabled={!matchLoaded}
               onClick={() => this.props.onAudienceDisplay("MatchPreview")}
             >

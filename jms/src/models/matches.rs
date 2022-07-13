@@ -1,4 +1,4 @@
-use crate::{db::{self, DBDateTime, TableType}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
+use crate::{db::{self, DBDateTime, TableType, DBDuration}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
 
 use super::TeamRanking;
 
@@ -216,6 +216,7 @@ pub enum MatchGenerationRecordData {
     station_balance: f64,
     cooccurrence: Vec<Vec<usize>>,
     station_dist: Vec<Vec<usize>>,
+    gen_time: DBDuration
   },
   Playoff {
     mode: PlayoffMode,

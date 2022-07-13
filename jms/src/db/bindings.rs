@@ -129,3 +129,9 @@ impl<'de> serde::Deserialize<'de> for DBDuration {
     Ok(Self(Duration::milliseconds(ms)))
   }
 }
+
+impl From<chrono::Duration> for DBDuration {
+  fn from(chrono_dur: chrono::Duration) -> Self {
+    DBDuration(chrono_dur)
+  }
+}

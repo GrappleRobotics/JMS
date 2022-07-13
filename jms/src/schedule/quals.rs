@@ -21,7 +21,7 @@ impl QualsMatchGenerator {
     Self {}
   }
 
-  fn commit_generation_record(&self, result: &GenerationResult) -> Result<(), Box<dyn Error>> {
+  fn commit_generation_record(&self, result: &GenerationResult, gen_time: chrono::Duration) -> Result<(), Box<dyn Error>> {
     let mut mgr = MatchGenerationRecord {
       match_type: models::MatchType::Qualification,
       data: Some(MatchGenerationRecordData::Qualification {
@@ -37,6 +37,7 @@ impl QualsMatchGenerator {
           .column_iter()
           .map(|col| col.iter().cloned().collect::<Vec<usize>>())
           .collect(),
+        gen_time: gen_time.into(),
       })
     };
 
@@ -96,6 +97,8 @@ impl MatchGenerator for QualsMatchGenerator {
     params: QualsMatchGeneratorParams,
     _: Option<MatchGenerationRecord>,
   ) -> Result<(), Box<dyn Error>> {
+    let gen_start_t = chrono::Local::now();
+
     let station_balance_anneal = Annealer::new(1.0, 0.0, params.station_anneal_steps);
     let team_balance_anneal = Annealer::new(1.0, 0.0, params.team_anneal_steps);
 
@@ -114,8 +117,10 @@ impl MatchGenerator for QualsMatchGenerator {
       .schedule
       .contextualise(&teams);
 
+    let gen_end_t = chrono::Local::now();
+      
     // Commit
-    self.commit_generation_record(&generation_result)?;
+    self.commit_generation_record(&generation_result, gen_end_t - gen_start_t)?;
     self.commit_matches(&team_sched)?;
 
     Ok(())

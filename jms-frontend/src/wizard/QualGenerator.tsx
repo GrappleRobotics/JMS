@@ -17,7 +17,7 @@ type QualGeneratorState = {
   schedule: ScheduleBlock[]
 };
 
-type QualGenRecord = Extract<MatchGenerationRecordData, { Qualification: any }>["Qualification"];
+type QualGenRecord = Extract<MatchGenerationRecordData, { Qualification: any }>;
 
 export default class QualGenerator extends React.Component<{}, QualGeneratorState> {
   static contextType = WebsocketContext;
@@ -52,7 +52,7 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
       this.context.send({ Match: { Quals: "Clear" } });
   }
 
-  renderStatsForNerds = (record: QualGenRecord) => {
+  renderStatsForNerds = (record: QualGenRecord["Qualification"]) => {
     return <div>
       <Row>
         <Col>
@@ -98,15 +98,21 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
   }
 
   renderSchedule = () => {
-    const { gen } = this.state;
-    const matches = gen?.matches;
-    const record = gen?.record?.data;
+    const { gen, teams } = this.state;
+    const matches = gen?.matches || [];
+    const record = (gen?.record?.data! as QualGenRecord)["Qualification"];
+
+    const mean_gap = _.mean(teams.flatMap(t => {
+      const matchIdxs = _.filter( _.range(matches.length), (i) => _.find(matches[i].blue_teams, u => u === t.id) != null || _.find(matches[i].red_teams, u => u === t.id) != null);
+      const diff = _.zip(matchIdxs.slice(1), matchIdxs.slice(0, matchIdxs.length - 1)).map(v => (v!)[0]! - (v!)[1]!);
+      return diff;
+    }));
 
     return <div>
       <Button
         variant="danger"
         onClick={this.clearSchedule}
-        disabled={matches?.find(x => x.played) != null}
+        disabled={matches.find(x => x.played) != null}
       >
         Clear Qualification Schedule
       </Button>
@@ -114,7 +120,7 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
       <br /> <br />
 
       <Accordion>
-        <Card>
+        {/* <Card>
           <Accordion.Toggle as={Card.Header} eventKey="0">
             Stats for Nerds
           </Accordion.Toggle>
@@ -123,9 +129,22 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
               { (record && "Qualification" in record) ? this.renderStatsForNerds(record.Qualification) : undefined }
             </Card.Body>
           </Accordion.Collapse>
-        </Card>
+        </Card> */}
+        <Accordion.Item eventKey="0">
+          <Accordion.Header> Stats for Nerds </Accordion.Header>
+          <Accordion.Body>
+            { this.renderStatsForNerds(record) }
+          </Accordion.Body>
+        </Accordion.Item>
       </Accordion>
 
+      <br />
+
+      <span> Schedule Generated in { moment.duration(record.gen_time, 'milliseconds').asSeconds().toFixed(2) }s </span>
+      <br />
+      <span> Mean Gap: { mean_gap.toFixed(2) } matches </span>
+
+      <br />
       <br />
 
       <Table bordered striped size="sm">
@@ -139,7 +158,7 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
         </thead>
         <tbody>
           {
-            matches?.map(match => <tr>
+            matches.map(match => <tr>
               <td> &nbsp; { match.start_time ? moment.unix(match.start_time).format("ddd HH:mm:ss") : "Unknown" } </td>
               <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
               { match.blue_teams.map(t => <td className="schedule-row" data-alliance="blue"> { t } </td>) }
@@ -157,35 +176,31 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
 
     return <div>
       <Accordion>
-        <Card>
-          <Accordion.Toggle as={Card.Header} eventKey="0">
-            Advanced Configuration
-          </Accordion.Toggle>
-          <Accordion.Collapse eventKey="0">
-            <Card.Body>
-              <Row>
-                <Col>
-                  <Form.Label> Team Balance Annealer Steps </Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={this.state.team_anneal_steps}
-                    onChange={e => this.setState({ team_anneal_steps: parseInt(e.target.value) })}
-                  />
-                  <Form.Text> { this.state.team_anneal_steps.toLocaleString() } </Form.Text>
-                </Col>
-                <Col>
-                  <Form.Label> Station Balance Annealer Steps </Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={this.state.station_anneal_steps}
-                    onChange={e => this.setState({ station_anneal_steps: parseInt(e.target.value) })}
-                  />
-                  <Form.Text> { this.state.station_anneal_steps.toLocaleString() } </Form.Text>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Accordion.Collapse>
-        </Card>
+        <Accordion.Item eventKey="0">
+          <Accordion.Header>Advanced Configuration</Accordion.Header>
+          <Accordion.Body>
+            <Row>
+              <Col>
+                <Form.Label> Team Balance Annealer Steps </Form.Label>
+                <Form.Control
+                  type="number"
+                  value={this.state.team_anneal_steps}
+                  onChange={e => this.setState({ team_anneal_steps: parseInt(e.target.value) })}
+                />
+                <Form.Text> { this.state.team_anneal_steps.toLocaleString() } </Form.Text>
+              </Col>
+              <Col>
+                <Form.Label> Station Balance Annealer Steps </Form.Label>
+                <Form.Control
+                  type="number"
+                  value={this.state.station_anneal_steps}
+                  onChange={e => this.setState({ station_anneal_steps: parseInt(e.target.value) })}
+                />
+                <Form.Text> { this.state.station_anneal_steps.toLocaleString() } </Form.Text>
+              </Col>
+            </Row>
+          </Accordion.Body>
+        </Accordion.Item>
       </Accordion>
 
       <br />

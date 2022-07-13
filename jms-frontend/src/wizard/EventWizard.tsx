@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { Button, Col, Container, Nav, Row, Tab, TabProps, Tabs } from "react-bootstrap";
 import { EventDetails, Team, ScheduleBlock, PlayoffAlliance, TeamRanking, Award } from "ws-schema";
-import ConfigureAlliances from "./ConfigureAlliances";
+import AllianceSelection from "./AllianceSelection";
 import ConfigureAwards from "./ConfigureAwards";
 import ConfigureEvent from "./ConfigureEvent";
 import ConfigureSchedule from "./ConfigureSchedule";
@@ -77,7 +77,10 @@ type EventWizardMetaState = {
   configEvent?: EventWizardPageMeta,
   configTeams?: EventWizardPageMeta
   configSchedule?: EventWizardPageMeta
-  qualGen?: EventWizardPageMeta
+  qualGen?: EventWizardPageMeta,
+  allianceSel?: EventWizardPageMeta,
+  playoffGen?: EventWizardPageMeta,
+  awards?: EventWizardPageMeta
 }
 
 type EventWizardState = {
@@ -131,7 +134,10 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               <br /> <h6 className="text-muted">Qualifications</h6>
               { this.navFor("qualGen") }
               <br /> <h6 className="text-muted">Playoffs</h6>
+              { this.navFor("allianceSel") }
+              { this.navFor("playoffGen") }
               <br /> <h6 className="text-muted">Awards</h6>
+              { this.navFor("awards") }
             </Nav>
           </Col>
           <Col md>
@@ -142,6 +148,9 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.paneFor("configTeams", <ConfigureTeams />) }
               { this.paneFor("configSchedule", <ConfigureSchedule />) }
               { this.paneFor("qualGen", <QualGenerator />) }
+              { this.paneFor("allianceSel", <AllianceSelection />) }
+              { this.paneFor("playoffGen", <PlayoffGenerator />) }
+              { this.paneFor("awards", <ConfigureAwards />) }
             </Tab.Content>
           </Col>
         </Row>

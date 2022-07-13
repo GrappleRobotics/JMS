@@ -7,8 +7,8 @@ type ConfirmModalOptions<T> = {
   title?: React.ReactNode,
 
   // Either this....
-  okBtn?: Omit<React.ComponentProps<Button>, "onClick">,
-  cancelBtn?: Omit<React.ComponentProps<Button>, "onClick">,
+  okBtn?: Omit<React.ComponentProps<typeof Button>, "onClick">,
+  cancelBtn?: Omit<React.ComponentProps<typeof Button>, "onClick">,
   
   // Or this...
   render?: (ok: (data?: T) => void, cancel: () => void) => React.ReactNode,
@@ -21,7 +21,7 @@ type ConfirmModalOptions<T> = {
 
   renderInner?: (data: T, onUpdate: (data: T) => void) => React.ReactNode,
   data?: T
-} & Omit<React.ComponentProps<Modal>, "show" | "onHide">;
+} & Omit<React.ComponentProps<typeof Modal>, "show" | "onHide">;
 
 type ConfirmModalProps<T> = ReactConfirmProps & ConfirmModalOptions<T>;
 

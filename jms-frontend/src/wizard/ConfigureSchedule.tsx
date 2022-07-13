@@ -98,8 +98,8 @@ class ScheduleBlockComponent extends React.PureComponent<ScheduleBlockComponentP
           </small>
         </Col>
         <Col md="11">
-          <Card border={ is_match_block ? "primary" : "secondary" }>
-            <Accordion.Toggle as={Card.Header} eventKey="0">
+          <Accordion.Item eventKey="0" as={Card} border={ is_match_block ? "primary" : "secondary" }>
+            <Accordion.Header className="wizard-schedule-header">
               <Row>
                 <Col md={5}>
                   <EditableFormControl
@@ -118,7 +118,7 @@ class ScheduleBlockComponent extends React.PureComponent<ScheduleBlockComponentP
                     { duration.format("h [hours], m [minutes]", { trim: "both" }) }
                   </small>
                 </Col>
-                <Col md={4} className="text-right">
+                <Col md={4} className="text-end">
                   {
                     is_match_block ? 
                       <span>
@@ -134,85 +134,82 @@ class ScheduleBlockComponent extends React.PureComponent<ScheduleBlockComponentP
                   }
                 </Col>
               </Row>
-            </Accordion.Toggle>
-            <Accordion.Collapse eventKey="0">
-              <Card.Body>
-                <Row className="mb-3">
-                  <Col>
-                    <EnumToggleGroup
-                      name="block_type"
-                      value={block_type}
-                      onChange={ (v: ScheduleBlock["block_type"]) => onUpdate({ ...block, block_type: v }) }
-                      values={BLOCK_TYPES}
-                      variant="light"
-                      disabled={disabled}
-                    />
-                  </Col>
-                </Row>
-                <Row>
-                  <Col>
-                    <Form.Label>Start Time</Form.Label>
+            </Accordion.Header>
+            <Accordion.Body>
+              <Row className="mb-3">
+                <Col>
+                  <EnumToggleGroup
+                    name="block_type"
+                    value={block_type}
+                    onChange={ (v: any) => onUpdate({ ...block, block_type: v as ScheduleBlock["block_type"] }) }
+                    values={BLOCK_TYPES}
+                    disabled={disabled}
+                  />
+                </Col>
+              </Row>
+              <Row>
+                <Col>
+                  <Form.Label>Start Time</Form.Label>
 
-                    <BufferedFormControl
-                      auto
-                      type="datetime-local"
-                      value={ start_time.format(ELEMENT_FORMAT) }
-                      onUpdate={ v => this.updateDate(block, "start_time", v) }
-                      disabled={disabled}
-                    />
-                  </Col>
-                  <Col>
-                    <Form.Label>End Time</Form.Label>
+                  <BufferedFormControl
+                    auto
+                    type="datetime-local"
+                    value={ start_time.format(ELEMENT_FORMAT) }
+                    onUpdate={ v => this.updateDate(block, "start_time", v) }
+                    disabled={disabled}
+                  />
+                </Col>
+                <Col>
+                  <Form.Label>End Time</Form.Label>
 
-                    <BufferedFormControl
-                      auto
-                      type="datetime-local"
-                      value={ end_time.format(ELEMENT_FORMAT) }
-                      onUpdate={ v => this.updateDate(block, "end_time", v) }
-                      disabled={disabled}
-                    />
-                  </Col>
-                  <Col md={3}>
-                    <Form.Label>Cycle Time</Form.Label>
-                    <Row>
-                      <Col>
-                        <BufferedFormControl
-                          auto
-                          disabled={disabled || !is_match_block}
-                          type="number"
-                          min={0}
-                          max={59}
-                          value={ cycle_time.minutes() }
-                          onUpdate={ v => this.updateTime(block, "cycle_time", "00:" + (v || 0) + ":" + cycle_time.seconds()) }
-                        />
-                      </Col>
-                      <Col className="text-muted">
-                        Minutes
-                      </Col>
-                      <Col>
-                        <BufferedFormControl
-                          auto
-                          disabled={disabled || !is_match_block}
-                          type="number"
-                          min={0}
-                          max={59}
-                          value={ cycle_time.seconds() }
-                          onUpdate={ v => this.updateTime(block, "cycle_time", "00:" + cycle_time.minutes() + ":" + (v || 0)) }
-                        />
-                      </Col>
-                      <Col className="text-muted">
-                        Seconds
-                      </Col>
-                    </Row>
+                  <BufferedFormControl
+                    auto
+                    type="datetime-local"
+                    value={ end_time.format(ELEMENT_FORMAT) }
+                    onUpdate={ v => this.updateDate(block, "end_time", v) }
+                    disabled={disabled}
+                  />
+                </Col>
+                <Col md={3}>
+                  <Form.Label>Cycle Time</Form.Label>
+                  <Row>
+                    <Col>
+                      <BufferedFormControl
+                        auto
+                        disabled={disabled || !is_match_block}
+                        type="number"
+                        min={0}
+                        max={59}
+                        value={ cycle_time.minutes() }
+                        onUpdate={ v => this.updateTime(block, "cycle_time", "00:" + (v || 0) + ":" + cycle_time.seconds()) }
+                      />
+                    </Col>
+                    <Col className="text-muted">
+                      Minutes
+                    </Col>
+                    <Col>
+                      <BufferedFormControl
+                        auto
+                        disabled={disabled || !is_match_block}
+                        type="number"
+                        min={0}
+                        max={59}
+                        value={ cycle_time.seconds() }
+                        onUpdate={ v => this.updateTime(block, "cycle_time", "00:" + cycle_time.minutes() + ":" + (v || 0)) }
+                      />
+                    </Col>
+                    <Col className="text-muted">
+                      Seconds
+                    </Col>
+                  </Row>
 
-                    <Form.Text className="text-muted">
-                      { num_matches } matches
-                    </Form.Text>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Accordion.Collapse>
-          </Card>
+                  <Form.Text className="text-muted">
+                    { num_matches } matches
+                  </Form.Text>
+                </Col>
+              </Row>
+            </Accordion.Body>
+          </Accordion.Item>
         </Col>
       </Row>
       

@@ -172,6 +172,7 @@ export type MatchGenerationRecordData =
   | {
       Qualification: {
         cooccurrence: number[][];
+        gen_time: number;
         station_balance: number;
         station_dist: number[][];
         team_balance: number;

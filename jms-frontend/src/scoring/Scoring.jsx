@@ -113,7 +113,7 @@ export class ScoringAlliance extends React.Component {
           <h3 className="mb-0"> { match.match.name } </h3>
           <i className="text-muted"> { this.props.alliance } Alliance Scorer </i>
         </Col>
-        <Col className="text-right">
+        <Col className="text-end">
           <h3 className="text-muted"> { match.state } &nbsp; { match.remaining_time.secs }s </h3>
         </Col>
       </Row>

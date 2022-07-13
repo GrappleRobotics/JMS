@@ -1,27 +1,34 @@
 import React from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { Button, ButtonGroup, ButtonGroupProps } from "react-bootstrap";
 import { Combine } from "support/util";
 
-type EnumToggleGroupProps = Combine<{
+type EnumToggleGroupProps<T> = Combine<{
   name: string,
-  values: string[],
-  disabled: boolean
-}, React.ComponentProps<ToggleButtonGroup<string>>>;
+  values: T[],
+  names?: string[],
+  disabled: boolean,
+  value: T,
+  onChange: (v: T) => void,
+  variant: string,
+  variantActive: string
+}, Omit<ButtonGroupProps, "type">>;
 
-export default class EnumToggleGroup extends React.PureComponent<EnumToggleGroupProps> {
+export default class EnumToggleGroup<T> extends React.PureComponent<EnumToggleGroupProps<T>> {
   static defaultProps = {
-    disabled: false
+    disabled: false,
+    variant: "outline-primary",
+    variantActive: "primary"
   }
   
   render() {
-    let { className, name, disabled, values, value, ...props } = this.props;
+    let { className, name, names, disabled, values, value, variant, variantActive, onChange, ...props } = this.props;
 
-    return <ToggleButtonGroup className={`enum-toggle ${className}`} name={name} type="radio" value={value} {...props}>
+    return <ButtonGroup name={name} {...props}>
       {
-        values.map(v => <ToggleButton disabled={disabled} data-active={ value == v } value={v}>
-          { v }
-        </ToggleButton>)
+        values.map((v, i) => <Button key={i} variant={value === v ? variantActive : variant} disabled={disabled}onClick={() => onChange(v)}>
+          { names ? names[i] : String(v) }
+        </Button>)
       }
-    </ToggleButtonGroup>
+    </ButtonGroup>
   }
 }

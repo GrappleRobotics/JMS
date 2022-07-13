@@ -1,5 +1,7 @@
 .match-flow-btn {
   @extend .btn-lg;
+  display: block;
+  width: 100%;
 
   border: 0;
 

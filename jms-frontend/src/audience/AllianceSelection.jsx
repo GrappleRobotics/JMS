@@ -15,7 +15,7 @@ export default class AllianceSelection extends React.PureComponent {
     return <AudienceCard event={event} className="audience-alliance-selection">
       <Row>
         <Col md={7} className="audience-card-title"> Alliance Selection </Col>
-        <Col className="audience-card-title text-right"> Remaining Teams </Col>
+        <Col className="audience-card-title text-end"> Remaining Teams </Col>
       </Row>
       <Row className="grow">
         <Col className="alliance-table" md={8}>

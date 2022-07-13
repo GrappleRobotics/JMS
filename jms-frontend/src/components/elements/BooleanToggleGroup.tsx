@@ -1,7 +1,7 @@
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { ToggleButton, ToggleButtonGroup, ToggleButtonGroupProps } from "react-bootstrap";
 import { Combine } from "support/util";
 
 // type ToggleGroupProps = {
@@ -14,7 +14,7 @@ type ToggleGroupProps = Combine<{
   name: string,
   value: boolean,
   onChange: (v: boolean) => void,
-}, React.ComponentProps<ToggleButtonGroup<boolean>>>;
+}, Omit<ToggleButtonGroupProps<boolean>, "type">>;
 
 export default class BooleanToggleGroup extends React.PureComponent<ToggleGroupProps> {
   render() {

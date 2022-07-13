@@ -186,7 +186,7 @@ export default class AllianceDash extends React.PureComponent<AllianceProps> {
     return <div className="alliance" data-colour={colour}>
       <Row>
         <Col>
-          <Row className={"alliance-score px-4 " + (colour === "red" ? "text-left" : "text-right")}>
+          <Row className={"alliance-score px-4 " + (colour === "red" ? "text-left" : "text-end")}>
             {
               matchScore ? this.renderScore(matchScore) : <React.Fragment />
             }
