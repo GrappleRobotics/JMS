@@ -119,7 +119,7 @@ export default class TopNavbar extends React.Component<{}, TopNavbarState> {
       <Button variant="estop" disabled={!connected || arena_state?.state === "Estop"} onClick={this.estopShow}>
         E-STOP
       </Button>
-      <div className="mr-3" />
+      <div className="me-3" />
       <Navbar.Brand>
         <strong>JMS</strong>
       </Navbar.Brand>
