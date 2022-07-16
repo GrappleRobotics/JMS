@@ -184,8 +184,8 @@ class ScheduleBlockComponent extends React.PureComponent<ScheduleBlockComponentP
                         onUpdate={ v => this.updateTime(block, "cycle_time", "00:" + (v || 0) + ":" + cycle_time.seconds()) }
                       />
                     </Col>
-                    <Col className="text-muted">
-                      Minutes
+                    <Col md={2} className="text-muted">
+                      min
                     </Col>
                     <Col>
                       <BufferedFormControl
@@ -198,8 +198,8 @@ class ScheduleBlockComponent extends React.PureComponent<ScheduleBlockComponentP
                         onUpdate={ v => this.updateTime(block, "cycle_time", "00:" + cycle_time.minutes() + ":" + (v || 0)) }
                       />
                     </Col>
-                    <Col className="text-muted">
-                      Seconds
+                    <Col md={2} className="text-muted">
+                      sec
                     </Col>
                   </Row>
 
