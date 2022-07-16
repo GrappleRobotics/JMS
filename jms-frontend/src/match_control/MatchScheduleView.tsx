@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import moment from "moment";
 import { EVENT_WIZARD } from "paths";
 import React from "react";
-import { Button, Table, Tabs, Tab } from "react-bootstrap";
+import { Button, Tab, Table, Tabs } from "react-bootstrap";
 import { ArenaState, LoadedMatch, SerializedMatch } from "ws-schema";
 
 type MatchScheduleProps = {

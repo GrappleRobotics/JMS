@@ -1,7 +1,7 @@
 import moment from "moment";
 import React from "react";
 import { Col, Navbar } from "react-bootstrap";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { WebsocketComponent } from "support/ws-component";
 import { EventDetails, LoadedMatch, SerializedMatch } from "ws-schema";
 
 type BottomNavbarState = {
@@ -10,31 +10,16 @@ type BottomNavbarState = {
   next_match?: SerializedMatch
 }
 
-export default class BottomNavbar extends React.Component<{}, BottomNavbarState> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-
+export default class BottomNavbar extends WebsocketComponent<{}, BottomNavbarState> {
   readonly state: BottomNavbarState = { };
-  handles: string[] = [];
 
   componentDidMount = () => {
     this.handles = [
-      this.context.listen<LoadedMatch | null>(["Arena", "Match", "Current"], msg => {
-        this.setState({ current_match: msg || undefined })
-      }),
-      this.context.listen<EventDetails>(["Event", "Details", "Current"], msg => {
-        this.setState({ event_details: msg })
-      }),
-      this.context.listen<SerializedMatch | null>([ "Match", "Next" ], msg => {
-        this.setState({ next_match: msg || undefined })
-      })
+      this.listen("Arena/Match/Current", "current_match"),
+      this.listen("Match/Next", "next_match"),
+      this.listen("Event/Details/Current", "event_details")
     ]
   }
-
-  componentWillUnmount = () => {
-    this.context.unlisten(this.handles);
-  }
-
 
   getScheduleTimings = () => {
     // @ts-ignore

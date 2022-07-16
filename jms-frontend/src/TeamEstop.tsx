@@ -1,7 +1,6 @@
 import React from "react";
 import { Button, Container } from "react-bootstrap";
-import JmsWebsocket from "support/ws";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { WebsocketComponent } from "support/ws-component";
 import { AllianceStation } from "ws-schema";
 
 type TeamEstopProps = {
@@ -44,18 +43,12 @@ type TeamEstopsState = {
   stations: AllianceStation[]
 };
 
-export class TeamEstops extends React.PureComponent<{}, TeamEstopsState> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-
+export class TeamEstops extends WebsocketComponent<{}, TeamEstopsState> {
   readonly state: TeamEstopsState = { stations: [] };
-  handle: string = "";
 
-  componentDidMount = () => {
-    this.handle = this.context.listen<AllianceStation[]>(["Arena", "Alliance", "CurrentStations"], msg => this.setState({ stations: msg }))
-  }
-
-  componentWillUnmount = () => this.context.unlisten([this.handle]);
+  componentDidMount = () => this.handles = [
+    this.listen("Arena/Alliance/CurrentStations", "stations")
+  ]
 
   render() {
     let stationIdx = parseInt(window.location.hash.substr(1));
@@ -65,7 +58,7 @@ export class TeamEstops extends React.PureComponent<{}, TeamEstopsState> {
         (!isNaN(stationIdx) ? 
           <TeamEstop 
             station={this.state.stations[stationIdx]}
-            onTrigger={which => this.context.send({
+            onTrigger={which => this.send({
               Arena: { Alliance: { UpdateAlliance: {
                 [which]: true,
                 station: this.state.stations[stationIdx].station

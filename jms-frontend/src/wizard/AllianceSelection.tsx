@@ -1,15 +1,15 @@
 import { faCheck, faExclamationTriangle, faInfoCircle, faUnlock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool from "components/elements/Confirm";
+import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import _ from "lodash";
 import React from "react";
-import { Button, Col, Row, Table, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { Button, Col, Row, Table } from "react-bootstrap";
 import RangeSlider from "react-bootstrap-range-slider";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { Menu, MenuItem, Typeahead } from 'react-bootstrap-typeahead';
+import { WebsocketComponent } from "support/ws-component";
 import { PlayoffAlliance, SerialisedMatchGeneration, Team, TeamRanking } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
-import { Menu, MenuItem, Typeahead } from 'react-bootstrap-typeahead';
-import EnumToggleGroup from "components/elements/EnumToggleGroup";
 
 type TypeaheadTeam =  { id: string, rank: number, disabled: boolean };
 
@@ -110,10 +110,7 @@ type AllianceSelectionState = {
   rankings: TeamRanking[]
 };
 
-export default class AllianceSelection extends React.Component<{}, AllianceSelectionState> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-  handles: string[] = [];
+export default class AllianceSelection extends WebsocketComponent<{}, AllianceSelectionState> {
 
   readonly state: AllianceSelectionState = {
     quals_complete: false,
@@ -123,15 +120,13 @@ export default class AllianceSelection extends React.Component<{}, AllianceSelec
 
   componentDidMount = () => {
     this.handles = [
-      this.context.listen<Team[]>(["Event", "Team", "CurrentAll"], msg => this.setState({ teams: msg })),
-      this.context.listen<PlayoffAlliance[]>(["Event", "Alliance", "CurrentAll"], msg => this.setState({ alliances: msg })),
-      this.context.listen<TeamRanking[]>(["Event", "Ranking", "CurrentAll"], msg => this.setState({ rankings: msg })),
-      this.context.listen<SerialisedMatchGeneration>(["Match", "Quals", "Generation"], msg => this.setState({ quals_complete: msg.matches.length > 0 && _.every(msg.matches, m => m.played) })),
-      this.context.listen<SerialisedMatchGeneration>(["Match", "Playoffs", "Generation"], msg => this.setState({ playoffs_generated: msg.record?.data != null })),
+      this.listen("Event/Team/CurrentAll", "teams"),
+      this.listen("Event/Alliance/CurrentAll", "alliances"),
+      this.listen("Event/Ranking/CurrentAll", "rankings"),
+      this.listenFn<SerialisedMatchGeneration>("Match/Quals/Generation", msg => this.setState({ quals_complete: msg.matches.length > 0 && _.every(msg.matches, m => m.played) })),
+      this.listenFn<SerialisedMatchGeneration>("Match/Playoffs/Generation", msg => this.setState({ playoffs_generated: msg.record?.data != null })),
     ]
   }
-
-  componentWillUnmount = () => this.context.unlisten(this.handles);
 
   clearAlliances = async () => {
     let result = await confirmBool("Are you sure? This will clear ALL alliances.", {
@@ -141,13 +136,13 @@ export default class AllianceSelection extends React.Component<{}, AllianceSelec
     });
 
     if (result)
-      this.context.send({ Event: { Alliance: "Clear" } });
+      this.send({ Event: { Alliance: "Clear" } });
   }
 
   updateAlliancePick = (alliance: PlayoffAlliance, idx: number, value: TypeaheadTeam[]) => {
     let team = value.length > 0 ? parseInt(value[0].id) : null;
     alliance.teams[idx] = team;
-    this.context.send({ Event: { Alliance: { Update: alliance } } });
+    this.send({ Event: { Alliance: { Update: alliance } } });
   }
 
   renderAlliances = () => {
@@ -174,7 +169,7 @@ export default class AllianceSelection extends React.Component<{}, AllianceSelec
           <Button
             variant="primary"
             disabled={ !alliances.some(x => x.teams[0] == null) }
-            onClick={() => this.context.send({ Event: { Alliance: "Promote" } })}
+            onClick={() => this.send({ Event: { Alliance: "Promote" } })}
           >
             Promote Captains
           </Button>
@@ -232,7 +227,7 @@ export default class AllianceSelection extends React.Component<{}, AllianceSelec
                         size="sm"
                         disabled={!(editable && canReady)}
                         variant={alliance.ready ? "danger" : canReady ? "good" : "secondary"}
-                        onClick={() => this.context.send({
+                        onClick={() => this.send({
                           Event: { Alliance: { Update: { ...alliance, ready: !alliance.ready } } }
                         })}
                       >
@@ -268,7 +263,7 @@ export default class AllianceSelection extends React.Component<{}, AllianceSelec
           this.renderAlliances() : 
           <AllianceSelectionGenerator
             n_teams={n_teams} 
-            gen={n => this.context.send({
+            gen={n => this.send({
               Event: { Alliance: { Create: n } }
             })}
           />

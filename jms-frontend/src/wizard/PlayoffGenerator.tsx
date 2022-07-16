@@ -3,10 +3,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool from "components/elements/Confirm";
 import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import _ from "lodash";
-import moment from "moment";
-import React from "react";
 import { Button, Form, Table } from "react-bootstrap";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { WebsocketComponent } from "support/ws-component";
 import { MatchGenerationRecordData, PlayoffAlliance, PlayoffMode, SerialisedMatchGeneration } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 
@@ -21,24 +19,17 @@ type PlayoffGeneratorState = {
   playoff_type: PlayoffMode
 }
 
-export default class PlayoffGenerator extends React.Component<{}, PlayoffGeneratorState> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-  handles: string[] = [];
-
+export default class PlayoffGenerator extends WebsocketComponent<{}, PlayoffGeneratorState> {
+  
   readonly state: PlayoffGeneratorState = {
     alliances: [],
     playoff_type: "Bracket"
   };
 
-  componentDidMount = () => {
-    this.handles = [
-      this.context.listen<PlayoffAlliance[]>(["Event", "Alliance", "CurrentAll"], msg => this.setState({ alliances: msg })),
-      this.context.listen<SerialisedMatchGeneration>(["Match", "Playoffs", "Generation"], msg => this.setState({ gen: msg })),
-    ]
-  }
-
-  componentWillUnmount = () => this.context.unlisten(this.handles);
+  componentDidMount = () => this.handles = [
+    this.listen("Event/Alliance/CurrentAll", "alliances"),
+    this.listen("Match/Playoffs/Generation", "gen")
+  ];
 
   clearSchedule = async () => {
     let result = await confirmBool("Are you sure? This will clear the entire Playoffs schedule", {
@@ -48,7 +39,7 @@ export default class PlayoffGenerator extends React.Component<{}, PlayoffGenerat
     });
 
     if (result)
-      this.context.send({ Match: { Playoffs: "Clear" } })
+      this.send({ Match: { Playoffs: "Clear" } })
   }
 
   renderPlayoffs = () => {
@@ -69,7 +60,7 @@ export default class PlayoffGenerator extends React.Component<{}, PlayoffGenerat
       &nbsp;
       <Button
         variant="success"
-        onClick={() => this.context.send({ Match: { Playoffs: { Generate: record_data.mode } } })}
+        onClick={() => this.send({ Match: { Playoffs: { Generate: record_data.mode } } })}
 
       >
         Update
@@ -139,8 +130,7 @@ export default class PlayoffGenerator extends React.Component<{}, PlayoffGenerat
       <br />
       <Button
         variant="success"
-        // onClick={() => this.props.ws.send("matches", "playoffs", "generate", this.state.playoff_type)}
-        onClick={() => this.context.send({ Match: { Playoffs: { Generate: this.state.playoff_type } } })}
+        onClick={() => this.send({ Match: { Playoffs: { Generate: this.state.playoff_type } } })}
       >
         Generate
       </Button>

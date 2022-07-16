@@ -1,27 +1,16 @@
-import React from "react";
-import JmsWebsocket from "support/ws";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
-import { ArenaMessageMatch2UI } from "ws-schema";
+import { WebsocketComponent } from "support/ws-component";
+import { ArenaMessageMatch2UI, Duration } from "ws-schema";
 
-export default class Timer extends React.PureComponent<{}, ArenaMessageMatch2UI> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
+export default class Timer extends WebsocketComponent<{}, { remaining?: Duration }> {
 
-  readonly state: ArenaMessageMatch2UI = { Current: null };
-  handle: string = "";
-
-  componentDidMount = () => {
-    this.handle = this.context.listen<ArenaMessageMatch2UI>(["Arena", "Match", "Current"], msg => this.setState(msg))
-  }
-
-  componentWillUnmount = () => {
-    this.context.unlisten([this.handle])
-  }
+  componentDidMount = () => this.handles = [
+    this.listenFn("Arena/Match/Current", (msg: ArenaMessageMatch2UI["Current"]) => this.setState({ remaining: msg?.remaining_time }))
+  ];
 
   render() {
     return <div className="timer">
       <div>
-        { this.state.Current?.remaining_time?.secs || "---" }
+        { this.state.remaining?.secs || "---" }
       </div>
     </div>
   }

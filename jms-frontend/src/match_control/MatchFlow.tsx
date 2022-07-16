@@ -1,6 +1,6 @@
 import React from 'react';
-import { Row, Col, Button, ButtonProps } from 'react-bootstrap';
-import { ArenaMessageAudienceDisplaySet2JMS, ArenaSignal, ArenaState, AudienceDisplay } from 'ws-schema';
+import { Button, ButtonProps, Col, Row } from 'react-bootstrap';
+import { ArenaMessageAudienceDisplaySet2JMS, ArenaSignal, ArenaState } from 'ws-schema';
 
 class MatchFlowButton extends React.PureComponent<ButtonProps & { arenaState?: ArenaState, targetState: ArenaState["state"] }> {
   render() {

@@ -1,11 +1,10 @@
-import React from 'react';
-import Navbar from 'react-bootstrap/Navbar';
-import Nav from 'react-bootstrap/Nav';
-import { Button, Modal } from 'react-bootstrap';
 import { faCompressArrowsAlt, faExpand, faHome } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Button, Modal } from 'react-bootstrap';
+import Nav from 'react-bootstrap/Nav';
+import Navbar from 'react-bootstrap/Navbar';
+import { WebsocketComponent } from 'support/ws-component';
 import { ArenaState, LoadedMatch } from 'ws-schema';
-import { WebsocketContext, WebsocketContextT } from 'support/ws-component';
 
 type TopNavbarState = {
   estop_modal: boolean,
@@ -13,29 +12,16 @@ type TopNavbarState = {
   match?: LoadedMatch
 };
 
-export default class TopNavbar extends React.Component<{}, TopNavbarState> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
+export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
 
   readonly state: TopNavbarState = {
     estop_modal: false,
   };
-  handles: string[] = [];
 
-  componentDidMount = () => {
-    this.handles = [
-      this.context.listen<ArenaState>(["Arena", "State", "Current"], msg => {
-        this.setState({ arena_state: msg })
-      }),
-      this.context.listen<LoadedMatch | null | undefined>(["Arena", "Match", "Current"], msg => {
-        this.setState({ match: msg || undefined })
-      })
-    ]
-  }
-
-  componentWillUnmount = () => {
-    this.context.unlisten(this.handles);
-  }
+  componentDidMount = () => this.handles = [
+    this.listen("Arena/State/Current", "arena_state"),
+    this.listen("Arena/Match/Current", "match")
+  ];
 
   estopShow = () => {
     this.setState({ estop_modal: true });
@@ -46,7 +32,7 @@ export default class TopNavbar extends React.Component<{}, TopNavbarState> {
   }
 
   triggerEstop = () => {
-    this.context.send({ Arena: { State: { Signal: "Estop" } } });
+    this.send({ Arena: { State: { Signal: "Estop" } } });
     this.estopHide();
   }
 

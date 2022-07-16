@@ -3,10 +3,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool from "components/elements/Confirm";
 import _ from "lodash";
 import moment from "moment";
-import React from "react";
-import { Accordion, Button, Card, Col, Form, Row, Table } from "react-bootstrap";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
-import { MatchGenerationRecord, MatchGenerationRecordData, ScheduleBlock, SerialisedMatchGeneration, Team } from "ws-schema";
+import { Accordion, Button, Col, Form, Row, Table } from "react-bootstrap";
+import { WebsocketComponent } from "support/ws-component";
+import { MatchGenerationRecordData, ScheduleBlock, SerialisedMatchGeneration, Team } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 
 type QualGeneratorState = {
@@ -19,11 +18,8 @@ type QualGeneratorState = {
 
 type QualGenRecord = Extract<MatchGenerationRecordData, { Qualification: any }>;
 
-export default class QualGenerator extends React.Component<{}, QualGeneratorState> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-  handles: string[] = [];
-
+export default class QualGenerator extends WebsocketComponent<{}, QualGeneratorState> {
+  
   readonly state: QualGeneratorState = {
     team_anneal_steps: 100_000,
     station_anneal_steps: 50_000,
@@ -31,15 +27,11 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
     schedule: []
   };
 
-  componentDidMount = () => {
-    this.handles = [
-      this.context.listen<Team[]>(["Event", "Team", "CurrentAll"], msg => this.setState({ teams: msg })),
-      this.context.listen<SerialisedMatchGeneration>(["Match", "Quals", "Generation"], msg => this.setState({ gen: msg })),
-      this.context.listen<ScheduleBlock[]>(["Event", "Schedule", "CurrentBlocks"], msg => this.setState({ schedule: msg }))
-    ]
-  }
-
-  componentWillUnmount = () => this.context.unlisten(this.handles);
+  componentDidMount = () => this.handles = [
+    this.listen("Event/Team/CurrentAll", "teams"),
+    this.listen("Match/Quals/Generation", "gen"),
+    this.listen("Event/Schedule/CurrentBlocks", "schedule")
+  ]
 
   clearSchedule = async () => {
     let result = await confirmBool("Are you sure? This will clear the entire Qualification schedule", {
@@ -49,7 +41,7 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
     });
 
     if (result)
-      this.context.send({ Match: { Quals: "Clear" } });
+      this.send({ Match: { Quals: "Clear" } });
   }
 
   renderStatsForNerds = (record: QualGenRecord["Qualification"]) => {
@@ -207,7 +199,7 @@ export default class QualGenerator extends React.Component<{}, QualGeneratorStat
       <Button 
         size="lg"
         variant="success" 
-        onClick={ () => this.context.send({ Match: { Quals: { Generate: { team_anneal_steps, station_anneal_steps } } } }) }
+        onClick={ () => this.send({ Match: { Quals: { Generate: { team_anneal_steps, station_anneal_steps } } } }) }
         disabled={running}
       >
         <FontAwesomeIcon icon={running ? faCircleNotch : faCog} spin={running} />

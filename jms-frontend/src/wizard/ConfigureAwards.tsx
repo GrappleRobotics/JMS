@@ -1,12 +1,12 @@
-import { faExclamationTriangle, faInfoCircle, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationTriangle, faInfoCircle, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React from "react";
-import { Button, Card, Col, Form, ListGroup, Row } from "react-bootstrap";
-import { maybeParseInt, nullIfEmpty, undefinedIfEmpty } from "support/strings";
-import EditableFormControl from "components/elements/EditableFormControl";
-import { Award } from "ws-schema";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
 import confirmBool from "components/elements/Confirm";
+import EditableFormControl from "components/elements/EditableFormControl";
+import React from "react";
+import { Card, Col, Form, ListGroup, Row } from "react-bootstrap";
+import { maybeParseInt, nullIfEmpty, undefinedIfEmpty } from "support/strings";
+import { WebsocketComponent } from "support/ws-component";
+import { Award } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 
 type AwardCardProps = {
@@ -146,21 +146,15 @@ type ConfigureAwardsState = {
   awards: Award[]
 };
 
-export default class ConfigureAwards extends React.Component {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-  handles: string[] = [];
+export default class ConfigureAwards extends WebsocketComponent<{}, ConfigureAwardsState> {
 
   readonly state: ConfigureAwardsState = {
     awards: []
   };
 
-  componentDidMount = () => {
-    this.handles = [
-      this.context.listen<Award[]>([ "Event", "Award", "CurrentAll" ], msg => this.setState({ awards: msg }))
-    ]
-  }
-  componentWillUnmount = () => this.context.unlisten(this.handles);
+  componentDidMount = () => this.handles = [
+    this.listen("Event/Award/CurrentAll", "awards")
+  ];
 
   render() {
     return <EventWizardPageContent tabLabel="Assign Awards">
@@ -183,7 +177,7 @@ export default class ConfigureAwards extends React.Component {
               if (e.key === 'Enter') {
                 let val = nullIfEmpty(e.target.value);
                 if (val)
-                  this.context.send({ Event: { Award: { Create: val } } });
+                  this.send({ Event: { Award: { Create: val } } });
                 e.target.value = "";
               }
             }}
@@ -193,9 +187,9 @@ export default class ConfigureAwards extends React.Component {
       <Row className="my-3 flex-wrap">
         {
           this.state.awards.map(a => <Col className="my-2">
-            <AwardCard award={a} onUpdate={award => this.context.send({
+            <AwardCard award={a} onUpdate={award => this.send({
               Event: { Award: { Update: { ...a, ...award } } }
-            })} onDelete={id => this.context.send({
+            })} onDelete={id => this.send({
               Event: { Award: { Delete: id } }
             })} />
           </Col>)

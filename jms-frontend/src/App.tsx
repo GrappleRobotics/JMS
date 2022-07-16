@@ -1,25 +1,18 @@
-import React from 'react';
-import { Route, Routes } from 'react-router-dom';
-import JmsWebsocket from 'support/ws';
-import MatchControl from 'match_control/MatchControl';
-import EventWizard from 'wizard/EventWizard';
-import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
-import TopNavbar from 'TopNavbar';
-import { Col, Navbar, Row } from 'react-bootstrap';
 import BottomNavbar from 'BottomNavbar';
-import { nullIfEmpty } from 'support/strings';
-import Home from 'Home';
-import { ScoringRouter } from 'scoring/Scoring';
-import Rankings from 'rankings/Rankings';
-import FieldMonitor from 'monitor/FieldMonitor';
-import Reports from 'reports/Reports';
-import Audience from 'audience/Audience';
-import AudienceDisplayControl from 'audience/AudienceDisplayControl';
-import { RefereeRouter } from 'scoring/Referee';
 import Debug from 'Debug';
-import Timer from 'Timer';
-import { TeamEstops } from 'TeamEstop';
+import Home from 'Home';
+import MatchControl from 'match_control/MatchControl';
+import { DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, RANKINGS, RANKINGS_NO_SCROLL, REPORTS, TIMER } from 'paths';
+import Rankings from 'rankings/Rankings';
+import React from 'react';
+import { Col, Navbar, Row } from 'react-bootstrap';
+import { Route, Routes } from 'react-router-dom';
+import Reports from 'reports/Reports';
 import { WebsocketContext, WebsocketContextT } from 'support/ws-component';
+import { TeamEstops } from 'TeamEstop';
+import Timer from 'Timer';
+import TopNavbar from 'TopNavbar';
+import EventWizard from 'wizard/EventWizard';
 
 export default class App extends React.Component {
   static contextType = WebsocketContext;

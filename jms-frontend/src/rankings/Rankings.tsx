@@ -1,8 +1,8 @@
 import moment from "moment";
 import React from "react";
 import { Col, Container, Row, Table } from "react-bootstrap";
-import { animateScroll as scroll, scroller, Element } from "react-scroll";
-import { WebsocketComponent, WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { Element, scroller } from "react-scroll";
+import { WebsocketComponent } from "support/ws-component";
 import { EventDetails, SerializedMatch, TeamRanking } from "ws-schema";
 
 const SCROLL_TIME = 20000;

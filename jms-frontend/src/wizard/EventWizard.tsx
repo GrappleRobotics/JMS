@@ -1,8 +1,7 @@
 import { faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
-import { Button, Col, Container, Nav, Row, Tab, TabProps, Tabs } from "react-bootstrap";
-import { EventDetails, Team, ScheduleBlock, PlayoffAlliance, TeamRanking, Award } from "ws-schema";
+import { Col, Container, Nav, Row, Tab } from "react-bootstrap";
 import AllianceSelection from "./AllianceSelection";
 import ConfigureAwards from "./ConfigureAwards";
 import ConfigureEvent from "./ConfigureEvent";

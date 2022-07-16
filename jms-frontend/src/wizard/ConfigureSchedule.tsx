@@ -7,9 +7,9 @@ import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import moment from "moment";
 import "moment-duration-format";
 import React from "react";
-import { Accordion, Button, Card, Col, Form, Row, Modal } from "react-bootstrap";
+import { Accordion, Button, Card, Col, Form, Row } from "react-bootstrap";
 import { Combine } from "support/util";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { WebsocketComponent } from "support/ws-component";
 import { ScheduleBlock, SerialisedMatchGeneration, Team } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 
@@ -223,11 +223,7 @@ type ConfigureScheduleState = {
   teams: Team[]
 };
 
-export default class ConfigureSchedule extends React.Component<{}, ConfigureScheduleState> {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-  handles: string[] = [];
-
+export default class ConfigureSchedule extends WebsocketComponent<{}, ConfigureScheduleState> {
   readonly state: ConfigureScheduleState = {
     schedule: [],
     quals_generated: false,
@@ -236,18 +232,16 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
 
   componentDidMount = () => {
     this.handles = [
-      this.context.listen<ScheduleBlock[]>([ "Event", "Schedule", "CurrentBlocks" ], msg => {
+      this.listenFn<ScheduleBlock[]>("Event/Schedule/CurrentBlocks", msg => {
         this.setState({ schedule: msg.map(mapBlock) })
       }),
-      this.context.listen<SerialisedMatchGeneration>([ "Match", "Quals", "Generation" ], msg => this.setState({
+      this.listenFn<SerialisedMatchGeneration>("Match/Quals/Generation", msg => this.setState({
         quals_generated: msg.record?.data != null || msg.running
       })),
-      this.context.listen<Team[]>([ "Event", "Team", "CurrentAll" ], msg => this.setState({ teams: msg }))
+      this.listen("Event/Team/CurrentAll", "teams")
     ]
   }
 
-  componentWillUnmount = () => this.context.unlisten(this.handles);
-    
   genListElements = (schedule: MappedScheduleBlock[], editable: boolean) => {
     let total_matches = 0;
     let last: MappedScheduleBlock | undefined = undefined;
@@ -280,10 +274,10 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
           key={block.id}
           disabled={!editable}
           block={block}
-          onUpdate={new_mapped_block => this.context.send({
+          onUpdate={new_mapped_block => this.send({
             Event: { Schedule: { UpdateBlock: unmapBlock(new_mapped_block) } }
           })}
-          onDelete={id => this.context.send({
+          onDelete={id => this.send({
             Event: { Schedule: { DeleteBlock: id } }
           })}
         />
@@ -311,7 +305,7 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
         />
       </React.Fragment>
     }).then(start_date => {
-      this.context.send({
+      this.send({
         Event: { Schedule: { LoadDefault: start_date.unix() } }
       })
     })
@@ -336,7 +330,7 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
       <div>
         <Button
           disabled={quals_generated}
-          onClick={() => this.context.send({ Event: { Schedule: "NewBlock" } })}
+          onClick={() => this.send({ Event: { Schedule: "NewBlock" } })}
         > 
           <FontAwesomeIcon icon={faPlus} /> &nbsp; Add Block 
         </Button> 

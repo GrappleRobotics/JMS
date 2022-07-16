@@ -1,12 +1,11 @@
-import React from 'react';
-import { Row, Col, Button } from 'react-bootstrap';
-import BufferedFormControl from 'components/elements/BufferedFormControl';
-import { AllianceStation, AllianceStationDSReport, AllianceStationOccupancy, ArenaMessageAlliance2JMS, ArenaState, DSMode, SnapshotScore } from 'ws-schema';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBan, faBugSlash, faCode, faGear, faRobot, faShuffle, faXmark } from '@fortawesome/free-solid-svg-icons';
-import SimpleTooltip from 'components/elements/SimpleTooltip';
-import { faHand } from '@fortawesome/free-regular-svg-icons';
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
+import { faBan, faBugSlash, faCode, faGear, faShuffle, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import BufferedFormControl from 'components/elements/BufferedFormControl';
+import SimpleTooltip from 'components/elements/SimpleTooltip';
+import React from 'react';
+import { Button, Col, Row } from 'react-bootstrap';
+import { AllianceStation, AllianceStationDSReport, AllianceStationOccupancy, ArenaMessageAlliance2JMS, ArenaState, DSMode, SnapshotScore } from 'ws-schema';
 
 type IndicatorProps = React.HTMLAttributes<HTMLDivElement>;
 

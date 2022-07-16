@@ -1,16 +1,16 @@
-import { faCheck, faCloudDownloadAlt, faInfoCircle, faSpinner, faSquareCheck, faSquareXmark, faTimes, faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import { faCloudDownloadAlt, faInfoCircle, faSpinner, faSquareCheck, faSquareXmark, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import EditableFormControl from "components/elements/EditableFormControl";
-import React from "react";
-import { Accordion, Button, Card, Form, FormControl, FormControlProps, Table } from "react-bootstrap";
-import { nullIfEmpty } from "support/strings";
-import { Importer, ImporterField } from "react-csv-importer";
-import { Team, SerialisedMatchGeneration } from "ws-schema";
-import { WebsocketContext, WebsocketContextT } from "support/ws-component";
-import { EventWizardPageContent } from "./EventWizard";
-import confirmBool, { withConfirm } from "components/elements/Confirm";
 import { BufferedProps } from "components/elements/BufferedFormControl";
+import confirmBool, { withConfirm } from "components/elements/Confirm";
+import EditableFormControl from "components/elements/EditableFormControl";
 import SimpleTooltip from "components/elements/SimpleTooltip";
+import React from "react";
+import { Accordion, Button, FormControl, FormControlProps, Table } from "react-bootstrap";
+import { Importer, ImporterField } from "react-csv-importer";
+import { nullIfEmpty } from "support/strings";
+import { WebsocketComponent } from "support/ws-component";
+import { SerialisedMatchGeneration, Team } from "ws-schema";
+import { EventWizardPageContent } from "./EventWizard";
 
 // This is a well-known public key I've created. It may be cancelled at any time.
 const TBA_AUTH_KEY = "19iOXH0VVxCvYQTlmIRpXyx2xoUQuZoWEPECGitvJcFxEY6itgqDP7A4awVL2CJn";
@@ -22,11 +22,7 @@ type ConfigureTeamsState = {
   fetching: boolean
 }
 
-export default class ConfigureTeams extends React.Component {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
-  handles: string[] = [];
-
+export default class ConfigureTeams extends WebsocketComponent<{}, ConfigureTeamsState> {
   readonly state: ConfigureTeamsState = {
     teams: [],
     has_matches: true,
@@ -34,14 +30,10 @@ export default class ConfigureTeams extends React.Component {
     fetching: false
   };
 
-  componentDidMount = () => {
-    this.handles = [
-      this.context.listen<Team>(["Event", "Team", "CurrentAll"], msg => this.setState({ teams: msg })),
-      this.context.listen<SerialisedMatchGeneration>(["Match", "Quals", "Generation"], msg => this.setState({ has_matches: msg.matches.length > 0 }))
-    ]
-  }
-
-  componentWillUnmount = () => this.context.unlisten(this.handles);
+  componentDidMount = () => this.handles = [
+    this.listen("Event/Team/CurrentAll", "teams"),
+    this.listenFn<SerialisedMatchGeneration>("Match/Quals/Generation", msg => this.setState({ has_matches: msg.matches.length > 0 }))
+  ]
 
   updateTeam = (team: Partial<Team>) => {
     if (team.id !== undefined) {
@@ -49,7 +41,7 @@ export default class ConfigureTeams extends React.Component {
         if (team.schedule === undefined)
           team.schedule = true;
         
-        this.context.send({
+        this.send({
           Event: { Team: { Insert: team as Team } }
         })
         return true;
@@ -255,7 +247,7 @@ export default class ConfigureTeams extends React.Component {
                     <a 
                       className="text-danger" 
                       onClick={() => {
-                        const del = () => this.context.send({ Event: { Team: { Delete: t.id } } });
+                        const del = () => this.send({ Event: { Team: { Delete: t.id } } });
                         return withConfirm(del, 
                           `Are you sure you want to delete Team ${t.id}${t.name ? " - " + t.name : ""}?`,
                           { title: "Delete Team", okVariant: "danger", okText: `DELETE ${t.id}` }
