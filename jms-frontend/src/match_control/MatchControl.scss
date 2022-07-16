@@ -63,7 +63,7 @@
       @include hazard(theme-color("hazard-red"));
     }
     &[data-mode=Teleop] {
-      background-color: theme-color("good");
+      background-color: theme-color("orange");
     }
     &[data-mode=Auto] {
       background-color: theme-color("purple");

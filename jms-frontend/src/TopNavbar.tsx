@@ -1,70 +1,52 @@
 import { faCompressArrowsAlt, faExpand, faHome } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Button, Modal } from 'react-bootstrap';
+import confirmBool from 'components/elements/Confirm';
+import _ from 'lodash';
+import { Button } from 'react-bootstrap';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import { WebsocketComponent } from 'support/ws-component';
 import { ArenaState, LoadedMatch } from 'ws-schema';
 
 type TopNavbarState = {
-  estop_modal: boolean,
   arena_state?: ArenaState,
   match?: LoadedMatch
 };
 
 export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
-
-  readonly state: TopNavbarState = {
-    estop_modal: false,
-  };
+  readonly state: TopNavbarState = {};
 
   componentDidMount = () => this.handles = [
     this.listen("Arena/State/Current", "arena_state"),
     this.listen("Arena/Match/Current", "match")
   ];
 
-  estopShow = () => {
-    this.setState({ estop_modal: true });
-  }
-  
-  estopHide = () => {
-    this.setState({ estop_modal: false });
-  }
+  triggerEstop = async () => {
+    const subtitle = <p className="estop-subtitle text-muted">
+      Anyone can E-Stop the match. <br />
+      E-Stop if there is a safety threat or as instructed by the FTA. <br />
+      <strong className="text-danger"> Robot Faults are NOT Field E-Stop conditions. </strong>
+    </p>
 
-  triggerEstop = () => {
-    this.send({ Arena: { State: { Signal: "Estop" } } });
-    this.estopHide();
-  }
+    let result = await confirmBool(subtitle, {
+      size: "xl",
+      okBtn: {
+        size: "lg",
+        className: "estop-big",
+        variant: "estop",
+        children: "EMERGENCY STOP"
+      },
+      cancelBtn: {
+        size: "lg",
+        className: "btn-block",
+        children: "CANCEL",
+        variant: "secondary"
+      }
+    });
 
-  estopModal = () => {
-    return (
-      <Modal 
-        show={this.state.estop_modal}
-        onHide={this.estopHide}
-        backdrop="static"
-        animation={false}
-        centered
-        size="lg"
-      >
-        <Modal.Body>
-          <p className="estop-subtitle text-muted">
-            Anyone can E-Stop the match. <br />
-            E-Stop if there is a safety threat or as instructed by the FTA. <br />
-            <strong className="text-danger"> Robot Faults are NOT Field E-Stop conditions. </strong>
-          </p>
-          <div className="my-5" />
-          <Button
-            size="lg"
-            variant="estop"
-            className="estop-big"
-            onClick={this.triggerEstop}
-          >
-            EMERGENCY STOP
-          </Button>
-          <div className="my-5" />
-          <Button className="estop-cancel" variant="secondary" onClick={this.estopHide}> CANCEL </Button>
-        </Modal.Body>
-      </Modal>);
+    if (result) {
+      this.send({ Arena: { State: { Signal: "Estop" } } });
+    }
   }
 
   arenaStateText = (connected: boolean, state?: ArenaState, match?: LoadedMatch) => {
@@ -101,15 +83,23 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
     const { connected } = this.context;
     const { arena_state, match } = this.state;
 
-    return <Navbar variant="dark" fixed="top">
-      <Button variant="estop" disabled={!connected || arena_state?.state === "Estop"} onClick={this.estopShow}>
+    return <Navbar
+      className="top-nav"
+      variant="dark"
+      fixed="top"
+      data-connected={ connected }
+      data-match-state={ match?.state }
+      { ...Object.fromEntries(arena_state !== undefined ? Object.keys(arena_state).map(k => [ `data-arena-${k}`, (arena_state as any)[k] ]) : []) }
+      // data-arena-state={ arena_state?.state }
+    >
+      <Button variant="estop" disabled={!connected || arena_state?.state === "Estop"} onClick={this.triggerEstop}>
         E-STOP
       </Button>
       <div className="me-3" />
       <Navbar.Brand>
         <strong>JMS</strong>
       </Navbar.Brand>
-      <Navbar.Brand data-connected={ connected } data-arena-state={ arena_state?.state } data-match-state={ match?.state }>
+      <Navbar.Brand>
         { this.arenaStateText(connected, arena_state, match) }
       </Navbar.Brand>
       <Navbar.Toggle />
@@ -128,8 +118,6 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
           </Nav.Link>
         </Nav>
       </Navbar.Collapse>
-
-      <this.estopModal />
     </Navbar>
   }
 };

@@ -19,6 +19,7 @@ $theme-colors: (
   "bad": #e74c3c,
   "red": #f53e31,
   "blue": #3152f5,
+  "orange": #d47500,
   "purple": #9300e9,
   "hazard-yellow": #735a00,
   "hazard-red": #730000,
@@ -43,6 +44,46 @@ $alliances: ( "red", "blue" );
 
 @function theme-color($key) {
   @return map-get($theme-colors, $key);
+}
+
+@mixin scroll-gradient-horizontal($time) {
+  background-size: 400% 100%;
+  animation: scroll-gradient $time linear infinite;
+}
+
+@keyframes scroll-gradient {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@mixin hazard-btn($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
+  border-color: $bg_b;
+  &:hover {
+    &:enabled {
+      @include scroll-gradient-horizontal(60s);
+    }
+  }
+  @include hazard($bg_a, $bg_b, $text);
+}
+
+@mixin hazard($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
+  background: repeating-linear-gradient(
+    45deg,
+    $bg_a, $bg_a 10px, $bg_b 10px, $bg_b 20px
+  );
+  color: $text;
+}
+
+@mixin hazard-active($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff, $scroll: 60s) {
+  @include hazard($bg_a, $bg_b, $text);
+  @include scroll-gradient-horizontal($scroll);
 }
 
 a {
@@ -110,65 +151,58 @@ html, body, #root {
   }
 }
 
-// $hazard-dark-primary: #735a00;
-// $hazard-dark-secondary: #593e00;
-// $hazard-red-dark-primary: #730000;
-// $hazard-red-dark-secondary: #590000;
-
-@mixin scroll-gradient-horizontal($time) {
-  background-size: 400% 100%;
-  animation: scroll-gradient $time linear infinite;
-}
-
-@keyframes scroll-gradient {
-  0% {
-    background-position: 0% 0%;
+.top-nav {
+  &:not([data-connected=true]) {
+    background-color: theme-color("bad");
   }
-  50% {
-    background-position: 100% 0%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@mixin hazard-btn($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
-  border-color: $bg_b;
-  &:hover {
-    &:enabled {
-      @include scroll-gradient-horizontal(60s);
+  &[data-connected=true] {
+    &[data-arena-state=Prestart] {
+      background-color: theme-color("warning");
+      &[data-arena-ready=true] {
+        background-color: theme-color("good");
+      }
+    }
+    &[data-arena-state=MatchArmed] {
+      @include hazard-active(theme-color("hazard-yellow"));
+    }
+    &[data-arena-state=MatchPlay] {
+      &[data-match-state=Auto] {
+        background-color: theme-color("purple");
+      }
+      &[data-match-state=Teleop] {
+        background-color: theme-color("orange");
+      }
+    }
+    &[data-arena-state=MatchComplete] {
+      background-color: theme-color("warning");
+      &[data-arena-ready=true] {
+        background-color: theme-color("good");
+      }
+    }
+    &[data-arena-state=MatchCommit] {
+      background-color: theme-color("good");
+    }
+    &[data-arena-state=Estop] {
+      @include hazard-active(theme-color("hazard-red"));
     }
   }
-  @include hazard($bg_a, $bg_b, $text);
-}
-
-@mixin hazard($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
-  background: repeating-linear-gradient(
-    45deg,
-    $bg_a, $bg_a 10px, $bg_b 10px, $bg_b 20px
-  );
-  color: $text;
-}
-
-@mixin hazard-active($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff, $scroll: 60s) {
-  @include hazard($bg_a, $bg_b, $text);
-  @include scroll-gradient-horizontal($scroll);
 }
 
 .btn-estop, .btn-hazard-red {
   @include hazard-btn(theme-color("hazard-red"));
 }
 
-.btn-estop-reset, .btn-hazard-yellow {
+.btn-estop-reset, .btn-astop, .btn-hazard-yellow {
   @include hazard-btn(theme-color("hazard-yellow"));
 }
 
 .estop-big {
   display: block;
   width: 100%;
-  padding: 2rem;
-  font-size: 3rem;
+  padding: 5rem;
+  font-size: 4rem;
   font-weight: bold;
+  margin-bottom: 1rem;
 }
 
 .estop-subtitle {
