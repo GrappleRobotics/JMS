@@ -2,11 +2,19 @@ import { faCarBattery, faCode, faRobot, faSkullCrossbones, faWifi } from "@forta
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
+import { WebsocketComponent } from "support/ws-component";
+import { AllianceStation, AllianceStationDSReport, ArenaState, LoadedMatch } from "ws-schema";
 
-class FieldMonitorStation extends React.PureComponent {
-  lostPktPercent = (lost, sent) => (lost || 0) / ((lost + sent) || 1) * 100;
+type FieldMonitorStationState = {
+  station: AllianceStation,
+  state?: ArenaState,
+  match?: LoadedMatch
+}
 
-  renderSent = (lost, sent) => {
+class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> {
+  lostPktPercent = (lost: number, sent: number) => (lost) / ((lost + sent) || 1) * 100;
+
+  renderSent = (lost: number, sent: number) => {
     let percent = 100 - this.lostPktPercent(lost, sent);
 
     if (percent > 100)
@@ -16,8 +24,8 @@ class FieldMonitorStation extends React.PureComponent {
     return percent.toFixed(0);
   }
 
-  whatError = (stn, report, estop) => {
-    let playing_match = this.props.state == "MatchPlay";
+  whatError = (stn: AllianceStation, report: AllianceStation["ds_report"], estop: boolean) => {
+    let playing_match = this.props.state?.state === "MatchPlay";
 
     if (stn.bypass) return null;
     if (estop) return "E-STOPPED";
@@ -27,7 +35,7 @@ class FieldMonitorStation extends React.PureComponent {
     if (stn.occupancy == "WrongMatch") return "WRONG MATCH";
     if (stn.occupancy == "WrongStation") return "WRONG STATION";
 
-    if (!report) return "NO DS REPORT";
+    if (report == null) return "NO DS REPORT";
 
     if (!report.radio_ping) return "NO RADIO";
     if (!report.rio_ping) return "NO RIO";
@@ -44,7 +52,7 @@ class FieldMonitorStation extends React.PureComponent {
       return "DISABLED";
 
     if (playing_match && report.mode !== this.props.match?.state)
-      return report.mode.toUpperCase();
+      return report.mode?.toUpperCase();
 
     return null;
   }
@@ -52,7 +60,7 @@ class FieldMonitorStation extends React.PureComponent {
   render() {
     let s = this.props.station;
     let report = s.ds_report;
-    let estop = s.estop || s.astop || report?.estop;
+    let estop = report?.estop || s.estop || s.astop;
 
     let error = this.whatError(s, report, estop);
 
@@ -68,8 +76,8 @@ class FieldMonitorStation extends React.PureComponent {
               <Col className="monitor-team">
                 { s.team || "" }
               </Col>
-              <Col className="text-end" data-ok={ this.lostPktPercent(report?.pkts_lost, report?.pkts_sent) < 10 }>
-                { this.renderSent(s.ds_report?.pkts_lost, s.ds_report?.pkts_sent) }%
+              <Col className="text-end" data-ok={ this.lostPktPercent(report?.pkts_lost || 0, report?.pkts_sent || 0) < 10 }>
+                { this.renderSent(s.ds_report?.pkts_lost || 0, s.ds_report?.pkts_sent || 0) }%
               </Col>
             </Row>
         }
@@ -107,17 +115,27 @@ class FieldMonitorStation extends React.PureComponent {
   }
 }
 
-export default class FieldMonitor extends React.PureComponent {
-  constructor(props) {
-    super(props);
+type FieldMonitorState = {
+  stations: AllianceStation[],
+  state?: ArenaState,
+  match?: LoadedMatch
+};
 
-    props.ws.subscribe("arena", "stations");
-  }
+export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorState> {
+  readonly state: FieldMonitorState = {
+    stations: []
+  };
 
-  renderAlliance = (stations) => {
+  componentDidMount = () => this.handles = [
+    this.listen("Arena/State/Current", "state"),
+    this.listen("Arena/Match/Current", "match"),
+    this.listen("Arena/Alliance/CurrentStations", "stations")
+  ];
+
+  renderAlliance = (stations: AllianceStation[]) => {
     return <React.Fragment>
       {
-        stations.map(s => <FieldMonitorStation state={this.props.arena?.state} match={this.props.arena?.match} station={s}/>)
+        stations.map(s => <FieldMonitorStation state={this.state?.state} match={this.state?.match} station={s}/>)
       }
     </React.Fragment>
   }
@@ -125,10 +143,10 @@ export default class FieldMonitor extends React.PureComponent {
   renderAvailable = () => {
     return <Row>
       <Col className="col-full monitor-alliance" data-alliance="red">
-        { this.renderAlliance( this.props.arena.stations.filter(s => s.station.alliance == "Red") ) }
+        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance == "Red") ) }
       </Col>
       <Col className="col-full monitor-alliance" data-alliance="blue">
-        { this.renderAlliance( this.props.arena.stations.filter(s => s.station.alliance == "Blue").reverse() ) }
+        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance == "Blue").reverse() ) }
       </Col>
     </Row>
   }
@@ -136,7 +154,7 @@ export default class FieldMonitor extends React.PureComponent {
   render() {
     return <Col className="col-full">
       {
-        this.props.arena?.stations ? this.renderAvailable() : <h4 className="m-5"> Waiting... </h4>
+        this.state.stations.length > 0 ? this.renderAvailable() : <h4 className="m-5"> Waiting... </h4>
       }
     </Col>
   }

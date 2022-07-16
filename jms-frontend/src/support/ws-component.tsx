@@ -51,8 +51,7 @@ export abstract class WebsocketComponent<P={},S={}> extends React.Component<P,S>
 
   listen = <K extends keyof S>(path: string|string[], key: K) => {
     const fn = (data: S[K]) => {
-      const actual_data = data == null ? undefined : data;
-      this.setState({ [key]: actual_data } as Pick<S, K>)
+      this.setState({ [key]: data } as Pick<S, K>)
     };
     return this.listenFn<S[K]>(path, fn);
   }

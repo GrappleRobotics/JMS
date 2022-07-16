@@ -2,7 +2,8 @@ import BottomNavbar from 'BottomNavbar';
 import Debug from 'Debug';
 import Home from 'Home';
 import MatchControl from 'match_control/MatchControl';
-import { DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, RANKINGS, RANKINGS_NO_SCROLL, REPORTS, TIMER } from 'paths';
+import FieldMonitor from 'monitor/FieldMonitor';
+import { DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REPORTS, TIMER } from 'paths';
 import Rankings from 'rankings/Rankings';
 import React from 'react';
 import { Col, Navbar, Row } from 'react-bootstrap';
@@ -164,6 +165,7 @@ export default class App extends React.Component {
     return <Routes>
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
       <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl />) } />
+      <Route path={MONITOR} element={ this.wrapView(<FieldMonitor />) } />
       <Route path={RANKINGS} element={ this.wrapView(<Rankings />, { fullscreen: true, nonav: true }) } />
       <Route path={RANKINGS_NO_SCROLL} element={ this.wrapView(<Rankings scroll={false} />, { fullscreen: true }) } />
       <Route path={ESTOPS} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
