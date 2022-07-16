@@ -116,7 +116,7 @@ export type ArenaMessageMatch2UI = {
   Current: LoadedMatch | null;
 };
 export type WinStatus = "WIN" | "LOSS" | "TIE";
-export type EndgamePointType = "None" | "Hang" | "Park";
+export type EndgamePointType = "None" | "Low" | "Mid" | "High" | "Traversal";
 export type MatchSubtype = "Quarterfinal" | "Semifinal" | "Final";
 export type MatchType = "Test" | "Qualification" | "Playoff";
 export type MatchPlayState = "Waiting" | "Warmup" | "Auto" | "Pause" | "Teleop" | "Cooldown" | "Complete" | "Fault";
@@ -301,17 +301,16 @@ export type ArenaMessageMatch2JMS =
     };
 export type ScoreUpdate =
   | {
-      Initiation: {
+      Taxi: {
         crossed: boolean;
         station: number;
       };
     }
   | {
-      PowerCell: {
+      Cargo: {
         auto: boolean;
-        bottom?: number;
-        inner?: number;
-        outer?: number;
+        lower?: number;
+        upper?: number;
       };
     }
   | {
@@ -319,9 +318,6 @@ export type ScoreUpdate =
         endgame: EndgamePointType;
         station: number;
       };
-    }
-  | {
-      RungLevel: boolean;
     }
   | {
       Penalty: {
@@ -486,14 +482,14 @@ export interface SnapshotScore {
   live: LiveScore;
 }
 export interface DerivedScore {
-  cell_points: ModeScoreForInt;
+  cargo_points: ModeScoreForInt;
+  cargo_rp: boolean;
   endgame_points: number;
-  initiation_points: number;
+  hangar_rp: boolean;
   mode_score: ModeScoreForInt;
   penalty_score: number;
-  shield_gen_rp: boolean;
-  stage: number;
-  stage3_rp: boolean;
+  quintet: boolean;
+  taxi_points: number;
   total_bonus_rp: number;
   total_rp: number;
   total_score: number;
@@ -505,24 +501,22 @@ export interface ModeScoreForInt {
   teleop: number;
 }
 export interface LiveScore {
+  cargo: ModeScoreFor_CargoCounts;
   endgame: EndgamePointType[];
-  initiation_line_crossed: boolean[];
   penalties: Penalties;
-  power_cells: ModeScoreFor_PowerCellCounts;
-  rung_level: boolean;
+  taxi: boolean[];
+}
+export interface ModeScoreFor_CargoCounts {
+  auto: CargoCounts;
+  teleop: CargoCounts;
+}
+export interface CargoCounts {
+  lower: number;
+  upper: number;
 }
 export interface Penalties {
   fouls: number;
   tech_fouls: number;
-}
-export interface ModeScoreFor_PowerCellCounts {
-  auto: PowerCellCounts;
-  teleop: PowerCellCounts;
-}
-export interface PowerCellCounts {
-  bottom: number;
-  inner: number;
-  outer: number;
 }
 export interface MatchScore {
   blue: LiveScore;

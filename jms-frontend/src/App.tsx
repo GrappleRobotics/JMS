@@ -165,7 +165,7 @@ export default class App extends React.Component {
     return <Routes>
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
       <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl />) } />
-      <Route path={MONITOR} element={ this.wrapView(<FieldMonitor />) } />
+      <Route path={MONITOR} element={ this.wrapView(<FieldMonitor />, { fullscreen: true, nopad: true }) } />
       <Route path={RANKINGS} element={ this.wrapView(<Rankings />, { fullscreen: true, nonav: true }) } />
       <Route path={RANKINGS_NO_SCROLL} element={ this.wrapView(<Rankings scroll={false} />, { fullscreen: true }) } />
       <Route path={ESTOPS} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />

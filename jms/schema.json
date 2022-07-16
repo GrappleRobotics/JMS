@@ -874,6 +874,25 @@
         }
       }
     },
+    "CargoCounts": {
+      "type": "object",
+      "required": [
+        "lower",
+        "upper"
+      ],
+      "properties": {
+        "lower": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "upper": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "DSMode": {
       "type": "string",
       "enum": [
@@ -908,14 +927,14 @@
     "DerivedScore": {
       "type": "object",
       "required": [
-        "cell_points",
+        "cargo_points",
+        "cargo_rp",
         "endgame_points",
-        "initiation_points",
+        "hangar_rp",
         "mode_score",
         "penalty_score",
-        "shield_gen_rp",
-        "stage",
-        "stage3_rp",
+        "quintet",
+        "taxi_points",
         "total_bonus_rp",
         "total_rp",
         "total_score",
@@ -923,16 +942,18 @@
         "win_status"
       ],
       "properties": {
-        "cell_points": {
+        "cargo_points": {
           "$ref": "#/definitions/ModeScore_for_int"
+        },
+        "cargo_rp": {
+          "type": "boolean"
         },
         "endgame_points": {
           "type": "integer",
           "format": "int"
         },
-        "initiation_points": {
-          "type": "integer",
-          "format": "int"
+        "hangar_rp": {
+          "type": "boolean"
         },
         "mode_score": {
           "$ref": "#/definitions/ModeScore_for_int"
@@ -942,16 +963,12 @@
           "format": "uint",
           "minimum": 0.0
         },
-        "shield_gen_rp": {
+        "quintet": {
           "type": "boolean"
         },
-        "stage": {
+        "taxi_points": {
           "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "stage3_rp": {
-          "type": "boolean"
+          "format": "int"
         },
         "total_bonus_rp": {
           "type": "integer",
@@ -1001,8 +1018,10 @@
       "type": "string",
       "enum": [
         "None",
-        "Hang",
-        "Park"
+        "Low",
+        "Mid",
+        "High",
+        "Traversal"
       ]
     },
     "EventDetails": {
@@ -1460,33 +1479,29 @@
     "LiveScore": {
       "type": "object",
       "required": [
+        "cargo",
         "endgame",
-        "initiation_line_crossed",
         "penalties",
-        "power_cells",
-        "rung_level"
+        "taxi"
       ],
       "properties": {
+        "cargo": {
+          "$ref": "#/definitions/ModeScore_for_CargoCounts"
+        },
         "endgame": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/EndgamePointType"
           }
         },
-        "initiation_line_crossed": {
+        "penalties": {
+          "$ref": "#/definitions/Penalties"
+        },
+        "taxi": {
           "type": "array",
           "items": {
             "type": "boolean"
           }
-        },
-        "penalties": {
-          "$ref": "#/definitions/Penalties"
-        },
-        "power_cells": {
-          "$ref": "#/definitions/ModeScore_for_PowerCellCounts"
-        },
-        "rung_level": {
-          "type": "boolean"
         }
       }
     },
@@ -1877,7 +1892,7 @@
         "Playoff"
       ]
     },
-    "ModeScore_for_PowerCellCounts": {
+    "ModeScore_for_CargoCounts": {
       "type": "object",
       "required": [
         "auto",
@@ -1885,10 +1900,10 @@
       ],
       "properties": {
         "auto": {
-          "$ref": "#/definitions/PowerCellCounts"
+          "$ref": "#/definitions/CargoCounts"
         },
         "teleop": {
-          "$ref": "#/definitions/PowerCellCounts"
+          "$ref": "#/definitions/CargoCounts"
         }
       }
     },
@@ -1964,31 +1979,6 @@
         "RoundRobin"
       ]
     },
-    "PowerCellCounts": {
-      "type": "object",
-      "required": [
-        "bottom",
-        "inner",
-        "outer"
-      ],
-      "properties": {
-        "bottom": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "inner": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "outer": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        }
-      }
-    },
     "QualsMatchGeneratorParams": {
       "type": "object",
       "required": [
@@ -2059,10 +2049,10 @@
         {
           "type": "object",
           "required": [
-            "Initiation"
+            "Taxi"
           ],
           "properties": {
-            "Initiation": {
+            "Taxi": {
               "type": "object",
               "required": [
                 "crossed",
@@ -2085,10 +2075,10 @@
         {
           "type": "object",
           "required": [
-            "PowerCell"
+            "Cargo"
           ],
           "properties": {
-            "PowerCell": {
+            "Cargo": {
               "type": "object",
               "required": [
                 "auto"
@@ -2097,17 +2087,12 @@
                 "auto": {
                   "type": "boolean"
                 },
-                "bottom": {
+                "lower": {
                   "default": 0,
                   "type": "integer",
                   "format": "int"
                 },
-                "inner": {
-                  "default": 0,
-                  "type": "integer",
-                  "format": "int"
-                },
-                "outer": {
+                "upper": {
                   "default": 0,
                   "type": "integer",
                   "format": "int"
@@ -2139,18 +2124,6 @@
                   "minimum": 0.0
                 }
               }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "RungLevel"
-          ],
-          "properties": {
-            "RungLevel": {
-              "type": "boolean"
             }
           },
           "additionalProperties": false

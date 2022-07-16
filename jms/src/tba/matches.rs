@@ -29,7 +29,7 @@ pub struct TBAMatch {
   pub set_number: usize,
   pub match_number: usize,
   pub alliances: TBAMatchAlliances,
-  pub score_breakdown: Option<TBA2021ScoreBreakdownFull>,
+  pub score_breakdown: Option<TBA2022ScoreBreakdownFull>,
   pub time_str: Option<String>,
   pub time_utc: Option<String>
 }
@@ -69,7 +69,7 @@ impl TryFrom<models::Match> for TBAMatch {
       }
     };
 
-    let score_breakdown = score.map(|score| TBA2021ScoreBreakdownFull::from(score));
+    let score_breakdown = score.map(|score| TBA2022ScoreBreakdownFull::from(score));
 
     Ok(TBAMatch {
       comp_level: TBAMatchLevel::try_from(( m.match_type, m.match_subtype ))?,
@@ -94,12 +94,12 @@ impl TBAMatch {
 }
 
 #[derive(serde::Serialize, Debug, Clone, PartialEq, Eq)]
-pub struct TBA2021ScoreBreakdownFull {
-  blue: TBA2021ScoreBreakdown,
-  red: TBA2021ScoreBreakdown,
+pub struct TBA2022ScoreBreakdownFull {
+  blue: TBA2022ScoreBreakdown,
+  red: TBA2022ScoreBreakdown,
 }
 
-impl From<MatchScoreSnapshot> for TBA2021ScoreBreakdownFull {
+impl From<MatchScoreSnapshot> for TBA2022ScoreBreakdownFull {
   fn from(score: MatchScoreSnapshot) -> Self {
     Self {
       red: score.red.into(),
@@ -110,92 +110,110 @@ impl From<MatchScoreSnapshot> for TBA2021ScoreBreakdownFull {
 
 #[derive(serde::Serialize, Debug, Clone, PartialEq, Eq)]
 #[allow(non_snake_case)]
-pub struct TBA2021ScoreBreakdown {
+pub struct TBA2022ScoreBreakdown {
   // Thanks Cheesy-Arena :)
-  initLineRobot1: &'static str,
-  initLineRobot2: &'static str,
-  initLineRobot3: &'static str,
-  autoCellsBottom: usize,
-  autoCellsOuter: usize,
-  autoCellsInner: usize,
-  teleopCellsBottom: usize,
-  teleopCellsOuter: usize,
-  teleopCellsInner: usize,
-  stage1Activated: bool,
-  stage2Activated: bool,
-  stage3Activated: bool,
-  stage3TargetColor: &'static str,
+  taxiRobot1: &'static str,
+  taxiRobot2: &'static str,
+  taxiRobot3: &'static str,
+  autoCargoLowerBlue: usize,
+  autoCargoLowerRed: usize,
+  autoCargoLowerFar: usize,
+  autoCargoLowerNear: usize,
+  autoCargoUpperBlue: usize,
+  autoCargoUpperRed: usize,
+  autoCargoUpperFar: usize,
+  autoCargoUpperNear: usize,
+  autoCargoTotal: usize,
+  teleopCargoLowerBlue: usize,
+  teleopCargoLowerRed: usize,
+  teleopCargoLowerFar: usize,
+  teleopCargoLowerNear: usize,
+  teleopCargoUpperBlue: usize,
+  teleopCargoUpperRed: usize,
+  teleopCargoUpperFar: usize,
+  teleopCargoUpperNear: usize,
+  teleopCargoTotal: usize,
+  matchCargoTotal: usize,
   endgameRobot1: &'static str,
   endgameRobot2: &'static str,
   endgameRobot3: &'static str,
-  endgameRungIsLevel: &'static str,
+  autoTaxiPoints: usize,
+  autoCargoPoints: usize,
+  teleopCargoPoints: usize,
+  autoPoints: usize,
+  endgamePoints: usize,
+  teleopPoints: usize,
+  quintetAchieved: bool,
+  cargoBonusRankingPoint: bool,
+  hangarBonusRankingPoint: bool,
   foulCount: usize,
   techFoulCount: usize,
-  autoInitLinePoints: isize,
-  autoCellPoints: isize,
-  autoPoints: isize,
-  teleopCellPoints: isize,
-  controlPanelPoints: isize,
-  endgamePoints: isize,
-  teleopPoints: isize,
   foulPoints: usize,
   totalPoints: usize,
-  shieldEnergizedRankingPoint: bool,
-  shieldOperationalRankingPoint: bool,
   rp: usize
 }
 
-impl TBA2021ScoreBreakdown {
-  pub fn init_crossed_str(crossed: Option<&bool>) -> &'static str {
-    crossed.and_then(|c| c.then(|| "Exited")).unwrap_or("None")
+impl TBA2022ScoreBreakdown {
+  pub fn taxi_str(taxi: Option<&bool>) -> &'static str {
+    taxi.and_then(|c| c.then(|| "Yes")).unwrap_or("No")
   }
 
   pub fn endgame_str(endgame: Option<&EndgamePointType>) -> &'static str {
     match endgame {
       Some(EndgamePointType::None) => "None",
-      Some(EndgamePointType::Park) => "Park",
-      Some(EndgamePointType::Hang) => "Hang",
+      Some(EndgamePointType::Low) => "Low",
+      Some(EndgamePointType::Mid) => "Mid",
+      Some(EndgamePointType::High) => "High",
+      Some(EndgamePointType::Traversal) => "Traversal",
       None => "None",
     }
   }
 }
 
-impl From<SnapshotScore> for TBA2021ScoreBreakdown {
+impl From<SnapshotScore> for TBA2022ScoreBreakdown {
   fn from(score: SnapshotScore) -> Self {
     let live = score.live;
     let derived = score.derived;
 
-    TBA2021ScoreBreakdown {
-      initLineRobot1: TBA2021ScoreBreakdown::init_crossed_str(live.initiation_line_crossed.get(0)),
-      initLineRobot2: TBA2021ScoreBreakdown::init_crossed_str(live.initiation_line_crossed.get(1)),
-      initLineRobot3: TBA2021ScoreBreakdown::init_crossed_str(live.initiation_line_crossed.get(2)),
-      autoCellsBottom: live.power_cells.auto.bottom,
-      autoCellsOuter: live.power_cells.auto.outer,
-      autoCellsInner: live.power_cells.auto.inner,
-      teleopCellsBottom: live.power_cells.teleop.bottom,
-      teleopCellsOuter: live.power_cells.teleop.outer,
-      teleopCellsInner: live.power_cells.teleop.inner,
-      stage1Activated: derived.stage >= 1,
-      stage2Activated: derived.stage >= 2,
-      stage3Activated: derived.stage >= 3,
-      stage3TargetColor: "Unknown",
-      endgameRobot1: TBA2021ScoreBreakdown::endgame_str(live.endgame.get(0)),
-      endgameRobot2: TBA2021ScoreBreakdown::endgame_str(live.endgame.get(1)),
-      endgameRobot3: TBA2021ScoreBreakdown::endgame_str(live.endgame.get(2)),
-      endgameRungIsLevel: live.rung_level.then(|| "IsLevel").unwrap_or("NotLevel"),
+    TBA2022ScoreBreakdown {
+      taxiRobot1: Self::taxi_str(live.taxi.get(0)),
+      taxiRobot2: Self::taxi_str(live.taxi.get(1)),
+      taxiRobot3: Self::taxi_str(live.taxi.get(2)),
+      autoCargoLowerBlue: 0,
+      autoCargoLowerRed: 0,
+      autoCargoLowerFar: 0,
+      autoCargoLowerNear: live.cargo.auto.lower,
+      autoCargoUpperBlue: 0,
+      autoCargoUpperRed: 0,
+      autoCargoUpperFar: 0,
+      autoCargoUpperNear: live.cargo.auto.upper,
+      autoCargoTotal: live.cargo.auto.total_cargo(),
+      teleopCargoLowerBlue: 0,
+      teleopCargoLowerRed: 0,
+      teleopCargoLowerFar: 0,
+      teleopCargoLowerNear: live.cargo.teleop.lower,
+      teleopCargoUpperBlue: 0,
+      teleopCargoUpperRed: 0,
+      teleopCargoUpperFar: 0,
+      teleopCargoUpperNear: live.cargo.teleop.upper,
+      teleopCargoTotal: live.cargo.teleop.total_cargo(),
+      matchCargoTotal: live.cargo.total().total_cargo(),
+      endgameRobot1: Self::endgame_str(live.endgame.get(0)),
+      endgameRobot2: Self::endgame_str(live.endgame.get(1)),
+      endgameRobot3: Self::endgame_str(live.endgame.get(2)),
+      autoTaxiPoints: derived.taxi_points as usize,
+      autoCargoPoints: derived.cargo_points.auto as usize,
+      teleopCargoPoints: derived.cargo_points.teleop as usize,
+      autoPoints: derived.mode_score.auto as usize,
+      endgamePoints: derived.endgame_points as usize,
+      teleopPoints: derived.mode_score.teleop as usize,
+      quintetAchieved: derived.quintet,
+      cargoBonusRankingPoint: derived.cargo_rp,
+      hangarBonusRankingPoint: derived.hangar_rp,
       foulCount: live.penalties.fouls,
       techFoulCount: live.penalties.tech_fouls,
-      autoInitLinePoints: derived.initiation_points,
-      autoCellPoints: derived.cell_points.auto,
-      autoPoints: derived.mode_score.auto,
-      teleopCellPoints: derived.cell_points.teleop,
-      controlPanelPoints: 0,
-      endgamePoints: derived.endgame_points,
-      teleopPoints: derived.mode_score.teleop,
       foulPoints: derived.penalty_score,
       totalPoints: derived.total_score,
-      shieldEnergizedRankingPoint: derived.stage3_rp,
-      shieldOperationalRankingPoint: derived.shield_gen_rp,
       rp: derived.total_rp,
     }
   }

@@ -165,13 +165,10 @@ export default class AllianceDash extends React.PureComponent<AllianceProps> {
   renderScore = (score: SnapshotScore) => {
     let score_components = [
       <Col>
-        <h6> Stage { score.derived.stage } </h6>
-      </Col>,
-      <Col>
         <h6> {score.derived.total_bonus_rp} rp </h6>
       </Col>,
       <Col>
-        <h4> { score.derived.total_score } </h4>
+        <h4> { score.derived.total_score } pts </h4>
       </Col>
     ]
 
