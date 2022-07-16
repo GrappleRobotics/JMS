@@ -4,7 +4,7 @@ import JmsWebsocket, { CallbackFn } from "./ws";
 
 export type WebsocketContextT = {
   send: (msg: WebsocketMessage2JMS) => void,
-  listen: <T>(path: string[], callback: CallbackFn<T>) => string,
+  listen: <T>(path: string|string[], callback: CallbackFn<T>) => string,
   unlisten: (paths: string[]) => void,
   connected: boolean
 };
@@ -42,3 +42,19 @@ export class WebsocketManagerComponent extends React.Component<{ children: React
     </WebsocketContext.Provider>
   }
 };
+
+export abstract class WebsocketComponent<P,S> extends React.Component<P,S> {
+  static contextType = WebsocketContext;
+  context!: WebsocketContextT;
+  handles: string[] = [];
+
+  listen = <K extends keyof S>(path: string|string[], key: K) => {
+    const fn = (data: S[K]) => this.setState({ [key]: data } as Pick<S, K>);
+    return this.context.listen<S[K]>(path, fn);
+  }
+  
+  listenFn = <T,>(path: string|string[], fn: (data: T) => void) => {
+    return this.context.listen<T>(path, fn);
+  }
+  componentWillUnmount = () => this.context.unlisten(this.handles);
+}

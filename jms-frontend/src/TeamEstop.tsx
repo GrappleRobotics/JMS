@@ -76,7 +76,7 @@ export class TeamEstops extends React.PureComponent<{}, TeamEstopsState> {
             <Button 
               className="my-3 btn-block" 
               size="lg" 
-              data-alliance={s.station.alliance.toLowerCase()}
+              variant={`${s.station.alliance.toLowerCase()}`}
               onClick={() => window.location.hash = "#" + i}
             >
               { s.station.alliance } { s.station.station }

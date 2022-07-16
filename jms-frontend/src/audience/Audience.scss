@@ -19,13 +19,13 @@
 .audience-card {
   // $border-colour: #9c00be;
   $border-colour: #e9ab01;
-  // $border-colour: gray("700");
+  // $border-colour: $gray-700;
   
   @extend .audience;
   background-color: desaturate(darken($border-colour, 30%), 20%);
 
   .audience-card-inner {
-    background-color: gray("300");
+    background-color: $gray-300;
     position: absolute;
     width: 90vw;
     height: 90vh;
@@ -218,8 +218,8 @@
         align-items: center;
 
         &[data-bypass="true"] {
-          color: gray("300");
-          background-color: gray("700");
+          color: $gray-300;
+          background-color: $gray-700;
         }
 
         &[data-estop="true"] {

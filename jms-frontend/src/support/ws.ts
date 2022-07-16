@@ -113,15 +113,17 @@ export default class JmsWebsocket {
     }
   }
 
-  onMessage<T>(path: string[], callback: CallbackFn<T>): string {
+  onMessage<T>(path: string[]|string, callback: CallbackFn<T>): string {
+    const actual_path = typeof path === 'string' ? path.split("/") : path;
+
     let id = uuid();
     this.callbacks.set(id, {
-      path: path,
+      path: actual_path,
       fn: callback
     });
 
     if (this.alive()) {
-      this.send({ Subscribe: path });
+      this.send({ Subscribe: actual_path });
     }
 
     return id;

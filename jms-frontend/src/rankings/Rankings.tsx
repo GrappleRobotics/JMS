@@ -2,20 +2,39 @@ import moment from "moment";
 import React from "react";
 import { Col, Container, Row, Table } from "react-bootstrap";
 import { animateScroll as scroll, scroller, Element } from "react-scroll";
+import { WebsocketComponent, WebsocketContext, WebsocketContextT } from "support/ws-component";
+import { EventDetails, SerializedMatch, TeamRanking } from "ws-schema";
 
 const SCROLL_TIME = 20000;
 const SCROLL_RESET_TIME = 2500;
 
-export default class Rankings extends React.PureComponent {
-  constructor(props) {
-    super(props);
+type RankingsProps = {
+  scroll: boolean
+};
 
+type RankingsState = {
+  rankings: TeamRanking[],
+  event_details?: EventDetails,
+  next_match?: SerializedMatch
+}
+
+export default class Rankings extends WebsocketComponent<RankingsProps, RankingsState> { 
+  static defaultProps = {
+    scroll: true
+  };
+  
+  readonly state: RankingsState = {
+    rankings: []
+  };
+
+  componentDidMount = () => {
+    this.handles = [
+      this.listen("Event/Ranking/CurrentAll", "rankings"),
+      this.listen("Event/Details/Current", "event_details"),
+      this.listen("Match/Next", "next_match"),
+    ];
     if (this.props.scroll)
       this.scrollDown();
-    
-    props.ws.subscribe("event", "rankings");
-    props.ws.subscribe("event", "details");
-    props.ws.subscribe("matches", "next");
   }
 
   scrollDown = () => {
@@ -36,7 +55,7 @@ export default class Rankings extends React.PureComponent {
   }
 
   renderRankings = () => {
-    let { rankings } = this.props;
+    const { rankings } = this.state;
     return <Table bordered striped className="rankings">
       <thead>
         <tr>
@@ -68,14 +87,14 @@ export default class Rankings extends React.PureComponent {
   }
 
   render() {
-    let next_match = this.props.next_match;
+    const { event_details, rankings, next_match } = this.state;
     return <Container className="wrapper">
       <Row className="my-4">
         <Col>
-          <h2> Team Standings - { this.props.details?.event_name || "Unnamed Event" } </h2>
+          <h2> Team Standings - { event_details?.event_name || "Unnamed Event" } </h2>
           {
             next_match ? <h4 className="text-muted"> 
-              Next Match: { next_match.name } &nbsp; ({ moment.unix(next_match.time).calendar() })
+              Next Match: { next_match.name } &nbsp; ({ moment.unix(next_match.start_time || 0).calendar() })
             </h4> : <React.Fragment />
           }
         </Col>
@@ -84,7 +103,7 @@ export default class Rankings extends React.PureComponent {
         <Col>
             <Element name="top" />
             {
-              this.props.rankings?.length ? this.renderRankings() : <h4> No Rankings Available - waiting for matches to begin... </h4>
+              rankings.length > 0 ? this.renderRankings() : <h4> No Rankings Available - waiting for matches to begin... </h4>
             }
             <Element name="bottom" />
         </Col>

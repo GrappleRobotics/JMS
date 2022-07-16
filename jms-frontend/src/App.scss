@@ -22,8 +22,9 @@ $theme-colors: (
   "purple": #9300e9,
   "hazard-yellow": #735a00,
   "hazard-red": #730000,
-  "gold": #daa520,
-  "silver": #c0c0c0
+  "gold": #9c8501,
+  "silver": #888,
+  "bronze": #865320,
 );
 
 $accordion-bg: $dark;
@@ -94,7 +95,7 @@ html, body, #root {
   }
 
   ::-webkit-scrollbar-thumb {
-    background: gray("500");
+    background: $gray-500;
   }
 }
 
@@ -365,9 +366,9 @@ th {
   thead > tr {
     th {
       text-align: center;
-      color: gray("900");
+      color: $gray-900;
       font-size: 20px;
-      background-color: gray("100");
+      background-color: $gray-100;
       position: sticky;
       top: 1px;
     }
@@ -380,20 +381,20 @@ th {
     }
 
     &:nth-child(even) {
-      background-color: gray("800");
+      background-color: $gray-800;
     }
     &:nth-child(odd) {
-      background-color: gray("700");
+      background-color: $gray-700;
     }
 
     &[data-rank="1"] {
-      background-color: #9c8501;
+      background-color: theme-color("gold");
     }
     &[data-rank="2"] {
-      background-color: gray("600");
+      background-color: theme-color("silver");
     }
     &[data-rank="3"] {
-      background-color: #865320;
+      background-color: theme-color("bronze");
     }
   }
 }
@@ -422,7 +423,7 @@ th {
         flex: 1 !important;
 
         background-color: desaturate(darken($tc, 45%), 25%);
-        border: 2px solid gray("800");
+        border: 2px solid $gray-800;
         
         > .monitor-station-id {
           background-color: desaturate(darken($tc, 25%), 25%);
@@ -507,13 +508,13 @@ th {
         }
 
         &[data-bypass="true"] {
-          background-color: gray("900");
+          background-color: $gray-900;
           > .monitor-team {
-            color: gray("600");
+            color: $gray-600;
           }
 
           .monitor-jumbo {
-            color: gray("700");
+            color: $gray-700;
           }
         }
 
