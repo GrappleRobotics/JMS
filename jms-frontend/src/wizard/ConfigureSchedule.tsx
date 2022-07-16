@@ -345,7 +345,7 @@ export default class ConfigureSchedule extends React.Component<{}, ConfigureSche
           <FontAwesomeIcon icon={faDownload} /> &nbsp; Load 2-day Default
         </Button>
 
-        <span className="mx-3 float-right">
+        <span className="mx-3 float-end">
           <i className="text-muted">Quals</i> &nbsp;
           <strong>{ total_matches }</strong> matches
           <span className="text-muted mx-2">•</span>
