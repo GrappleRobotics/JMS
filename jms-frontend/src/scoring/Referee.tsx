@@ -228,7 +228,7 @@ export class HeadReferee extends RefereePanelBase {
           <Button
             variant="good"
             size="lg"
-            onClick={() => this.send({ Arena: { Access: { Set: "ResetOnly" } } })}
+            onClick={() => this.send({ Arena: { Access: { Set: "Teams" } } })}
             disabled={!canChangeAccess || access === "Teams"}
           >
             TEAMS ON FIELD
