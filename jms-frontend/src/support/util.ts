@@ -1,3 +1,5 @@
+import { Alliance } from "ws-schema";
+
 export function withVal<T,R>(val: T, fn: (v: T|null|undefined) => R|null) {
   if (val !== null && val !== undefined)
     return fn(val)
@@ -5,3 +7,12 @@ export function withVal<T,R>(val: T, fn: (v: T|null|undefined) => R|null) {
 }
 
 export type Combine<A, B> = A & Omit<B, keyof A>;
+
+const inverse_alliance_map: { [K in Alliance]: Alliance } = {
+  blue: "red",
+  red: "blue"
+};
+
+export function otherAlliance(alliance: Alliance): Alliance {
+  return inverse_alliance_map[alliance];
+}

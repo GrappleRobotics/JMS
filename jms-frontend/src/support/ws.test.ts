@@ -55,7 +55,7 @@ describe("websocket behaviour", () => {
       Arena: {
         Alliance: {
           UpdateAlliance: {
-            station: { alliance: "Red", station: 2 },
+            station: { alliance: "red", station: 2 },
             team: 5333, astop: false, estop: true, bypass: false
           }
         }

@@ -21,11 +21,11 @@ export default class EnumToggleGroup<T> extends React.PureComponent<EnumToggleGr
   }
   
   render() {
-    let { className, name, names, disabled, values, value, variant, variantActive, onChange, ...props } = this.props;
+    let { name, names, disabled, values, value, variant, variantActive, onChange, ...props } = this.props;
 
     return <ButtonGroup name={name} {...props}>
       {
-        values.map((v, i) => <Button key={i} variant={value === v ? variantActive : variant} disabled={disabled}onClick={() => onChange(v)}>
+        values.map((v, i) => <Button key={i} variant={value === v ? variantActive : variant} data-selected={value === v} disabled={disabled} onClick={() => onChange(v)}>
           { names ? names[i] : String(v) }
         </Button>)
       }

@@ -3,6 +3,7 @@ use crate::{db::{self, DBDateTime, TableType, DBDuration}, schedule::{playoffs::
 use super::TeamRanking;
 
 #[derive(Debug, strum_macros::EnumString, strum_macros::ToString, EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(rename_all="snake_case")]
 pub enum Alliance {
   Blue, Red
 }

@@ -3,12 +3,13 @@ import Debug from 'Debug';
 import Home from 'Home';
 import MatchControl from 'match_control/MatchControl';
 import FieldMonitor from 'monitor/FieldMonitor';
-import { DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REPORTS, TIMER } from 'paths';
+import { DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, TIMER } from 'paths';
 import Rankings from 'rankings/Rankings';
 import React from 'react';
 import { Col, Navbar, Row } from 'react-bootstrap';
 import { Route, Routes } from 'react-router-dom';
 import Reports from 'reports/Reports';
+import { RefereeRouter } from 'scoring/Referee';
 import { WebsocketContext, WebsocketContextT } from 'support/ws-component';
 import { TeamEstops } from 'TeamEstop';
 import Timer from 'Timer';
@@ -166,6 +167,7 @@ export default class App extends React.Component {
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
       <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl />) } />
       <Route path={MONITOR} element={ this.wrapView(<FieldMonitor />, { fullscreen: true, nopad: true }) } />
+      <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
       <Route path={RANKINGS} element={ this.wrapView(<Rankings />, { fullscreen: true, nonav: true }) } />
       <Route path={RANKINGS_NO_SCROLL} element={ this.wrapView(<Rankings scroll={false} />, { fullscreen: true }) } />
       <Route path={ESTOPS} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />

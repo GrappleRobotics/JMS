@@ -111,7 +111,7 @@ export type ArenaMessageAlliance2UI = {
 };
 export type DSMode = "Teleop" | "Test" | "Auto";
 export type AllianceStationOccupancy = "Vacant" | "Occupied" | "WrongStation" | "WrongMatch";
-export type Alliance = "Blue" | "Red";
+export type Alliance = "blue" | "red";
 export type ArenaMessageMatch2UI = {
   Current: LoadedMatch | null;
 };

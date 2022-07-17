@@ -84,7 +84,7 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
                 matchLoaded={ has_match }
                 arenaState={arena.state}
                 matchScore={arena.match?.score?.blue}
-                stations={arena.stations?.filter(x => x.station.alliance === "Blue") || []}
+                stations={arena.stations?.filter(x => x.station.alliance === "blue") || []}
                 onStationUpdate={ update => this.send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
               />
             </Col>
@@ -94,7 +94,7 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
                 matchLoaded={ has_match }
                 arenaState={arena.state}
                 matchScore={arena.match?.score?.red}
-                stations={arena.stations?.filter(x => x.station.alliance === "Red").reverse() || []}  // Red teams go 3-2-1 to order how they're seen from the scoring table
+                stations={arena.stations?.filter(x => x.station.alliance === "red").reverse() || []}  // Red teams go 3-2-1 to order how they're seen from the scoring table
                 onStationUpdate={ update => this.send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
               />
             </Col>

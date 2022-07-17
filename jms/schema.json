@@ -18,8 +18,8 @@
     "Alliance": {
       "type": "string",
       "enum": [
-        "Blue",
-        "Red"
+        "blue",
+        "red"
       ]
     },
     "AllianceStation": {

@@ -143,10 +143,10 @@ export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorSta
   renderAvailable = () => {
     return <Row>
       <Col className="col-full monitor-alliance" data-alliance="red">
-        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance == "Red") ) }
+        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance === "red") ) }
       </Col>
       <Col className="col-full monitor-alliance" data-alliance="blue">
-        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance == "Blue").reverse() ) }
+        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance === "blue").reverse() ) }
       </Col>
     </Row>
   }

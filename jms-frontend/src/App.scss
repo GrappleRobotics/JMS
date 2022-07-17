@@ -583,43 +583,6 @@ th {
   height: 3.75em;
 }
 
-.penalty-category {
-  margin: 0.5em;
-  padding: 0.5em;
-  border-radius: 1em;
-
-  @each $alliance in $alliances {
-    $tc: theme-color($alliance);
-    &[data-alliance=#{$alliance}] {
-      background-color: desaturate(darken($tc, 25%), 30%);
-    }
-  }
-
-  .penalty-count {
-    text-align: center;
-    font-size: 4em;
-    margin-bottom: 0.125em;
-  }
-}
-
-.referee-team {
-  margin: 0.5em;
-  padding: 1em;
-  border-radius: 1em;
-
-  @each $alliance in $alliances {
-    $tc: theme-color($alliance);
-    &[data-alliance=#{$alliance}] {
-      background-color: desaturate(darken($tc, 25%), 30%);
-    }
-  }
-
-  .team {
-    font-size: 2em;
-    margin-left: 0.5em;
-  }
-}
-
 .endgame-state {
   text-align: center;
 }
@@ -708,3 +671,4 @@ th {
 @import "audience/Audience.scss";
 @import "match_control/MatchControl.scss";
 @import "wizard/EventWizard.scss";
+@import "scoring/Scoring.scss";
