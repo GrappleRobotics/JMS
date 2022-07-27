@@ -28,26 +28,18 @@ void loop() {
   // strip.set({255,0,0});
   // FastLED.clear();
   // strip.set(4, (255,0,0));
-  for (size_t i = 0; i < strip.getSize(); i++) {
-    strip.set(i-1, CRGB(0,0,0));
-    strip.set(i, CRGB(255,0,0));
-  }
-  strip.set(CRGB(255,0,0));
-  for (size_t i = 0; i < strip.getSize(); i++) {
-    strip.set(i-1, CRGB(0,0,0));
-    strip.set(i, CRGB(255,0,0));
-  }
-  FastLED.clear();
-  // FastLED.show();
-  // int val = digitalRead(2);
-
-  // Serial.println("Vector Size: ");
-  // Serial.println(myVector.get(2));
-  // Serial.print("\n");
-
-  // if (state) {
-  //   Serial.println("Triggered");
+  // for (size_t i = 0; i < strip.getSize(); i++) {
+  //   strip.set(i-1, CRGB(0,0,0));
+  //   strip.set(i, CRGB(255,0,0));
   // }
+  // strip.set(CRGB(255,0,0));
+  // for (size_t i = 0; i < strip.getSize(); i++) {
+  //   strip.set(i-1, CRGB(0,0,0));
+  //   strip.set(i, CRGB(255,0,0));
+  // }
+  // FastLED.clear();
 
-  // delay(100);
+  strip.setWave(CRGB(255,0,0), 5, 25);
+  strip.setRainbow(25);
+  strip.setPulse(CRGB(255,0,0), 0);
 }

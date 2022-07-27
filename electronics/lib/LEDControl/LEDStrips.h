@@ -12,9 +12,9 @@ namespace LED {
       free(_strip);
     }
 
-    template <typename T>
+    template <typename CHIPSET>
     void create(int size) {
-      static T c;
+      static CHIPSET c;
       _size = size;
       _strip = (CRGB*)calloc(size, sizeof(CRGB));
       FastLED.addLeds(&c, _strip, size).setCorrection(TypicalLEDStrip);
@@ -25,8 +25,14 @@ namespace LED {
     void setBrightness(byte value);
 
     void set(unsigned int index, CRGB rgb, bool noShow = false);
-
     void set(CRGB rgb, bool noShow = false);
+
+    // Animations
+
+
+    void setRainbow(int speed, bool noShow = false);
+    void setWave(CRGB colour, int waveSize, int speed, bool noShow = false);
+    void setPulse(CRGB colour, int speed, bool noShow = false);
 
     size_t getSize() {
       return _size;
