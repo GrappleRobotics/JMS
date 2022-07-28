@@ -5,6 +5,7 @@ import _ from 'lodash';
 import { Button } from 'react-bootstrap';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
+import { Link } from 'react-router-dom';
 import { WebsocketComponent } from 'support/ws-component';
 import { ArenaState, LoadedMatch } from 'ws-schema';
 
@@ -105,10 +106,10 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
       <Navbar.Toggle />
       <Navbar.Collapse className="justify-content-end">
         <Nav>
-          <Nav.Link href="/">
+          <Link to="/" className="nav-link">
             <FontAwesomeIcon icon={faHome} /> &nbsp;
             Home
-          </Nav.Link>
+          </Link>
           <Nav.Link className="mx-3" onClick={ (e: any) => {
             if (fullscreen) document.exitFullscreen();
             else document.body.requestFullscreen();
