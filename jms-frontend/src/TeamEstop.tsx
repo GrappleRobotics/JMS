@@ -12,7 +12,6 @@ type TeamEstopProps = {
   onTrigger: (which: "astop" | "estop") => void
 }
 
-// TODO: Guard with an "ARE YOU SURE?"
 class TeamEstop extends React.PureComponent<TeamEstopProps> {  
   triggerEstop = async (mode: "estop" | "astop") => {
     const subtitle = <p className="estop-subtitle text-muted">
