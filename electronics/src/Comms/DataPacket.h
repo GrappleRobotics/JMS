@@ -37,16 +37,19 @@ namespace Message {
         leds = brgb;
       }
 
+      Mode getMode() {
+        return (Mode)mode;
+      }
+
       MSGPACK_DEFINE(mode, speed, leds);
     };
 
     /**
-     * @brief The id of the node
-     * Specified through either type or manual id
-     * 
+     * @brief Device, provides id and if the packet is empty
      */
-    struct ID {
+    struct Device {
       int __id;
+      bool __emptyData = false;
       enum class Type {
         kMaster     = 0x0,
         kRedDS      = 0x1,
@@ -62,34 +65,37 @@ namespace Message {
         return (Type)__id; 
       }
 
-      MSGPACK_DEFINE(__id);
+      MSGPACK_DEFINE(__id, __emptyData);
     };
   }
 
   namespace Nodes {
     /**
      * @brief Alliance node, Red/Blue
+     * Sent from any node to alliance node
      */
     struct Alliance {
-      Common::ID id; // id also acts as alliance/node type
+      Common::Device device; // id also acts as alliance/node type
+      bool field_estop;
       bool estop1;
       bool estop2;
       bool estop3;
       Common::Lights lights;
 
-      MSGPACK_DEFINE(id, estop1, estop2, estop3, lights);
+      MSGPACK_DEFINE(device, estop1, estop2, estop3, lights);
     };
 
     /**
      * @brief Scoring table node
+     * Sent from any node to scoring table node
      * 
      */
     struct ScoringTable {
-      Common::ID id; // id also acts as alliance/node type
+      Common::Device device; // id also acts as alliance/node type
       bool estop;
       Common::Lights lights;
 
-      MSGPACK_DEFINE(id, estop, lights);
+      MSGPACK_DEFINE(device, estop, lights);
     };
   }
 } // message

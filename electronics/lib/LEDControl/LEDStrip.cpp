@@ -42,16 +42,15 @@ void Strip::setWave(CRGB colour, int waveSize, int speed, bool noShow) {
 }
 
 void Strip::setPulse(CRGB colour, int speed, bool noShow) {
-  for (byte i = 255; i > 0; i--) {
+  set(colour);
+  for (int i = 250; i > 8; i--) {
     setBrightness(i);
-    set(colour);
     if (!noShow) FastLED.show();
     delay(speed);
   }
 
-  for (byte i = 0; i < 255; i++) {
+  for (int i = 8; i < 250; i++) {
     setBrightness(i);
-    set(colour);
     if (!noShow) FastLED.show();
     delay(speed);
   }

@@ -33,28 +33,88 @@ namespace Comms {
       _baudRate = br;
     }
 
-    static void setNodeID(Message::Common::ID::Type t, int id = (int)Message::Common::ID::Type::kOther) {
-      _id.setType(t, id);
+    static void setNodeID(Message::Common::Device::Type t, int id = (int)Message::Common::Device::Type::kOther) {
+      _device.setType(t, id);
     }
 
     template <typename NODE_T>
-    static void sendDataTo(NODE_T n, int id) {
-      // _packer.clear();
-      // _packer.serialize(n);
-      // CAN.begin
+    static void sendDataTo(NODE_T n) {
+      MsgPack::Packer packer;
+      packer.serialize(n);
+
+      int n_packets = (1 + ((packer.size() - 1) / 8)); // get number of packets to store message
+
+      // Start header packet
+      CAN.beginExtendedPacket(n.id.__id);
+      CAN.write(n_packets);
+      CAN.write(packer.size());
+      CAN.endPacket();
+
+      int index = 0;
+      for (byte i = 0; i < n_packets; i++) { // write packet
+
+        CAN.beginExtendedPacket(n.id.__id);
+        for (size_t j = 0; j < 8; j++) { // write bytes to packet
+          CAN.write(packer.buffer[index]);
+          index++;
+        }
+        CAN.endPacket();
+      }
     }
 
     template <typename NODE_T>
-    static NODE_T getDataFrom(int id) {
+    static NODE_T getData(NODE_T default_node) {
+      default_node.device.__emptyData = true;
 
+      CAN.filterExtended(_device.__id);
+
+      int message_n_packets = 0; // message size in packets (each packet holds 8 bytes)
+      int message_size = 0; // size of message in bytes
+
+      // Check if data is being send
+      int packetSize = CAN.parsePacket();
+      if (packetSize <= 0) return default_node;
+
+      // Read header
+      if (!CAN.packetRtr()) {
+        if (CAN.available()) {
+          message_n_packets = CAN.read();
+          message_size = CAN.read();
+        }
+
+        if (CAN.available() || message_n_packets < 0 || message_size < 0) {
+          Serial.println("Bad header read");
+          return default_node;
+        }
+      }
+
+      // Read message
+      byte messageBuffer[message_size];
+      int counter = 0;
+      for (int i = 0; i < message_n_packets; i++) {
+        packetSize = CAN.parsePacket(); // between 1-8 bytes
+        while (CAN.available()) {
+          int buf_byte = CAN.read();
+          if (buf_byte < 0) return default_node;
+          messageBuffer[counter] = buf_byte;
+          counter++;
+        }
+      }
+
+      MsgPack::Unpacker unpacker;
+      unpacker.feed(messageBuffer, message_size);
+      NODE_T data;
+      unpacker.deserialize(data);
+      return data;
     }
 
    private:
-    static MsgPack::Packer _packer;
-    static MsgPack::Unpacker _unpacker;
     static long _baudRate;
-    static Message::Common::ID _id;
+    static Message::Common::Device _device;
   };
+
+  long Comm::_baudRate = k500Kbs;
+  Message::Common::Device Comm::_device;
 }
 
 #endif
