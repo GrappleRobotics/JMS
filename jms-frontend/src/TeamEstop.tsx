@@ -1,6 +1,9 @@
 import confirmBool from "components/elements/Confirm";
+import { TeamSelector } from "components/FieldPosSelector";
 import React from "react";
-import { Button, Container } from "react-bootstrap";
+import { Button, Col, Container } from "react-bootstrap";
+import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { capitalise } from "support/strings";
 import { WebsocketComponent } from "support/ws-component";
 import { AllianceStation } from "ws-schema";
 
@@ -41,7 +44,7 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
   render() {
     let { station } = this.props;
     return <div className="team-estop">
-      <h3> { station.station.alliance } { station.station.station } - { station.team || "No Team" } </h3>
+      <h3> { capitalise(station.station.alliance) } { station.station.station } - { station.team || "No Team" } </h3>
       <br />
       <Button
         size="lg"
@@ -79,31 +82,19 @@ export class TeamEstops extends WebsocketComponent<{}, TeamEstopsState> {
   ]
 
   render() {
-    let stationIdx = parseInt(window.location.hash.substr(1));
-    
-    return <Container fluid>
+    return <Routes>
+      <Route path="/" element={ <TeamSelector stations={this.state.stations} /> }/>
+
       {
-        ((this.state.stations.length > 0) && !isNaN(stationIdx)) ? 
-          <TeamEstop 
-            station={this.state.stations[stationIdx]}
-            onTrigger={which => this.send({
-              Arena: { Alliance: { UpdateAlliance: {
-                [which]: true,
-                station: this.state.stations[stationIdx].station
-              } } }
-            })}
+      this.state.stations.map((s, i) => (
+        <Route key={i} path={`${s.station.alliance}-${s.station.station}`} element={
+          <TeamEstop
+          station={s}
+          onTrigger={which => this.send({ Arena: { Alliance: { UpdateAlliance: { [which]: true, station: s.station } } } })}
           />
-          : this.state.stations.map( (s, i) => (
-            <Button 
-              className="my-3 btn-block" 
-              size="lg" 
-              variant={`${s.station.alliance.toLowerCase()}`}
-              onClick={() => window.location.hash = "#" + i}
-            >
-              { s.station.alliance } { s.station.station }
-            </Button> 
-          ))
+        }/>
+        ))
       }
-    </Container>
+    </Routes>
   }
 }

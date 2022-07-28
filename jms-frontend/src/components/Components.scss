@@ -1,0 +1,56 @@
+.field-pos-selector-container {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+
+  .field-pos-selector-row {
+    flex-grow: 1;
+    flex-basis: 0;
+    overflow: auto;
+    display: flex;
+
+    .field-pos-selector-image-container {
+      max-height: 100%;
+      max-width: 100%;
+      display: flex;
+      // margin: auto;
+      justify-content: center;
+      position: relative;
+
+      .field-pos-selector-image {
+        max-width: 90%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+
+      .btn {
+        position: absolute;
+        font-size: 1.5rem;
+        transform: translate(-50%, 50%);
+      }
+    }
+  }
+}
+
+.team-selector {
+  .btn {
+    max-width: 5em;
+    &[data-alliance=blue] {
+      @extend .btn-blue;
+      left: 7.5%;
+
+      &[data-position="1"] { bottom: 70%; }
+      &[data-position="2"] { bottom: 55%; }
+      &[data-position="3"] { bottom: 40%; }
+    }
+
+    &[data-alliance=red] {
+      @extend .btn-red;
+      left: 92.5%;
+
+      &[data-position="3"] { bottom: 60%; }
+      &[data-position="2"] { bottom: 45%; }
+      &[data-position="1"] { bottom: 30%; }
+    }
+  }
+}

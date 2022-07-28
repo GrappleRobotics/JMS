@@ -1,6 +1,6 @@
 import { Alliance } from "ws-schema";
 
-export function withVal<T,R>(val: T, fn: (v: T|null|undefined) => R|null) {
+export function withVal<T,R>(val: T|null|undefined, fn: (v: T) => R|null) {
   if (val !== null && val !== undefined)
     return fn(val)
   return null

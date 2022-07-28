@@ -1,6 +1,7 @@
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EnumToggleGroup from "components/elements/EnumToggleGroup";
+import FieldPosSelector from "components/FieldPosSelector";
 import _ from "lodash";
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
@@ -273,32 +274,23 @@ export class HeadReferee extends RefereePanelBase {
 
 class RefereeSelector extends React.PureComponent {
   render() {
-    return <Col className="referee-selector-container">
-      <Row>
-        <h3 className="text-center mb-4"> Referee Selection </h3>
-      </Row>
-      <Row className="referee-selector-row">
-        <Col className="referee-selector-image-container">
-          {
-            [ "blue", "red" ].map(alliance => [ "near", "far" ].map(position => (
-              <Link to={`${alliance}/${position}`}>
-                <Button className="referee-selector-btn" data-alliance={alliance} data-position={position}>
-                  { capitalise(alliance) } { capitalise(position) }
-                </Button>
-              </Link>
-            )))
-          }
-
-          <Link to="head">
-            <Button className="referee-selector-btn" data-head-referee="true">
-              Head Referee
+    return <FieldPosSelector className="referee-selector" title="Referee Selection">
+      {
+        [ "blue", "red" ].map(alliance => [ "near", "far" ].map(position => (
+          <Link to={`${alliance}/${position}`}>
+            <Button data-alliance={alliance} data-position={position}>
+              { capitalise(alliance) } { capitalise(position) }
             </Button>
           </Link>
+        )))
+      }
 
-          <img className="referee-selector-image" src="/img/game/field.png" />
-        </Col>
-      </Row>
-    </Col>
+      <Link to="head">
+        <Button data-head-referee="true">
+          Head Referee
+        </Button>
+      </Link>
+    </FieldPosSelector>
   }
 }
 

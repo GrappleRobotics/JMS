@@ -170,7 +170,7 @@ export default class App extends React.Component {
       <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
       <Route path={RANKINGS} element={ this.wrapView(<Rankings />, { fullscreen: true, nonav: true }) } />
       <Route path={RANKINGS_NO_SCROLL} element={ this.wrapView(<Rankings scroll={false} />, { fullscreen: true }) } />
-      <Route path={ESTOPS} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
+      <Route path={`${ESTOPS}/*`} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
       <Route path={DEBUG} element={ this.wrapView(<Debug />) } />
       <Route path={REPORTS} element={ this.wrapView(<Reports />) } />
       <Route path={TIMER} element={ this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true }) } />

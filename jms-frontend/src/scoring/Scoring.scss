@@ -1,61 +1,26 @@
-.referee-selector-container {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
+.referee-selector {
+  .btn {
+    &[data-alliance=blue] {
+      @extend .btn-blue;
+      left: 30%;
+    }
+    &[data-alliance=red] {
+      @extend .btn-red;
+      left: 70%;
+    }
+    &[data-position=near] {
+      bottom: 10%;
+    }
+    &[data-position=far] {
+      bottom: 90%;
+    }
 
-  .referee-selector-row {
-    flex-grow: 1;
-    flex-basis: 0;
-    overflow: auto;
-    display: flex;
-
-    .referee-selector-image-container {
-      max-height: 100%;
-      max-width: 100%;
-      display: flex;
-      // margin: auto;
-      justify-content: center;
-      position: relative;
-
-      .referee-selector-image {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-      }
-
-      .referee-selector-btn {
-        position: absolute;
-        font-size: 1.5rem;
-        transform: translate(-50%, 50%);
-
-        &[data-alliance=blue] {
-          @extend .btn-blue;
-          left: 30%;
-        }
-        &[data-alliance=red] {
-          @extend .btn-red;
-          left: 70%;
-        }
-        &[data-position=near] {
-          bottom: 10%;
-        }
-        &[data-position=far] {
-          bottom: 90%;
-        }
-
-        &[data-head-referee=true] {
-          @extend .btn-orange;
-          left: 50%;
-          bottom: 10%;
-        }
-      }
+    &[data-head-referee=true] {
+      @extend .btn-orange;
+      left: 50%;
+      bottom: 10%;
     }
   }
-
-  // .referee-selector-field {
-  //   max-width: 100%;
-  //   max-height: 100%;
-  // }
 }
 
 .btn-penalty {
