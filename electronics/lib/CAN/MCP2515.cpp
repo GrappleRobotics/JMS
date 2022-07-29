@@ -199,7 +199,6 @@ int MCP2515Class::endPacket(long int timeout_ms)
     }
 
     long int current_time = millis();
-    Serial.println(current_time-time_start);
     if ((current_time-time_start) > timeout_ms) {
       // abort
       timeout_abort = true;

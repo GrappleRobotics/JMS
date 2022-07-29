@@ -1,7 +1,7 @@
 #ifndef ALLIANCE_H
 #define ALLIANCE_H
 
-#include "NodeBase/NodeBase.h"
+#include "NodeBase.h"
 #include "LEDStrips.h"
 
 class Alliance : public NodeBase {

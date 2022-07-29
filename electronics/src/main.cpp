@@ -3,16 +3,16 @@
 #define NODE_TYPE 0 // 0 = master, 1 = red, 2 = blue
 
 #if NODE_TYPE==0
-#include "ScoringTable/ScoringTable.h"
+#include "ScoringTable.h"
 #define NODE_INSTANTIATE ScoringTable __node(k500Kbs)
 #elif NODE_TYPE==1
-#include "Alliance/Alliance.h"
+#include "Alliance.h"
 #define NODE_INSTANTIATE Alliance __node(Comms::Message::Common::Device::Type::kRedDS, k500Kbs)
 #elif NODE_TYPE==2
-#include "Alliance/Alliance.h"
+#include "Alliance.h"
 #define NODE_INSTANTIATE Alliance __node(Comms::Message::Common::Device::Type::kBlueDS, k500Kbs)
 #else
-#include "ScoringTable/ScoringTable.h"
+#include "ScoringTable.h"
 #define NODE_INSTANTIATE ScoringTable __node(k500Kbs)
 #endif
 

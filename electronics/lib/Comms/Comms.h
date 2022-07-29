@@ -46,21 +46,21 @@ namespace Comms {
 
       // Start header packet
       // if (!CAN.available()) return 1;
-      if (!CAN.beginPacket(n.device.__id)) return -1;
+      if (!CAN.beginExtendedPacket(n.device.__id)) return -1;
       CAN.write(n_packets);
       CAN.write(packer.size());
-      if (!CAN.endPacket(5000)) return -1;
+      if (!CAN.endPacket(1000)) return -1;
 
-      // int index = 0;
-      // for (byte i = 0; i < n_packets; i++) { // write packet
+      int index = 0;
+      for (byte i = 0; i < n_packets; i++) { // write packet
 
-      //   CAN.beginExtendedPacket(n.device.__id);
-      //   for (size_t j = 0; j < 8; j++) { // write bytes to packet
-      //     CAN.write(packer.data()[index]);
-      //     index++;
-      //   }
-      //   CAN.endPacket();
-      // }
+        if (CAN.beginExtendedPacket(n.device.__id)) return -1;
+        for (size_t j = 0; j < 8; j++) { // write bytes to packet
+          CAN.write(packer.data()[index]);
+          index++;
+        }
+        if (CAN.endPacket(1000)) return -1;
+      }
       return 0;
     }
 
@@ -111,8 +111,8 @@ namespace Comms {
     }
 
    private:
-    inline static long _baudRate = k500Kbs;
-    inline static Message::Common::Device _device;
+    static long _baudRate;
+    static Message::Common::Device _device;
   };
 }
 

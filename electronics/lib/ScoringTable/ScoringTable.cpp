@@ -23,10 +23,10 @@ void ScoringTable::loop() {
   _strip.setRainbow(2);
   if (e_mst.isTriggered()) {
     _message2RedAlliance.field_estop = true;
-    // _message2BlueAlliance.field_estop = true;
+    _message2BlueAlliance.field_estop = true;
 
-    // Comms::Comm::sendDataTo(_message2BlueAlliance);
-    Comms::Comm::sendDataTo(_message2RedAlliance);
-    // _strip.setPulse(CRGB(255,0,0), 0);
+    if (Comms::Comm::sendDataTo(_message2BlueAlliance) != 0) Serial.println("Failed to send");
+    if (Comms::Comm::sendDataTo(_message2RedAlliance) != 0) Serial.println("Failed to send");
+    _strip.setPulse(CRGB(255,0,0), 0);
   }
 }

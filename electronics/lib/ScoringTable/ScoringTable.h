@@ -1,7 +1,7 @@
 #ifndef SCORING_TABLE_H
 #define SCORING_TABLE_H
 
-#include "NodeBase/NodeBase.h"
+#include "NodeBase.h"
 #include "InterruptButton.h"
 #include "LEDStrips.h"
 
@@ -10,7 +10,8 @@ void onInterrupt_Emst();
 
 class ScoringTable : public NodeBase {
  public:
-  ScoringTable(long baudRate);
+  ScoringTable(long baudRate = k500Kbs);
+  ~ScoringTable() {}
 
   void init() override;
   void loop() override;
@@ -33,7 +34,7 @@ class ScoringTable : public NodeBase {
   InterruptButton e_b3{9, &onInterrupt_Estop};
 
   // Filed E stop
-  InterruptButton e_mst{A0, &onInterrupt_Emst, true};
+  InterruptButton e_mst{A0, &onInterrupt_Emst};
 };
 
 #endif
