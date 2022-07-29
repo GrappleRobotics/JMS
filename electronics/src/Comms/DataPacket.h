@@ -53,7 +53,7 @@ namespace Message {
       enum class Type {
         kMaster     = 0x0,
         kRedDS      = 0x1,
-        kBlueDs     = 0x2,
+        kBlueDS     = 0x2,
         kOther      = 0x3
       };
 
@@ -61,8 +61,8 @@ namespace Message {
         __id = t == Type::kOther ? id : (int)t;
       }
 
-      Type getType() { 
-        return (Type)__id; 
+      Type getType() {
+        return (Type)__id;
       }
 
       MSGPACK_DEFINE(__id, __emptyData);

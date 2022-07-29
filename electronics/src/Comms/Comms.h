@@ -38,28 +38,30 @@ namespace Comms {
     }
 
     template <typename NODE_T>
-    static void sendDataTo(NODE_T n) {
+    static int sendDataTo(NODE_T n) {
       MsgPack::Packer packer;
       packer.serialize(n);
 
       int n_packets = (1 + ((packer.size() - 1) / 8)); // get number of packets to store message
 
       // Start header packet
-      CAN.beginExtendedPacket(n.id.__id);
+      // if (!CAN.available()) return 1;
+      if (!CAN.beginPacket(n.device.__id)) return -1;
       CAN.write(n_packets);
       CAN.write(packer.size());
-      CAN.endPacket();
+      if (!CAN.endPacket(5000)) return -1;
 
-      int index = 0;
-      for (byte i = 0; i < n_packets; i++) { // write packet
+      // int index = 0;
+      // for (byte i = 0; i < n_packets; i++) { // write packet
 
-        CAN.beginExtendedPacket(n.id.__id);
-        for (size_t j = 0; j < 8; j++) { // write bytes to packet
-          CAN.write(packer.buffer[index]);
-          index++;
-        }
-        CAN.endPacket();
-      }
+      //   CAN.beginExtendedPacket(n.device.__id);
+      //   for (size_t j = 0; j < 8; j++) { // write bytes to packet
+      //     CAN.write(packer.data()[index]);
+      //     index++;
+      //   }
+      //   CAN.endPacket();
+      // }
+      return 0;
     }
 
     template <typename NODE_T>
@@ -109,12 +111,9 @@ namespace Comms {
     }
 
    private:
-    static long _baudRate;
-    static Message::Common::Device _device;
+    inline static long _baudRate = k500Kbs;
+    inline static Message::Common::Device _device;
   };
-
-  long Comm::_baudRate = k500Kbs;
-  Message::Common::Device Comm::_device;
 }
 
 #endif
