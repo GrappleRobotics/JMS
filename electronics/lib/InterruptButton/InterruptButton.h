@@ -12,6 +12,7 @@ enum class InterruptState {
  */
 class InterruptButton {
  public:
+
   /**
    * @brief Construct a new Interrupt Button object
    * 

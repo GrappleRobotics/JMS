@@ -1,6 +1,8 @@
 #include "Alliance.h"
 
-Alliance::Alliance(Comms::Message::Common::Device::Type t, long baudRate) : NodeBase(t, (int)t, baudRate) {
+using namespace Comms;
+
+Alliance::Alliance(Comms::Message::Common::Device::Type t, long serial_br, long can_br) : NodeBase((unsigned int)t) {
   if (t == Comms::Message::Common::Device::Type::kBlueDS) {
     _message2Alliance.lights.setLights(Comms::Message::Common::Lights::Mode::kConstant, {255,0,0,255});
   } else {
@@ -13,6 +15,7 @@ void Alliance::init() {
 }
 
 void Alliance::loop() {
+  _message2Alliance = Comm::getData(_message2Alliance);
   switch (_message2Alliance.lights.getMode()) {
     case Comms::Message::Common::Lights::Mode::kOff:
       _strip.set(CRGB(0,0,0));

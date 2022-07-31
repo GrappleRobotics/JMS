@@ -4,9 +4,11 @@
 #include "NodeBase.h"
 #include "LEDStrips.h"
 
+#include "DataPacket.h"
+
 class Alliance : public NodeBase {
  public:
-  Alliance(Comms::Message::Common::Device::Type t, long baudRate = k500Kbs);
+  Alliance(Comms::Message::Common::Device::Type t, long serial_br = 115200, long can_br = 500E3);
   ~Alliance() {}
 
   void init() override;

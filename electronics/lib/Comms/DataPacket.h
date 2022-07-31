@@ -48,13 +48,15 @@ namespace Message {
      * @brief Device, provides id and if the packet is empty
      */
     struct Device {
+      Device(int id = 0, bool empty = false) : __id(id), __emptyData(empty) {}
       int __id;
       bool __emptyData = false;
       enum class Type {
-        kMaster     = 0x0,
-        kRedDS      = 0x1,
-        kBlueDS     = 0x2,
-        kOther      = 0x3
+        kJMS        = 0x0,
+        kMaster     = 0x1,
+        kRedDS      = 0x2,
+        kBlueDS     = 0x3,
+        kOther      = 0x4
       };
 
       void setType(Type t, int id = (int)Type::kOther) { 
@@ -91,11 +93,30 @@ namespace Message {
      * 
      */
     struct ScoringTable {
-      Common::Device device; // id also acts as alliance/node type
+      Common::Device device{(int)Common::Device::Type::kMaster, false}; // id also acts as alliance/node type
       bool estop;
       Common::Lights lights;
 
       MSGPACK_DEFINE(device, estop, lights);
+    };
+    
+    /**
+     * @brief JMS Node/Server
+     * Sent from any node (capable) to the JMS
+     */
+    struct JMS {
+      Common::Device device{(int)Common::Device::Type::kJMS, false};
+      bool estop;
+
+      bool r1_estop;
+      bool r2_estop;
+      bool r3_estop;
+
+      bool b1_estop;
+      bool b2_estop;
+      bool b3_estop;
+
+      MSGPACK_DEFINE(device, estop, r1_estop, r2_estop, r3_estop, b1_estop, b2_estop, b3_estop);
     };
   }
 } // message
