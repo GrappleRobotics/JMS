@@ -3,12 +3,12 @@
 #include "ScoringTable.h"
 
 void test_scoring_table_constructors() {
-  ScoringTable s(k500Kbs);
+  ScoringTable s;
   s.~ScoringTable();
 }
 
 void test_scoring_table_functions() {
-  ScoringTable s(k500Kbs);
+  ScoringTable s(115200, 500E3);
   s.~ScoringTable();
   s.init();
   
