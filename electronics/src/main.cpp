@@ -3,7 +3,7 @@
 #define SERIAL_BAUD 115200
 #define CAN_BAUD 500E3
 
-#define NODE_TYPE 1 // 0 = master, 1 = red, 2 = blue
+#define NODE_TYPE 0 // 0 = master, 1 = red, 2 = blue
 
 #if NODE_TYPE==0
 #include "ScoringTable.h"

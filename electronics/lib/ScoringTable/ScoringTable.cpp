@@ -88,7 +88,6 @@ void ScoringTable::loop() {
   // _strip.setRainbow(2);
   _message2ScoringTable = Comm::getData(_message2ScoringTable, true);
 
-
   if (e_mst.isTriggered()) {
     _message2RedAlliance.field_estop = true;
     _message2BlueAlliance.field_estop = true;
