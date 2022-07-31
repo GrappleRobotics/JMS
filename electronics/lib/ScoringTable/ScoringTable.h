@@ -19,6 +19,8 @@ class ScoringTable : public NodeBase {
   void init() override;
   void loop() override;
 
+  void onUpdate();
+
  private:
   Comms::Message::Nodes::Alliance _message2RedAlliance;
   Comms::Message::Nodes::Alliance _message2BlueAlliance;

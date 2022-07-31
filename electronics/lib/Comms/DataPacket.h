@@ -95,9 +95,12 @@ namespace Message {
     struct ScoringTable {
       Common::Device device{(int)Common::Device::Type::kMaster, false}; // id also acts as alliance/node type
       bool estop;
-      Common::Lights lights;
 
-      MSGPACK_DEFINE(device, estop, lights);
+      Common::Lights lights;
+      Common::Lights b_lights;
+      Common::Lights r_lights;
+
+      MSGPACK_DEFINE(device, estop, lights, b_lights, r_lights);
     };
     
     /**
