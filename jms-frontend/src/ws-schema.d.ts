@@ -309,8 +309,16 @@ export type ScoreUpdate =
   | {
       Cargo: {
         auto: boolean;
-        lower?: number;
-        upper?: number;
+        /**
+         * @minItems 4
+         * @maxItems 4
+         */
+        lower?: [number, number, number, number];
+        /**
+         * @minItems 4
+         * @maxItems 4
+         */
+        upper?: [number, number, number, number];
       };
     }
   | {
@@ -511,8 +519,16 @@ export interface ModeScoreFor_CargoCounts {
   teleop: CargoCounts;
 }
 export interface CargoCounts {
-  lower: number;
-  upper: number;
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  lower: [number, number, number, number];
+  /**
+   * @minItems 4
+   * @maxItems 4
+   */
+  upper: [number, number, number, number];
 }
 export interface Penalties {
   fouls: number;

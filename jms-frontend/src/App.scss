@@ -19,6 +19,7 @@ $theme-colors: (
   "bad": #e74c3c,
   "red": #f53e31,
   "blue": #3152f5,
+  "green": #28a745,
   "orange": #d47500,
   "purple": #9300e9,
   "hazard-yellow": #735a00,
@@ -679,42 +680,6 @@ th {
 .head-ref-field-ax {
   > .btn {
     margin-left: 1em;
-  }
-}
-
-.scorer-container {
-  .scorer-img {
-    img {
-      max-width: 40vw;
-      max-height: calc(100vh - 280px);
-      // height: 100%;
-      object-fit: contain;
-    }
-  }
-
-  .scorer-col {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .scorer-button-pair {
-    > *:first-child {
-      padding-right: 0;
-    }
-
-    > *:last-child {
-      padding-left: 0;
-    }
-
-    .btn {
-      font-size: 1.5em;
-      height: 5em;
-
-      .current-value {
-        font-size: 2em;
-      }
-    }
   }
 }
 

@@ -882,14 +882,24 @@
       ],
       "properties": {
         "lower": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "maxItems": 4,
+          "minItems": 4
         },
         "upper": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "maxItems": 4,
+          "minItems": 4
         }
       }
     },
@@ -2088,14 +2098,34 @@
                   "type": "boolean"
                 },
                 "lower": {
-                  "default": 0,
-                  "type": "integer",
-                  "format": "int"
+                  "default": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int"
+                  },
+                  "maxItems": 4,
+                  "minItems": 4
                 },
                 "upper": {
-                  "default": 0,
-                  "type": "integer",
-                  "format": "int"
+                  "default": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int"
+                  },
+                  "maxItems": 4,
+                  "minItems": 4
                 }
               }
             }

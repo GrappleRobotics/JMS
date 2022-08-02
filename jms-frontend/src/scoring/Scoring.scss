@@ -1,24 +1,26 @@
+// Referees
+
 .referee-selector {
   .btn {
     &[data-alliance=blue] {
       @extend .btn-blue;
-      left: 30%;
+      left: 50% - 20%;
     }
     &[data-alliance=red] {
       @extend .btn-red;
-      left: 70%;
+      left: 50% + 20%;
     }
     &[data-position=near] {
-      bottom: 10%;
+      bottom: calc(50% - 35% - 2em);
     }
     &[data-position=far] {
-      bottom: 90%;
+      bottom: calc(50% + 35% + 2em);
     }
 
     &[data-head-referee=true] {
       @extend .btn-orange;
       left: 50%;
-      bottom: 10%;
+      bottom: calc(50% - 35% - 2em);
     }
   }
 }
@@ -98,5 +100,93 @@
       //   }
       // }
     }
+  }
+}
+
+// Scorers
+
+.scorer-selector {
+  .btn {
+    font-size: 1.75rem !important;
+
+    &[data-score-pair="12"] {
+      @extend .btn-blue;
+      left: 50% - 2.5%;
+      bottom: 50% - 15%;
+    }
+    &[data-score-pair="34"] {
+      @extend .btn-red;
+      left: 50% + 2.5%;
+      bottom: 50% + 15%;
+    }
+
+    &[data-score-height="HIGH"] {
+      @extend .btn-green;
+      left: 50%;
+      bottom: 70%;
+    }
+
+    &[data-score-height="LOW"] {
+      @extend .btn-red;
+      left: 50%;
+      bottom: 10%;
+    }
+  }
+}
+
+.scorer-panel {
+  .scorer-label {
+    position: absolute;
+    font-size: 3rem;
+    font-weight: bold;
+    transform: translate(-50%, 50%);
+
+    &[data-pos="left"] { left: 15%; }
+    &[data-pos="right"] { left: 85%; }
+  }
+
+  &[data-height="HIGH"] {
+    .scorer-label { bottom: 55%; color: theme-color("green"); }
+  }
+  &[data-height="LOW"] {
+    .scorer-label { bottom: 30%; color: theme-color("red"); }
+  }
+
+  .pos-selector-left, .pos-selector-right {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+
+    .row {
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
+    .btn {
+      @extend .btn-block;
+      height: 100%;
+    }
+
+    .scorer-decrease {
+      .btn { font-size: 1.5em; }
+      height: 10%;
+    }
+
+    .scorer-current {
+      height: 15%;
+      font-size: 2.5em;
+
+      > .col {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+
+    .scorer-increase {
+      height: 20%;
+      .btn { font-size: 2.5em; }
+    }
+    
   }
 }

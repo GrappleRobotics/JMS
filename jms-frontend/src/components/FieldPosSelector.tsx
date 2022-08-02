@@ -5,30 +5,42 @@ import { capitalise } from "support/strings";
 import { withVal } from "support/util";
 import { AllianceStation, AllianceStationId } from "ws-schema";
 
-type FieldPosSelectorProps = {
+type PosSelectorProps = {
   title?: React.ReactNode,
   className?: string,
-  children?: React.ReactNode[]
+  children?: React.ReactNode[],
+  leftChildren?: React.ReactNode | React.ReactNode[],
+  rightChildren?: React.ReactNode | React.ReactNode[],
+  img?: string
 };
 
-export default class FieldPosSelector extends React.PureComponent<FieldPosSelectorProps> {
+export class PosSelector extends React.PureComponent<PosSelectorProps> {
   render() {
-    const { title, className, children } = this.props;
-    return <Col className={`field-pos-selector-container ${className || ''}`}>
-      { withVal(title, t => <Row className="field-pos-selector-title">
+    const { title, className, children, img, leftChildren, rightChildren, ...props } = this.props;
+    return <Col className={`pos-selector-container ${className || ''}`} { ...props }>
+      { withVal(title, t => <Row className="pos-selector-title">
         {
           typeof t === "string" ? <h3 className="text-center mb-4"> {t} </h3> : t
         }
       </Row>) }
 
-      <Row className="field-pos-selector-row">
-        <Col className="field-pos-selector-image-container">
+      <Row className="pos-selector-row">
+        <Col className="pos-selector-left"> { leftChildren } </Col>
+        <Col className="pos-selector-image-container">
           { children }
-          <img className="field-pos-selector-image" src="/img/game/field.png" />
+          <img className="pos-selector-image" src={img} />
         </Col>
+        <Col className="pos-selector-right"> { rightChildren } </Col>
       </Row>
     </Col>
   }
+}
+
+
+export const FIELD_IMG = "/img/game/field.png";
+
+export default function FieldPosSelector(props: Omit<PosSelectorProps, 'img'>) {
+  return <PosSelector img={FIELD_IMG} className={`field-pos-selector ${props.className || ''}`} {...props} />
 }
 
 type FieldStationSelectorProps = {

@@ -30,13 +30,13 @@ pub enum EndgamePointType {
 
 #[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct CargoCounts {
-  pub upper: usize,
-  pub lower: usize,
+  pub upper: [usize; 4],
+  pub lower: [usize; 4],
 }
 
 impl CargoCounts {
   pub fn total_cargo(&self) -> usize {
-    return self.upper + self.lower;
+    return self.upper.iter().sum::<usize>() + self.lower.iter().sum::<usize>();
   }
 }
 
@@ -44,10 +44,15 @@ impl Add for CargoCounts {
   type Output = CargoCounts;
 
   fn add(self, rhs: Self) -> Self::Output {
-    return CargoCounts {
-      upper: self.upper + rhs.upper,
-      lower: self.lower + rhs.lower
+    let mut upper = self.upper.clone();
+    let mut lower = self.lower.clone();
+
+    for idx in 0..4 {
+      upper[idx] += rhs.upper[idx];
+      lower[idx] += rhs.lower[idx];
     }
+
+    return CargoCounts { upper, lower };
   }
 }
 
@@ -154,9 +159,9 @@ pub enum ScoreUpdate {
   Cargo {
     auto: bool,
     #[serde(default)]
-    upper: isize,
+    upper: [isize; 4],
     #[serde(default)]
-    lower: isize,
+    lower: [isize; 4],
   },
   Endgame {
     station: usize,
@@ -183,12 +188,12 @@ impl LiveScore {
       taxi: vec![false; num_teams],
       cargo: ModeScore {
         auto: CargoCounts {
-          upper: 0,
-          lower: 0,
+          upper: [0; 4],
+          lower: [0; 4],
         },
         teleop: CargoCounts {
-          upper: 0,
-          lower: 0,
+          upper: [0; 4],
+          lower: [0; 4],
         },
       },
       endgame: vec![EndgamePointType::None; num_teams],
@@ -245,8 +250,11 @@ impl LiveScore {
         } else {
           &mut self.cargo.teleop
         };
-        pc.lower = saturating_offset(pc.lower, lower);
-        pc.upper = saturating_offset(pc.upper, upper);
+
+        for idx in 0..4 {
+          pc.lower[idx] = saturating_offset(pc.lower[idx], lower[idx]);
+          pc.upper[idx] = saturating_offset(pc.upper[idx], upper[idx]);
+        }
       }
       ScoreUpdate::Endgame { station, endgame } => {
         self.endgame[station] = endgame;
@@ -266,8 +274,8 @@ impl LiveScore {
     let auto = &self.cargo.auto;
     let teleop = &self.cargo.teleop;
     ModeScore {
-      auto: (auto.lower * 2 + auto.upper * 4) as isize,
-      teleop: (teleop.lower * 1 + teleop.upper * 2) as isize,
+      auto: (auto.lower.iter().sum::<usize>() * 2 + auto.upper.iter().sum::<usize>() * 4) as isize,
+      teleop: (teleop.lower.iter().sum::<usize>() * 1 + teleop.upper.iter().sum::<usize>() * 2) as isize,
     }
   }
 
@@ -335,12 +343,12 @@ impl LiveScore {
       taxi: vec![ rng.gen(), rng.gen(), rng.gen() ],
       cargo: ModeScore {
         auto: CargoCounts {
-          lower: rng.gen_range(0..=5),
-          upper: rng.gen_range(0..=5),
+          lower: [rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1)],
+          upper: [rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1)],
         },
         teleop: CargoCounts {
-          lower: rng.gen_range(0..=20),
-          upper: rng.gen_range(0..=20),
+          lower: [rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5)],
+          upper: [rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5)],
         }
       },
       endgame: vec![ rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng) ],

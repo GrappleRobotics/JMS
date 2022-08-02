@@ -1,32 +1,33 @@
-.field-pos-selector-container {
+.pos-selector-container {
   display: flex;
   flex-direction: column;
   padding: 0;
 
-  .field-pos-selector-row {
-    flex-grow: 1;
-    flex-basis: 0;
-    overflow: auto;
+  .pos-selector-row {
     display: flex;
+    // overflow: none;
 
-    .field-pos-selector-image-container {
+    .pos-selector-image-container {
       max-height: 100%;
       max-width: 100%;
       display: flex;
-      // margin: auto;
+
       justify-content: center;
       position: relative;
 
-      .field-pos-selector-image {
-        max-width: 90%;
-        max-height: 100%;
-        object-fit: contain;
+      .pos-selector-image {
+        display: block;
+        max-width: calc(100vw - 100px - 10rem);
+        max-height: calc(100vh - 200px - 4rem);
+        height: auto;
+        width: auto;
       }
 
       .btn {
         position: absolute;
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         transform: translate(-50%, 50%);
+        border: 0.15em solid black;
       }
     }
   }
@@ -37,7 +38,7 @@
     max-width: 5em;
     &[data-alliance=blue] {
       @extend .btn-blue;
-      left: 7.5%;
+      left: 10%;
 
       &[data-position="1"] { bottom: 70%; }
       &[data-position="2"] { bottom: 55%; }
@@ -46,7 +47,7 @@
 
     &[data-alliance=red] {
       @extend .btn-red;
-      left: 92.5%;
+      left: 90%;
 
       &[data-position="3"] { bottom: 60%; }
       &[data-position="2"] { bottom: 45%; }
