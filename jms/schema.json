@@ -1730,6 +1730,21 @@
         {
           "type": "object",
           "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SerializedMatch"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
             "Next"
           ],
           "properties": {

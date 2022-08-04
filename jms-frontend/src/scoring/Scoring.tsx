@@ -52,7 +52,8 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
     const arr = ["red" as Alliance, "blue" as Alliance].map((alliance: Alliance) => {
       const goal = this.props.height === "HIGH" ? "upper" : "lower";
       const enabled = match != null && match.state !== "Waiting" && match.state !== "Fault";
-      const teleop = match ? (match.state !== "Teleop" && (match.remaining_time.secs) > (match.config.teleop_time.secs - 5)) : false;
+      // 5 second auto cool-off to allow for balls in the air at the end of auto
+      const teleop = match ? ( match.state === "Teleop" && match.remaining_time.secs < (match.config.teleop_time.secs - 5) ) : false;
       const current_score = match ? match.score[alliance].live.cargo[teleop ? "teleop" : "auto"][goal] : [0, 0, 0, 0];
 
       return this.buttonPair(alliance, enabled, current_score[goalIdx], n => {

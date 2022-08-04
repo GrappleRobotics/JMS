@@ -135,6 +135,7 @@
   .score-block {
     position: fixed;
     bottom: 0;
+    left: 0;
     width: 100vw;
     background-color: theme-color("dark");
     display: flex;
@@ -148,6 +149,7 @@
       height: 100%;
       border-radius: 0;
       opacity: 0.7;
+      padding: 0;
 
       > .progress-bar {
         background-color: theme-color("success");
@@ -392,12 +394,12 @@
 
 .audience-control {
   h2 {
-    font-size: 3em;
+    font-size: 2em;
   }
 
   h3 {
     text-align: center;
-    font-size: 2.5em;
+    font-size: 1.5em;
     font-weight: bold;
     margin-bottom: 0.5em;
   }
@@ -407,11 +409,19 @@
   }
 
   .btn {
-    font-size: 2.5em;
+    font-size: 2em;
 
     &.award-btn {
       font-size: 2em;
     }
+
+    &[data-scene="custom"] { @extend .btn-orange; }
+
+    &[data-scene="match_preview"] { @extend .btn-blue; }
+    &[data-scene="match_play"] { @extend .btn-green; }
+    &[data-scene="match_results"] { @extend .btn-red; }
+
+    &[data-scene="alliance_selection"] { @extend .btn-purple; }
   }
 }
 

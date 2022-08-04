@@ -19,6 +19,7 @@ define_websocket_msg!($MatchMessage {
     recv Clear,
     recv Generate(<PlayoffMatchGenerator as MatchGenerator>::ParamType)
   },
+  send All(Vec<models::SerializedMatch>),
   send Next(Option<models::SerializedMatch>),
   send Last(Option<models::SerializedMatch>)
 });
@@ -32,6 +33,9 @@ pub async fn ws_periodic_match(params_arc: SharedMatchGenerators) -> super::Resu
     let params = params_arc.lock().await;
     data.push(MatchMessageQuals2UI::Generation((&params.quals).into()).into());
     data.push(MatchMessagePlayoffs2UI::Generation((&params.playoffs).into()).into());
+  } {
+    let matches = sorted.iter().map(|m| models::SerializedMatch::from(m.clone()) ).collect();
+    data.push(MatchMessage2UI::All(matches));
   } {
     let next_match = sorted.iter().find(|&m| !m.played).map(|m| models::SerializedMatch::from(m.clone()));
     data.push(MatchMessage2UI::Next(next_match.clone()))

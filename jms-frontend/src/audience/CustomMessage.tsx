@@ -1,12 +1,17 @@
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 import AudienceCard from "./AudienceCard";
+import BaseAudienceScene from "./BaseAudienceScene";
 
-export default class CustomMessage extends React.PureComponent {
-  render() {
-    const { event, msg } = this.props;
+type CustomMessageProps = {
+  msg: string
+};
 
-    return <AudienceCard event={event}>
+export default class AudienceSceneCustomMessage extends BaseAudienceScene<CustomMessageProps> {
+  show = (props: CustomMessageProps) => {
+    const { msg } = props;
+
+    return <AudienceCard event_name={this.props.details.event_name}>
       <Row>
         <Col className="audience-card-title" md="auto">
           Event Message

@@ -160,6 +160,9 @@ export type MatchMessage2UI =
       Playoffs: MatchMessagePlayoffs2UI;
     }
   | {
+      All: SerializedMatch[];
+    }
+  | {
       Next: SerializedMatch | null;
     }
   | {
