@@ -1,17 +1,50 @@
 import { faCarBattery, faCode, faRobot, faSkullCrossbones, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import confirmBool from "components/elements/Confirm";
 import React from "react";
-import { Col, Row } from "react-bootstrap";
+import { Button, Col, Row } from "react-bootstrap";
+import { capitalise } from "support/strings";
+import { withVal } from "support/util";
 import { WebsocketComponent } from "support/ws-component";
 import { AllianceStation, AllianceStationDSReport, ArenaState, LoadedMatch } from "ws-schema";
 
 type FieldMonitorStationState = {
   station: AllianceStation,
   state?: ArenaState,
-  match?: LoadedMatch
+  match?: LoadedMatch,
+  estop_mode: boolean,
+  do_estop: () => void
 }
 
 class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> {
+  triggerEstop = async () => {
+    const { station } = this.props;
+    const station_text = `${ station.station.alliance.toUpperCase() } ${ station.station.station }`;
+
+    const subtitle = <h2 className="estop-subtitle">
+      Are you sure you want to <strong className="text-danger">EMERGENCY STOP {station_text}{ withVal(station.team, t => ` (${t})`) }?</strong>
+    </h2>
+    let result = await confirmBool(subtitle, {
+      size: "xl",
+      okBtn: {
+        size: "lg",
+        className: "estop-big",
+        variant: "estop",
+        children: `E-STOP ${station_text} ${station.team || ""}`
+      },
+      cancelBtn: {
+        size: "lg",
+        className: "btn-block",
+        children: "CANCEL",
+        variant: "secondary"
+      }
+    });
+
+    if (result) {
+      this.props.do_estop();
+    }
+  }
+  
   lostPktPercent = (lost: number, sent: number) => (lost) / ((lost + sent) || 1) * 100;
 
   renderSent = (lost: number, sent: number) => {
@@ -84,10 +117,16 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
         <Row className="monitor-jumbo align-items-center" data-error={error}>
           <Col>
             {
-              s.bypass 
-                ? `BYPASS ${s.team || ""}` : 
-                  error ? error :
-                    (report?.mode?.toUpperCase() || "READY")
+              s.bypass ? `BYPASS ${s.team || ""}`
+                : s.estop ? "E-STOPPED"
+                : this.props.estop_mode ?
+                  <Button
+                    className="btn-block monitor-team-estop"
+                    variant="estop"
+                    onClick={this.triggerEstop}
+                  > E-STOP { s.team || "" } </Button>
+                : error ? error
+                : (report?.mode?.toUpperCase() || "READY")
             }
           </Col>
         </Row>
@@ -118,12 +157,14 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
 type FieldMonitorState = {
   stations: AllianceStation[],
   state?: ArenaState,
-  match?: LoadedMatch
+  match?: LoadedMatch,
+  estop_mode: boolean
 };
 
 export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorState> {
   readonly state: FieldMonitorState = {
-    stations: []
+    stations: [],
+    estop_mode: false
   };
 
   componentDidMount = () => this.handles = [
@@ -135,7 +176,17 @@ export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorSta
   renderAlliance = (stations: AllianceStation[]) => {
     return <React.Fragment>
       {
-        stations.map(s => <FieldMonitorStation state={this.state?.state} match={this.state?.match} station={s}/>)
+        stations.map(s => (
+          <FieldMonitorStation
+            estop_mode={this.state.estop_mode}
+            state={this.state?.state}
+            match={this.state?.match}
+            station={s}
+            do_estop={() => this.send({
+              Arena: { Alliance: { UpdateAlliance: { station: s.station, estop: true } } }
+            })}
+          />
+        ))
       }
     </React.Fragment>
   }
@@ -152,10 +203,22 @@ export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorSta
   }
 
   render() {
+    const { estop_mode, stations } = this.state;
     return <Col className="col-full">
       {
-        this.state.stations.length > 0 ? this.renderAvailable() : <h4 className="m-5"> Waiting... </h4>
+        stations.length > 0 ? this.renderAvailable() : <h4 className="m-5"> Waiting... </h4>
       }
+      <Row className="monitor-estop-toggle">
+        <Col className="col-full">
+          <Button
+            className="btn-block"
+            variant={estop_mode ? "estop-reset" : "estop"}
+            onClick={ () => this.setState({ estop_mode: !estop_mode }) }
+          >
+            { estop_mode ? "EXIT" : "" } TEAM EMERGENCY STOP
+          </Button>
+        </Col>
+      </Row>
     </Col>
   }
 }
