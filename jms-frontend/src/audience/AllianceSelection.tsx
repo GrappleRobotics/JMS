@@ -1,4 +1,3 @@
-import React from "react";
 import { Col, Row } from "react-bootstrap";
 import { PlayoffAlliance, TeamRanking } from "ws-schema";
 import AudienceCard from "./AudienceCard";

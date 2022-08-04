@@ -2,8 +2,8 @@ import BufferedFormControl from "components/elements/BufferedFormControl";
 import { confirmModal } from "components/elements/Confirm";
 import Paginate from "components/elements/Paginate";
 import React from "react";
-import { Col, Container, Row, Button, Modal, Form } from "react-bootstrap";
-import { nullIfEmpty, undefinedIfEmpty } from "support/strings";
+import { Col, Container, Row, Button, Modal } from "react-bootstrap";
+import { nullIfEmpty } from "support/strings";
 import { withVal } from "support/util";
 import { WebsocketComponent } from "support/ws-component";
 import { Award, ArenaMessageAudienceDisplaySet2JMS, SerializedMatch } from "ws-schema";
@@ -138,7 +138,7 @@ export default class AudienceDisplayControl extends WebsocketComponent<{}, Audie
                 <Button
                   className="m-1 px-5 award-btn"
                   onClick={() => this.change({ Award: award.id! })}
-                  disabled={award.recipients.length == 0}
+                  disabled={award.recipients.length === 0}
                 >
                   { award.name }
                 </Button>
