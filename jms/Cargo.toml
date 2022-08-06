@@ -26,8 +26,8 @@ scopeguard = "1.1.0"
 regex = "1.4.6"
 dotenv = "0.15.0"
 rand = "0.8.3"
-strum = "0.11.0"
-strum_macros = "0.11.0"
+strum = "0.24.1"
+strum_macros = "0.24.1"
 enum-as-inner = "0.3.3"
 bytes = "1.0.1"
 byteorder = "1.4.3"
@@ -50,8 +50,6 @@ serde_yaml = "0.8.17"
 anyhow = "1.0.42"
 thiserror = "1.0.26"
 ssh2 = "0.9.1"
-prost = "0.8.0"
-prost-types = "0.8"
 inquire = "0.0.6"
 reqwest = "0.11.4"
 md5 = "0.7.0"
@@ -60,10 +58,10 @@ uuid = { version = "0.8.2", features = ["v4"] }
 palette = "0.6.0"
 cursive = "0.16.3"
 schemars = { version = "0.8", features=["chrono"] }
+tokio-serial = "5.4.1"
 
 [build-dependencies]
 anyhow = "1.0.42"
 serde = { version = "1.0.126", features = ["derive"]}
 serde_json = "1.0.64"
-prost-build = { version = "0.8.0" }
 schemars = { version = "0.8", features=["chrono"] }

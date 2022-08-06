@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::comms::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}};
+use jms::{arena::{self, SharedArena}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -82,7 +82,8 @@ async fn main() -> anyhow::Result<()> {
     let mut ds_service = DSConnectionService::new(arena.clone()).await;
     let ds_fut = ds_service.run().map_err(|e| anyhow::anyhow!("DS Error: {}", e));
 
-    let electronics_service = FieldElectronicsService::new(arena.clone(), 5333).await;
+    // TODO: Configurable port
+    let electronics_service = FieldElectronicsService::new(arena.clone(), "/dev/ttyUSB0".to_owned()).await;
     let electronics_fut = electronics_service.begin();
 
     let ws_params = WebsocketParams {

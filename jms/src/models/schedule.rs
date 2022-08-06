@@ -2,7 +2,7 @@ use chrono::{Date, Duration, Local, NaiveTime, TimeZone};
 
 use crate::db::{self, DBDateTime, DBDuration, TableType};
 
-#[derive(Debug, strum_macros::EnumString, strum_macros::ToString, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, strum_macros::EnumString, Display, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum ScheduleBlockType {
   General,
   Qualification,
