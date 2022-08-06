@@ -2,7 +2,7 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
-import { Alliance, AllianceStation, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
+import { Alliance, AllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
 import BaseAudienceScene from "./BaseAudienceScene";
 
 type MatchProgressBarProps = {
@@ -109,16 +109,59 @@ class AllianceScore extends React.PureComponent<AllianceScoreProps> {
 
 type AudienceSceneMatchPlayState = {
   stations: AllianceStation[],
-  match?: LoadedMatch
+  match?: LoadedMatch,
+  arenaState?: ArenaState
 };
 
 export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, AudienceSceneMatchPlayState> {
   readonly state: AudienceSceneMatchPlayState = { stations: [] };
+  audio?: HTMLAudioElement;
   
   componentDidMount = () => this.handles = [
     this.listen("Arena/Alliance/CurrentStations", "stations"),
-    this.listen("Arena/Match/Current", "match")
+    this.listen("Arena/Match/Current", "match"),
+    this.listen("Arena/State/Current", "arenaState")
   ];
+
+  playSound = async (sound: string) => {
+    this.audio = new Audio(`/sounds/${sound}.wav`);
+    this.audio.play().catch((e: DOMException) => {
+      if (e.message.includes("interact")) {
+        alert("Can't play sound - autoplay policy. Interact with this page first!");
+      }
+    })
+  }
+
+  onUpdate = (prevProps: {}, prevState: AudienceSceneMatchPlayState) => {
+    if (prevState.match != null && this.state.match != null) {
+      const last_state = prevState.match.state;
+      const current_state = this.state.match.state;
+
+      if (last_state !== current_state) {
+        switch (current_state) {
+          case "Auto":
+            this.playSound("auto");
+            break;
+          case "Teleop":
+            this.playSound("teleop");
+            break;
+          case "Cooldown":
+            this.playSound("match_stop");
+            break;
+          default:
+            break;
+        }
+      }
+
+      if (this.state.match.endgame && !prevState.match.endgame) {
+        this.playSound("endgame");
+      }
+    }
+
+    if (this.state.arenaState?.state === "Estop" && prevState.arenaState?.state !== "Estop") {
+      this.playSound("estop");
+    }
+  }
 
   show = () => {
     // const { arena, event } = this.props;

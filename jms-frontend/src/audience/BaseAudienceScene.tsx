@@ -11,12 +11,14 @@ export default abstract class BaseAudienceScene<P={}, S={}> extends WebsocketCom
   abstract show: (props: P) => React.ReactNode;
   onShow = () => {};
   onHide = () => {};
+  onUpdate = (prevProps: AudienceSceneBaseProps<P>, prevState: S) => {};
 
-  componentDidUpdate = (prevProps: AudienceSceneBaseProps<P>) => {
+  componentDidUpdate = (prevProps: AudienceSceneBaseProps<P>, prevState: S) => {
     if (prevProps.props != null && this.props.props == null)
       this.onShow();
     if (!prevProps.props == null && this.props.props != null)
       this.onHide();
+    this.onUpdate(prevProps, prevState);
   }
   
   render = () => {

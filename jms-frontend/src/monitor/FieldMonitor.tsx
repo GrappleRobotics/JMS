@@ -1,12 +1,11 @@
-import { faCarBattery, faCode, faRobot, faSkullCrossbones, faWifi } from "@fortawesome/free-solid-svg-icons";
+import { faCode, faRobot, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool from "components/elements/Confirm";
 import React from "react";
 import { Button, Col, Row } from "react-bootstrap";
-import { capitalise } from "support/strings";
 import { withVal } from "support/util";
 import { WebsocketComponent } from "support/ws-component";
-import { AllianceStation, AllianceStationDSReport, ArenaState, LoadedMatch } from "ws-schema";
+import { AllianceStation, ArenaState, LoadedMatch } from "ws-schema";
 
 type FieldMonitorStationState = {
   station: AllianceStation,
