@@ -62,16 +62,16 @@ impl Packable for LightMode {
       LightMode::Pulse(colour, duration) => {
         buf.put_u8(2);
         colour.pack(buf);
-        buf.put_u32(duration.num_milliseconds() as u32);
+        buf.put_u16(duration.num_milliseconds() as u16);
       },
       LightMode::Chase(colour, duration) => {
         buf.put_u8(3);
         colour.pack(buf);
-        buf.put_u32(duration.num_milliseconds() as u32);
+        buf.put_u16(duration.num_milliseconds() as u16);
       },
       LightMode::Rainbow(duration) => {
         buf.put_u8(4);
-        buf.put_u32(duration.num_milliseconds() as u32);
+        buf.put_u16(duration.num_milliseconds() as u16);
       },
     }
   }
