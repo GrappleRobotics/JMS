@@ -1,5 +1,6 @@
 pub mod comms;
 pub mod service;
+pub mod settings;
 
 use bitvec::{prelude::Msb0, view::BitView};
 

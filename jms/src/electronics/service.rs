@@ -5,127 +5,55 @@ use tokio_serial::SerialPortBuilderExt;
 
 use crate::{arena::{ArenaSignal, SharedArena, lighting::ArenaLighting, station::AllianceStationId}, models::{self, Alliance}, electronics::comms::{Packable, Unpackable}};
 
-use super::{ElectronicsMessageIn, ElectronicsMessageOut, AddressedElectronicsMessageOut, ElectronicsRole, AddressedElectronicsMessageIn};
-
-// pub struct FieldElectronicsConnection {
-//   arena: SharedArena,
-//   socket: TcpStream,
-//   role: Option<protos::NodeRole>,
-//   update_rx: broadcast::Receiver<Vec<protos::UpdateField2Node>>
-// }
-
-// impl FieldElectronicsConnection {
-//   pub async fn process(&mut self) -> anyhow::Result<()> {
-    
-//     loop {
-//       let mut buf_read = vec![0u8; 256];
-//       tokio::select! {
-//         result = self.update_rx.recv() => {
-//           // Send an update
-//           let msgs = result?;
-//           for msg in msgs {
-//             if Some(msg.role()) == self.role {
-//               let out = msg.encode_to_vec();
-//               self.socket.write(&out).await?;
-//             }
-//           }
-//         },
-//         result = self.socket.read(&mut buf_read) => {
-//           // Process the incoming message
-//           let n_bytes = result?;
-//           if n_bytes > 0 {
-//             self.process_msg(&buf_read[0..n_bytes]).await?;
-//           }
-//         }
-//       }
-//     }
-//   }
-
-//   async fn process_msg(&mut self, buf: &[u8]) -> anyhow::Result<()> {
-//     let msg = protos::UpdateNode2Field::decode(&mut Cursor::new(buf))?;
-//     self.role = Some(msg.role());
-
-//     let alliance  = Option::<models::Alliance>::from(msg.role());
-
-//     match msg.data {
-//       Some(data) => match (data, alliance) {
-//         (protos::update_node2_field::Data::Alliance(data), Some(alliance)) => {
-//           if data.estop1 || data.estop2 || data.estop3 {
-//             let mut arena = self.arena.lock().await;
-
-//             if data.estop1 {
-//               arena.estop_station(AllianceStationId { alliance, station: 1 });
-//             }
-
-//             if data.estop2 {
-//               arena.estop_station(AllianceStationId { alliance, station: 2 });
-//             }
-
-//             if data.estop3 {
-//               arena.estop_station(AllianceStationId { alliance, station: 3 });
-//             }
-//           }
-//         },
-//         (protos::update_node2_field::Data::ScoringTable(st), None) => {
-//           if st.abort {
-//             self.arena.lock().await.signal(ArenaSignal::Estop).await;
-//           }
-//         },
-//         _ => (),
-//     },
-//       None => (),
-//     }
-
-//     Ok(())
-//   }
-// }
+use super::{ElectronicsMessageIn, ElectronicsMessageOut, AddressedElectronicsMessageOut, ElectronicsRole, AddressedElectronicsMessageIn, settings::ElectronicsSettings};
 
 pub struct FieldElectronicsService {
   arena: SharedArena,
-  port: String,
-  // tx: broadcast::Sender<Vec<ElectronicsMessageOut>>
+  settings: ElectronicsSettings
 }
 
 impl FieldElectronicsService {
-  pub async fn new(arena: SharedArena, port: String) -> Self {
-    // let (tx, _) = broadcast::channel(16);
+  pub async fn new(arena: SharedArena, settings: ElectronicsSettings) -> Self {
     FieldElectronicsService {
       arena,
-      port,
-      // tx
+      settings,
     }
   }
 
   pub async fn begin(&self) -> anyhow::Result<()> {
-    info!("Starting Field Electronics Server");
-    // let server = TcpListener::bind(format!("0.0.0.0:{}", self.port).as_str()).await?;
-    let mut port = tokio_serial::new(&self.port, 115200).open_native_async()?;
-    let mut send_interval = time::interval(Duration::from_millis(250));
+    match &self.settings.0 {
+      Some(settings) => {
+        info!("Starting Field Electronics Server");
+        let mut port = tokio_serial::new(&settings.port, settings.baud as u32).open_native_async()?;
+        let mut send_interval = time::interval(Duration::from_millis(250));
 
-    // TODO: Error handling & reconnect
+        // TODO: Error handling & reconnect
 
-    loop {
-      tokio::select! {
-        _ = send_interval.tick() => {
-          // Send an update
-          let msgs = self.create_update().await?;
-          for msg in msgs {
-            let mut buf = bytes::BytesMut::with_capacity(64);
-            msg.pack(&mut buf);
-            port.write_u8(buf.len() as u8).await?;
-            port.write_buf(&mut buf).await?;
+        loop {
+          tokio::select! {
+            _ = send_interval.tick() => {
+              // Send an update
+              let msgs = self.create_update().await?;
+              for msg in msgs {
+                let mut buf = bytes::BytesMut::with_capacity(64);
+                msg.pack(&mut buf);
+                port.write_u8(buf.len() as u8).await?;
+                port.write_buf(&mut buf).await?;
+              }
+            }
+            result = port.read_u8() => {
+              let n_bytes = result?;
+
+              let mut buf = bytes::BytesMut::with_capacity(n_bytes as usize);
+              port.read_buf(&mut buf).await?;
+
+              // TODO: Handle
+              self.handle(AddressedElectronicsMessageIn::unpack(&mut buf)).await?;
+            }
           }
         }
-        result = port.read_u8() => {
-          let n_bytes = result?;
-
-          let mut buf = bytes::BytesMut::with_capacity(n_bytes as usize);
-          port.read_buf(&mut buf).await?;
-
-          // TODO: Handle
-          self.handle(AddressedElectronicsMessageIn::unpack(&mut buf)).await?;
-        }
-      }
+      },
+      None => Ok(()),
     }
   }
 
