@@ -5,7 +5,7 @@ use tokio_serial::SerialPortBuilderExt;
 
 use crate::{arena::{ArenaSignal, SharedArena, lighting::ArenaLighting, station::AllianceStationId}, models::{self, Alliance}, electronics::comms::{Packable, Unpackable}};
 
-use super::{ElectronicsMessageIn, ElectronicsMessageOut, AddressedElectronicsMessageOut, ElectronicsRole, AddressedElectronicsMessageIn, settings::ElectronicsSettings};
+use super::{ElectronicsMessageIn, ElectronicsMessageOut, AddressedElectronicsMessageOut, ElectronicsRole, AddressedElectronicsMessageIn, settings::{ElectronicsSettings, InnerElectronicsSettings}};
 
 pub struct FieldElectronicsService {
   arena: SharedArena,
@@ -24,36 +24,45 @@ impl FieldElectronicsService {
     match &self.settings.0 {
       Some(settings) => {
         info!("Starting Field Electronics Server");
-        let mut port = tokio_serial::new(&settings.port, settings.baud as u32).open_native_async()?;
-        let mut send_interval = time::interval(Duration::from_millis(250));
-
-        // TODO: Error handling & reconnect
-
         loop {
-          tokio::select! {
-            _ = send_interval.tick() => {
-              // Send an update
-              let msgs = self.create_update().await?;
-              for msg in msgs {
-                let mut buf = bytes::BytesMut::with_capacity(64);
-                msg.pack(&mut buf);
-                port.write_u8(buf.len() as u8).await?;
-                port.write_buf(&mut buf).await?;
-              }
-            }
-            result = port.read_u8() => {
-              let n_bytes = result?;
-
-              let mut buf = bytes::BytesMut::with_capacity(n_bytes as usize);
-              port.read_buf(&mut buf).await?;
-
-              // TODO: Handle
-              self.handle(AddressedElectronicsMessageIn::unpack(&mut buf)).await?;
-            }
+          match self.start(settings).await {
+            Err(err) => {
+              error!("Field Electronics Error: {}", err);
+              tokio::time::sleep(Duration::from_millis(250)).await;
+            },
+            Ok(_) => return Ok(())
           }
         }
       },
       None => Ok(()),
+    }
+  }
+
+  pub async fn start(&self, settings: &InnerElectronicsSettings) -> anyhow::Result<()> {
+    let mut port = tokio_serial::new(&settings.port, settings.baud as u32).open_native_async()?;
+    let mut send_interval = time::interval(Duration::from_millis(250));
+
+    loop {
+      tokio::select! {
+        _ = send_interval.tick() => {
+          // Send an update
+          let msgs = self.create_update().await?;
+          for msg in msgs {
+            let mut buf = bytes::BytesMut::with_capacity(64);
+            msg.pack(&mut buf);
+            port.write_u8(buf.len() as u8).await?;
+            port.write_buf(&mut buf).await?;
+          }
+        }
+        result = port.read_u8() => {
+          let n_bytes = result?;
+
+          let mut buf = bytes::BytesMut::with_capacity(n_bytes as usize);
+          port.read_buf(&mut buf).await?;
+
+          self.handle(AddressedElectronicsMessageIn::unpack(&mut buf)).await?;
+        }
+      }
     }
   }
 
@@ -99,7 +108,6 @@ impl FieldElectronicsService {
       role => anyhow::bail!("Role {:?} does not have an alliance!", role),
     };
 
-    // TODO: multiple lights (one per team), etc
     Ok(AddressedElectronicsMessageOut {
       role,
       msg: ElectronicsMessageOut::SetLights(lights.clone()),

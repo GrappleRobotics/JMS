@@ -82,7 +82,6 @@ async fn main() -> anyhow::Result<()> {
     let mut ds_service = DSConnectionService::new(arena.clone()).await;
     let ds_fut = ds_service.run().map_err(|e| anyhow::anyhow!("DS Error: {}", e));
 
-    // TODO: Configurable port
     let electronics_service = FieldElectronicsService::new(arena.clone(), settings.electronics).await;
     let electronics_fut = electronics_service.begin();
 
