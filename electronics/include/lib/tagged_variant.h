@@ -29,17 +29,16 @@ struct variant_helper {
 template<typename T>
 struct variant_helper<T>  {
   static const size_t size = sizeof(T);
+
+  inline static void destroy(size_t tag, void *data) {
+    if (tag == T::tag) reinterpret_cast<T*>(data)->~T();
+  }
+
+  inline static void copy(size_t old_t, const void *old_v, void *new_v) {
+    if (old_t == T::tag)
+      new (new_v) T(*reinterpret_cast<const T*>(old_v));
+  }
 };
-
-//   inline static void destroy(size_t tag, void *data) {
-//     if (tag === F::tag) reinterpret_cast<F*>(data)->~F();
-//   }
-
-//   inline static void copy(size_t old_t, const void *old_v, void *new_v) {
-//     if (old_t == F::tag)
-//       new (new_v) F(*reinterpret_cast<const F*>(old_v));
-//   }
-// };
 
 template<unsigned int size>
 class raw_data { char data[size]; };
@@ -56,12 +55,18 @@ struct tagged_variant {
     helper::copy(old._tag, &old._raw, &_raw);
   }
 
-  template<class T, typename... Args>
-  tagged_variant(Args&&... args) {
-    helper::destroy(_tag, _raw);
-
-    new (&_raw) T(forward<Args>(args)...);
+  template<class T>
+  tagged_variant(const T& value) {
+    new (&_raw) T(value);
     _tag = T::tag;
+  }
+
+  template<typename T>
+  tagged_variant<Ts...>& operator=(const T& variant) {
+    new (&_raw) T(variant);
+    _tag = T::tag;
+
+    return *this;
   }
 
   tagged_variant<Ts...>& operator= (tagged_variant<Ts...>&& old) {
@@ -88,7 +93,7 @@ struct tagged_variant {
   template<typename T>
   const T& get() const {
     // DANGER
-    return *reinterpret_cast<T*>(&_raw);
+    return *reinterpret_cast<const T*>(&_raw);
   }
 
   size_t tag() const {

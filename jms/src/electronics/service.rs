@@ -57,10 +57,12 @@ impl FieldElectronicsService {
         result = port.read_u8() => {
           let n_bytes = result?;
 
-          let mut buf = bytes::BytesMut::with_capacity(n_bytes as usize);
-          port.read_buf(&mut buf).await?;
+          if n_bytes > 0 {
+            let mut buf = bytes::BytesMut::zeroed(n_bytes as usize);
+            port.read_exact(&mut buf).await?;
 
-          self.handle(AddressedElectronicsMessageIn::unpack(&mut buf)).await?;
+            self.handle(AddressedElectronicsMessageIn::unpack(&mut buf)).await?;
+          }
         }
       }
     }

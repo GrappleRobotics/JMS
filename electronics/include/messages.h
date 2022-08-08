@@ -4,7 +4,9 @@
 
 template<class It>
 void _unpack(It &&it, uint16_t &u16) {
-  u16 = (*it++) | (*it++ << 8);
+  uint8_t a = *it++;
+  uint8_t b = *it++;
+  u16 = a | (b << 8);
 }
 
 template<typename T, class It>
@@ -22,7 +24,7 @@ enum class Role {
 };
 
 template<class OutputIterator>
-void pack(const Role &role, OutputIterator iter) {
+void pack(const Role &role, OutputIterator &&iter) {
   *iter++ = static_cast<uint8_t>(role);
 }
 
@@ -38,7 +40,7 @@ struct EstopStates {
 };
 
 template<class OutputIterator>
-void pack(const EstopStates &states, OutputIterator iter) {
+void pack(const EstopStates &states, OutputIterator &&iter) {
   *iter++ = states.field | (states.red[0] << 1) | (states.red[1] << 2) | (states.red[2] << 3)
                          | (states.blue[0] << 4) | (states.blue[1] << 5) | (states.blue[2] << 6);
 }
@@ -120,16 +122,11 @@ void _unpack(It &&it, Message &msg) {
 }
 
 template<class OutputIterator>
-void pack(const Message &msg, OutputIterator it) {
+void pack(const Message &msg, OutputIterator &&it) {
   *it++ = msg.tag();
   if (msg.is<MessageEstops>()) {
-    pack(msg.get<MessageEstops>(), it);
+    pack(msg.get<MessageEstops>().estops, it);
   }
-  // std::visit(overloaded {
-  //   [](auto any) {},
-  //   [&it](const MessagePing &ping) { *it++ = 0; },
-  //   [&it](const MessageEstops &estops) { *it++ = 1; pack(estops.estops, it); }
-  // }, msg);
 }
 
 struct AddressedMessage {
@@ -144,7 +141,7 @@ void _unpack(It &&it, AddressedMessage &msg) {
 }
 
 template<class OutputIterator>
-void pack(const AddressedMessage &msg, OutputIterator it) {
+void pack(const AddressedMessage &msg, OutputIterator &&it) {
   pack(msg.role, it);
   pack(msg.msg, it);
 }

@@ -2,7 +2,7 @@ pub mod comms;
 pub mod service;
 pub mod settings;
 
-use bitvec::{prelude::Msb0, view::BitView};
+use bitvec::{prelude::Lsb0, view::BitView};
 
 use crate::arena::lighting::{LightMode, Colour};
 
@@ -39,7 +39,7 @@ pub struct EstopStates {
 impl Unpackable for EstopStates {
   fn unpack(buf: &mut dyn bytes::Buf) -> Self {
     let byte = buf.get_u8();
-    let bits = byte.view_bits::<Msb0>();
+    let bits = byte.view_bits::<Lsb0>();
     return Self { field: bits[0], red: [bits[1], bits[2], bits[3]], blue: [bits[4], bits[5], bits[6]] };
   }
 }
@@ -99,6 +99,7 @@ impl Packable for ElectronicsMessageOut {
   }
 }
 
+#[derive(Debug, Clone)]
 pub struct AddressedElectronicsMessageOut{
   role: ElectronicsRole,
   msg: ElectronicsMessageOut
@@ -128,6 +129,7 @@ impl Unpackable for ElectronicsMessageIn {
   }
 }
 
+#[derive(Debug, Clone)]
 pub struct AddressedElectronicsMessageIn {
   #[allow(dead_code)]
   role: ElectronicsRole,

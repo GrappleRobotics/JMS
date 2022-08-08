@@ -39,17 +39,17 @@ class Comms {
 
   void write(const AddressedMessage &msg) const {
     uint8_t data[64];
-    auto it = &data[0] + 1;
+    auto it = &data[1];
     pack(msg, it);
-    size_t count = it - (&data[0] + 1);
+    size_t count = it - &data[1];
 
     if (count > 0 && count < 64) {
       data[0] = count;
-      T::write(&data[0], count);
+      T::write(&data[0], count + 1);
     }
   }
 
-  optional<AddressedMessage> poll() const {
+  optional<AddressedMessage> poll() {
     size_t avail = T::available();
     if (avail > 0) {
       if (_to_read == 0) {

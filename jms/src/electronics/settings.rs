@@ -9,9 +9,7 @@ pub struct InnerElectronicsSettings {
 #[async_trait::async_trait]
 impl Interactive for InnerElectronicsSettings {
   async fn interactive() -> anyhow::Result<Self> {
-    let all_ports = tokio_serial::available_ports()?;
-    let port_names: Vec<&str> = all_ports.iter().map(|i| i.port_name.as_str()).collect();
-    let port = inquire::Select::new("Select Serial Port for Master Node", &port_names[..]).prompt()?.value;
+    let port = inquire::Text::new("Serial Port Path").with_default("/dev/ttyUSB0").prompt()?;
     let baud = inquire::CustomType::<usize>::new("Baud Rate?").with_default( (115200, &|x| x.to_string())).prompt()?;
 
     Ok(InnerElectronicsSettings {
