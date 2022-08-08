@@ -1,10 +1,6 @@
-#include <cstdint>
-#include <variant>
-#include <vector>
-#include <bitset>
+#include <stdint.h>
 
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+#include "lib/tagged_variant.h"
 
 template<class It>
 void _unpack(It &&it, uint16_t &u16) {
@@ -62,30 +58,30 @@ void _unpack(It &&it, Colour &c) {
   c = Colour { *it++, *it++, *it++ };
 }
 
-struct LightModeOff {};
-struct LightModeConstant { Colour colour; };
-struct LightModePulse { Colour colour; uint16_t duration; };
-struct LightModeChase { Colour colour; uint16_t duration; };
-struct LightModeRainbow { uint16_t duration; };
-using LightMode = std::variant<LightModeOff, LightModeConstant, LightModePulse, LightModeChase, LightModeRainbow>;
+struct LightModeOff { static const size_t tag = 0; };
+struct LightModeConstant { static const size_t tag = 1; Colour colour; };
+struct LightModePulse { static const size_t tag = 2; Colour colour; uint16_t duration; };
+struct LightModeChase { static const size_t tag = 3; Colour colour; uint16_t duration; };
+struct LightModeRainbow { static const size_t tag = 4; uint16_t duration; };
+using LightMode = tagged_variant<LightModeOff, LightModeConstant, LightModePulse, LightModeChase, LightModeRainbow>;
 
 template<class It>
 void _unpack(It &&it, LightMode &mode) {
   uint8_t variant = *it++;
   switch (variant) {
-  case 0:
+  case LightModeOff::tag:
     mode = LightModeOff{};
     break;
-  case 1:
+  case LightModeConstant::tag:
     mode = LightModeConstant{ unpack<Colour>(it) };
     break;
-  case 2:
+  case LightModePulse::tag:
     mode = LightModePulse{ unpack<Colour>(it), unpack<uint16_t>(it) };
     break;
-  case 3:
+  case LightModeChase::tag:
     mode = LightModeChase{ unpack<Colour>(it), unpack<uint16_t>(it) };
     break;
-  case 4:
+  case LightModeRainbow::tag:
     mode = LightModeRainbow{ unpack<uint16_t>(it) };
     break;
   default:
@@ -93,24 +89,29 @@ void _unpack(It &&it, LightMode &mode) {
   }
 };
 
-struct MessagePing {};
-struct MessageEstops { EstopStates estops; };
-struct MessageSetLights { std::vector<LightMode> lights; };
-using Message = std::variant<MessagePing, MessageEstops, MessageSetLights>;
+struct MessagePing { static const size_t tag = 0; };
+struct MessageEstops { static const size_t tag = 1; EstopStates estops; };
+struct MessageSetLights { static const size_t tag = 2; LightMode lights[4]; };
+using Message = tagged_variant<MessagePing, MessageEstops, MessageSetLights>;
 
 template<class It>
 void _unpack(It &&it, Message &msg) {
   uint8_t variant = *it++;
   switch (variant) {
-  case 0: // Ping
+  case MessagePing::tag: // Ping
     msg = MessagePing{};
     break;
-  case 2: { // Set Lights
+  case MessageSetLights::tag: { // Set Lights
     uint8_t n = *it++;
-    std::vector<LightMode> lights;
-    for (auto i = 0; i < n; i++)
-      lights.push_back(unpack<LightMode>(it));
-    msg = MessageSetLights{ lights };
+    MessageSetLights msl;
+
+    size_t i;
+    for (i = 0; i < n; i++)
+      msl.lights[i] = unpack<LightMode>(it);
+    for (; i < 4; i++)
+      msl.lights[i] = LightModeOff{};
+
+    msg = msl;
     break;
   }
   default:
@@ -120,11 +121,15 @@ void _unpack(It &&it, Message &msg) {
 
 template<class OutputIterator>
 void pack(const Message &msg, OutputIterator it) {
-  std::visit(overloaded {
-    [](auto any) {},
-    [&it](const MessagePing &ping) { *it++ = 0; },
-    [&it](const MessageEstops &estops) { *it++ = 1; pack(estops.estops, it); }
-  }, msg);
+  *it++ = msg.tag();
+  if (msg.is<MessageEstops>()) {
+    pack(msg.get<MessageEstops>(), it);
+  }
+  // std::visit(overloaded {
+  //   [](auto any) {},
+  //   [&it](const MessagePing &ping) { *it++ = 0; },
+  //   [&it](const MessageEstops &estops) { *it++ = 1; pack(estops.estops, it); }
+  // }, msg);
 }
 
 struct AddressedMessage {
