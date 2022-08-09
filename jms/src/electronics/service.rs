@@ -27,6 +27,7 @@ impl FieldElectronicsService {
         loop {
           match self.start(settings).await {
             Err(err) => {
+              self.arena.lock().await.signal(ArenaSignal::Estop).await;
               error!("Field Electronics Error: {}", err);
               tokio::time::sleep(Duration::from_millis(250)).await;
             },
@@ -41,6 +42,9 @@ impl FieldElectronicsService {
   pub async fn start(&self, settings: &InnerElectronicsSettings) -> anyhow::Result<()> {
     let mut port = tokio_serial::new(&settings.port, settings.baud as u32).open_native_async()?;
     let mut send_interval = time::interval(Duration::from_millis(250));
+    let mut recv_timeout = time::interval(Duration::from_millis(500));
+
+    recv_timeout.reset();
 
     loop {
       tokio::select! {
@@ -53,13 +57,16 @@ impl FieldElectronicsService {
             port.write_u8(buf.len() as u8).await?;
             port.write_buf(&mut buf).await?;
           }
-        }
+        },
+        _ = recv_timeout.tick() => anyhow::bail!("Receive Timed Out"),
         result = port.read_u8() => {
           let n_bytes = result?;
 
           if n_bytes > 0 {
             let mut buf = bytes::BytesMut::zeroed(n_bytes as usize);
             port.read_exact(&mut buf).await?;
+
+            recv_timeout.reset();
 
             self.handle(AddressedElectronicsMessageIn::unpack(&mut buf)).await?;
           }
