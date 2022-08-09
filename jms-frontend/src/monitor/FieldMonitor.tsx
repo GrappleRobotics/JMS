@@ -160,7 +160,7 @@ type FieldMonitorState = {
   estop_mode: boolean
 };
 
-export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorState> {
+export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, FieldMonitorState> {
   readonly state: FieldMonitorState = {
     stations: [],
     estop_mode: false
@@ -207,7 +207,8 @@ export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorSta
       {
         stations.length > 0 ? this.renderAvailable() : <h4 className="m-5"> Waiting... </h4>
       }
-      <Row className="monitor-estop-toggle">
+      {
+        this.props.fta ? <Row className="monitor-estop-toggle">
         <Col className="col-full">
           <Button
             className="btn-block"
@@ -217,7 +218,9 @@ export default class FieldMonitor extends WebsocketComponent<{}, FieldMonitorSta
             { estop_mode ? "EXIT" : "" } TEAM EMERGENCY STOP
           </Button>
         </Col>
-      </Row>
+      </Row> : <React.Fragment />
+      }
+      
     </Col>
   }
 }

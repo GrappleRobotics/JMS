@@ -2,18 +2,16 @@ import FieldPosSelector, { PosSelector } from "components/FieldPosSelector";
 import React from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import { Routes, Route, Link } from "react-router-dom";
-import { WebsocketComponent } from "support/ws-component";
-import { Alliance, LoadedMatch, ScoreUpdateData } from "ws-schema";
+import { WebsocketComponent, withRole } from "support/ws-component";
+import { Alliance, GoalHeight, LoadedMatch, ScoreUpdateData, ScorerPair } from "ws-schema";
 
-type ScorerPair = "12" | "34";
-const SCORER_PAIRS: ScorerPair[] = ["12", "34"];
+const SCORER_PAIRS: ScorerPair[] = ["AB", "CD"];
 
-type ScorerHeight = "HIGH" | "LOW";
-const SCORER_HEIGHTS: ScorerHeight[] = ["HIGH", "LOW"];
+const GOAL_HEIGHTS: GoalHeight[] = ["high", "low"];
 
 type ScorerPanelProps = {
   pair: ScorerPair,
-  height: ScorerHeight
+  height: GoalHeight
 };
 
 type ScorerPanelState = {
@@ -50,7 +48,7 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
 
   scoreFlank = (goalIdx: number, match: LoadedMatch | undefined, update: (u: ScoreUpdateData) => void) => {
     const arr = ["red" as Alliance, "blue" as Alliance].map((alliance: Alliance) => {
-      const goal = this.props.height === "HIGH" ? "upper" : "lower";
+      const goal = this.props.height === "high" ? "upper" : "lower";
       const enabled = match != null && match.state !== "Waiting" && match.state !== "Fault";
       // 5 second auto cool-off to allow for balls in the air at the end of auto
       const teleop = match ? ( match.state === "Teleop" && match.remaining_time.secs < (match.config.teleop_time.secs - 5) ) : false;
@@ -116,10 +114,10 @@ class ScorerSelector extends React.PureComponent<{}, ScorerSelectorState> {
   renderSelectHeight(pair: ScorerPair) {
     return <PosSelector className="scorer-selector" title={`Scorer Selection (${pair})`} img="/img/game/hub.png">
       {
-        SCORER_HEIGHTS.map(height => (
+        GOAL_HEIGHTS.map(height => (
           <Link to={`${pair}${height[0]}`}>
             <Button data-score-height={height}>
-              { height }
+              { height.toUpperCase() }
             </Button>
           </Link>
         ))
@@ -138,8 +136,10 @@ export function ScoringRouter() {
   return <Routes>
     <Route path="/" element={ <ScorerSelector /> } />
     {
-      SCORER_PAIRS.map(pair => SCORER_HEIGHTS.map(height => (
-        <Route path={`${pair}${height[0]}`} element={ <ScorerPanel pair={pair} height={height} /> } />
+      SCORER_PAIRS.map(pair => GOAL_HEIGHTS.map(height => (
+        <Route path={`${pair}${height[0]}`} element={ 
+          withRole({ Scorer: { goals: pair, height: height } }, <ScorerPanel pair={pair} height={height} />)
+        } />
       )))
     }
   </Routes>

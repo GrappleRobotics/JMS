@@ -1486,6 +1486,13 @@
         }
       ]
     },
+    "GoalHeight": {
+      "type": "string",
+      "enum": [
+        "low",
+        "high"
+      ]
+    },
     "LiveScore": {
       "type": "object",
       "required": [
@@ -1949,6 +1956,82 @@
         }
       }
     },
+    "NearFar": {
+      "type": "string",
+      "enum": [
+        "near",
+        "far"
+      ]
+    },
+    "Panel": {
+      "type": "object",
+      "required": [
+        "fta",
+        "id",
+        "role"
+      ],
+      "properties": {
+        "fta": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/PanelRole"
+        }
+      }
+    },
+    "PanelRole": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Unknown",
+            "Scorekeeper",
+            "Monitor",
+            "Timer",
+            "AudienceDisplay"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Referee"
+          ],
+          "properties": {
+            "Referee": {
+              "$ref": "#/definitions/RefereeID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Scorer"
+          ],
+          "properties": {
+            "Scorer": {
+              "$ref": "#/definitions/ScorerID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "EStop"
+          ],
+          "properties": {
+            "EStop": {
+              "$ref": "#/definitions/AllianceStationId"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "Penalties": {
       "type": "object",
       "required": [
@@ -2022,6 +2105,38 @@
           "minimum": 0.0
         }
       }
+    },
+    "RefereeID": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "HeadReferee"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/Alliance"
+                },
+                {
+                  "$ref": "#/definitions/NearFar"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "ScheduleBlock": {
       "type": "object",
@@ -2213,6 +2328,28 @@
           "$ref": "#/definitions/ScoreUpdate"
         }
       }
+    },
+    "ScorerID": {
+      "type": "object",
+      "required": [
+        "goals",
+        "height"
+      ],
+      "properties": {
+        "goals": {
+          "$ref": "#/definitions/ScorerPair"
+        },
+        "height": {
+          "$ref": "#/definitions/GoalHeight"
+        }
+      }
+    },
+    "ScorerPair": {
+      "type": "string",
+      "enum": [
+        "AB",
+        "CD"
+      ]
     },
     "SerialisedMatchGeneration": {
       "type": "object",
@@ -2502,6 +2639,24 @@
     "WebsocketMessage2JMS": {
       "oneOf": [
         {
+          "type": "string",
+          "enum": [
+            "Ping"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Panel"
+          ],
+          "properties": {
+            "Panel": {
+              "$ref": "#/definitions/WebsocketMessagePanel2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
           "type": "object",
           "required": [
             "Subscribe"
@@ -2569,6 +2724,24 @@
     "WebsocketMessage2UI": {
       "oneOf": [
         {
+          "type": "string",
+          "enum": [
+            "Ping"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Panel"
+          ],
+          "properties": {
+            "Panel": {
+              "$ref": "#/definitions/WebsocketMessagePanel2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
           "type": "object",
           "required": [
             "Error"
@@ -2612,6 +2785,80 @@
           "properties": {
             "Match": {
               "$ref": "#/definitions/MatchMessage2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WebsocketMessagePanel2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "ID"
+          ],
+          "properties": {
+            "ID": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Role"
+          ],
+          "properties": {
+            "Role": {
+              "$ref": "#/definitions/PanelRole"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetFTA"
+          ],
+          "properties": {
+            "SetFTA": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WebsocketMessagePanel2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/Panel"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/Panel"
             }
           },
           "additionalProperties": false

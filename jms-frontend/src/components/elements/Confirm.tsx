@@ -19,7 +19,7 @@ type ConfirmModalOptions<T> = {
   okVariant?: string,
   cancelVariant?: string,
 
-  renderInner?: (data: T, onUpdate: (data: T) => void) => React.ReactNode,
+  renderInner?: (data: T, onUpdate: (data: T) => void, ok: () => void, cancel: () => void) => React.ReactNode,
   data?: T
 } & Omit<React.ComponentProps<typeof Modal>, "show" | "onHide">;
 
@@ -55,7 +55,7 @@ export class ConfirmModal extends React.Component<ConfirmModalProps<any>, { data
         render ? render(okFn, cancelFn) : <React.Fragment>
           <Modal.Body> 
             {
-              renderInner ? renderInner(this.state.data, (data: any) => this.setState({ data: data }))
+              renderInner ? renderInner(this.state.data, (data: any) => this.setState({ data: data }), () => okFn(this.state.data), cancelFn)
                 : (confirmation || "Are you sure?")
             }
           </Modal.Body>

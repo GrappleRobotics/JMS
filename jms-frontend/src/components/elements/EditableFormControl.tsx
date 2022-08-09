@@ -14,7 +14,7 @@ export default class EditableFormControl extends React.Component<BufferedProps, 
         {...this.props} 
         onUpdate={ v => {
           this.setState({ editing: false });
-          this.props.onUpdate(v);
+          this.props.onUpdate?.(v);
         }}
       />;
     } else {

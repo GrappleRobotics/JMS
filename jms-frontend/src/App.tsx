@@ -3,25 +3,36 @@ import AudienceDisplayControl from 'audience/AudienceDisplayControl';
 import BottomNavbar from 'BottomNavbar';
 import Debug from 'Debug';
 import Home from 'Home';
+import update from 'immutability-helper';
 import MatchControl from 'match_control/MatchControl';
 import FieldMonitor from 'monitor/FieldMonitor';
 import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
 import Rankings from 'rankings/Rankings';
 import React from 'react';
-import { Col, Navbar, Row } from 'react-bootstrap';
+import { Alert, Col, Navbar, Row } from 'react-bootstrap';
 import { Route, Routes } from 'react-router-dom';
 import Reports from 'reports/Reports';
 import { RefereeRouter } from 'scoring/Referee';
 import { ScoringRouter } from 'scoring/Scoring';
-import { WebsocketContext, WebsocketContextT } from 'support/ws-component';
+import { WebsocketComponent, WebsocketContext, WebsocketContextT, withRole } from 'support/ws-component';
 import { TeamEstops } from 'TeamEstop';
 import Timer from 'Timer';
 import TopNavbar from 'TopNavbar';
 import EventWizard from 'wizard/EventWizard';
+import { Panel } from 'ws-schema';
 
-export default class App extends React.Component {
-  static contextType = WebsocketContext;
-  context!: WebsocketContextT;
+type AppState = {
+  errors: String[],
+  fta: boolean
+};
+
+export default class App extends WebsocketComponent<{}, AppState> {
+  readonly state: AppState = { errors: [], fta: false };
+
+  componentDidMount = () => this.handles = [
+    this.listenFn("Panel/Current", (pan: Panel) => this.setState({ fta: pan.fta })),
+    this.listenFn("Error", (err: string) => this.setState(s => update(s, { errors: { $push: [err] } })))
+  ];
 
   renderNoNavbar = () => {
     return this.context.connected ? <React.Fragment /> : <Navbar bg="danger" variant="dark"> <Navbar.Brand className="ml-5"> DISCONNECTED </Navbar.Brand> </Navbar>
@@ -32,19 +43,26 @@ export default class App extends React.Component {
 
     return <div className="wrapper">
       {
-        nonav ? this.renderNoNavbar() : <Row className="navbar-padding">
+        nonav ? this.renderNoNavbar() : <Row className="navbar-padding-top">
           <Col>
             <TopNavbar />
           </Col>
         </Row>
       }
+
+      {
+        this.state.errors.map((e, i) => <Alert dismissible variant="danger" onClose={() => this.setState(s => update(s, { errors: { $splice: [[i, 1]] } }))}>
+          Error: { e }
+        </Alert>)
+      }
+
       <Row className={"app-viewport " + (fullscreen ? "fullscreen " : "") + (nopad ? "p-0 " : "")} data-connected={this.context.connected}>
         {/* <Col> */}
         { children }
         {/* </Col> */}
       </Row>
       {
-        nonav ? <React.Fragment /> : <Row className="navbar-padding">
+        nonav ? <React.Fragment /> : <Row className="navbar-padding-bottom">
           <Col>
             <BottomNavbar />
           </Col>
@@ -54,21 +72,22 @@ export default class App extends React.Component {
   }
 
   render() {
+    const fta = this.state.fta;
     return <Routes>
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
-      <Route path={MATCH_CONTROL} element={ this.wrapView(<MatchControl />) } />
-      <Route path={MONITOR} element={ this.wrapView(<FieldMonitor />, { fullscreen: true, nopad: true }) } />
+      <Route path={MATCH_CONTROL} element={ withRole("Scorekeeper", this.wrapView(<MatchControl />)) } />
+      <Route path={MONITOR} element={ withRole("Monitor", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
       <Route path={AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />
       <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
       <Route path={`${SCORING}/*`} element={ this.wrapView(<ScoringRouter />) } />
-      <Route path={AUDIENCE} element={ this.wrapView(<Audience />, { fullscreen: true, nonav: true }) } />
+      <Route path={AUDIENCE} element={ withRole("AudienceDisplay", this.wrapView(<Audience />, { fullscreen: true, nonav: true })) } />
       <Route path={RANKINGS} element={ this.wrapView(<Rankings />, { fullscreen: true, nonav: true }) } />
       <Route path={RANKINGS_NO_SCROLL} element={ this.wrapView(<Rankings scroll={false} />, { fullscreen: true }) } />
       <Route path={`${ESTOPS}/*`} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
-      <Route path={DEBUG} element={ this.wrapView(<Debug />) } />
-      <Route path={REPORTS} element={ this.wrapView(<Reports />) } />
-      <Route path={TIMER} element={ this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true }) } />
-      <Route path="/" element={ this.wrapView(<Home />) } />
+      <Route path={DEBUG} element={ this.wrapView(<Debug fta={fta} />) } />
+      <Route path={REPORTS} element={ this.wrapView(<Reports fta={fta} />) } />
+      <Route path={TIMER} element={ withRole("Timer", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
+      <Route path="/" element={ this.wrapView(<Home fta={fta} />) } />
     </Routes>
   }
 };

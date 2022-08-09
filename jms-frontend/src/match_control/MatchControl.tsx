@@ -44,7 +44,7 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
         msg => this.setState(state => update(state, { matches: { playoffs: { $set: msg.matches } } }))),
       this.listenFn<SerializedMatch | null>("Match/Next", 
         msg => this.setState(state => update(state, { matches: { next: { $set: msg || undefined } } })))
-    ]
+    ];
   }
 
   render() {

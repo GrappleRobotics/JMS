@@ -105,8 +105,8 @@ where
 {
   let options: Vec<String> = E::iter().map(|t| t.to_string()).collect();
   let options_ref: Vec<&str> = options.iter().map(|s| s.as_str()).collect();
-  let result = inquire::Select::new(message, &options_ref[..]).prompt()?.value;
-  Ok(T::from_str(result.as_str()).unwrap())
+  let result = inquire::Select::new(message, options_ref).prompt()?;
+  Ok(T::from_str(result).unwrap())
 }
 
 pub trait Inquirable where Self: Sized {

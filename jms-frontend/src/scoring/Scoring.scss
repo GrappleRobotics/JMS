@@ -109,24 +109,24 @@
   .btn {
     font-size: 1.75rem !important;
 
-    &[data-score-pair="12"] {
+    &[data-score-pair="AB"] {
       @extend .btn-blue;
       left: 50% - 2.5%;
       bottom: 50% - 15%;
     }
-    &[data-score-pair="34"] {
+    &[data-score-pair="CD"] {
       @extend .btn-red;
       left: 50% + 2.5%;
       bottom: 50% + 15%;
     }
 
-    &[data-score-height="HIGH"] {
+    &[data-score-height="high"] {
       @extend .btn-green;
       left: 50%;
       bottom: 70%;
     }
 
-    &[data-score-height="LOW"] {
+    &[data-score-height="low"] {
       @extend .btn-red;
       left: 50%;
       bottom: 10%;
@@ -145,10 +145,10 @@
     &[data-pos="right"] { left: 85%; }
   }
 
-  &[data-height="HIGH"] {
+  &[data-height="high"] {
     .scorer-label { bottom: 55%; color: theme-color("green"); }
   }
-  &[data-height="LOW"] {
+  &[data-height="low"] {
     .scorer-label { bottom: 30%; color: theme-color("red"); }
   }
 

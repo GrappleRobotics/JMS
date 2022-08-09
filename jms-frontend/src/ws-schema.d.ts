@@ -6,6 +6,10 @@
  */
 
 export type WebsocketMessage2UI =
+  | "Ping"
+  | {
+      Panel: WebsocketMessagePanel2UI;
+    }
   | {
       Error: string;
     }
@@ -18,6 +22,39 @@ export type WebsocketMessage2UI =
   | {
       Match: MatchMessage2UI;
     };
+export type WebsocketMessagePanel2UI =
+  | {
+      All: {
+        [k: string]: Panel;
+      };
+    }
+  | {
+      Current: Panel;
+    };
+export type PanelRole =
+  | ("Unknown" | "Scorekeeper" | "Monitor" | "Timer" | "AudienceDisplay")
+  | {
+      Referee: RefereeID;
+    }
+  | {
+      Scorer: ScorerID;
+    }
+  | {
+      EStop: AllianceStationId;
+    };
+export type RefereeID =
+  | "HeadReferee"
+  | {
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      Alliance: [Alliance, NearFar];
+    };
+export type Alliance = "blue" | "red";
+export type NearFar = "near" | "far";
+export type ScorerPair = "AB" | "CD";
+export type GoalHeight = "low" | "high";
 export type EventMessage2UI =
   | {
       Details: EventMessageDetails2UI;
@@ -111,7 +148,6 @@ export type ArenaMessageAlliance2UI = {
 };
 export type DSMode = "Teleop" | "Test" | "Auto";
 export type AllianceStationOccupancy = "Vacant" | "Occupied" | "WrongStation" | "WrongMatch";
-export type Alliance = "blue" | "red";
 export type ArenaMessageMatch2UI = {
   Current: LoadedMatch | null;
 };
@@ -191,6 +227,10 @@ export type MatchMessagePlayoffs2UI = {
   Generation: SerialisedMatchGeneration;
 };
 export type WebsocketMessage2JMS =
+  | "Ping"
+  | {
+      Panel: WebsocketMessagePanel2JMS;
+    }
   | {
       Subscribe: string[];
     }
@@ -205,6 +245,16 @@ export type WebsocketMessage2JMS =
     }
   | {
       Match: MatchMessage2JMS;
+    };
+export type WebsocketMessagePanel2JMS =
+  | {
+      ID: string;
+    }
+  | {
+      Role: PanelRole;
+    }
+  | {
+      SetFTA: string | null;
     };
 export type DebugMessage2JMS = {
   Match: DebugMessageMatch2JMS;
@@ -375,6 +425,19 @@ export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
   ui2jms: WebsocketMessage2JMS;
 }
+export interface Panel {
+  fta: boolean;
+  id: string;
+  role: PanelRole;
+}
+export interface ScorerID {
+  goals: ScorerPair;
+  height: GoalHeight;
+}
+export interface AllianceStationId {
+  alliance: Alliance;
+  station: number;
+}
 export interface EventDetails {
   code?: string | null;
   event_name?: string | null;
@@ -442,10 +505,6 @@ export interface AllianceStationDSReport {
   rio_ping: boolean;
   robot_ping: boolean;
   rtt: number;
-}
-export interface AllianceStationId {
-  alliance: Alliance;
-  station: number;
 }
 export interface LoadedMatch {
   config: MatchConfig;

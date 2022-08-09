@@ -5,11 +5,6 @@ mod debug;
 
 use jms_macros::define_websocket_msg;
 
-// pub use arena::ArenaWebsocketHandler;
-// pub use event::EventWebsocketHandler;
-// pub use matches::MatchWebsocketHandler;
-// pub use debug::DebugWebsocketHandler;
-
 use anyhow::Result;
 
 use futures::{SinkExt, StreamExt};
@@ -21,11 +16,21 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena, matches::ws_recv_match}, arena::SharedArena, schedule::worker::SharedMatchGenerators};
+use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena, matches::ws_recv_match}, arena::{SharedArena, panel::{PanelRole, SharedPanels, Panels, Panel}}, schedule::worker::SharedMatchGenerators, models::FTAKey, db};
 
 use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}};
 
 define_websocket_msg!($WebsocketMessage {
+  Ping,
+
+  $Panel {
+    send All(Panels),
+    send Current(Panel),
+    recv ID(String),
+    recv Role(PanelRole),
+    recv SetFTA(Option<String>)
+  },
+
   send Error(String),
   recv Subscribe(Vec<String>),
 
@@ -63,7 +68,8 @@ impl From<MatchMessage2UI> for WebsocketMessage2UI {
 #[derive(Clone)]
 pub struct WebsocketParams {
   pub arena: SharedArena,
-  pub matches: SharedMatchGenerators
+  pub matches: SharedMatchGenerators,
+  pub panels: SharedPanels
 }
 
 pub struct Websockets {
@@ -95,13 +101,21 @@ impl Websockets {
             let tx = self.broadcast.clone();
             let rx = self.broadcast.subscribe();
             let params = self.params.clone();
+            let duration = self.loop_duration.clone();
 
             tokio::spawn(async move {
-              if let Err(e) = connection_handler(stream, tx, rx, params).await {
+              let mut id = None;
+
+              if let Err(e) = connection_handler(stream, &mut id, tx, rx, &params, duration).await {
                 match e.downcast_ref::<tungstenite::Error>() {
                   Some(tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8) => (),
                   _ => error!("Websocket Error: {}", e),
                 }
+              }
+
+              // Remove the panel when it disconnects, whether gracefully or not
+              if let Some(id) = id {
+                params.panels.lock().await.remove(&id);
               }
             });
           },
@@ -109,6 +123,9 @@ impl Websockets {
         },
 
         _ = update_interval.tick() => {
+          let panels = self.params.panels.lock().await;
+          do_broadcast_update(&self.broadcast, Ok(vec![ WebsocketMessage2UI::Ping ])).await?;
+          do_broadcast_update(&self.broadcast, Ok(vec![ WebsocketMessagePanel2UI::All(panels.clone()) ])).await?;
           do_broadcast_update(&self.broadcast, event::ws_periodic_event().await).await?;
           do_broadcast_update(&self.broadcast, arena::ws_periodic_arena(self.params.arena.clone()).await).await?;
           do_broadcast_update(&self.broadcast, matches::ws_periodic_match(self.params.matches.clone()).await).await?;
@@ -139,30 +156,78 @@ where
   Ok(())
 }
 
+async fn handle_panel_msg(msg: &WebsocketMessagePanel2JMS, panel_id: &mut Option<String>, panels: SharedPanels) -> Result<Vec<WebsocketMessage2UI>> {
+  let mut panels = panels.lock().await;
+  
+  match msg {
+    WebsocketMessagePanel2JMS::ID(id) => {
+      panels.register(id.clone(), panel_id);
+      *panel_id = Some(id.clone());
+    },
+    WebsocketMessagePanel2JMS::Role(role) => {
+      if let Some(panel) = panels.get_mut(panel_id) {
+        panel.role = *role;
+      }
+    },
+    WebsocketMessagePanel2JMS::SetFTA(key) => {
+      if let Some(panel) = panels.get_mut(panel_id) {
+        match key {
+          Some(key) => {
+            if FTAKey::get(&db::database())?.validate(&key) {
+              panel.fta = true;
+            } else {
+              panel.fta = false;
+              anyhow::bail!("Incorrect FTA Key!")
+            }
+          },
+          _ => panel.fta = false
+        }
+      } 
+    }
+  };
+
+  Ok(vec![])
+}
+
 // Can't be a self method as tokio::spawn may outlive the object itself, unless we constrain to be 'static lifetime
 async fn connection_handler(
   stream: TcpStream,
+  panel_id: &mut Option<String>,
   _broadcast_tx: broadcast::Sender<Vec<WebsocketMessage2UI>>,
   mut broadcast_rx: broadcast::Receiver<Vec<WebsocketMessage2UI>>,
-  params: WebsocketParams
+  params: &WebsocketParams,
+  loop_duration: Duration
 ) -> Result<()> {
   let mut ws = accept_async(stream).await?;
   let mut subscribed_to = HashSet::<Vec<String>>::new();
+
+  let mut ping_timeout = tokio::time::interval(loop_duration * 3);
+  ping_timeout.reset();
+
+  let mut panel_update_int = tokio::time::interval(loop_duration);
 
   debug!("Websocket Connected");
 
   loop {
     tokio::select! {
+      _ = ping_timeout.tick() => {
+        anyhow::bail!("Timed Out");
+      },
       recvd = ws.next() => match recvd {
         Some(recvd) => match recvd {
           Ok(msg) => match msg {
             tungstenite::Message::Text(msg_str) => {
               let m: WebsocketMessage2JMS = serde_json::from_str(&msg_str)?;
               let response = match m {
+                WebsocketMessage2JMS::Ping => {
+                  ping_timeout.reset();
+                  Ok(vec![])
+                },
                 WebsocketMessage2JMS::Subscribe(schema_names) => {
                   subscribed_to.insert(schema_names);
                   Ok(vec![])
                 },
+                WebsocketMessage2JMS::Panel(panel_msg) => handle_panel_msg(&panel_msg, panel_id, params.panels.clone()).await,
                 WebsocketMessage2JMS::Event(msg) => ws_recv_event(&msg).await,
                 WebsocketMessage2JMS::Debug(msg) => ws_recv_debug(&msg).await,
                 WebsocketMessage2JMS::Arena(msg) => ws_recv_arena(&msg, params.arena.clone()).await,
@@ -194,14 +259,19 @@ async fn connection_handler(
           return Ok(());
         }
       },
+      // Send an update about the current panel
+      _ = panel_update_int.tick() => {
+        let panels = params.panels.lock().await;
+        if let Some(panel) = panels.get(panel_id) {
+          let msg: WebsocketMessage2UI = WebsocketMessagePanel2UI::Current(panel.clone()).into();
+          ws.send(tungstenite::Message::Text(serde_json::to_string(&vec![msg])?)).await?;
+        }
+      },
       recvd = broadcast_rx.recv() => match recvd {
         // New broadcast 
         Ok(msgs) => {
           let msgs_filtered: Vec<&WebsocketMessage2UI> = msgs.iter().filter(|m| {
             matches!(m, WebsocketMessage2UI::Error(_)) || is_subscribed_for_message(&subscribed_to, m)
-            // let ts_specific = TopicSubscription { object: m.object.clone(), noun: m.noun.clone() };
-            // let ts_generic = TopicSubscription { object: m.object.clone(), noun: "*".to_owned() };
-            // subscriptions.contains_key(&ts_specific) || subscriptions.contains_key(&ts_generic)
           }).collect();
 
           if msgs_filtered.len() > 0 {
@@ -219,6 +289,8 @@ fn is_subscribed_for_message(subscriptions: &HashSet<Vec<String>>, msg: &Websock
   // let actual_path = msg.ws_path();
   let actual_path = match msg {
     WebsocketMessage2UI::Error(_) => todo!(),
+    WebsocketMessage2UI::Ping => { return true; },
+    WebsocketMessage2UI::Panel(_) => msg.ws_path(),
     WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Match(match_msg) => [ &["Match"], match_msg.ws_path().as_slice() ].concat(),

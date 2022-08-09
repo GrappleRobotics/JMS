@@ -8,8 +8,8 @@ import { Button, Col, Container, Row } from "react-bootstrap";
 import { Link, Route, Routes } from "react-router-dom";
 import { capitalise } from "support/strings";
 import { otherAlliance, withVal } from "support/util";
-import { WebsocketComponent } from "support/ws-component";
-import { Alliance, AllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState } from "ws-schema";
+import { WebsocketComponent, withRole } from "support/ws-component";
+import { Alliance, AllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
 
 type RefereePanelState = {
   match?: LoadedMatch,
@@ -145,7 +145,7 @@ export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
 
 type AllianceRefereeProps = {
   alliance: Alliance,
-  position: "near" | "far"
+  position: NearFar
 };
 
 export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
@@ -153,7 +153,7 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
   renderWaiting() {
     return <React.Fragment>
       <h3> Waiting for Scorekeeper... </h3>
-      <i className="text-muted"> { capitalise(this.props.alliance) } Alliance Referee </i>
+      <i className="text-muted"> { capitalise(this.props.alliance) } { capitalise(this.props.position) } Referee </i>
     </React.Fragment>
   }
 
@@ -173,7 +173,7 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
       <Row className="mb-3">
         <Col>
           <h3 className="mb-0"> { match.match_meta.name } </h3>
-          <i className="text-muted"> { capitalise(alliance) } Alliance Referee </i>
+          <i className="text-muted"> { capitalise(alliance) } { capitalise(this.props.position) } Referee </i>
         </Col>
         <Col className="text-end">
           <h3 className="text-muted"> { match.state || "--" } &nbsp; { match?.remaining_time?.secs }s </h3>
@@ -297,10 +297,13 @@ class RefereeSelector extends React.PureComponent {
 export function RefereeRouter() {
   return <Routes>
     <Route path="/" element={ <RefereeSelector /> } />
-    <Route path="blue/near" element={ <AllianceReferee alliance="blue" position="near" /> } />
-    <Route path="blue/far" element={ <AllianceReferee alliance="blue" position="far" /> } />
-    <Route path="red/near" element={ <AllianceReferee alliance="red" position="near" /> } />
-    <Route path="red/far" element={ <AllianceReferee alliance="red" position="far" /> } />
-    <Route path="head" element={ <HeadReferee /> } />
+    {
+      ["red" as Alliance, "blue" as Alliance].map(alliance => ["near" as NearFar, "far" as NearFar].map(nearfar => (
+        <Route path={`${alliance}/${nearfar}`} element={
+          withRole({ Referee: { Alliance: [ alliance, nearfar ] } }, <AllianceReferee alliance={alliance} position={nearfar} />)
+        } />
+      )))
+    }
+    <Route path="head" element={ withRole({ Referee: "HeadReferee" }, <HeadReferee />) } />
   </Routes>
 }

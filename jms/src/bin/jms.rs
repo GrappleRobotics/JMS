@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}};
+use jms::{arena::{self, SharedArena, panel::{SharedPanels, Panels}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -49,24 +49,27 @@ async fn main() -> anyhow::Result<()> {
     .get_matches();
 
   logging::configure(matches.is_present("debug"));
-
-  let settings = JMSSettings::load_or_create_config(matches.is_present("new-cfg")).await?;
-
+  
   if let Some(v) = matches.value_of("gen-schema") {
     let file = Path::new(v);
     let schema = schemars::schema_for!(AllWebsocketMessages);
-
+    
     fs::write(file, serde_json::to_string_pretty(&schema)?)?;
   } else if !matches.is_present("cfg-only") {
+    let settings = JMSSettings::load_or_create_config(matches.is_present("new-cfg")).await?;
+
     db::database(); // Start connection
+
+    FTAKey::get(&db::database())?;  // Init the FTA key if it isn't ready
 
     let network = settings.network.create()?;
 
     let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, network)));
-    let match_workers = Arc::new(Mutex::new(MatchGenerators { 
+    let match_workers: SharedMatchGenerators = Arc::new(Mutex::new(MatchGenerators { 
       quals: MatchGenerationWorker::new(QualsMatchGenerator::new()), 
       playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new()) 
     }));
+    let panels: SharedPanels = Arc::new(Mutex::new(Panels::new()));
 
     let a2 = arena.clone();
     let arena_fut = async move {
@@ -87,7 +90,8 @@ async fn main() -> anyhow::Result<()> {
 
     let ws_params = WebsocketParams {
       arena: arena.clone(),
-      matches: match_workers.clone()
+      matches: match_workers.clone(),
+      panels: panels.clone()
     };
 
     let ws = Websockets::new(ws_params, Duration::from_millis(500));

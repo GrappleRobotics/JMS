@@ -4,7 +4,7 @@ import React from "react";
 import { Button, Col, Container } from "react-bootstrap";
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { capitalise } from "support/strings";
-import { WebsocketComponent } from "support/ws-component";
+import { WebsocketComponent, withRole } from "support/ws-component";
 import { AllianceStation } from "ws-schema";
 
 type TeamEstopProps = {
@@ -87,10 +87,10 @@ export class TeamEstops extends WebsocketComponent<{}, TeamEstopsState> {
       {
       this.state.stations.map((s, i) => (
         <Route key={i} path={`${s.station.alliance}-${s.station.station}`} element={
-          <TeamEstop
-          station={s}
-          onTrigger={which => this.send({ Arena: { Alliance: { UpdateAlliance: { [which]: true, station: s.station } } } })}
-          />
+          withRole({ EStop: s.station }, <TeamEstop
+            station={s}
+            onTrigger={which => this.send({ Arena: { Alliance: { UpdateAlliance: { [which]: true, station: s.station } } } })}
+          />)
         }/>
         ))
       }

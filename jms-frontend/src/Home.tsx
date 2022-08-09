@@ -1,4 +1,4 @@
-import { AUDIENCE, AUDIENCE_CONTROL, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
+import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
 import React from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
@@ -34,8 +34,10 @@ const HomeTileSep = (props: { children: React.ReactNode }) => <Row className="ho
 
 const HomeTileRow = (props: React.ComponentProps<typeof Row>) => <Row className="flex-wrap" {...props} />
 
-export default class Home extends React.PureComponent {
+export default class Home extends React.PureComponent<{ fta: boolean }> {
   render() {
+    const fta = this.props.fta;
+    
     return <Container className="home">
       <h2> Welcome to JMS! </h2>
       <br />
@@ -46,6 +48,9 @@ export default class Home extends React.PureComponent {
         <HomeTile name="Field Monitor" href={MONITOR} img="fieldmon.png"> Monitor the status of robots on the field. </HomeTile>
         <HomeTile name="Reports" href={REPORTS} img="reports.jpg"> Generate schedule, team, and advancement reports. </HomeTile>
         <HomeTile name="A/V Controls" href={AUDIENCE_CONTROL} img="audiencecontrol.jpg"> Control the Audience Display from the AV Desk. </HomeTile>
+        {
+          fta ? <HomeTile name="DEBUG" href={DEBUG}> Debug Information </HomeTile> : <React.Fragment />
+        }
       </HomeTileRow>
 
       <HomeTileSep> On the Field </HomeTileSep>

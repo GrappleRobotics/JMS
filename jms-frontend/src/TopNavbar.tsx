@@ -1,17 +1,21 @@
-import { faCompressArrowsAlt, faExpand, faHome } from '@fortawesome/free-solid-svg-icons';
+import { faCompressArrowsAlt, faCrown, faExpand, faHome, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import confirmBool from 'components/elements/Confirm';
+import BufferedFormControl from 'components/elements/BufferedFormControl';
+import confirmBool, { confirmModal } from 'components/elements/Confirm';
 import _ from 'lodash';
-import { Button } from 'react-bootstrap';
+import React from 'react';
+import { Button, FormControl } from 'react-bootstrap';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import { Link } from 'react-router-dom';
+import { undefinedIfEmpty } from 'support/strings';
 import { WebsocketComponent } from 'support/ws-component';
-import { ArenaState, LoadedMatch } from 'ws-schema';
+import { ArenaState, LoadedMatch, Panel } from 'ws-schema';
 
 type TopNavbarState = {
   arena_state?: ArenaState,
-  match?: LoadedMatch
+  match?: LoadedMatch,
+  panel?: Panel
 };
 
 export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
@@ -19,7 +23,8 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
 
   componentDidMount = () => this.handles = [
     this.listen("Arena/State/Current", "arena_state"),
-    this.listen("Arena/Match/Current", "match")
+    this.listen("Arena/Match/Current", "match"),
+    this.listen("Panel/Current", "panel")
   ];
 
   triggerEstop = async () => {
@@ -79,15 +84,35 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
     }
   }
 
+  tryFTA = () => {
+    confirmModal("", {
+      data: "",
+      title: "FTA Login",
+      okText: "Login",
+      renderInner: (pass: string, onUpdate, ok) => <React.Fragment>
+        <h6> Enter FTA PIN: </h6>
+        <BufferedFormControl
+          instant
+          autofocus
+          type="password"
+          value={pass}
+          onUpdate={(v) => onUpdate(String(v))}
+          onEnter={ok}
+        />
+      </React.Fragment>
+    }).then(pass => this.send({ Panel: { SetFTA: pass } }))
+  }
+
   render() {
     let fullscreen = document.fullscreenElement != null;
     const { connected } = this.context;
-    const { arena_state, match } = this.state;
+    const { arena_state, match, panel } = this.state;
 
     return <Navbar
       className="top-nav"
       variant="dark"
       fixed="top"
+      data-fta={ panel?.fta }
       data-connected={ connected }
       data-match-state={ match?.state }
       { ...Object.fromEntries(arena_state !== undefined ? Object.keys(arena_state).map(k => [ `data-arena-${k}`, (arena_state as any)[k] ]) : []) }
@@ -106,10 +131,21 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
       <Navbar.Toggle />
       <Navbar.Collapse className="justify-content-end">
         <Nav>
-          <Link to="/" className="nav-link">
+          <Link to="/" className="nav-link mx-3">
             <FontAwesomeIcon icon={faHome} /> &nbsp;
             Home
           </Link>
+          {
+            panel?.fta ? <React.Fragment>
+              <Navbar.Brand className="brand-fta"> <strong>FTA</strong> </Navbar.Brand>
+              <Nav.Link onClick={() => this.send({ Panel: { SetFTA: null } })}>
+                <FontAwesomeIcon icon={faRightFromBracket} /> Logout
+              </Nav.Link>
+            </React.Fragment> 
+            : <Nav.Link onClick={this.tryFTA}>
+                <FontAwesomeIcon icon={faCrown} /> FTA Login
+              </Nav.Link>
+          }
           <Nav.Link className="mx-3" onClick={ (e: any) => {
             if (fullscreen) document.exitFullscreen();
             else document.body.requestFullscreen();

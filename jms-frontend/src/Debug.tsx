@@ -1,7 +1,19 @@
+import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { WebsocketComponent } from "support/ws-component";
+import { Panel } from "ws-schema";
 
-export default class Debug extends WebsocketComponent<{}> {
+type DebugState = {
+  panels?: Panel[]
+};
+
+export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugState> {
+  readonly state: DebugState = {};
+
+  componentDidMount = () => this.handles = [
+    this.listen("Panel/All", "panels")
+  ];
+
   render() {
     let screen = window.screen;
     let root = document.documentElement;
@@ -22,25 +34,34 @@ export default class Debug extends WebsocketComponent<{}> {
           <p> Window Inner Dimensions: { window.innerWidth } x { window.innerHeight } </p>
         </Col>
       </Row>
-      <Row>
-        <Col>
-          <h4> Matches </h4>
-          <Button
-            onClick={() => this.send({ Debug: { Match: "FillRandomScores" } })}
-            variant="danger"
-          >
-            Random Fill
-          </Button>
-          <br />
-          <br />
-          <Button
-            onClick={() => this.send({ Debug: { Match: "DeleteAll" } })}
-            variant="danger"
-          >
-            DELETE ALL (DANGER)
-          </Button>
-        </Col>
-      </Row>
+      {
+        !this.props.fta ? <React.Fragment /> : <React.Fragment>
+          <Row>
+            <Col>
+              <h4> Matches </h4>
+              <Button
+                onClick={() => this.send({ Debug: { Match: "FillRandomScores" } })}
+                variant="danger"
+              >
+                Random Fill
+              </Button>
+              <br />
+              <br />
+              <Button
+                onClick={() => this.send({ Debug: { Match: "DeleteAll" } })}
+                variant="danger"
+              >
+                DELETE ALL (DANGER)
+              </Button>
+            </Col>
+          </Row>
+          <Row>
+            <Col>
+              <textarea disabled value={JSON.stringify(this.state, null, 2)} style={ { width: 500, height: 500 } } />
+            </Col>
+          </Row>
+        </React.Fragment>
+      }
     </Container>
   }
 }

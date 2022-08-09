@@ -35,14 +35,15 @@ export default class AudienceDisplayControl extends WebsocketComponent<{}, Audie
       data: "",
       title: "Show Custom Message",
       okText: "Display",
-      renderInner: (msg: string, onUpdate) => <React.Fragment>
+      renderInner: (msg: string, onUpdate, ok) => <React.Fragment>
         <p> Custom Message: </p>
         <BufferedFormControl
-          auto
+          instant
           autofocus
           type="text"
           value={msg}
           onUpdate={(v) => onUpdate(String(v))}
+          onEnter={ok}
         />
       </React.Fragment>
     }).then(msg => {

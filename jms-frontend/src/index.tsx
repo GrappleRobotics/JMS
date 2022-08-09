@@ -8,9 +8,9 @@ import './App.scss';
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 root.render(
-  <WebsocketManagerComponent>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </WebsocketManagerComponent>
+  <BrowserRouter>
+    <WebsocketManagerComponent>
+        <App />
+    </WebsocketManagerComponent>
+  </BrowserRouter>
 );

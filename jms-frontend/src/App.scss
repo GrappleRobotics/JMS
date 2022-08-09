@@ -130,22 +130,29 @@ html, body, #root {
   &[data-connected=false] {
     background-color: darken(theme-color("danger"), 40%);
   }
+}
 
-  ::-webkit-scrollbar {
-    width: 2px;  /* Remove scrollbar space */
-    background: transparent;  /* Optional: just make scrollbar invisible */
-  }
+::-webkit-scrollbar {
+  width: 3px;  /* Remove scrollbar space */
+  background: transparent;  /* Optional: just make scrollbar invisible */
+}
 
-  ::-webkit-scrollbar-thumb {
-    background: $gray-500;
-  }
+::-webkit-scrollbar-thumb {
+  background: $gray-700;
 }
 
 .navbar {
   padding: 1rem;
 }
 
-.navbar-padding {
+.navbar-padding-top {
+  padding-top: 75px;
+  > .col {
+    height: 0;
+  }
+}
+
+.navbar-padding-bottom {
   padding-top: 30px + 16px*2;
   > .col {
     height: 0;
@@ -187,6 +194,13 @@ html, body, #root {
       @include hazard-active(theme-color("hazard-red"));
     }
   }
+  &[data-fta=true] {
+    border-bottom: 3px solid theme-color("gold");
+  }
+}
+
+.brand-fta {
+  color: theme-color("gold") !important;
 }
 
 .btn-estop, .btn-hazard-red {

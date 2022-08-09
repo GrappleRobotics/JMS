@@ -1,11 +1,13 @@
-import React from "react";
-import { WebsocketMessage2JMS } from "ws-schema";
+import React, { useContext } from "react";
+import { useLocation } from "react-router-dom";
+import { PanelRole, WebsocketMessage2JMS } from "ws-schema";
 import JmsWebsocket, { CallbackFn } from "./ws";
 
 export type WebsocketContextT = {
   send: (msg: WebsocketMessage2JMS) => void,
   listen: <T>(path: string|string[], callback: CallbackFn<T>) => string,
   unlisten: (paths: string[]) => void,
+  setRole: (role: PanelRole, location: string) => void,
   connected: boolean
 };
 
@@ -14,7 +16,24 @@ export const WebsocketContext = React.createContext<WebsocketContextT>(
   null
 );
 
-export class WebsocketManagerComponent extends React.Component<{ children: React.ReactNode }, WebsocketContextT> {
+export function RoleUpdater(props: { role: PanelRole, children: React.ReactElement }) {
+  let location = useLocation();
+  let wsContext = useContext(WebsocketContext);
+
+  React.useEffect(() => {
+    wsContext.setRole(props.role, location.pathname);
+  }, [location.pathname]);
+
+  return props.children;
+}
+
+export function withRole(role: PanelRole, children: React.ReactElement) {
+  return <RoleUpdater role={role}>
+    { children }
+  </RoleUpdater>
+}
+
+export class WebsocketManagerComponent extends React.Component<{ children: React.ReactElement }, WebsocketContextT> {
   socket: JmsWebsocket = new JmsWebsocket();
   handles: string[] = [];
 
@@ -22,6 +41,7 @@ export class WebsocketManagerComponent extends React.Component<{ children: React
     send: this.socket.send,
     listen: this.socket.onMessage,
     unlisten: this.socket.removeHandles,
+    setRole: this.socket.updateRole,
     connected: false
   };
 
@@ -38,7 +58,9 @@ export class WebsocketManagerComponent extends React.Component<{ children: React
 
   render() {
     return <WebsocketContext.Provider value={this.state}>
-      { this.props.children }
+      <RoleUpdater role="Unknown">
+        { this.props.children }
+      </RoleUpdater>
     </WebsocketContext.Provider>
   }
 };

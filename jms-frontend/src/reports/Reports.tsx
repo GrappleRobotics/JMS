@@ -9,6 +9,7 @@ export const REPORT_MAP = [
 
   { 
     title: "WPA Keys (FTA ONLY)", 
+    fta: true,
     paths: [ 
       { title: "PDF",  path: "wpa/pdf", variant: "danger" }, 
       { title: "CSV", path: "wpa/csv", variant: "warning" } 
@@ -31,13 +32,13 @@ export const REPORT_MAP = [
 
 export const REPORT_BASE_URL = "http://" + window.location.host + REPORTS;
 
-export default function Reports() {
+export default function Reports(props: { fta: boolean }) {
   return <Container>
     <h2> Generate Reports </h2>
     <br />
 
     {
-      REPORT_MAP.map(report => <Row className="mb-4">
+      REPORT_MAP.filter(p => !("fta" in p) || props.fta).map(report => <Row className="mb-4">
         <Col>
           <h3> { report.title } </h3>
           <div className="ml-4">

@@ -9,9 +9,10 @@ export type BufferedProps = Combine<{
   instant?: boolean,
   enter?: boolean,
   value: number | string,
-  onUpdate: (val: number | string) => void,
+  onUpdate?: (val: number | string) => void,
   className?: string,
-  resetOnEnter?: boolean
+  resetOnEnter?: boolean,
+  onEnter?: (val: number | string) => void
 }, FormControlProps & React.InputHTMLAttributes<HTMLInputElement>>;
 
 type BufferedState = {
@@ -56,7 +57,7 @@ export default class BufferedFormControl extends React.Component<BufferedProps, 
   }
 
   triggerUpdate = () => {
-    this.props.onUpdate(this.state.value);
+    this.props.onUpdate?.(this.state.value);
     if (this.props.resetOnEnter)
       this.setState({ value: this.props.value });
   }
@@ -73,6 +74,7 @@ export default class BufferedFormControl extends React.Component<BufferedProps, 
   onKeyDown = (e : {key: string}) => {
     if (this.props.enter && e.key === 'Enter') {
       this.triggerUpdate();
+      this.props.onEnter?.(this.state.value);
     }
   }
 
@@ -82,7 +84,7 @@ export default class BufferedFormControl extends React.Component<BufferedProps, 
   }
 
   render() {
-    let { className, onUpdate, autofocus, auto, autoMillis, instant, enter, resetOnEnter, ...props } = this.props;
+    let { className, onUpdate, onEnter, autofocus, auto, autoMillis, instant, enter, resetOnEnter, ...props } = this.props;
 
     return <FormControl
       {...props}

@@ -1,5 +1,6 @@
-import { WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
+import { PanelRole, WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
 import { v4 as uuid } from 'uuid';
+import panel_id from "./panelid";
 
 export type CallbackFn<T> = (msg: T, fullMessage: WebsocketMessage2UI) => void;
 export type ConnectCallback = (isOpen: boolean) => void;
@@ -14,12 +15,16 @@ export default class JmsWebsocket {
   ws?: WebSocket;
   connectCallbacks: Map<string, ConnectCallback>;
   callbacks: Map<string, Callback<any>>;
+  sendQueue: WebsocketMessage2JMS[];
+  role: [PanelRole, string];
 
   constructor(url="ws://" + window.location.hostname + ":9000", timeout=250) {
     this.url = url;
     this.timeout = timeout;
     this.callbacks = new Map<string, Callback<any>>();
     this.connectCallbacks = new Map<string, ConnectCallback>();
+    this.sendQueue = [];
+    this.role = [ "Unknown", "" ];
 
     this.connect = this.connect.bind(this);
     this.dead = this.dead.bind(this);
@@ -38,8 +43,12 @@ export default class JmsWebsocket {
     ws.onopen = () => {
       console.log("WS Connected");
       setTimeout(() => {
+        this.send({ Panel: { ID: panel_id() } })
         this.connectCallbacks.forEach(cb => cb(true));
         this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
+        this.sendQueue.forEach(sq => this.sendNow(sq));
+        this.sendQueue = [];
+        this.send({ Panel: { Role: this.role[0] } });
       }, 100);
       that.ws = ws;
       clearTimeout(timer);
@@ -62,27 +71,31 @@ export default class JmsWebsocket {
         let messages = JSON.parse(msg.data) as WebsocketMessage2UI[];
 
         messages.forEach(message => {
-          this.callbacks.forEach(cb => {
-            // Check variant tree
-            let path = cb.path;
-            let valid = true;
-            let child_msg: any = message;
-            for (let i = 0; i < path.length && valid; i++) {
-              if (path[i] in child_msg) {
-                child_msg = child_msg[path[i]];
-              } else if (path[i] === child_msg) {
-                // Special case for unit variants
-                child_msg = {};
-              } else {
-                valid = false;
+          if (message === "Ping") {
+            this.send("Ping");
+          } else {
+            this.callbacks.forEach(cb => {
+              // Check variant tree
+              let path = cb.path;
+              let valid = true;
+              let child_msg: any = message;
+              for (let i = 0; i < path.length && valid; i++) {
+                if (path[i] in child_msg) {
+                  child_msg = child_msg[path[i]];
+                } else if (path[i] === child_msg) {
+                  // Special case for unit variants
+                  child_msg = {};
+                } else {
+                  valid = false;
+                }
               }
-            }
 
-            // Dispatch
-            if (valid) {
-              cb.fn(child_msg, message);
-            }
-          });
+              // Dispatch
+              if (valid) {
+                cb.fn(child_msg, message);
+              }
+            });
+          }
         });
       }
     };
@@ -105,12 +118,24 @@ export default class JmsWebsocket {
       this.connect();
   }
 
-  send(msg: WebsocketMessage2JMS) {
-    if (this.alive()) {
-      this.ws!.send(JSON.stringify(msg));
-    } else {
-      console.log("Can't send message, WS dead :X", msg);
+  updateRole = (role: PanelRole, location: string) => {
+    if (location !== this.role[1] || this.role[1] === "Unknown") {
+      this.role = [role, location];
+      this.send({ Panel: { Role: role } });
     }
+  }
+
+  send(msg: WebsocketMessage2JMS) {
+    if (this.alive() && this.sendQueue.length === 0) {
+      this.sendNow(msg);
+    } else {
+      // console.log("Can't send message, WS dead :X", msg);
+      this.sendQueue.push(msg);
+    }
+  }
+
+  sendNow(msg: WebsocketMessage2JMS) {
+    this.ws!.send(JSON.stringify(msg));
   }
 
   onMessage<T>(path: string[]|string, callback: CallbackFn<T>): string {
