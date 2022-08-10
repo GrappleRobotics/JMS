@@ -11,6 +11,7 @@ use anyhow::{anyhow, bail, Result};
 use chrono::Duration;
 use enum_as_inner::EnumAsInner;
 use log::{error, info};
+use schemars::JsonSchema;
 use tokio::sync::Mutex;
 
 use super::{exceptions::ArenaIllegalStateChange, lighting::{ArenaLighting, LightMode}, matches::MatchPlayState, station::AllianceStationId};
@@ -21,7 +22,7 @@ use serde::{Deserialize, Serialize};
 
 use super::matches::LoadedMatch;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, EnumAsInner, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, EnumAsInner, Serialize, JsonSchema)]
 #[serde(tag = "state")]
 pub enum ArenaState {
   Init,
@@ -51,18 +52,18 @@ enum StateData {
   MatchCommit,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 #[serde(transparent)]
 pub struct BoundState {
   #[serde(skip)]
   first: bool, // First run?
-  state: ArenaState,
+  pub state: ArenaState,
   #[serde(skip)]
   data: StateData,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, Deserialize)]
-#[serde(tag = "signal")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Display, Deserialize, JsonSchema)]
+// #[serde(tag = "signal")]
 pub enum ArenaSignal {
   Estop,
   EstopReset,
@@ -72,7 +73,7 @@ pub enum ArenaSignal {
   MatchCommit,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, JsonSchema)]
 #[serde(tag = "scene", content = "params")]
 pub enum AudienceDisplay {
   Field,
@@ -84,14 +85,14 @@ pub enum AudienceDisplay {
   CustomMessage(String),
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
 pub enum ArenaAccessRestriction {
   NoRestriction,
   ResetOnly, // Field reset crew (purple lights)
   Teams,     // Teams can collect robots (green lights)
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
 pub struct AllianceStationDSReport {
   pub robot_ping: bool,
   pub rio_ping: bool,
@@ -122,7 +123,7 @@ impl Default for AllianceStationDSReport {
   }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, JsonSchema, PartialEq, Eq)]
 pub enum AllianceStationOccupancy {
   Vacant,
   Occupied,
@@ -130,7 +131,7 @@ pub enum AllianceStationOccupancy {
   WrongMatch,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
 pub struct AllianceStation {
   pub station: AllianceStationId,
   pub team: Option<u16>,
@@ -181,7 +182,7 @@ impl AllianceStation {
   }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 pub struct Arena {
   // network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
   #[serde(skip)]
@@ -494,7 +495,7 @@ impl Arena {
           let m = self.current_match.as_mut().unwrap().commit_score().await?;
           self.prepare_state_change(ArenaState::Idle { ready: false })?;
 
-          self.audience_display = AudienceDisplay::MatchResults(models::SerializedMatch(m));
+          self.audience_display = AudienceDisplay::MatchResults(models::SerializedMatch::from(m));
         }
       }
       (state, _) => Err(anyhow!("Unimplemented state: {:?}", state))?,

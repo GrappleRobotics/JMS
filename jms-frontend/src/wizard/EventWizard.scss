@@ -1,0 +1,94 @@
+.CSVImporter_Importer {
+  color: $gray-700;
+}
+
+.CSVImporter_FileSelector {
+  background-color: $gray-700;
+  color: $gray-400;
+}
+
+.wizard-tabs {
+  max-width: 300px;
+}
+
+.wizard-tab-link {
+  &[data-attention=true] {
+    &.active {
+      @extend .bg-danger;
+    }
+    &:not(.active) {
+      color: theme-color("danger");
+    }
+  }
+  &:hover {
+    cursor: pointer;
+    opacity: 80%;
+  }
+}
+
+// Configure Teams
+.wizard-team-list {
+  .wizard-team-row {
+    > [data-field="id"] {
+      width: 15%;
+      padding-right: 2px;
+      text-align: right;
+    }
+  }
+  
+  thead > tr {
+    background-color: lighten(theme-color("dark"), 5%);
+    text-align: center;
+  }
+
+  tbody > tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.03);
+  }
+}
+
+// Configure Schedule
+.wizard-schedule-day-split {
+  text-align: center;
+  margin-top: 4px;
+  font-weight: bold;
+  border-top: 3px solid lighten(theme-color("dark"), 5%);
+  padding-top: 4px;
+}
+
+.wizard-schedule-header {
+  > button {
+    display: block;
+    width: 100%;
+    &::after {
+      display: none;
+    }
+  }
+}
+
+// Configure Awards
+.wizard-award {
+  min-width: 315px;
+  max-width: 400px;
+
+  &[data-award-name="winner" i] {
+    border: 1px solid darken(theme-color("gold"), 20%);
+    .card-header {
+      background-color: darken(theme-color("gold"), 5%);
+      color: black;
+      .text-muted {
+        color: black !important;
+      }
+    }
+  }
+
+  &[data-award-name="finalist" i] {
+    border: 1px solid darken(theme-color("silver"), 20%);
+    .card-header {
+      background-color: theme-color("silver");
+      color: black;
+      .text-muted {
+        color: black !important;
+      }
+    }
+  }
+}

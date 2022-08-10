@@ -1,0 +1,192 @@
+// Referees
+
+.referee-selector {
+  .btn {
+    &[data-alliance=blue] {
+      @extend .btn-blue;
+      left: 50% - 20%;
+    }
+    &[data-alliance=red] {
+      @extend .btn-red;
+      left: 50% + 20%;
+    }
+    &[data-position=near] {
+      bottom: calc(50% - 35% - 2em);
+    }
+    &[data-position=far] {
+      bottom: calc(50% + 35% + 2em);
+    }
+
+    &[data-head-referee=true] {
+      @extend .btn-orange;
+      left: 50%;
+      bottom: calc(50% - 35% - 2em);
+    }
+  }
+}
+
+.btn-penalty {
+  font-weight: bold;
+  font-size: 1.45em;
+  height: 3.75em;
+}
+
+.penalty-category {
+  margin: 0.5em;
+  padding: 0.5em;
+  border-radius: 1em;
+
+  @each $alliance in $alliances {
+    $tc: theme-color($alliance);
+    &[data-alliance=#{$alliance}] {
+      background-color: desaturate(darken($tc, 25%), 30%);
+    }
+  }
+
+  .penalty-count {
+    text-align: center;
+    font-size: 4em;
+    margin-bottom: 0.125em;
+  }
+}
+
+.referee-station {
+  margin: 0.5em;
+  padding: 1em;
+  border-radius: 1em;
+
+  @each $alliance in $alliances {
+    $tc: theme-color($alliance);
+    &[data-alliance=#{$alliance}] {
+      background-color: desaturate(darken($tc, 25%), 30%);
+    }
+  }
+
+  .referee-station-team {
+    font-size: 2em;
+    margin-left: 0.5em;
+  }
+
+  .referee-station-score {
+    padding: 0.5em;
+
+    &[data-score-type=taxi] {
+      @extend .btn-bad;
+      &[data-score-value=true] {
+        @extend .btn-good;
+      }
+    }
+
+    &[data-score-type=endgame] {
+      width: 100%;
+      display: flex;
+      > button {
+        @extend .btn-outline-light;
+        &[data-selected=true] {
+          @extend .btn-good;
+        }
+        flex-grow: 1;
+        font-weight: bold;
+      }
+
+      &[data-score-value=None] > [data-selected=true] {
+        @extend .btn-bad;
+      }
+      // @extend .btn-outline-secondary;
+      // &[data-selected=true] {
+      //   @extend .btn-good;
+      //   &[data-score-value=None] {
+      //     @extend .btn-bad;
+      //   }
+      // }
+    }
+  }
+}
+
+// Scorers
+
+.scorer-selector {
+  .btn {
+    font-size: 1.75rem !important;
+
+    &[data-score-pair="AB"] {
+      @extend .btn-blue;
+      left: 50% - 2.5%;
+      bottom: 50% - 15%;
+    }
+    &[data-score-pair="CD"] {
+      @extend .btn-red;
+      left: 50% + 2.5%;
+      bottom: 50% + 15%;
+    }
+
+    &[data-score-height="high"] {
+      @extend .btn-green;
+      left: 50%;
+      bottom: 70%;
+    }
+
+    &[data-score-height="low"] {
+      @extend .btn-red;
+      left: 50%;
+      bottom: 10%;
+    }
+  }
+}
+
+.scorer-panel {
+  .scorer-label {
+    position: absolute;
+    font-size: 3rem;
+    font-weight: bold;
+    transform: translate(-50%, 50%);
+
+    &[data-pos="left"] { left: 15%; }
+    &[data-pos="right"] { left: 85%; }
+  }
+
+  &[data-height="high"] {
+    .scorer-label { bottom: 55%; color: theme-color("green"); }
+  }
+  &[data-height="low"] {
+    .scorer-label { bottom: 30%; color: theme-color("red"); }
+  }
+
+  .pos-selector-left, .pos-selector-right {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+
+    .row {
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
+    .btn {
+      @extend .btn-block;
+      height: 100%;
+    }
+
+    .scorer-decrease {
+      .btn { font-size: 1.5em; }
+      height: 10%;
+    }
+
+    .scorer-current {
+      height: 15%;
+      font-size: 2.5em;
+
+      > .col {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+
+    .scorer-increase {
+      height: 20%;
+      .btn { font-size: 2.5em; }
+    }
+    
+  }
+}

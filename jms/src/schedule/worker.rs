@@ -7,10 +7,12 @@ use std::{
 };
 
 use log::error;
-use serde::{ser::SerializeStruct, Serialize, Serializer};
+use schemars::JsonSchema;
+use serde::Serialize;
 
 use crate::{db::{self, TableType}, models::{self, MatchGenerationRecord}};
 
+#[derive(Debug, Clone)]
 pub struct MatchGenerationWorker<T>
 where
   T: MatchGenerator + Send + Sync + 'static,
@@ -70,10 +72,10 @@ where
     let running = self.running.clone();
     let gen = self.generator.clone();
     let record = self.record();
-    tokio::spawn(async move {
+    std::thread::spawn(move || {
       // *running.get_mut() = true;
       running.swap(true, Ordering::Relaxed);
-      match gen.generate(params, record).await {
+      match gen.generate(params, record) {
         Ok(_) => (),
         Err(e) => error!("Match Generation Error: {}", e),
       }
@@ -83,31 +85,41 @@ where
   }
 }
 
-impl<T> Serialize for MatchGenerationWorker<T>
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+pub struct SerialisedMatchGeneration {
+  running: bool,
+  matches: Vec<models::SerializedMatch>,
+  record: Option<MatchGenerationRecord>
+}
+
+impl<T> From<&MatchGenerationWorker<T>> for SerialisedMatchGeneration
 where
-  T: MatchGenerator + Send + Sync + Clone + 'static,
-  <T as MatchGenerator>::ParamType: Send,
+  T: MatchGenerator + Send + Sync + Clone,
+  <T as MatchGenerator>::ParamType: Send
 {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: Serializer,
-  {
-    let mut state = serializer.serialize_struct("MatchGenerationWorker", 3)?;
-    state.serialize_field("running", &self.running())?;
-    state.serialize_field("matches", &self.matches().iter().map(|m| models::SerializedMatch(m.clone())).collect::<Vec<models::SerializedMatch>>())?;
-    state.serialize_field("record", &self.record())?;
-    state.end()
+  fn from(worker: &MatchGenerationWorker<T>) -> Self {
+    SerialisedMatchGeneration { 
+      running: worker.running(), 
+      matches: worker.matches().iter().map(|m| models::SerializedMatch::from(m.clone())).collect::<Vec<models::SerializedMatch>>(),
+      record: worker.record()
+    }
   }
 }
 
-#[async_trait::async_trait]
 pub trait MatchGenerator {
   type ParamType;
 
   fn match_type(&self) -> models::MatchType;
-  async fn generate(
+  fn generate(
     &self,
     params: Self::ParamType,
     record: Option<MatchGenerationRecord>,
   ) -> Result<(), Box<dyn Error>>;
 }
+
+pub struct MatchGenerators {
+  pub quals: MatchGenerationWorker<super::quals::QualsMatchGenerator>,
+  pub playoffs: MatchGenerationWorker<super::playoffs::PlayoffMatchGenerator>,
+}
+
+pub type SharedMatchGenerators = std::sync::Arc<tokio::sync::Mutex<MatchGenerators>>;

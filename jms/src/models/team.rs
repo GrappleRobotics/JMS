@@ -1,6 +1,6 @@
 use crate::db;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Team {
   pub id: usize,
   pub name: Option<String>,
@@ -21,6 +21,27 @@ impl db::TableType for Team {
 
   fn set_id(&mut self, id: Self::Id) {
     self.id = id.into()
+  }
+}
+
+impl Team {
+  pub fn maybe_gen_wpa(&self) -> Team {
+    if self.wpakey.is_some() {
+      return self.clone()
+    } else {
+      use rand::distributions::Alphanumeric;
+      use rand::{thread_rng, Rng};
+      
+      let mut new_team = self.clone();
+      new_team.wpakey = Some(
+        thread_rng()
+          .sample_iter(&Alphanumeric)
+          .take(30)
+          .map(char::from)
+          .collect()
+      );
+      return new_team
+    }
   }
 }
 

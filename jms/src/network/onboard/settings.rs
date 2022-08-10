@@ -18,14 +18,14 @@ pub fn select_iface<'a>(message: &str, vlan: u16, ifaces: &'a Vec<LinkMetadata>)
   let options: Vec<String> = ifaces.iter().map(|i| format!("{}", i)).collect();
   let options_r: Vec<&str> = options.iter().map(|s| s.as_str()).collect();
 
-  let mut inq = inquire::Select::new(message, &options_r[..]);
+  let mut inq = inquire::Select::new(message, options_r);
   if vlan != 0 {
     let default = ifaces.iter().enumerate().find(|(_, i)| i.vlan == Some(vlan));
     if let Some((idx, _)) = default {
       inq.starting_cursor = idx;
     }
   }
-  let selection = inq.prompt()?.index;
+  let selection = inq.raw_prompt()?.index;
   Ok(&ifaces[selection])
 }
 

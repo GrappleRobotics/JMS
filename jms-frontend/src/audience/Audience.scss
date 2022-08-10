@@ -19,13 +19,13 @@
 .audience-card {
   // $border-colour: #9c00be;
   $border-colour: #e9ab01;
-  // $border-colour: gray("700");
+  // $border-colour: $gray-700;
   
   @extend .audience;
   background-color: desaturate(darken($border-colour, 30%), 20%);
 
   .audience-card-inner {
-    background-color: gray("300");
+    background-color: $gray-300;
     position: absolute;
     width: 90vw;
     height: 90vh;
@@ -135,6 +135,7 @@
   .score-block {
     position: fixed;
     bottom: 0;
+    left: 0;
     width: 100vw;
     background-color: theme-color("dark");
     display: flex;
@@ -148,6 +149,7 @@
       height: 100%;
       border-radius: 0;
       opacity: 0.7;
+      padding: 0;
 
       > .progress-bar {
         background-color: theme-color("success");
@@ -218,12 +220,12 @@
         align-items: center;
 
         &[data-bypass="true"] {
-          color: gray("300");
-          background-color: gray("700");
+          color: $gray-300;
+          background-color: $gray-700;
         }
 
         &[data-estop="true"] {
-          @extend .bg-hazard-dark-active;
+          // @extend .bg-hazard-dark-active;
         }
 
         &[data-alive="false"] {
@@ -232,8 +234,8 @@
         }
       }
 
-      @each $alliance in blue, red {
-        $tc: theme-color("alliance-#{$alliance}");
+      @each $alliance in $alliances {
+        $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 25%), 40%);
         }
@@ -249,8 +251,8 @@
       justify-content: center;
       align-items: center;
 
-      @each $alliance in blue, red {
-        $tc: theme-color("alliance-#{$alliance}");
+      @each $alliance in $alliances {
+        $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 15%), 20%);
         }
@@ -344,8 +346,8 @@
       display: flex;
       flex-direction: column;
 
-      @each $alliance in blue, red {
-        $tc: theme-color("alliance-#{$alliance}");
+      @each $alliance in $alliances {
+        $tc: theme-color($alliance);
         &[data-alliance=#{$alliance}] {
           background-color: desaturate(darken($tc, 25%), 40%);
         }
@@ -392,12 +394,12 @@
 
 .audience-control {
   h2 {
-    font-size: 3em;
+    font-size: 2em;
   }
 
   h3 {
     text-align: center;
-    font-size: 2.5em;
+    font-size: 1.5em;
     font-weight: bold;
     margin-bottom: 0.5em;
   }
@@ -407,11 +409,19 @@
   }
 
   .btn {
-    font-size: 2.5em;
+    font-size: 2em;
 
     &.award-btn {
       font-size: 2em;
     }
+
+    &[data-scene="custom"] { @extend .btn-orange; }
+
+    &[data-scene="match_preview"] { @extend .btn-blue; }
+    &[data-scene="match_play"] { @extend .btn-green; }
+    &[data-scene="match_results"] { @extend .btn-red; }
+
+    &[data-scene="alliance_selection"] { @extend .btn-purple; }
   }
 }
 

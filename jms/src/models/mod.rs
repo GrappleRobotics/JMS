@@ -18,3 +18,6 @@ pub use rankings::*;
 
 mod awards;
 pub use awards::*;
+
+mod fta;
+pub use fta::FTAKey;

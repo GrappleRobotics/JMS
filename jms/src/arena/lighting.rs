@@ -129,6 +129,8 @@ impl Inquirable for Colour {
       formatter: &|v| format!("{:x}", v),
       parser: &|i| Colour::from_str(i).or(Err(())),
       error_message: "Must be in hex code format".into(),
+      placeholder: None,
+      render_config: inquire::ui::RenderConfig::default(),
     }
   }
 }

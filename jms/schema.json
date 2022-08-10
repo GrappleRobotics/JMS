@@ -1,0 +1,2877 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AllWebsocketMessages",
+  "type": "object",
+  "required": [
+    "jms2ui",
+    "ui2jms"
+  ],
+  "properties": {
+    "jms2ui": {
+      "$ref": "#/definitions/WebsocketMessage2UI"
+    },
+    "ui2jms": {
+      "$ref": "#/definitions/WebsocketMessage2JMS"
+    }
+  },
+  "definitions": {
+    "Alliance": {
+      "type": "string",
+      "enum": [
+        "blue",
+        "red"
+      ]
+    },
+    "AllianceStation": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "estop",
+        "occupancy",
+        "station"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "ds_report": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AllianceStationDSReport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "occupancy": {
+          "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "station": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "AllianceStationDSReport": {
+      "type": "object",
+      "required": [
+        "battery",
+        "estop",
+        "pkts_lost",
+        "pkts_sent",
+        "radio_ping",
+        "rio_ping",
+        "robot_ping",
+        "rtt"
+      ],
+      "properties": {
+        "battery": {
+          "type": "number",
+          "format": "double"
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/DSMode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pkts_lost": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "pkts_sent": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "radio_ping": {
+          "type": "boolean"
+        },
+        "rio_ping": {
+          "type": "boolean"
+        },
+        "robot_ping": {
+          "type": "boolean"
+        },
+        "rtt": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        }
+      }
+    },
+    "AllianceStationId": {
+      "type": "object",
+      "required": [
+        "alliance",
+        "station"
+      ],
+      "properties": {
+        "alliance": {
+          "$ref": "#/definitions/Alliance"
+        },
+        "station": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "AllianceStationOccupancy": {
+      "type": "string",
+      "enum": [
+        "Vacant",
+        "Occupied",
+        "WrongStation",
+        "WrongMatch"
+      ]
+    },
+    "ArenaAccessRestriction": {
+      "type": "string",
+      "enum": [
+        "NoRestriction",
+        "ResetOnly",
+        "Teams"
+      ]
+    },
+    "ArenaMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "State"
+          ],
+          "properties": {
+            "State": {
+              "$ref": "#/definitions/ArenaMessageState2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "$ref": "#/definitions/ArenaMessageAlliance2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Match"
+          ],
+          "properties": {
+            "Match": {
+              "$ref": "#/definitions/ArenaMessageMatch2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "AudienceDisplay"
+          ],
+          "properties": {
+            "AudienceDisplay": {
+              "$ref": "#/definitions/ArenaMessageAudienceDisplay2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Access"
+          ],
+          "properties": {
+            "Access": {
+              "$ref": "#/definitions/ArenaMessageAccess2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "State"
+          ],
+          "properties": {
+            "State": {
+              "$ref": "#/definitions/ArenaMessageState2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "$ref": "#/definitions/ArenaMessageAlliance2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Match"
+          ],
+          "properties": {
+            "Match": {
+              "$ref": "#/definitions/ArenaMessageMatch2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "AudienceDisplay"
+          ],
+          "properties": {
+            "AudienceDisplay": {
+              "$ref": "#/definitions/ArenaMessageAudienceDisplay2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Access"
+          ],
+          "properties": {
+            "Access": {
+              "$ref": "#/definitions/ArenaMessageAccess2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAccess2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Set"
+          ],
+          "properties": {
+            "Set": {
+              "$ref": "#/definitions/ArenaAccessRestriction"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAccess2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/ArenaAccessRestriction"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAlliance2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "UpdateAlliance"
+          ],
+          "properties": {
+            "UpdateAlliance": {
+              "type": "object",
+              "required": [
+                "station"
+              ],
+              "properties": {
+                "astop": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "bypass": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "estop": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "station": {
+                  "$ref": "#/definitions/AllianceStationId"
+                },
+                "team": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAlliance2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "CurrentStations"
+          ],
+          "properties": {
+            "CurrentStations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AllianceStation"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAudienceDisplay2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Set"
+          ],
+          "properties": {
+            "Set": {
+              "$ref": "#/definitions/ArenaMessageAudienceDisplaySet2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAudienceDisplay2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/AudienceDisplay"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAudienceDisplaySet2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Field",
+            "MatchPreview",
+            "MatchPlay",
+            "AllianceSelection"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "MatchResults"
+          ],
+          "properties": {
+            "MatchResults": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Award"
+          ],
+          "properties": {
+            "Award": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "CustomMessage"
+          ],
+          "properties": {
+            "CustomMessage": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageMatch2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "LoadTest",
+            "Unload"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Load"
+          ],
+          "properties": {
+            "Load": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ScoreUpdate"
+          ],
+          "properties": {
+            "ScoreUpdate": {
+              "$ref": "#/definitions/ScoreUpdateData"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageMatch2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/LoadedMatch"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageState2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Signal"
+          ],
+          "properties": {
+            "Signal": {
+              "$ref": "#/definitions/ArenaSignal"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageState2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/ArenaState"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaSignal": {
+      "type": "string",
+      "enum": [
+        "Estop",
+        "EstopReset",
+        "Prestart",
+        "MatchArm",
+        "MatchPlay",
+        "MatchCommit"
+      ]
+    },
+    "ArenaState": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "Init"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "ready",
+            "state"
+          ],
+          "properties": {
+            "ready": {
+              "type": "boolean"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "Idle"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "Estop"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "EstopReset"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "ready",
+            "state"
+          ],
+          "properties": {
+            "ready": {
+              "type": "boolean"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "Prestart"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "MatchArmed"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "MatchPlay"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "ready",
+            "state"
+          ],
+          "properties": {
+            "ready": {
+              "type": "boolean"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "MatchComplete"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "MatchCommit"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "AudienceDisplay": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "Field"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "MatchPreview"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "MatchPlay"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "params",
+            "scene"
+          ],
+          "properties": {
+            "params": {
+              "$ref": "#/definitions/SerializedMatch"
+            },
+            "scene": {
+              "type": "string",
+              "enum": [
+                "MatchResults"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "AllianceSelection"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "params",
+            "scene"
+          ],
+          "properties": {
+            "params": {
+              "$ref": "#/definitions/Award"
+            },
+            "scene": {
+              "type": "string",
+              "enum": [
+                "Award"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "params",
+            "scene"
+          ],
+          "properties": {
+            "params": {
+              "type": "string"
+            },
+            "scene": {
+              "type": "string",
+              "enum": [
+                "CustomMessage"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "Award": {
+      "type": "object",
+      "required": [
+        "name",
+        "recipients"
+      ],
+      "properties": {
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "name": {
+          "type": "string"
+        },
+        "recipients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AwardRecipient"
+          }
+        }
+      }
+    },
+    "AwardRecipient": {
+      "type": "object",
+      "properties": {
+        "awardee": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "CargoCounts": {
+      "type": "object",
+      "required": [
+        "lower",
+        "upper"
+      ],
+      "properties": {
+        "lower": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "maxItems": 4,
+          "minItems": 4
+        },
+        "upper": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "maxItems": 4,
+          "minItems": 4
+        }
+      }
+    },
+    "DSMode": {
+      "type": "string",
+      "enum": [
+        "Teleop",
+        "Test",
+        "Auto"
+      ]
+    },
+    "DebugMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Match"
+          ],
+          "properties": {
+            "Match": {
+              "$ref": "#/definitions/DebugMessageMatch2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DebugMessageMatch2JMS": {
+      "type": "string",
+      "enum": [
+        "FillRandomScores",
+        "DeleteAll"
+      ]
+    },
+    "DerivedScore": {
+      "type": "object",
+      "required": [
+        "cargo_points",
+        "cargo_rp",
+        "endgame_points",
+        "hangar_rp",
+        "mode_score",
+        "penalty_score",
+        "quintet",
+        "taxi_points",
+        "total_bonus_rp",
+        "total_rp",
+        "total_score",
+        "win_rp",
+        "win_status"
+      ],
+      "properties": {
+        "cargo_points": {
+          "$ref": "#/definitions/ModeScore_for_int"
+        },
+        "cargo_rp": {
+          "type": "boolean"
+        },
+        "endgame_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "hangar_rp": {
+          "type": "boolean"
+        },
+        "mode_score": {
+          "$ref": "#/definitions/ModeScore_for_int"
+        },
+        "penalty_score": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "quintet": {
+          "type": "boolean"
+        },
+        "taxi_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "total_bonus_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "total_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "total_score": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "win_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "win_status": {
+          "$ref": "#/definitions/WinStatus"
+        }
+      }
+    },
+    "Duration": {
+      "type": "object",
+      "required": [
+        "nanos",
+        "secs"
+      ],
+      "properties": {
+        "nanos": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "secs": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "EndgamePointType": {
+      "type": "string",
+      "enum": [
+        "None",
+        "Low",
+        "Mid",
+        "High",
+        "Traversal"
+      ]
+    },
+    "EventDetails": {
+      "type": "object",
+      "required": [
+        "webcasts"
+      ],
+      "properties": {
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "webcasts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "EventMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Details"
+          ],
+          "properties": {
+            "Details": {
+              "$ref": "#/definitions/EventMessageDetails2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Team"
+          ],
+          "properties": {
+            "Team": {
+              "$ref": "#/definitions/EventMessageTeam2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Schedule"
+          ],
+          "properties": {
+            "Schedule": {
+              "$ref": "#/definitions/EventMessageSchedule2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "$ref": "#/definitions/EventMessageAlliance2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Award"
+          ],
+          "properties": {
+            "Award": {
+              "$ref": "#/definitions/EventMessageAward2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Details"
+          ],
+          "properties": {
+            "Details": {
+              "$ref": "#/definitions/EventMessageDetails2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Team"
+          ],
+          "properties": {
+            "Team": {
+              "$ref": "#/definitions/EventMessageTeam2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Schedule"
+          ],
+          "properties": {
+            "Schedule": {
+              "$ref": "#/definitions/EventMessageSchedule2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "$ref": "#/definitions/EventMessageAlliance2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Ranking"
+          ],
+          "properties": {
+            "Ranking": {
+              "$ref": "#/definitions/EventMessageRanking2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Award"
+          ],
+          "properties": {
+            "Award": {
+              "$ref": "#/definitions/EventMessageAward2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageAlliance2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Clear",
+            "Promote"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Create"
+          ],
+          "properties": {
+            "Create": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Update"
+          ],
+          "properties": {
+            "Update": {
+              "$ref": "#/definitions/PlayoffAlliance"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageAlliance2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "CurrentAll"
+          ],
+          "properties": {
+            "CurrentAll": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PlayoffAlliance"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageAward2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Create"
+          ],
+          "properties": {
+            "Create": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Update"
+          ],
+          "properties": {
+            "Update": {
+              "$ref": "#/definitions/Award"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Delete"
+          ],
+          "properties": {
+            "Delete": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageAward2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "CurrentAll"
+          ],
+          "properties": {
+            "CurrentAll": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Award"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageDetails2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Update"
+          ],
+          "properties": {
+            "Update": {
+              "$ref": "#/definitions/EventDetails"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageDetails2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/EventDetails"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageRanking2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "CurrentAll"
+          ],
+          "properties": {
+            "CurrentAll": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TeamRanking"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageSchedule2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "NewBlock"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "DeleteBlock"
+          ],
+          "properties": {
+            "DeleteBlock": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "UpdateBlock"
+          ],
+          "properties": {
+            "UpdateBlock": {
+              "$ref": "#/definitions/ScheduleBlock"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "LoadDefault"
+          ],
+          "properties": {
+            "LoadDefault": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageSchedule2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "CurrentBlocks"
+          ],
+          "properties": {
+            "CurrentBlocks": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ScheduleBlock"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageTeam2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Insert"
+          ],
+          "properties": {
+            "Insert": {
+              "$ref": "#/definitions/Team"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Delete"
+          ],
+          "properties": {
+            "Delete": {
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "EventMessageTeam2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "CurrentAll"
+          ],
+          "properties": {
+            "CurrentAll": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "GoalHeight": {
+      "type": "string",
+      "enum": [
+        "low",
+        "high"
+      ]
+    },
+    "LiveScore": {
+      "type": "object",
+      "required": [
+        "cargo",
+        "endgame",
+        "penalties",
+        "taxi"
+      ],
+      "properties": {
+        "cargo": {
+          "$ref": "#/definitions/ModeScore_for_CargoCounts"
+        },
+        "endgame": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EndgamePointType"
+          }
+        },
+        "penalties": {
+          "$ref": "#/definitions/Penalties"
+        },
+        "taxi": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "LoadedMatch": {
+      "type": "object",
+      "required": [
+        "config",
+        "endgame",
+        "match_meta",
+        "remaining_time",
+        "score",
+        "state"
+      ],
+      "properties": {
+        "config": {
+          "$ref": "#/definitions/MatchConfig"
+        },
+        "endgame": {
+          "type": "boolean"
+        },
+        "match_meta": {
+          "$ref": "#/definitions/SerializedMatch"
+        },
+        "remaining_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "score": {
+          "$ref": "#/definitions/MatchScoreSnapshot"
+        },
+        "state": {
+          "$ref": "#/definitions/MatchPlayState"
+        }
+      }
+    },
+    "MatchConfig": {
+      "type": "object",
+      "required": [
+        "auto_time",
+        "endgame_time",
+        "pause_time",
+        "teleop_time",
+        "warmup_cooldown_time"
+      ],
+      "properties": {
+        "auto_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "endgame_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "pause_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "teleop_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "warmup_cooldown_time": {
+          "$ref": "#/definitions/Duration"
+        }
+      }
+    },
+    "MatchGenerationRecord": {
+      "type": "object",
+      "required": [
+        "match_type"
+      ],
+      "properties": {
+        "data": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchGenerationRecordData"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "match_type": {
+          "$ref": "#/definitions/MatchType"
+        }
+      }
+    },
+    "MatchGenerationRecordData": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Qualification"
+          ],
+          "properties": {
+            "Qualification": {
+              "type": "object",
+              "required": [
+                "cooccurrence",
+                "gen_time",
+                "station_balance",
+                "station_dist",
+                "team_balance"
+              ],
+              "properties": {
+                "cooccurrence": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint",
+                      "minimum": 0.0
+                    }
+                  }
+                },
+                "gen_time": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "station_balance": {
+                  "type": "number",
+                  "format": "double"
+                },
+                "station_dist": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "format": "uint",
+                      "minimum": 0.0
+                    }
+                  }
+                },
+                "team_balance": {
+                  "type": "number",
+                  "format": "double"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Playoff"
+          ],
+          "properties": {
+            "Playoff": {
+              "type": "object",
+              "required": [
+                "mode"
+              ],
+              "properties": {
+                "mode": {
+                  "$ref": "#/definitions/PlayoffMode"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "MatchMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Quals"
+          ],
+          "properties": {
+            "Quals": {
+              "$ref": "#/definitions/MatchMessageQuals2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Playoffs"
+          ],
+          "properties": {
+            "Playoffs": {
+              "$ref": "#/definitions/MatchMessagePlayoffs2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "MatchMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Quals"
+          ],
+          "properties": {
+            "Quals": {
+              "$ref": "#/definitions/MatchMessageQuals2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Playoffs"
+          ],
+          "properties": {
+            "Playoffs": {
+              "$ref": "#/definitions/MatchMessagePlayoffs2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SerializedMatch"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Next"
+          ],
+          "properties": {
+            "Next": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/SerializedMatch"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Last"
+          ],
+          "properties": {
+            "Last": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/SerializedMatch"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "MatchMessagePlayoffs2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Clear"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Generate"
+          ],
+          "properties": {
+            "Generate": {
+              "$ref": "#/definitions/PlayoffMode"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "MatchMessagePlayoffs2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Generation"
+          ],
+          "properties": {
+            "Generation": {
+              "$ref": "#/definitions/SerialisedMatchGeneration"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "MatchMessageQuals2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Clear"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Generate"
+          ],
+          "properties": {
+            "Generate": {
+              "$ref": "#/definitions/QualsMatchGeneratorParams"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "MatchMessageQuals2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Generation"
+          ],
+          "properties": {
+            "Generation": {
+              "$ref": "#/definitions/SerialisedMatchGeneration"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "MatchPlayState": {
+      "type": "string",
+      "enum": [
+        "Waiting",
+        "Warmup",
+        "Auto",
+        "Pause",
+        "Teleop",
+        "Cooldown",
+        "Complete",
+        "Fault"
+      ]
+    },
+    "MatchScore": {
+      "type": "object",
+      "required": [
+        "blue",
+        "red"
+      ],
+      "properties": {
+        "blue": {
+          "$ref": "#/definitions/LiveScore"
+        },
+        "red": {
+          "$ref": "#/definitions/LiveScore"
+        }
+      }
+    },
+    "MatchScoreSnapshot": {
+      "type": "object",
+      "required": [
+        "blue",
+        "red"
+      ],
+      "properties": {
+        "blue": {
+          "$ref": "#/definitions/SnapshotScore"
+        },
+        "red": {
+          "$ref": "#/definitions/SnapshotScore"
+        }
+      }
+    },
+    "MatchSubtype": {
+      "type": "string",
+      "enum": [
+        "Quarterfinal",
+        "Semifinal",
+        "Final"
+      ]
+    },
+    "MatchType": {
+      "type": "string",
+      "enum": [
+        "Test",
+        "Qualification",
+        "Playoff"
+      ]
+    },
+    "ModeScore_for_CargoCounts": {
+      "type": "object",
+      "required": [
+        "auto",
+        "teleop"
+      ],
+      "properties": {
+        "auto": {
+          "$ref": "#/definitions/CargoCounts"
+        },
+        "teleop": {
+          "$ref": "#/definitions/CargoCounts"
+        }
+      }
+    },
+    "ModeScore_for_int": {
+      "type": "object",
+      "required": [
+        "auto",
+        "teleop"
+      ],
+      "properties": {
+        "auto": {
+          "type": "integer",
+          "format": "int"
+        },
+        "teleop": {
+          "type": "integer",
+          "format": "int"
+        }
+      }
+    },
+    "NearFar": {
+      "type": "string",
+      "enum": [
+        "near",
+        "far"
+      ]
+    },
+    "Panel": {
+      "type": "object",
+      "required": [
+        "fta",
+        "id",
+        "role"
+      ],
+      "properties": {
+        "fta": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/PanelRole"
+        }
+      }
+    },
+    "PanelRole": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Unknown",
+            "Scorekeeper",
+            "Monitor",
+            "Timer",
+            "AudienceDisplay"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Referee"
+          ],
+          "properties": {
+            "Referee": {
+              "$ref": "#/definitions/RefereeID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Scorer"
+          ],
+          "properties": {
+            "Scorer": {
+              "$ref": "#/definitions/ScorerID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "EStop"
+          ],
+          "properties": {
+            "EStop": {
+              "$ref": "#/definitions/AllianceStationId"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Penalties": {
+      "type": "object",
+      "required": [
+        "fouls",
+        "tech_fouls"
+      ],
+      "properties": {
+        "fouls": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "tech_fouls": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "PlayoffAlliance": {
+      "type": "object",
+      "required": [
+        "id",
+        "ready",
+        "teams"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        }
+      }
+    },
+    "PlayoffMode": {
+      "type": "string",
+      "enum": [
+        "Bracket",
+        "RoundRobin"
+      ]
+    },
+    "QualsMatchGeneratorParams": {
+      "type": "object",
+      "required": [
+        "station_anneal_steps",
+        "team_anneal_steps"
+      ],
+      "properties": {
+        "station_anneal_steps": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "team_anneal_steps": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "RefereeID": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "HeadReferee"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/Alliance"
+                },
+                {
+                  "$ref": "#/definitions/NearFar"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ScheduleBlock": {
+      "type": "object",
+      "required": [
+        "block_type",
+        "cycle_time",
+        "end_time",
+        "name",
+        "start_time"
+      ],
+      "properties": {
+        "block_type": {
+          "$ref": "#/definitions/ScheduleBlockType"
+        },
+        "cycle_time": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "end_time": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "name": {
+          "type": "string"
+        },
+        "start_time": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "ScheduleBlockType": {
+      "type": "string",
+      "enum": [
+        "General",
+        "Qualification",
+        "Playoff"
+      ]
+    },
+    "ScoreUpdate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Taxi"
+          ],
+          "properties": {
+            "Taxi": {
+              "type": "object",
+              "required": [
+                "crossed",
+                "station"
+              ],
+              "properties": {
+                "crossed": {
+                  "type": "boolean"
+                },
+                "station": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Cargo"
+          ],
+          "properties": {
+            "Cargo": {
+              "type": "object",
+              "required": [
+                "auto"
+              ],
+              "properties": {
+                "auto": {
+                  "type": "boolean"
+                },
+                "lower": {
+                  "default": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int"
+                  },
+                  "maxItems": 4,
+                  "minItems": 4
+                },
+                "upper": {
+                  "default": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int"
+                  },
+                  "maxItems": 4,
+                  "minItems": 4
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Endgame"
+          ],
+          "properties": {
+            "Endgame": {
+              "type": "object",
+              "required": [
+                "endgame",
+                "station"
+              ],
+              "properties": {
+                "endgame": {
+                  "$ref": "#/definitions/EndgamePointType"
+                },
+                "station": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Penalty"
+          ],
+          "properties": {
+            "Penalty": {
+              "type": "object",
+              "properties": {
+                "fouls": {
+                  "default": 0,
+                  "type": "integer",
+                  "format": "int"
+                },
+                "tech_fouls": {
+                  "default": 0,
+                  "type": "integer",
+                  "format": "int"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ScoreUpdateData": {
+      "type": "object",
+      "required": [
+        "alliance",
+        "update"
+      ],
+      "properties": {
+        "alliance": {
+          "$ref": "#/definitions/Alliance"
+        },
+        "update": {
+          "$ref": "#/definitions/ScoreUpdate"
+        }
+      }
+    },
+    "ScorerID": {
+      "type": "object",
+      "required": [
+        "goals",
+        "height"
+      ],
+      "properties": {
+        "goals": {
+          "$ref": "#/definitions/ScorerPair"
+        },
+        "height": {
+          "$ref": "#/definitions/GoalHeight"
+        }
+      }
+    },
+    "ScorerPair": {
+      "type": "string",
+      "enum": [
+        "AB",
+        "CD"
+      ]
+    },
+    "SerialisedMatchGeneration": {
+      "type": "object",
+      "required": [
+        "matches",
+        "running"
+      ],
+      "properties": {
+        "matches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SerializedMatch"
+          }
+        },
+        "record": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchGenerationRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "running": {
+          "type": "boolean"
+        }
+      }
+    },
+    "SerializedMatch": {
+      "type": "object",
+      "required": [
+        "blue_teams",
+        "match_number",
+        "match_type",
+        "name",
+        "played",
+        "red_teams",
+        "set_number"
+      ],
+      "properties": {
+        "blue_alliance": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "blue_teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        },
+        "full_score": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchScoreSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "match_number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "match_subtype": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchSubtype"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "match_type": {
+          "$ref": "#/definitions/MatchType"
+        },
+        "name": {
+          "type": "string"
+        },
+        "played": {
+          "type": "boolean"
+        },
+        "red_alliance": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "red_teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        },
+        "score": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "score_time": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "set_number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "start_time": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "winner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Alliance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "SnapshotScore": {
+      "type": "object",
+      "required": [
+        "derived",
+        "live"
+      ],
+      "properties": {
+        "derived": {
+          "$ref": "#/definitions/DerivedScore"
+        },
+        "live": {
+          "$ref": "#/definitions/LiveScore"
+        }
+      }
+    },
+    "Team": {
+      "type": "object",
+      "required": [
+        "id",
+        "schedule"
+      ],
+      "properties": {
+        "affiliation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "location": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schedule": {
+          "type": "boolean"
+        },
+        "wpakey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "TeamRanking": {
+      "type": "object",
+      "required": [
+        "auto_points",
+        "endgame_points",
+        "loss",
+        "played",
+        "random_num",
+        "rp",
+        "team",
+        "teleop_points",
+        "tie",
+        "win"
+      ],
+      "properties": {
+        "auto_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "endgame_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "loss": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "played": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "random_num": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "team": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "teleop_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "tie": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "win": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "WebsocketMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Ping"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Panel"
+          ],
+          "properties": {
+            "Panel": {
+              "$ref": "#/definitions/WebsocketMessagePanel2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Subscribe"
+          ],
+          "properties": {
+            "Subscribe": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Debug"
+          ],
+          "properties": {
+            "Debug": {
+              "$ref": "#/definitions/DebugMessage2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Event"
+          ],
+          "properties": {
+            "Event": {
+              "$ref": "#/definitions/EventMessage2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Arena"
+          ],
+          "properties": {
+            "Arena": {
+              "$ref": "#/definitions/ArenaMessage2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Match"
+          ],
+          "properties": {
+            "Match": {
+              "$ref": "#/definitions/MatchMessage2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WebsocketMessage2UI": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Ping"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Panel"
+          ],
+          "properties": {
+            "Panel": {
+              "$ref": "#/definitions/WebsocketMessagePanel2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Error"
+          ],
+          "properties": {
+            "Error": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Event"
+          ],
+          "properties": {
+            "Event": {
+              "$ref": "#/definitions/EventMessage2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Arena"
+          ],
+          "properties": {
+            "Arena": {
+              "$ref": "#/definitions/ArenaMessage2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Match"
+          ],
+          "properties": {
+            "Match": {
+              "$ref": "#/definitions/MatchMessage2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WebsocketMessagePanel2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "ID"
+          ],
+          "properties": {
+            "ID": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Role"
+          ],
+          "properties": {
+            "Role": {
+              "$ref": "#/definitions/PanelRole"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetFTA"
+          ],
+          "properties": {
+            "SetFTA": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WebsocketMessagePanel2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/Panel"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/Panel"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WinStatus": {
+      "type": "string",
+      "enum": [
+        "WIN",
+        "LOSS",
+        "TIE"
+      ]
+    }
+  }
+}

@@ -1,0 +1,129 @@
+.match-flow-btn {
+  @extend .btn-lg;
+  display: block;
+  width: 100%;
+
+  border: 0;
+
+  &.active {
+    background: darken(theme-color("good"), 10%) !important;
+  }
+  &:disabled {
+    background: theme-color("dark");
+    color: #fff;
+  }
+  
+  padding: 1rem;
+}
+
+.indicator {
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0.1rem 0.1rem 0 0.1rem;
+  border: 0.1rem solid darken(theme-color("dark"), 10%);
+  border-radius: 0.2rem;
+  background-color: theme-color("dark");
+  display: inline-block;
+  color: #eee;
+
+  text-align: center;
+  font-weight: bold;
+
+  &[data-bool-value=true] {
+    background-color: theme-color("good");
+    color: black;
+  }
+  &[data-bool-value=false] {
+    background-color: theme-color("bad");
+  }
+  
+  &.ping {
+    &[data-bool-value=true], &:not([data-bool-value]) {
+      > * {
+        opacity: 0;
+      }
+    }
+  }
+
+  &.ds-status {
+    &[data-occupancy=Occupied] {
+      background-color: theme-color("good");
+    }
+    &[data-occupancy=WrongStation] {
+      background-color: theme-color("warning");
+      color: black;
+    }
+    &[data-occupancy=WrongMatch] {
+      background-color: theme-color("bad");
+    }
+  }
+
+  &.ds-mode {
+    &[data-mode=Estop] {
+      @include hazard(theme-color("hazard-red"));
+    }
+    &[data-mode=Teleop] {
+      background-color: theme-color("orange");
+    }
+    &[data-mode=Auto] {
+      background-color: theme-color("purple");
+    }
+  }
+}
+
+input.team-num {
+  font-size: 14px;
+  background-color:rgba(255, 255, 255, 0.75);
+  padding: 5px;
+  height: 30px;
+  min-width: 45px;
+  text-align: right;
+  color: #000;
+
+  &[data-buffer-diff=true] {
+    background-color: rgb(255, 251, 0);
+  }
+}
+
+.alliance {
+  border-radius: 10px;
+  padding: 1rem;
+
+  @each $alliance in $alliances {
+    &[data-colour=#{$alliance}] {
+      background-color: desaturate(theme-color($alliance), 5%);
+    }
+  }
+}
+
+@mixin alliance-row {
+  border-radius: 5px;
+  padding: 5px 0;
+  margin: 5px 0;
+}
+
+.alliance-header {
+  @include alliance-row;
+  background-color: rgba(white, 0.25);
+  font-weight: bold;
+}
+
+.alliance-station {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: rgba(white, 0.281);
+  @include alliance-row;
+
+  &[data-bypass=true] {
+    background-color: rgba(0, 0, 0, 0.25);
+  }
+
+  &[data-astop=true] {
+    @include hazard(theme-color("hazard-yellow"));
+  }
+
+  &[data-estop=true] {
+    @include hazard(theme-color("hazard-red"));
+  }
+}
+
+//  TODO: Styling for the schedule view
