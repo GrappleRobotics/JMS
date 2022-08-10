@@ -21,3 +21,6 @@ pub use awards::*;
 
 mod fta;
 pub use fta::FTAKey;
+
+mod resources;
+pub use resources::*;

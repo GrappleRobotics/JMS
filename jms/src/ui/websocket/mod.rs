@@ -2,6 +2,7 @@ mod arena;
 mod event;
 mod matches;
 mod debug;
+mod resources;
 
 use jms_macros::define_websocket_msg;
 
@@ -16,20 +17,12 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena, matches::ws_recv_match}, arena::{SharedArena, resource::{ResourceRole, SharedResources, Resources, Resource}}, schedule::worker::SharedMatchGenerators, models::FTAKey, db};
+use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena, matches::ws_recv_match, resources::{ws_recv_resources, ws_periodic_resources1}}, arena::{SharedArena, resource::SharedResources}, schedule::worker::SharedMatchGenerators};
 
-use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}};
+use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}};
 
 define_websocket_msg!($WebsocketMessage {
   Ping,
-
-  $Resource {
-    send All(Resources),
-    send Current(Resource),
-    recv SetID(String),
-    recv SetRole(ResourceRole),
-    recv SetFTA(Option<String>)
-  },
 
   send Error(String),
   recv Subscribe(Vec<String>),
@@ -45,6 +38,9 @@ define_websocket_msg!($WebsocketMessage {
 
   send Match(MatchMessage2UI),
   recv Match(MatchMessage2JMS),
+
+  send Resource(ResourceMessage2UI),
+  recv Resource(ResourceMessage2JMS),
 });
 
 impl From<EventMessage2UI> for WebsocketMessage2UI {
@@ -62,6 +58,12 @@ impl From<ArenaMessage2UI> for WebsocketMessage2UI {
 impl From<MatchMessage2UI> for WebsocketMessage2UI {
   fn from(msg: MatchMessage2UI) -> Self {
     WebsocketMessage2UI::Match(msg)
+  }
+}
+
+impl From<ResourceMessage2UI> for WebsocketMessage2UI {
+  fn from(msg: ResourceMessage2UI) -> Self {
+    WebsocketMessage2UI::Resource(msg)
   }
 }
 
@@ -113,7 +115,7 @@ impl Websockets {
                 }
               }
 
-              // Remove the panel when it disconnects, whether gracefully or not
+              // Remove the resource when it disconnects, whether gracefully or not
               if let Some(id) = id {
                 params.resources.lock().await.remove(&id);
               }
@@ -123,9 +125,8 @@ impl Websockets {
         },
 
         _ = update_interval.tick() => {
-          let resources = self.params.resources.lock().await;
           do_broadcast_update(&self.broadcast, Ok(vec![ WebsocketMessage2UI::Ping ])).await?;
-          do_broadcast_update(&self.broadcast, Ok(vec![ WebsocketMessageResource2UI::All(resources.clone()) ])).await?;
+          do_broadcast_update(&self.broadcast, resources::ws_periodic_resources(self.params.resources.clone()).await).await?;
           do_broadcast_update(&self.broadcast, event::ws_periodic_event().await).await?;
           do_broadcast_update(&self.broadcast, arena::ws_periodic_arena(self.params.arena.clone()).await).await?;
           do_broadcast_update(&self.broadcast, matches::ws_periodic_match(self.params.matches.clone()).await).await?;
@@ -156,39 +157,6 @@ where
   Ok(())
 }
 
-async fn handle_panel_msg(msg: &WebsocketMessageResource2JMS, resource_id: &mut Option<String>, resources: SharedResources) -> Result<Vec<WebsocketMessage2UI>> {
-  let mut resources = resources.lock().await;
-  
-  match msg {
-    WebsocketMessageResource2JMS::SetID(id) => {
-      resources.register(id.clone(), resource_id);
-      *resource_id = Some(id.clone());
-    },
-    WebsocketMessageResource2JMS::SetRole(role) => {
-      if let Some(resource) = resources.get_mut(resource_id) {
-        resource.role = *role;
-      }
-    },
-    WebsocketMessageResource2JMS::SetFTA(key) => {
-      if let Some(resource) = resources.get_mut(resource_id) {
-        match key {
-          Some(key) => {
-            if FTAKey::get(&db::database())?.validate(&key) {
-              resource.fta = true;
-            } else {
-              resource.fta = false;
-              anyhow::bail!("Incorrect FTA Key!")
-            }
-          },
-          _ => resource.fta = false
-        }
-      } 
-    }
-  };
-
-  Ok(vec![])
-}
-
 // Can't be a self method as tokio::spawn may outlive the object itself, unless we constrain to be 'static lifetime
 async fn connection_handler(
   stream: TcpStream,
@@ -204,7 +172,7 @@ async fn connection_handler(
   let mut ping_timeout = tokio::time::interval(loop_duration * 3);
   ping_timeout.reset();
 
-  let mut panel_update_int = tokio::time::interval(loop_duration);
+  let mut update_int = tokio::time::interval(loop_duration);
 
   debug!("Websocket Connected");
 
@@ -227,7 +195,7 @@ async fn connection_handler(
                   subscribed_to.insert(schema_names);
                   Ok(vec![])
                 },
-                WebsocketMessage2JMS::Resource(msg) => handle_panel_msg(&msg, resource_id, params.resources.clone()).await,
+                WebsocketMessage2JMS::Resource(msg) => ws_recv_resources(&msg, params.resources.clone(), resource_id).await,
                 WebsocketMessage2JMS::Event(msg) => ws_recv_event(&msg).await,
                 WebsocketMessage2JMS::Debug(msg) => ws_recv_debug(&msg).await,
                 WebsocketMessage2JMS::Arena(msg) => ws_recv_arena(&msg, params.arena.clone()).await,
@@ -259,12 +227,15 @@ async fn connection_handler(
           return Ok(());
         }
       },
-      // Send an update about the current resource
-      _ = panel_update_int.tick() => {
-        let resources = params.resources.lock().await;
-        if let Some(resource) = resources.get(resource_id) {
-          let msg: WebsocketMessage2UI = WebsocketMessageResource2UI::Current(resource.clone()).into();
-          ws.send(tungstenite::Message::Text(serde_json::to_string(&vec![msg])?)).await?;
+      // Send updates about just this websocket
+      _ = update_int.tick() => {
+        let mut msgs: Vec<WebsocketMessage2UI> = vec![];
+        for msg in ws_periodic_resources1(params.resources.clone(), resource_id).await? {
+          msgs.push(msg.into());
+        }
+
+        if msgs.len() > 0 {
+          ws.send(tungstenite::Message::Text(serde_json::to_string(&msgs)?)).await?
         }
       },
       recvd = broadcast_rx.recv() => match recvd {
@@ -290,7 +261,7 @@ fn is_subscribed_for_message(subscriptions: &HashSet<Vec<String>>, msg: &Websock
   let actual_path = match msg {
     WebsocketMessage2UI::Error(_) => todo!(),
     WebsocketMessage2UI::Ping => { return true; },
-    WebsocketMessage2UI::Resource(_) => msg.ws_path(),
+    WebsocketMessage2UI::Resource(resource) => [ &["Resource"], resource.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Match(match_msg) => [ &["Match"], match_msg.ws_path().as_slice() ].concat(),

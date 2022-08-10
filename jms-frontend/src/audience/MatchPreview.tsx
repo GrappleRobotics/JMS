@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
+import { ALLIANCES } from "support/ws-additional";
 import { AllianceStation, LoadedMatch, Alliance, Team, TeamRanking } from "ws-schema";
 import AudienceCard from "./AudienceCard";
 import BaseAudienceScene from "./BaseAudienceScene";
@@ -75,7 +76,7 @@ export default class AudienceSceneMatchPreview extends BaseAudienceScene<{}, Aud
 
         <Row className="match-teams">
           {
-            ["red" as Alliance, "blue" as Alliance].map(colour => <Col>
+            ALLIANCES.map(colour => <Col>
               <Card data-alliance={colour}>
                 {
                   withVal(match.match_meta[`${colour}_alliance`], a => <Card.Header>

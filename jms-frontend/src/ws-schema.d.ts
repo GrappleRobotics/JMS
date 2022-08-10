@@ -8,9 +8,6 @@
 export type WebsocketMessage2UI =
   | "Ping"
   | {
-      Resource: WebsocketMessageResource2UI;
-    }
-  | {
       Error: string;
     }
   | {
@@ -21,40 +18,10 @@ export type WebsocketMessage2UI =
     }
   | {
       Match: MatchMessage2UI;
-    };
-export type WebsocketMessageResource2UI =
-  | {
-      All: {
-        [k: string]: Resource;
-      };
     }
   | {
-      Current: Resource;
+      Resource: ResourceMessage2UI;
     };
-export type ResourceRole =
-  | ("Unknown" | "ScorekeeperPanel" | "MonitorPanel" | "TimerPanel" | "AudienceDisplay")
-  | {
-      RefereePanel: RefereeID;
-    }
-  | {
-      ScorerPanel: ScorerID;
-    }
-  | {
-      TeamEStop: AllianceStationId;
-    };
-export type RefereeID =
-  | "HeadReferee"
-  | {
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      Alliance: [Alliance, NearFar];
-    };
-export type Alliance = "blue" | "red";
-export type NearFar = "near" | "far";
-export type ScorerPair = "AB" | "CD";
-export type GoalHeight = "low" | "high";
 export type EventMessage2UI =
   | {
       Details: EventMessageDetails2UI;
@@ -148,6 +115,7 @@ export type ArenaMessageAlliance2UI = {
 };
 export type DSMode = "Teleop" | "Test" | "Auto";
 export type AllianceStationOccupancy = "Vacant" | "Occupied" | "WrongStation" | "WrongMatch";
+export type Alliance = "blue" | "red";
 export type ArenaMessageMatch2UI = {
   Current: LoadedMatch | null;
 };
@@ -226,11 +194,54 @@ export type PlayoffMode = "Bracket" | "RoundRobin";
 export type MatchMessagePlayoffs2UI = {
   Generation: SerialisedMatchGeneration;
 };
+export type ResourceMessage2UI =
+  | {
+      All: TaggedResource[];
+    }
+  | {
+      Current: TaggedResource;
+    }
+  | {
+      Requirements: ResourceMessageRequirements2UI;
+    };
+export type ResourceRole =
+  | ("Unknown" | "Any" | "ScorekeeperPanel" | "MonitorPanel" | "TimerPanel" | "AudienceDisplay" | "FieldElectronics")
+  | {
+      RefereePanel: RefereeID;
+    }
+  | {
+      ScorerPanel: ScorerID;
+    }
+  | {
+      TeamEStop: AllianceStationId;
+    };
+export type RefereeID =
+  | "HeadReferee"
+  | {
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      Alliance: [Alliance, NearFar];
+    };
+export type NearFar = "near" | "far";
+export type ScorerPair = "AB" | "CD";
+export type GoalHeight = "low" | "high";
+export type ResourceMessageRequirements2UI = {
+  Current: ResourceRequirementStatus | null;
+};
+export type ResourceRequirementStatusElement =
+  | {
+      And: ResourceRequirementStatus[];
+    }
+  | {
+      Or: ResourceRequirementStatus[];
+    }
+  | {
+      Quota: MappedResourceQuota;
+    };
 export type WebsocketMessage2JMS =
   | "Ping"
-  | {
-      Resource: WebsocketMessageResource2JMS;
-    }
   | {
       Subscribe: string[];
     }
@@ -245,16 +256,9 @@ export type WebsocketMessage2JMS =
     }
   | {
       Match: MatchMessage2JMS;
-    };
-export type WebsocketMessageResource2JMS =
-  | {
-      SetID: string;
     }
   | {
-      SetRole: ResourceRole;
-    }
-  | {
-      SetFTA: string | null;
+      Resource: ResourceMessage2JMS;
     };
 export type DebugMessage2JMS = {
   Match: DebugMessageMatch2JMS;
@@ -420,24 +424,36 @@ export type MatchMessagePlayoffs2JMS =
   | {
       Generate: PlayoffMode;
     };
+export type ResourceMessage2JMS =
+  | {
+      SetID: string;
+    }
+  | {
+      SetRole: ResourceRole;
+    }
+  | {
+      SetFTA: string | null;
+    }
+  | {
+      Requirements: ResourceMessageRequirements2JMS;
+    };
+export type ResourceMessageRequirements2JMS = {
+  SetActive: ResourceRequirements | null;
+};
+export type ResourceRequirements =
+  | {
+      And: ResourceRequirements[];
+    }
+  | {
+      Or: ResourceRequirements[];
+    }
+  | {
+      Quota: ResourceQuota;
+    };
 
 export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
   ui2jms: WebsocketMessage2JMS;
-}
-export interface Resource {
-  fta: boolean;
-  id: string;
-  ready: boolean;
-  role: ResourceRole;
-}
-export interface ScorerID {
-  goals: ScorerPair;
-  height: GoalHeight;
-}
-export interface AllianceStationId {
-  alliance: Alliance;
-  station: number;
 }
 export interface EventDetails {
   code?: string | null;
@@ -506,6 +522,10 @@ export interface AllianceStationDSReport {
   rio_ping: boolean;
   robot_ping: boolean;
   rtt: number;
+}
+export interface AllianceStationId {
+  alliance: Alliance;
+  station: number;
 }
 export interface LoadedMatch {
   config: MatchConfig;
@@ -610,6 +630,34 @@ export interface MatchGenerationRecord {
   data?: MatchGenerationRecordData | null;
   match_type: MatchType;
 }
+export interface TaggedResource {
+  fta?: boolean;
+  id: string;
+  ready?: boolean;
+  role: ResourceRole;
+}
+export interface ScorerID {
+  goals: ScorerPair;
+  height: GoalHeight;
+}
+export interface ResourceRequirementStatus {
+  element: ResourceRequirementStatusElement;
+  ready: boolean;
+  satisfied: boolean;
+}
+export interface MappedResourceQuota {
+  max?: number | null;
+  min: number;
+  ready: boolean;
+  resource_ids: string[];
+  satisfied: boolean;
+  template: Resource;
+}
+export interface Resource {
+  fta?: boolean;
+  ready?: boolean;
+  role: ResourceRole;
+}
 export interface ScoreUpdateData {
   alliance: Alliance;
   update: ScoreUpdate;
@@ -617,4 +665,9 @@ export interface ScoreUpdateData {
 export interface QualsMatchGeneratorParams {
   station_anneal_steps: number;
   team_anneal_steps: number;
+}
+export interface ResourceQuota {
+  max?: number | null;
+  min: number;
+  template: Resource;
 }

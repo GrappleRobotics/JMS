@@ -8,14 +8,13 @@ import { Button, FormControl } from 'react-bootstrap';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import { Link } from 'react-router-dom';
-import { undefinedIfEmpty } from 'support/strings';
 import { WebsocketComponent } from 'support/ws-component';
-import { ArenaState, LoadedMatch, Resource } from 'ws-schema';
+import { ArenaState, LoadedMatch, TaggedResource } from 'ws-schema';
 
 type TopNavbarState = {
   arena_state?: ArenaState,
   match?: LoadedMatch,
-  resource?: Resource
+  resource?: TaggedResource
 };
 
 export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {

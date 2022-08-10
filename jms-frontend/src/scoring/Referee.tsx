@@ -8,6 +8,7 @@ import { Button, Col, Container, Row } from "react-bootstrap";
 import { Link, Route, Routes } from "react-router-dom";
 import { capitalise } from "support/strings";
 import { otherAlliance, withVal } from "support/util";
+import { ALLIANCES, NEAR_FAR } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
 import { Alliance, AllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
 
@@ -298,7 +299,7 @@ export function RefereeRouter() {
   return <Routes>
     <Route path="/" element={ <RefereeSelector /> } />
     {
-      ["red" as Alliance, "blue" as Alliance].map(alliance => ["near" as NearFar, "far" as NearFar].map(nearfar => (
+      ALLIANCES.map(alliance => NEAR_FAR.map(nearfar => (
         <Route path={`${alliance}/${nearfar}`} element={
           withRole({ RefereePanel: { Alliance: [ alliance, nearfar ] } }, <AllianceReferee alliance={alliance} position={nearfar} />)
         } />

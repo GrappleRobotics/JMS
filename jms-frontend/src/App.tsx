@@ -19,7 +19,7 @@ import { TeamEstops } from 'TeamEstop';
 import Timer from 'Timer';
 import TopNavbar from 'TopNavbar';
 import EventWizard from 'wizard/EventWizard';
-import { Resource } from 'ws-schema';
+import { TaggedResource } from 'ws-schema';
 
 type AppState = {
   errors: String[],
@@ -30,7 +30,7 @@ export default class App extends WebsocketComponent<{}, AppState> {
   readonly state: AppState = { errors: [], fta: false };
 
   componentDidMount = () => this.handles = [
-    this.listenFn("Resource/Current", (r: Resource) => this.setState({ fta: r.fta })),
+    this.listenFn("Resource/Current", (r: TaggedResource) => this.setState({ fta: r.fta || false })),
     this.listenFn("Error", (err: string) => this.setState(s => update(s, { errors: { $push: [err] } })))
   ];
 

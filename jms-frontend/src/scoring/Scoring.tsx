@@ -2,6 +2,7 @@ import FieldPosSelector, { PosSelector } from "components/FieldPosSelector";
 import React from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import { Routes, Route, Link } from "react-router-dom";
+import { ALLIANCES } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
 import { Alliance, GoalHeight, LoadedMatch, ScoreUpdateData, ScorerPair } from "ws-schema";
 
@@ -47,7 +48,7 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
   }
 
   scoreFlank = (goalIdx: number, match: LoadedMatch | undefined, update: (u: ScoreUpdateData) => void) => {
-    const arr = ["red" as Alliance, "blue" as Alliance].map((alliance: Alliance) => {
+    const arr = ALLIANCES.map(alliance => {
       const goal = this.props.height === "high" ? "upper" : "lower";
       const enabled = match != null && match.state !== "Waiting" && match.state !== "Fault";
       // 5 second auto cool-off to allow for balls in the air at the end of auto

@@ -1,10 +1,10 @@
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { WebsocketComponent } from "support/ws-component";
-import { Resource } from "ws-schema";
+import { TaggedResource } from "ws-schema";
 
 type DebugState = {
-  resources?: Resource[]
+  resources?: TaggedResource[]
 };
 
 export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugState> {

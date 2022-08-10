@@ -1553,6 +1553,46 @@
         }
       }
     },
+    "MappedResourceQuota": {
+      "type": "object",
+      "required": [
+        "min",
+        "ready",
+        "resource_ids",
+        "satisfied",
+        "template"
+      ],
+      "properties": {
+        "max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "min": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "resource_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "satisfied": {
+          "type": "boolean"
+        },
+        "template": {
+          "$ref": "#/definitions/Resource"
+        }
+      }
+    },
     "MatchConfig": {
       "type": "object",
       "required": [
@@ -2072,19 +2112,15 @@
     "Resource": {
       "type": "object",
       "required": [
-        "fta",
-        "id",
-        "ready",
         "role"
       ],
       "properties": {
         "fta": {
+          "default": false,
           "type": "boolean"
         },
-        "id": {
-          "type": "string"
-        },
         "ready": {
+          "default": false,
           "type": "boolean"
         },
         "role": {
@@ -2092,16 +2128,298 @@
         }
       }
     },
+    "ResourceMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "SetID"
+          ],
+          "properties": {
+            "SetID": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetRole"
+          ],
+          "properties": {
+            "SetRole": {
+              "$ref": "#/definitions/ResourceRole"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetFTA"
+          ],
+          "properties": {
+            "SetFTA": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Requirements"
+          ],
+          "properties": {
+            "Requirements": {
+              "$ref": "#/definitions/ResourceMessageRequirements2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TaggedResource"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/TaggedResource"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Requirements"
+          ],
+          "properties": {
+            "Requirements": {
+              "$ref": "#/definitions/ResourceMessageRequirements2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceMessageRequirements2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "SetActive"
+          ],
+          "properties": {
+            "SetActive": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/ResourceRequirements"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceMessageRequirements2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/ResourceRequirementStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceQuota": {
+      "type": "object",
+      "required": [
+        "min",
+        "template"
+      ],
+      "properties": {
+        "max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "min": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "template": {
+          "$ref": "#/definitions/Resource"
+        }
+      }
+    },
+    "ResourceRequirementStatus": {
+      "type": "object",
+      "required": [
+        "element",
+        "ready",
+        "satisfied"
+      ],
+      "properties": {
+        "element": {
+          "$ref": "#/definitions/ResourceRequirementStatusElement"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "satisfied": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ResourceRequirementStatusElement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "And"
+          ],
+          "properties": {
+            "And": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirementStatus"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Or"
+          ],
+          "properties": {
+            "Or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirementStatus"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Quota"
+          ],
+          "properties": {
+            "Quota": {
+              "$ref": "#/definitions/MappedResourceQuota"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceRequirements": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "And"
+          ],
+          "properties": {
+            "And": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirements"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Or"
+          ],
+          "properties": {
+            "Or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirements"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Quota"
+          ],
+          "properties": {
+            "Quota": {
+              "$ref": "#/definitions/ResourceQuota"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "ResourceRole": {
       "oneOf": [
         {
           "type": "string",
           "enum": [
             "Unknown",
+            "Any",
             "ScorekeeperPanel",
             "MonitorPanel",
             "TimerPanel",
-            "AudienceDisplay"
+            "AudienceDisplay",
+            "FieldElectronics"
           ]
         },
         {
@@ -2529,6 +2847,29 @@
         }
       }
     },
+    "TaggedResource": {
+      "type": "object",
+      "required": [
+        "id",
+        "role"
+      ],
+      "properties": {
+        "fta": {
+          "default": false,
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "ready": {
+          "default": false,
+          "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/definitions/ResourceRole"
+        }
+      }
+    },
     "Team": {
       "type": "object",
       "required": [
@@ -2651,18 +2992,6 @@
         {
           "type": "object",
           "required": [
-            "Resource"
-          ],
-          "properties": {
-            "Resource": {
-              "$ref": "#/definitions/WebsocketMessageResource2JMS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
             "Subscribe"
           ],
           "properties": {
@@ -2722,6 +3051,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Resource"
+          ],
+          "properties": {
+            "Resource": {
+              "$ref": "#/definitions/ResourceMessage2JMS"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -2732,18 +3073,6 @@
           "enum": [
             "Ping"
           ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "Resource"
-          ],
-          "properties": {
-            "Resource": {
-              "$ref": "#/definitions/WebsocketMessageResource2UI"
-            }
-          },
-          "additionalProperties": false
         },
         {
           "type": "object",
@@ -2792,77 +3121,15 @@
             }
           },
           "additionalProperties": false
-        }
-      ]
-    },
-    "WebsocketMessageResource2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "SetID"
-          ],
-          "properties": {
-            "SetID": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
         },
         {
           "type": "object",
           "required": [
-            "SetRole"
+            "Resource"
           ],
           "properties": {
-            "SetRole": {
-              "$ref": "#/definitions/ResourceRole"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "SetFTA"
-          ],
-          "properties": {
-            "SetFTA": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "WebsocketMessageResource2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "All"
-          ],
-          "properties": {
-            "All": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/Resource"
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Current"
-          ],
-          "properties": {
-            "Current": {
-              "$ref": "#/definitions/Resource"
+            "Resource": {
+              "$ref": "#/definitions/ResourceMessage2UI"
             }
           },
           "additionalProperties": false

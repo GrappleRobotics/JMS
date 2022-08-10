@@ -16,3 +16,7 @@ const inverse_alliance_map: { [K in Alliance]: Alliance } = {
 export function otherAlliance(alliance: Alliance): Alliance {
   return inverse_alliance_map[alliance];
 }
+
+export function interleave<T>(arr: T[], el: T): T[] {
+  return arr.flatMap(n => [n, el]).slice(0, -1);
+}

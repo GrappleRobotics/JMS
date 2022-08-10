@@ -65,6 +65,59 @@
   }
 }
 
+// Configure Resources
+.wizard-resource-row {
+  &[data-ready=false] {
+    .wizard-resource-ready {
+      color: theme-color("bad");
+    }
+  }
+
+  &[data-ready=true] {
+    background-color: darken(theme-color("good"), 20%);
+  }
+
+  &[data-fta=true] {
+    background-color: darken(theme-color("gold"), 10%);
+  }
+}
+
+.wizard-resource-status {
+  border-width: 2px;
+
+  &.bg-dark {
+    border-color: darken(theme-color("light"), 10%);
+  }
+
+  .wizard-resource-status-or {
+    padding: 0;
+    text-align: center;
+    font-style: italic;
+    border: none;
+  }
+
+  .wizard-resource-status-item {
+    > .wizard-resource-status {
+      margin: 0.5em 1em;
+    }
+
+    &[data-satisfied=true] {
+      > * {
+        background-color: darken(theme-color("good"), 20%) !important;
+      }
+    }
+
+    .wizard-resource-status-count {
+      &[data-satisfied=false] {
+        * {
+          color: theme-color("danger") !important;
+        }
+      }
+    }
+  }
+}
+
+
 // Configure Awards
 .wizard-award {
   min-width: 315px;

@@ -3,19 +3,23 @@ use std::time::Duration;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, time};
 use tokio_serial::SerialPortBuilderExt;
 
-use crate::{arena::{ArenaSignal, SharedArena, lighting::ArenaLighting, station::AllianceStationId}, models::{self, Alliance}, electronics::comms::{Packable, Unpackable}};
+use crate::{arena::{ArenaSignal, SharedArena, lighting::ArenaLighting, station::AllianceStationId, resource::{SharedResources, ResourceRole}}, models::{self, Alliance}, electronics::comms::{Packable, Unpackable}};
 
 use super::{ElectronicsMessageIn, ElectronicsMessageOut, AddressedElectronicsMessageOut, ElectronicsRole, AddressedElectronicsMessageIn, settings::{ElectronicsSettings, InnerElectronicsSettings}};
 
+const ELECTRONICS_RESOURCE_ID: &str = "__electronics__";
+
 pub struct FieldElectronicsService {
   arena: SharedArena,
+  resources: SharedResources,
   settings: ElectronicsSettings
 }
 
 impl FieldElectronicsService {
-  pub async fn new(arena: SharedArena, settings: ElectronicsSettings) -> Self {
+  pub async fn new(arena: SharedArena, resources: SharedResources, settings: ElectronicsSettings) -> Self {
     FieldElectronicsService {
       arena,
+      resources,
       settings,
     }
   }
@@ -25,13 +29,18 @@ impl FieldElectronicsService {
       Some(settings) => {
         info!("Starting Field Electronics Server");
         loop {
+          {
+            let mut r = self.resources.lock().await;
+            r.remove(ELECTRONICS_RESOURCE_ID);
+          }
+
           match self.start(settings).await {
             Err(err) => {
               self.arena.lock().await.signal(ArenaSignal::Estop).await;
               error!("Field Electronics Error: {}", err);
               tokio::time::sleep(Duration::from_millis(250)).await;
             },
-            Ok(_) => return Ok(())
+            Ok(_) => ()
           }
         }
       },
@@ -45,6 +54,12 @@ impl FieldElectronicsService {
     let mut recv_timeout = time::interval(Duration::from_millis(500));
 
     recv_timeout.reset();
+
+    info!("Field Electronics Connected!");
+    {
+      let mut r = self.resources.lock().await;
+      r.register(ELECTRONICS_RESOURCE_ID, ResourceRole::FieldElectronics,  &None);
+    }
 
     loop {
       tokio::select! {
