@@ -1,17 +1,17 @@
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { WebsocketComponent } from "support/ws-component";
-import { Panel } from "ws-schema";
+import { Resource } from "ws-schema";
 
 type DebugState = {
-  panels?: Panel[]
+  resources?: Resource[]
 };
 
 export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugState> {
   readonly state: DebugState = {};
 
   componentDidMount = () => this.handles = [
-    this.listen("Panel/All", "panels")
+    this.listen("Resource/All", "resources")
   ];
 
   render() {

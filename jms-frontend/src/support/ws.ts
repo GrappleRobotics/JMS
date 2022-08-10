@@ -1,6 +1,6 @@
-import { PanelRole, WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
+import { ResourceRole, WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
 import { v4 as uuid } from 'uuid';
-import panel_id from "./panelid";
+import resource_id from "./resourceid";
 
 export type CallbackFn<T> = (msg: T, fullMessage: WebsocketMessage2UI) => void;
 export type ConnectCallback = (isOpen: boolean) => void;
@@ -16,7 +16,7 @@ export default class JmsWebsocket {
   connectCallbacks: Map<string, ConnectCallback>;
   callbacks: Map<string, Callback<any>>;
   sendQueue: WebsocketMessage2JMS[];
-  role: [PanelRole, string];
+  role: [ResourceRole, string];
 
   constructor(url="ws://" + window.location.hostname + ":9000", timeout=250) {
     this.url = url;
@@ -43,12 +43,12 @@ export default class JmsWebsocket {
     ws.onopen = () => {
       console.log("WS Connected");
       setTimeout(() => {
-        this.send({ Panel: { ID: panel_id() } })
+        this.send({ Resource: { SetID: resource_id() } })
         this.connectCallbacks.forEach(cb => cb(true));
         this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
         this.sendQueue.forEach(sq => this.sendNow(sq));
         this.sendQueue = [];
-        this.send({ Panel: { Role: this.role[0] } });
+        this.send({ Resource: { SetRole: this.role[0] } });
       }, 100);
       that.ws = ws;
       clearTimeout(timer);
@@ -118,10 +118,10 @@ export default class JmsWebsocket {
       this.connect();
   }
 
-  updateRole = (role: PanelRole, location: string) => {
+  updateRole = (role: ResourceRole, location: string) => {
     if (location !== this.role[1] || this.role[1] === "Unknown") {
       this.role = [role, location];
-      this.send({ Panel: { Role: role } });
+      this.send({ Resource: { SetRole: role } });
     }
   }
 

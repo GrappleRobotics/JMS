@@ -87,7 +87,7 @@ export class TeamEstops extends WebsocketComponent<{}, TeamEstopsState> {
       {
       this.state.stations.map((s, i) => (
         <Route key={i} path={`${s.station.alliance}-${s.station.station}`} element={
-          withRole({ EStop: s.station }, <TeamEstop
+          withRole({ TeamEStop: s.station }, <TeamEstop
             station={s}
             onTrigger={which => this.send({ Arena: { Alliance: { UpdateAlliance: { [which]: true, station: s.station } } } })}
           />)

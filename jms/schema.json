@@ -1963,75 +1963,6 @@
         "far"
       ]
     },
-    "Panel": {
-      "type": "object",
-      "required": [
-        "fta",
-        "id",
-        "role"
-      ],
-      "properties": {
-        "fta": {
-          "type": "boolean"
-        },
-        "id": {
-          "type": "string"
-        },
-        "role": {
-          "$ref": "#/definitions/PanelRole"
-        }
-      }
-    },
-    "PanelRole": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": [
-            "Unknown",
-            "Scorekeeper",
-            "Monitor",
-            "Timer",
-            "AudienceDisplay"
-          ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "Referee"
-          ],
-          "properties": {
-            "Referee": {
-              "$ref": "#/definitions/RefereeID"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Scorer"
-          ],
-          "properties": {
-            "Scorer": {
-              "$ref": "#/definitions/ScorerID"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "EStop"
-          ],
-          "properties": {
-            "EStop": {
-              "$ref": "#/definitions/AllianceStationId"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "Penalties": {
       "type": "object",
       "required": [
@@ -2132,6 +2063,79 @@
               ],
               "maxItems": 2,
               "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Resource": {
+      "type": "object",
+      "required": [
+        "fta",
+        "id",
+        "ready",
+        "role"
+      ],
+      "properties": {
+        "fta": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/definitions/ResourceRole"
+        }
+      }
+    },
+    "ResourceRole": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Unknown",
+            "ScorekeeperPanel",
+            "MonitorPanel",
+            "TimerPanel",
+            "AudienceDisplay"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "RefereePanel"
+          ],
+          "properties": {
+            "RefereePanel": {
+              "$ref": "#/definitions/RefereeID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ScorerPanel"
+          ],
+          "properties": {
+            "ScorerPanel": {
+              "$ref": "#/definitions/ScorerID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "TeamEStop"
+          ],
+          "properties": {
+            "TeamEStop": {
+              "$ref": "#/definitions/AllianceStationId"
             }
           },
           "additionalProperties": false
@@ -2647,11 +2651,11 @@
         {
           "type": "object",
           "required": [
-            "Panel"
+            "Resource"
           ],
           "properties": {
-            "Panel": {
-              "$ref": "#/definitions/WebsocketMessagePanel2JMS"
+            "Resource": {
+              "$ref": "#/definitions/WebsocketMessageResource2JMS"
             }
           },
           "additionalProperties": false
@@ -2732,11 +2736,11 @@
         {
           "type": "object",
           "required": [
-            "Panel"
+            "Resource"
           ],
           "properties": {
-            "Panel": {
-              "$ref": "#/definitions/WebsocketMessagePanel2UI"
+            "Resource": {
+              "$ref": "#/definitions/WebsocketMessageResource2UI"
             }
           },
           "additionalProperties": false
@@ -2791,15 +2795,15 @@
         }
       ]
     },
-    "WebsocketMessagePanel2JMS": {
+    "WebsocketMessageResource2JMS": {
       "oneOf": [
         {
           "type": "object",
           "required": [
-            "ID"
+            "SetID"
           ],
           "properties": {
-            "ID": {
+            "SetID": {
               "type": "string"
             }
           },
@@ -2808,11 +2812,11 @@
         {
           "type": "object",
           "required": [
-            "Role"
+            "SetRole"
           ],
           "properties": {
-            "Role": {
-              "$ref": "#/definitions/PanelRole"
+            "SetRole": {
+              "$ref": "#/definitions/ResourceRole"
             }
           },
           "additionalProperties": false
@@ -2834,7 +2838,7 @@
         }
       ]
     },
-    "WebsocketMessagePanel2UI": {
+    "WebsocketMessageResource2UI": {
       "oneOf": [
         {
           "type": "object",
@@ -2845,7 +2849,7 @@
             "All": {
               "type": "object",
               "additionalProperties": {
-                "$ref": "#/definitions/Panel"
+                "$ref": "#/definitions/Resource"
               }
             }
           },
@@ -2858,7 +2862,7 @@
           ],
           "properties": {
             "Current": {
-              "$ref": "#/definitions/Panel"
+              "$ref": "#/definitions/Resource"
             }
           },
           "additionalProperties": false

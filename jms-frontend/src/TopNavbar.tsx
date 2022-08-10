@@ -10,12 +10,12 @@ import Navbar from 'react-bootstrap/Navbar';
 import { Link } from 'react-router-dom';
 import { undefinedIfEmpty } from 'support/strings';
 import { WebsocketComponent } from 'support/ws-component';
-import { ArenaState, LoadedMatch, Panel } from 'ws-schema';
+import { ArenaState, LoadedMatch, Resource } from 'ws-schema';
 
 type TopNavbarState = {
   arena_state?: ArenaState,
   match?: LoadedMatch,
-  panel?: Panel
+  resource?: Resource
 };
 
 export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
@@ -24,7 +24,7 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
   componentDidMount = () => this.handles = [
     this.listen("Arena/State/Current", "arena_state"),
     this.listen("Arena/Match/Current", "match"),
-    this.listen("Panel/Current", "panel")
+    this.listen("Resource/Current", "resource")
   ];
 
   triggerEstop = async () => {
@@ -100,19 +100,19 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
           onEnter={ok}
         />
       </React.Fragment>
-    }).then(pass => this.send({ Panel: { SetFTA: pass } }))
+    }).then(pass => this.send({ Resource: { SetFTA: pass } }))
   }
 
   render() {
     let fullscreen = document.fullscreenElement != null;
     const { connected } = this.context;
-    const { arena_state, match, panel } = this.state;
+    const { arena_state, match, resource } = this.state;
 
     return <Navbar
       className="top-nav"
       variant="dark"
       fixed="top"
-      data-fta={ panel?.fta }
+      data-fta={ resource?.fta }
       data-connected={ connected }
       data-match-state={ match?.state }
       { ...Object.fromEntries(arena_state !== undefined ? Object.keys(arena_state).map(k => [ `data-arena-${k}`, (arena_state as any)[k] ]) : []) }
@@ -136,9 +136,9 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
             Home
           </Link>
           {
-            panel?.fta ? <React.Fragment>
+            resource?.fta ? <React.Fragment>
               <Navbar.Brand className="brand-fta"> <strong>FTA</strong> </Navbar.Brand>
-              <Nav.Link onClick={() => this.send({ Panel: { SetFTA: null } })}>
+              <Nav.Link onClick={() => this.send({ Resource: { SetFTA: null } })}>
                 <FontAwesomeIcon icon={faRightFromBracket} /> Logout
               </Nav.Link>
             </React.Fragment> 

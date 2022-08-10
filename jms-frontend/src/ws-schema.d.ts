@@ -8,7 +8,7 @@
 export type WebsocketMessage2UI =
   | "Ping"
   | {
-      Panel: WebsocketMessagePanel2UI;
+      Resource: WebsocketMessageResource2UI;
     }
   | {
       Error: string;
@@ -22,25 +22,25 @@ export type WebsocketMessage2UI =
   | {
       Match: MatchMessage2UI;
     };
-export type WebsocketMessagePanel2UI =
+export type WebsocketMessageResource2UI =
   | {
       All: {
-        [k: string]: Panel;
+        [k: string]: Resource;
       };
     }
   | {
-      Current: Panel;
+      Current: Resource;
     };
-export type PanelRole =
-  | ("Unknown" | "Scorekeeper" | "Monitor" | "Timer" | "AudienceDisplay")
+export type ResourceRole =
+  | ("Unknown" | "ScorekeeperPanel" | "MonitorPanel" | "TimerPanel" | "AudienceDisplay")
   | {
-      Referee: RefereeID;
+      RefereePanel: RefereeID;
     }
   | {
-      Scorer: ScorerID;
+      ScorerPanel: ScorerID;
     }
   | {
-      EStop: AllianceStationId;
+      TeamEStop: AllianceStationId;
     };
 export type RefereeID =
   | "HeadReferee"
@@ -229,7 +229,7 @@ export type MatchMessagePlayoffs2UI = {
 export type WebsocketMessage2JMS =
   | "Ping"
   | {
-      Panel: WebsocketMessagePanel2JMS;
+      Resource: WebsocketMessageResource2JMS;
     }
   | {
       Subscribe: string[];
@@ -246,12 +246,12 @@ export type WebsocketMessage2JMS =
   | {
       Match: MatchMessage2JMS;
     };
-export type WebsocketMessagePanel2JMS =
+export type WebsocketMessageResource2JMS =
   | {
-      ID: string;
+      SetID: string;
     }
   | {
-      Role: PanelRole;
+      SetRole: ResourceRole;
     }
   | {
       SetFTA: string | null;
@@ -425,10 +425,11 @@ export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
   ui2jms: WebsocketMessage2JMS;
 }
-export interface Panel {
+export interface Resource {
   fta: boolean;
   id: string;
-  role: PanelRole;
+  ready: boolean;
+  role: ResourceRole;
 }
 export interface ScorerID {
   goals: ScorerPair;

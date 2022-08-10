@@ -16,18 +16,18 @@ use tokio::{
 };
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena, matches::ws_recv_match}, arena::{SharedArena, panel::{PanelRole, SharedPanels, Panels, Panel}}, schedule::worker::SharedMatchGenerators, models::FTAKey, db};
+use crate::{ui::websocket::{event::ws_recv_event, debug::ws_recv_debug, arena::ws_recv_arena, matches::ws_recv_match}, arena::{SharedArena, resource::{ResourceRole, SharedResources, Resources, Resource}}, schedule::worker::SharedMatchGenerators, models::FTAKey, db};
 
 use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}};
 
 define_websocket_msg!($WebsocketMessage {
   Ping,
 
-  $Panel {
-    send All(Panels),
-    send Current(Panel),
-    recv ID(String),
-    recv Role(PanelRole),
+  $Resource {
+    send All(Resources),
+    send Current(Resource),
+    recv SetID(String),
+    recv SetRole(ResourceRole),
     recv SetFTA(Option<String>)
   },
 
@@ -69,7 +69,7 @@ impl From<MatchMessage2UI> for WebsocketMessage2UI {
 pub struct WebsocketParams {
   pub arena: SharedArena,
   pub matches: SharedMatchGenerators,
-  pub panels: SharedPanels
+  pub resources: SharedResources
 }
 
 pub struct Websockets {
@@ -115,7 +115,7 @@ impl Websockets {
 
               // Remove the panel when it disconnects, whether gracefully or not
               if let Some(id) = id {
-                params.panels.lock().await.remove(&id);
+                params.resources.lock().await.remove(&id);
               }
             });
           },
@@ -123,9 +123,9 @@ impl Websockets {
         },
 
         _ = update_interval.tick() => {
-          let panels = self.params.panels.lock().await;
+          let resources = self.params.resources.lock().await;
           do_broadcast_update(&self.broadcast, Ok(vec![ WebsocketMessage2UI::Ping ])).await?;
-          do_broadcast_update(&self.broadcast, Ok(vec![ WebsocketMessagePanel2UI::All(panels.clone()) ])).await?;
+          do_broadcast_update(&self.broadcast, Ok(vec![ WebsocketMessageResource2UI::All(resources.clone()) ])).await?;
           do_broadcast_update(&self.broadcast, event::ws_periodic_event().await).await?;
           do_broadcast_update(&self.broadcast, arena::ws_periodic_arena(self.params.arena.clone()).await).await?;
           do_broadcast_update(&self.broadcast, matches::ws_periodic_match(self.params.matches.clone()).await).await?;
@@ -156,31 +156,31 @@ where
   Ok(())
 }
 
-async fn handle_panel_msg(msg: &WebsocketMessagePanel2JMS, panel_id: &mut Option<String>, panels: SharedPanels) -> Result<Vec<WebsocketMessage2UI>> {
-  let mut panels = panels.lock().await;
+async fn handle_panel_msg(msg: &WebsocketMessageResource2JMS, resource_id: &mut Option<String>, resources: SharedResources) -> Result<Vec<WebsocketMessage2UI>> {
+  let mut resources = resources.lock().await;
   
   match msg {
-    WebsocketMessagePanel2JMS::ID(id) => {
-      panels.register(id.clone(), panel_id);
-      *panel_id = Some(id.clone());
+    WebsocketMessageResource2JMS::SetID(id) => {
+      resources.register(id.clone(), resource_id);
+      *resource_id = Some(id.clone());
     },
-    WebsocketMessagePanel2JMS::Role(role) => {
-      if let Some(panel) = panels.get_mut(panel_id) {
-        panel.role = *role;
+    WebsocketMessageResource2JMS::SetRole(role) => {
+      if let Some(resource) = resources.get_mut(resource_id) {
+        resource.role = *role;
       }
     },
-    WebsocketMessagePanel2JMS::SetFTA(key) => {
-      if let Some(panel) = panels.get_mut(panel_id) {
+    WebsocketMessageResource2JMS::SetFTA(key) => {
+      if let Some(resource) = resources.get_mut(resource_id) {
         match key {
           Some(key) => {
             if FTAKey::get(&db::database())?.validate(&key) {
-              panel.fta = true;
+              resource.fta = true;
             } else {
-              panel.fta = false;
+              resource.fta = false;
               anyhow::bail!("Incorrect FTA Key!")
             }
           },
-          _ => panel.fta = false
+          _ => resource.fta = false
         }
       } 
     }
@@ -192,7 +192,7 @@ async fn handle_panel_msg(msg: &WebsocketMessagePanel2JMS, panel_id: &mut Option
 // Can't be a self method as tokio::spawn may outlive the object itself, unless we constrain to be 'static lifetime
 async fn connection_handler(
   stream: TcpStream,
-  panel_id: &mut Option<String>,
+  resource_id: &mut Option<String>,
   _broadcast_tx: broadcast::Sender<Vec<WebsocketMessage2UI>>,
   mut broadcast_rx: broadcast::Receiver<Vec<WebsocketMessage2UI>>,
   params: &WebsocketParams,
@@ -227,7 +227,7 @@ async fn connection_handler(
                   subscribed_to.insert(schema_names);
                   Ok(vec![])
                 },
-                WebsocketMessage2JMS::Panel(panel_msg) => handle_panel_msg(&panel_msg, panel_id, params.panels.clone()).await,
+                WebsocketMessage2JMS::Resource(msg) => handle_panel_msg(&msg, resource_id, params.resources.clone()).await,
                 WebsocketMessage2JMS::Event(msg) => ws_recv_event(&msg).await,
                 WebsocketMessage2JMS::Debug(msg) => ws_recv_debug(&msg).await,
                 WebsocketMessage2JMS::Arena(msg) => ws_recv_arena(&msg, params.arena.clone()).await,
@@ -259,11 +259,11 @@ async fn connection_handler(
           return Ok(());
         }
       },
-      // Send an update about the current panel
+      // Send an update about the current resource
       _ = panel_update_int.tick() => {
-        let panels = params.panels.lock().await;
-        if let Some(panel) = panels.get(panel_id) {
-          let msg: WebsocketMessage2UI = WebsocketMessagePanel2UI::Current(panel.clone()).into();
+        let resources = params.resources.lock().await;
+        if let Some(resource) = resources.get(resource_id) {
+          let msg: WebsocketMessage2UI = WebsocketMessageResource2UI::Current(resource.clone()).into();
           ws.send(tungstenite::Message::Text(serde_json::to_string(&vec![msg])?)).await?;
         }
       },
@@ -290,7 +290,7 @@ fn is_subscribed_for_message(subscriptions: &HashSet<Vec<String>>, msg: &Websock
   let actual_path = match msg {
     WebsocketMessage2UI::Error(_) => todo!(),
     WebsocketMessage2UI::Ping => { return true; },
-    WebsocketMessage2UI::Panel(_) => msg.ws_path(),
+    WebsocketMessage2UI::Resource(_) => msg.ws_path(),
     WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
     WebsocketMessage2UI::Match(match_msg) => [ &["Match"], match_msg.ws_path().as_slice() ].concat(),

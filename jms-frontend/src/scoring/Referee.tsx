@@ -300,10 +300,10 @@ export function RefereeRouter() {
     {
       ["red" as Alliance, "blue" as Alliance].map(alliance => ["near" as NearFar, "far" as NearFar].map(nearfar => (
         <Route path={`${alliance}/${nearfar}`} element={
-          withRole({ Referee: { Alliance: [ alliance, nearfar ] } }, <AllianceReferee alliance={alliance} position={nearfar} />)
+          withRole({ RefereePanel: { Alliance: [ alliance, nearfar ] } }, <AllianceReferee alliance={alliance} position={nearfar} />)
         } />
       )))
     }
-    <Route path="head" element={ withRole({ Referee: "HeadReferee" }, <HeadReferee />) } />
+    <Route path="head" element={ withRole({ RefereePanel: "HeadReferee" }, <HeadReferee />) } />
   </Routes>
 }

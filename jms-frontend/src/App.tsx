@@ -19,7 +19,7 @@ import { TeamEstops } from 'TeamEstop';
 import Timer from 'Timer';
 import TopNavbar from 'TopNavbar';
 import EventWizard from 'wizard/EventWizard';
-import { Panel } from 'ws-schema';
+import { Resource } from 'ws-schema';
 
 type AppState = {
   errors: String[],
@@ -30,7 +30,7 @@ export default class App extends WebsocketComponent<{}, AppState> {
   readonly state: AppState = { errors: [], fta: false };
 
   componentDidMount = () => this.handles = [
-    this.listenFn("Panel/Current", (pan: Panel) => this.setState({ fta: pan.fta })),
+    this.listenFn("Resource/Current", (r: Resource) => this.setState({ fta: r.fta })),
     this.listenFn("Error", (err: string) => this.setState(s => update(s, { errors: { $push: [err] } })))
   ];
 
@@ -75,8 +75,8 @@ export default class App extends WebsocketComponent<{}, AppState> {
     const fta = this.state.fta;
     return <Routes>
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
-      <Route path={MATCH_CONTROL} element={ withRole("Scorekeeper", this.wrapView(<MatchControl />)) } />
-      <Route path={MONITOR} element={ withRole("Monitor", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
+      <Route path={MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl />)) } />
+      <Route path={MONITOR} element={ withRole("MonitorPanel", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
       <Route path={AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />
       <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
       <Route path={`${SCORING}/*`} element={ this.wrapView(<ScoringRouter />) } />
@@ -86,7 +86,7 @@ export default class App extends WebsocketComponent<{}, AppState> {
       <Route path={`${ESTOPS}/*`} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
       <Route path={DEBUG} element={ this.wrapView(<Debug fta={fta} />) } />
       <Route path={REPORTS} element={ this.wrapView(<Reports fta={fta} />) } />
-      <Route path={TIMER} element={ withRole("Timer", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
+      <Route path={TIMER} element={ withRole("TimerPanel", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
       <Route path="/" element={ this.wrapView(<Home fta={fta} />) } />
     </Routes>
   }

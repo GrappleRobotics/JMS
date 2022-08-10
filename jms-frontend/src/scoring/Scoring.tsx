@@ -138,7 +138,7 @@ export function ScoringRouter() {
     {
       SCORER_PAIRS.map(pair => GOAL_HEIGHTS.map(height => (
         <Route path={`${pair}${height[0]}`} element={ 
-          withRole({ Scorer: { goals: pair, height: height } }, <ScorerPanel pair={pair} height={height} />)
+          withRole({ ScorerPanel: { goals: pair, height: height } }, <ScorerPanel pair={pair} height={height} />)
         } />
       )))
     }

@@ -36,43 +36,46 @@ pub mod scorer {
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub enum PanelRole {
+pub enum ResourceRole {
   Unknown,
-  Scorekeeper,
-  Monitor,
-  Referee(referee::RefereeID),
-  Scorer(scorer::ScorerID),
-  Timer,
-  EStop(AllianceStationId),
+  ScorekeeperPanel,
+  MonitorPanel,
+  RefereePanel(referee::RefereeID),
+  ScorerPanel(scorer::ScorerID),
+  TimerPanel,
+  TeamEStop(AllianceStationId),
   AudienceDisplay
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct Panel {
+pub struct Resource {
   pub id: String,
-  pub role: PanelRole,
-  pub fta: bool
+  pub role: ResourceRole,
+  pub fta: bool,    // For Panels
+  pub ready: bool
 }
 
-impl Panel {
+impl Resource {
   pub fn default(id: String) -> Self {
-    Self { id, role: PanelRole::Unknown, fta: false }
+    Self { id, role: ResourceRole::Unknown, fta: false, ready: false }
   }
 }
 
+// pub struct PanelRequirements {
+//   pub required: 
+// }
+
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 #[serde(transparent)]
-pub struct Panels(pub HashMap<String, Panel>);
+pub struct Resources(pub HashMap<String, Resource>);
 
-impl Panels {
+impl Resources {
   pub fn new() -> Self {
     Self(HashMap::new())
   }
 
-  pub fn remove(&mut self, id: &str) -> Option<Panel> {
-    let ret = self.0.remove(id);
-    self._debug_list_panels();
-    ret
+  pub fn remove(&mut self, id: &str) -> Option<Resource> {
+    self.0.remove(id)
   }
 
   pub fn register(&mut self, new_id: String, old_id: &Option<String>) {
@@ -81,23 +84,18 @@ impl Panels {
         old.id = new_id.clone();
         self.0.insert(new_id, old);
       } else {
-        self.0.insert(new_id.clone(), Panel::default(new_id));
+        self.0.insert(new_id.clone(), Resource::default(new_id));
       }
-      self._debug_list_panels();
     }
   }
 
-  pub fn get(&self, id: &Option<String>) -> Option<&Panel> {
+  pub fn get(&self, id: &Option<String>) -> Option<&Resource> {
     id.as_ref().and_then(|id| self.0.get(id))
   }
 
-  pub fn get_mut(&mut self, id: &Option<String>) -> Option<&mut Panel> {
+  pub fn get_mut(&mut self, id: &Option<String>) -> Option<&mut Resource> {
     id.as_ref().and_then(|id| self.0.get_mut(id))
-  }
-
-  fn _debug_list_panels(&self) {
-    debug!("All Panels: {:?}", self.0.iter().map(|(k, v)| (k.as_str(), &v.role) ).collect::<Vec<(&str, &PanelRole)>>())
   }
 }
 
-pub type SharedPanels = std::sync::Arc<tokio::sync::Mutex<Panels>>;
+pub type SharedResources = std::sync::Arc<tokio::sync::Mutex<Resources>>;

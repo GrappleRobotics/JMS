@@ -1,13 +1,13 @@
 import React, { useContext } from "react";
 import { useLocation } from "react-router-dom";
-import { PanelRole, WebsocketMessage2JMS } from "ws-schema";
+import { ResourceRole, WebsocketMessage2JMS } from "ws-schema";
 import JmsWebsocket, { CallbackFn } from "./ws";
 
 export type WebsocketContextT = {
   send: (msg: WebsocketMessage2JMS) => void,
   listen: <T>(path: string|string[], callback: CallbackFn<T>) => string,
   unlisten: (paths: string[]) => void,
-  setRole: (role: PanelRole, location: string) => void,
+  setRole: (role: ResourceRole, location: string) => void,
   connected: boolean
 };
 
@@ -16,7 +16,7 @@ export const WebsocketContext = React.createContext<WebsocketContextT>(
   null
 );
 
-export function RoleUpdater(props: { role: PanelRole, children: React.ReactElement }) {
+export function RoleUpdater(props: { role: ResourceRole, children: React.ReactElement }) {
   let location = useLocation();
   let wsContext = useContext(WebsocketContext);
 
@@ -27,7 +27,7 @@ export function RoleUpdater(props: { role: PanelRole, children: React.ReactEleme
   return props.children;
 }
 
-export function withRole(role: PanelRole, children: React.ReactElement) {
+export function withRole(role: ResourceRole, children: React.ReactElement) {
   return <RoleUpdater role={role}>
     { children }
   </RoleUpdater>

@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena, panel::{SharedPanels, Panels}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
+use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -69,7 +69,7 @@ async fn main() -> anyhow::Result<()> {
       quals: MatchGenerationWorker::new(QualsMatchGenerator::new()), 
       playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new()) 
     }));
-    let panels: SharedPanels = Arc::new(Mutex::new(Panels::new()));
+    let resources: SharedResources = Arc::new(Mutex::new(Resources::new()));
 
     let a2 = arena.clone();
     let arena_fut = async move {
@@ -91,10 +91,10 @@ async fn main() -> anyhow::Result<()> {
     let ws_params = WebsocketParams {
       arena: arena.clone(),
       matches: match_workers.clone(),
-      panels: panels.clone()
+      resources: resources.clone()
     };
 
-    let ws = Websockets::new(ws_params, Duration::from_millis(500));
+    let ws = Websockets::new(ws_params, Duration::from_millis(200));
     let ws_fut = ws.begin();
 
     let port = match matches.value_of("port") {
