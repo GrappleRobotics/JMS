@@ -1,11 +1,14 @@
+import { faCarBattery, faWifi } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool from "components/elements/Confirm";
 import { FieldResourceSelector } from "components/FieldPosSelector";
 import React from "react";
-import { Button } from "react-bootstrap";
+import { Button, Col, Row } from "react-bootstrap";
 import { Link, Route, Routes } from "react-router-dom";
 import { capitalise } from "support/strings";
+import { withValU } from "support/util";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { SerialisedAllianceStation } from "ws-schema";
+import { AllianceStationDSReport, SerialisedAllianceStation } from "ws-schema";
 
 type TeamEstopProps = {
   station: SerialisedAllianceStation,
@@ -40,10 +43,34 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
     }
   }
 
+  renderDsReport = (report?: AllianceStationDSReport | null) => {
+    return <Row className="team-estop-indicators">
+      <Col data-ok={report?.radio_ping}>
+        <FontAwesomeIcon icon={faWifi} /> &nbsp;
+        { (report?.rtt?.toString() || "---").padStart(3, "\u00A0") }ms
+      </Col>
+      <Col data-ok={report?.rio_ping}>
+        RIO { report?.rio_ping ? "OK" : "BAD" }
+      </Col>
+      <Col data-ok={report?.robot_ping}>
+        CODE { report?.robot_ping ? "OK" : "DEAD" }
+      </Col>
+      <Col data-ok={report?.battery}>
+        <FontAwesomeIcon icon={faCarBattery} /> &nbsp;
+        { report?.battery?.toFixed(2) || "--.--" } V
+      </Col>
+      <Col data-estop={report?.estop}>
+        { report?.estop ? "ROBOT ESTOP" : (report?.mode || "---").toUpperCase() }
+      </Col>
+    </Row>
+  }
+
   render() {
     let { station } = this.props;
     return <div className="team-estop">
       <h3> { capitalise(station.station.alliance) } { station.station.station } - { station.team || "No Team" } </h3>
+      <br />
+      { this.renderDsReport(station.ds_report) }
       <br />
       <Button
         size="lg"

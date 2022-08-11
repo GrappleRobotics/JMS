@@ -636,14 +636,26 @@ th {
   .estop-auto {
     display: block;
     width: 100%;
-    height: 30vh;
+    height: 25vh;
     font-weight: bold;
-    font-size: 4em;
+    font-size: 3.5em;
   }
 
   .subtext {
     font-size: 0.8em;
     opacity: 0.8;
+  }
+
+  .team-estop-indicators {
+    @extend .text-muted;
+    font-size: 2em;
+    
+    .col {
+      &[data-ok=false], &[data-estop=true] {
+        color: theme-color("bad");
+        font-weight: bold;
+      }
+    }
   }
 }
 
