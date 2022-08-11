@@ -3029,7 +3029,8 @@
         {
           "type": "string",
           "enum": [
-            "Ping"
+            "Ping",
+            "Pong"
           ]
         },
         {
@@ -3114,7 +3115,8 @@
         {
           "type": "string",
           "enum": [
-            "Ping"
+            "Ping",
+            "Pong"
           ]
         },
         {

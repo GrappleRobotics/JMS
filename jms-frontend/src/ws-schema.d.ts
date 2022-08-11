@@ -6,7 +6,7 @@
  */
 
 export type WebsocketMessage2UI =
-  | "Ping"
+  | ("Ping" | "Pong")
   | {
       Error: string;
     }
@@ -251,7 +251,7 @@ export type ResourceRequirements =
       Quota: ResourceQuota;
     };
 export type WebsocketMessage2JMS =
-  | "Ping"
+  | ("Ping" | "Pong")
   | {
       Subscribe: string[];
     }

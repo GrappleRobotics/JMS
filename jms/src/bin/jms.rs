@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, WebsocketParams}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
+use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -88,13 +88,14 @@ async fn main() -> anyhow::Result<()> {
     let electronics_service = FieldElectronicsService::new(arena.clone(), resources.clone(), settings.electronics).await;
     let electronics_fut = electronics_service.begin();
 
-    let ws_params = WebsocketParams {
-      arena: arena.clone(),
-      matches: match_workers.clone(),
-      resources: resources.clone()
-    };
-
-    let ws = Websockets::new(ws_params, Duration::from_millis(300));
+    let ws = Websockets::new(resources.clone()).await;
+    {
+      ws.register(Duration::from_millis(1000), WSResourceHandler(resources.clone())).await;
+      ws.register(Duration::from_millis(1000), WSMatchHandler(match_workers.clone())).await;
+      ws.register(Duration::from_millis(300), WSArenaHandler(arena.clone())).await;
+      ws.register(Duration::from_millis(1000), WSEventHandler {}).await;
+      ws.register(Duration::from_millis(2000), WSDebugHandler {}).await;
+    }
     let ws_fut = ws.begin();
 
     let port = match matches.value_of("port") {

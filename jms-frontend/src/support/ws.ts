@@ -68,35 +68,33 @@ export default class JmsWebsocket {
 
     ws.onmessage = msg => {
       if (msg.data !== "ping") {
-        let messages = JSON.parse(msg.data) as WebsocketMessage2UI[];
+        let message = JSON.parse(msg.data) as WebsocketMessage2UI;
 
-        messages.forEach(message => {
-          if (message === "Ping") {
-            this.send("Ping");
-          } else {
-            this.callbacks.forEach(cb => {
-              // Check variant tree
-              let path = cb.path;
-              let valid = true;
-              let child_msg: any = message;
-              for (let i = 0; i < path.length && valid; i++) {
-                if (path[i] in child_msg) {
-                  child_msg = child_msg[path[i]];
-                } else if (path[i] === child_msg) {
-                  // Special case for unit variants
-                  child_msg = {};
-                } else {
-                  valid = false;
-                }
+        if (message === "Ping") {
+          this.send("Pong");
+        } else {
+          this.callbacks.forEach(cb => {
+            // Check variant tree
+            let path = cb.path;
+            let valid = true;
+            let child_msg: any = message;
+            for (let i = 0; i < path.length && valid; i++) {
+              if (path[i] in child_msg) {
+                child_msg = child_msg[path[i]];
+              } else if (path[i] === child_msg) {
+                // Special case for unit variants
+                child_msg = {};
+              } else {
+                valid = false;
               }
+            }
 
-              // Dispatch
-              if (valid) {
-                cb.fn(child_msg, message);
-              }
-            });
-          }
-        });
+            // Dispatch
+            if (valid) {
+              cb.fn(child_msg, message);
+            }
+          });
+        }
       }
     };
   }

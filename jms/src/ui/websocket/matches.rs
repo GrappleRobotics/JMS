@@ -6,7 +6,7 @@ use crate::{
   schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::{SerialisedMatchGeneration, MatchGenerator, SharedMatchGenerators}},
 };
 
-use super::WebsocketMessage2UI;
+use super::{ws::{WebsocketHandler, Websocket, WebsocketContext}, WebsocketMessage2JMS};
 
 define_websocket_msg!($MatchMessage {
   $Quals {
@@ -24,82 +24,45 @@ define_websocket_msg!($MatchMessage {
   send Last(Option<models::SerializedMatch>)
 });
 
+pub struct WSMatchHandler(pub SharedMatchGenerators);
 
-pub async fn ws_periodic_match(params_arc: SharedMatchGenerators) -> super::Result<Vec<MatchMessage2UI>> {
-  let mut data: Vec<MatchMessage2UI> = vec![];
-  let sorted = models::Match::sorted(&db::database())?;
-
-  {
-    let params = params_arc.lock().await;
-    data.push(MatchMessageQuals2UI::Generation((&params.quals).into()).into());
-    data.push(MatchMessagePlayoffs2UI::Generation((&params.playoffs).into()).into());
-  } {
-    let matches = sorted.iter().map(|m| models::SerializedMatch::from(m.clone()) ).collect();
-    data.push(MatchMessage2UI::All(matches));
-  } {
-    let next_match = sorted.iter().find(|&m| !m.played).map(|m| models::SerializedMatch::from(m.clone()));
-    data.push(MatchMessage2UI::Next(next_match.clone()))
-  } {
-    let last_match = sorted.iter().rev().find(|&m| m.played).map(|m| models::SerializedMatch::from(m.clone()));
-    data.push(MatchMessage2UI::Last(last_match.clone()))
+#[async_trait::async_trait]
+impl WebsocketHandler for WSMatchHandler {
+  async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
+    {
+      let gen = self.0.lock().await;
+      ctx.broadcast(MatchMessage2UI::from( MatchMessageQuals2UI::Generation((&gen.quals).into()) ));
+      ctx.broadcast(MatchMessage2UI::from( MatchMessagePlayoffs2UI::Generation((&gen.playoffs).into()) ));
+    }
+    {
+      let sorted = models::Match::sorted(&db::database())?;
+      ctx.broadcast(MatchMessage2UI::All(sorted.iter().map(|m| m.clone().into()).collect()));
+      ctx.broadcast(MatchMessage2UI::Next(sorted.iter().find(|&m| !m.played).map(|m| m.clone().into())));
+      ctx.broadcast(MatchMessage2UI::Last(sorted.iter().rev().find(|&m| m.played).map(|m| m.clone().into())));
+    }
+    Ok(())
   }
 
-  return Ok(data);
+  async fn handle(&self, msg: &WebsocketMessage2JMS, ws: &mut Websocket) -> anyhow::Result<()> {
+    if let WebsocketMessage2JMS::Match(msg) = msg {
+      let gen = self.0.lock().await;
+      match msg.clone() {
+        MatchMessage2JMS::Quals(msg) => match msg {
+          MatchMessageQuals2JMS::Clear if !gen.quals.has_played() => gen.quals.delete(),
+          MatchMessageQuals2JMS::Clear => bail!("Cannot clear match generator after matches have started!"),
+          MatchMessageQuals2JMS::Generate(p) => gen.quals.generate(p).await,
+        },
+        MatchMessage2JMS::Playoffs(msg) => match msg {
+          MatchMessagePlayoffs2JMS::Clear if !gen.playoffs.has_played() => gen.playoffs.delete(),
+          MatchMessagePlayoffs2JMS::Clear => bail!("Cannot clear match generator after matches have started!"),
+          MatchMessagePlayoffs2JMS::Generate(p) => gen.playoffs.generate(p).await,
+        },
+      }
+
+      // Broadcast any new changes
+      drop(gen);
+      self.broadcast(&ws.context).await?;
+    }
+    Ok(())
+  }
 }
-
-pub async fn ws_recv_match(data: &MatchMessage2JMS, params_arc: SharedMatchGenerators) -> super::Result<Vec<WebsocketMessage2UI>> {
-  let params = params_arc.lock().await;
-
-  match data.clone() {
-    MatchMessage2JMS::Quals(msg) => match msg {
-      MatchMessageQuals2JMS::Clear if !params.quals.has_played() => params.quals.delete(),
-      MatchMessageQuals2JMS::Clear => bail!("Cannot clear match generator after matches have started!"),
-      MatchMessageQuals2JMS::Generate(p) => params.quals.generate(p).await,
-    },
-    MatchMessage2JMS::Playoffs(msg) => match msg {
-      MatchMessagePlayoffs2JMS::Clear if !params.playoffs.has_played() => params.playoffs.delete(),
-      MatchMessagePlayoffs2JMS::Clear => bail!("Cannot clear match generator after matches have started!"),
-      MatchMessagePlayoffs2JMS::Generate(p) => params.playoffs.generate(p).await,
-    },
-  }
-  return Ok(vec![]);
-} 
-
-
-//   async fn handle(&mut self, msg: JsonMessage) -> super::Result<Vec<JsonMessage>> {
-//     // let response_msg = msg.response();
-
-//     match msg.noun.as_str() {
-//       "quals" => match (msg.verb.as_str(), msg.data) {
-//         ("clear", None) => {
-//           if self.quals.has_played() {
-//             bail!("Cannot delete after matches have started")
-//           } else {
-//             self.quals.delete();
-//           }
-//         }
-//         ("generate", Some(data)) => {
-//           let params = serde_json::from_value(data)?;
-//           self.quals.generate(params).await;
-//         }
-//         _ => bail!("Invalid verb or data"),
-//       },
-//       "playoffs" => match (msg.verb.as_str(), msg.data) {
-//         ("clear", None) => {
-//           if self.playoffs.has_played() {
-//             bail!("Cannot delete after matches have started")
-//           } else {
-//             self.playoffs.delete();
-//           }
-//         }
-//         ("generate", Some(data)) => {
-//           let params = serde_json::from_value(data)?;
-//           self.playoffs.generate(params).await;
-//         }
-//         _ => bail!("Invalid verb or data"),
-//       },
-//       _ => bail!("Unknown noun"),
-//     }
-//     Ok(vec![])
-//   }
-// }

@@ -403,6 +403,7 @@ impl Arena {
       (ArenaState::Idle { ready: true }, _) => {
         if first {
           info!("Idle ready!");
+          self.resources.lock().await.reset_all();
         } else if let Some(ArenaSignal::Prestart) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false })?;
         }
