@@ -2301,12 +2301,16 @@
       "type": "object",
       "required": [
         "element",
+        "original",
         "ready",
         "satisfied"
       ],
       "properties": {
         "element": {
           "$ref": "#/definitions/ResourceRequirementStatusElement"
+        },
+        "original": {
+          "$ref": "#/definitions/ResourceRequirements"
         },
         "ready": {
           "type": "boolean"

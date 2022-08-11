@@ -1,5 +1,6 @@
 import React from "react";
 import { FormControl, FormControlProps } from "react-bootstrap";
+import { nullIfEmpty } from "support/strings";
 import { Combine } from "support/util";
 
 export type BufferedProps = Combine<{
@@ -12,8 +13,8 @@ export type BufferedProps = Combine<{
   onUpdate?: (val: number | string) => void,
   className?: string,
   resetOnEnter?: boolean,
-  onEnter?: (val: number | string) => void
-}, FormControlProps & React.InputHTMLAttributes<HTMLInputElement>>;
+  onEnter?: (val: number | string) => void,
+}, Combine<FormControlProps, React.InputHTMLAttributes<HTMLInputElement>>>;
 
 type BufferedState = {
   value: number | string
@@ -67,8 +68,16 @@ export default class BufferedFormControl extends React.Component<BufferedProps, 
       clearTimeout(this.timer);
       this.timer = setTimeout(() => this.triggerUpdate(), this.props.autoMillis || 250);
     }
+
+    let value = event.target.value;
+
+    if (this.props.type === "number" && nullIfEmpty(String(value)) != null && Number(value) != null) {
+      let n = Number(value);
+      value = Math.min(Math.max(n, Number(this.props.min || Number.NEGATIVE_INFINITY)), Number(this.props.max || Number.POSITIVE_INFINITY));
+    }
+
     // @ts-ignore
-    this.setState({ value: (event.target.value) }, this.props.instant ? this.triggerUpdate : undefined);
+    this.setState({ value: value }, this.props.instant ? this.triggerUpdate : undefined);
   }
 
   onKeyDown = (e : {key: string}) => {

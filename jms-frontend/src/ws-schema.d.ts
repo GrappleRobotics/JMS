@@ -240,6 +240,16 @@ export type ResourceRequirementStatusElement =
   | {
       Quota: MappedResourceQuota;
     };
+export type ResourceRequirements =
+  | {
+      And: ResourceRequirements[];
+    }
+  | {
+      Or: ResourceRequirements[];
+    }
+  | {
+      Quota: ResourceQuota;
+    };
 export type WebsocketMessage2JMS =
   | "Ping"
   | {
@@ -440,16 +450,6 @@ export type ResourceMessage2JMS =
 export type ResourceMessageRequirements2JMS = {
   SetActive: ResourceRequirements | null;
 };
-export type ResourceRequirements =
-  | {
-      And: ResourceRequirements[];
-    }
-  | {
-      Or: ResourceRequirements[];
-    }
-  | {
-      Quota: ResourceQuota;
-    };
 
 export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
@@ -642,6 +642,7 @@ export interface ScorerID {
 }
 export interface ResourceRequirementStatus {
   element: ResourceRequirementStatusElement;
+  original: ResourceRequirements;
   ready: boolean;
   satisfied: boolean;
 }
@@ -658,6 +659,11 @@ export interface Resource {
   ready?: boolean;
   role: ResourceRole;
 }
+export interface ResourceQuota {
+  max?: number | null;
+  min: number;
+  template: Resource;
+}
 export interface ScoreUpdateData {
   alliance: Alliance;
   update: ScoreUpdate;
@@ -665,9 +671,4 @@ export interface ScoreUpdateData {
 export interface QualsMatchGeneratorParams {
   station_anneal_steps: number;
   team_anneal_steps: number;
-}
-export interface ResourceQuota {
-  max?: number | null;
-  min: number;
-  template: Resource;
 }

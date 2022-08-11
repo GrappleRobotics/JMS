@@ -21,7 +21,7 @@ export class ResourceRoleLabel extends React.PureComponent<{ role: ResourceRole,
     } else {
       const ROLE_LABEL_MAP: { [k in typeof role]: string } = {
         "Unknown": "Other",
-        "Any": "--ERROR--: Any",
+        "Any": "Any",
         "ScorekeeperPanel": "Scorekeeper",
         "MonitorPanel": "Monitor",
         "TimerPanel": "Timer",

@@ -180,6 +180,7 @@ pub enum ResourceRequirementStatusElement {
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
 pub struct ResourceRequirementStatus {
   pub element: ResourceRequirementStatusElement,
+  pub original: ResourceRequirements,
   pub satisfied: bool,
   pub ready: bool
 }
@@ -187,13 +188,14 @@ pub struct ResourceRequirementStatus {
 impl ResourceRequirements {
 
   pub fn status(self, resources: &Resources) -> ResourceRequirementStatus {
-    match self {
+    match self.clone() {
       ResourceRequirements::And(els) => {
         let mapped = els.into_iter().map(|r| r.status(resources));
         ResourceRequirementStatus {
           ready: mapped.clone().all(|r| r.ready),
           satisfied: mapped.clone().all(|r| r.satisfied),
-          element: ResourceRequirementStatusElement::And(mapped.collect())
+          element: ResourceRequirementStatusElement::And(mapped.collect()),
+          original: self
         }
       },
       ResourceRequirements::Or(els) => {
@@ -201,14 +203,16 @@ impl ResourceRequirements {
         ResourceRequirementStatus {
           ready: mapped.clone().any(|r| r.ready),
           satisfied: mapped.clone().any(|r| r.satisfied),
-          element: ResourceRequirementStatusElement::Or(mapped.collect())
+          element: ResourceRequirementStatusElement::Or(mapped.collect()),
+          original: self
         }
       },
       ResourceRequirements::Quota(q) => {
         let mapped = q.mapped(resources);
         ResourceRequirementStatus { 
           ready: mapped.ready, satisfied: mapped.satisfied, 
-          element: ResourceRequirementStatusElement::Quota(mapped)
+          element: ResourceRequirementStatusElement::Quota(mapped),
+          original: self
         }
       },
     }

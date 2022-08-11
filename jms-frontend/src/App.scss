@@ -89,6 +89,10 @@ $alliances: ( "red", "blue" );
 
 a {
   text-decoration: none;
+
+  &:hover {
+    cursor: pointer;
+  }
 }
 
 .nav-link.disabled {
