@@ -2,7 +2,7 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
-import { Alliance, AllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
 import BaseAudienceScene from "./BaseAudienceScene";
 
 type MatchProgressBarProps = {
@@ -65,7 +65,7 @@ type AllianceScoreProps = {
   has_rp: boolean,
   alliance: Alliance,
   score: SnapshotScore,
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   img?: string
 }
 
@@ -108,7 +108,7 @@ class AllianceScore extends React.PureComponent<AllianceScoreProps> {
 }
 
 type AudienceSceneMatchPlayState = {
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   match?: LoadedMatch,
   arenaState?: ArenaState
 };

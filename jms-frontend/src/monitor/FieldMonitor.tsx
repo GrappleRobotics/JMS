@@ -5,10 +5,10 @@ import React from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
 import { WebsocketComponent } from "support/ws-component";
-import { AllianceStation, ArenaState, LoadedMatch } from "ws-schema";
+import { SerialisedAllianceStation, ArenaState, LoadedMatch } from "ws-schema";
 
 type FieldMonitorStationState = {
-  station: AllianceStation,
+  station: SerialisedAllianceStation,
   state?: ArenaState,
   match?: LoadedMatch,
   estop_mode: boolean,
@@ -56,7 +56,7 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
     return percent.toFixed(0);
   }
 
-  whatError = (stn: AllianceStation, report: AllianceStation["ds_report"], estop: boolean) => {
+  whatError = (stn: SerialisedAllianceStation, report: SerialisedAllianceStation["ds_report"], estop: boolean) => {
     let playing_match = this.props.state?.state === "MatchPlay";
 
     if (stn.bypass) return null;
@@ -154,7 +154,7 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
 }
 
 type FieldMonitorState = {
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   state?: ArenaState,
   match?: LoadedMatch,
   estop_mode: boolean
@@ -172,7 +172,7 @@ export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, F
     this.listen("Arena/Alliance/CurrentStations", "stations")
   ];
 
-  renderAlliance = (stations: AllianceStation[]) => {
+  renderAlliance = (stations: SerialisedAllianceStation[]) => {
     return <React.Fragment>
       {
         stations.map(s => (

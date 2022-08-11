@@ -111,7 +111,7 @@ export type ArenaState =
       state: "MatchCommit";
     };
 export type ArenaMessageAlliance2UI = {
-  CurrentStations: AllianceStation[];
+  CurrentStations: SerialisedAllianceStation[];
 };
 export type DSMode = "Teleop" | "Test" | "Auto";
 export type AllianceStationOccupancy = "Vacant" | "Occupied" | "WrongStation" | "WrongMatch";
@@ -348,7 +348,11 @@ export type ArenaMessage2JMS =
 export type ArenaMessageState2JMS = {
   Signal: ArenaSignal;
 };
-export type ArenaSignal = "Estop" | "EstopReset" | "Prestart" | "MatchArm" | "MatchPlay" | "MatchCommit";
+export type ArenaSignal =
+  | ("Estop" | "EstopReset" | "Prestart" | "MatchPlay" | "MatchCommit")
+  | {
+      MatchArm: boolean;
+    };
 export type ArenaMessageAlliance2JMS = {
   UpdateAlliance: {
     astop?: boolean | null;
@@ -445,6 +449,9 @@ export type ResourceMessage2JMS =
       SetFTA: string | null;
     }
   | {
+      SetReady: boolean;
+    }
+  | {
       Requirements: ResourceMessageRequirements2JMS;
     };
 export type ResourceMessageRequirements2JMS = {
@@ -503,9 +510,10 @@ export interface AwardRecipient {
   awardee?: string | null;
   team?: number | null;
 }
-export interface AllianceStation {
+export interface SerialisedAllianceStation {
   astop: boolean;
   bypass: boolean;
+  can_arm: boolean;
   ds_report?: AllianceStationDSReport | null;
   estop: boolean;
   occupancy: AllianceStationOccupancy;
@@ -634,6 +642,7 @@ export interface TaggedResource {
   fta?: boolean;
   id: string;
   ready?: boolean;
+  ready_requested?: boolean;
   role: ResourceRole;
 }
 export interface ScorerID {
@@ -657,6 +666,7 @@ export interface MappedResourceQuota {
 export interface Resource {
   fta?: boolean;
   ready?: boolean;
+  ready_requested?: boolean;
   role: ResourceRole;
 }
 export interface ResourceQuota {

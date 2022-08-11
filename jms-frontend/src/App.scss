@@ -171,7 +171,15 @@ html, body, #root {
     &[data-arena-state=Prestart] {
       background-color: theme-color("warning");
       &[data-arena-ready=true] {
-        background-color: theme-color("good");
+        background-color: theme-color("dark");
+      }
+      &[data-ready=true] {
+        background-color: theme-color("green");
+      }
+      &[data-ready=false] {
+        &[data-ready-required=true] {
+          background-color: theme-color("bad");
+        }
       }
     }
     &[data-arena-state=MatchArmed] {
@@ -232,6 +240,22 @@ html, body, #root {
 .estop-cancel {
   display: block;
   width: 100%;
+}
+
+.ready-big {
+  display: block;
+  width: 100%;
+  padding: 5rem;
+  font-size: 4rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.ready-later {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  font-size: 2rem;
 }
 
 // .bg-hazard-dark {

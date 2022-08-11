@@ -10,11 +10,11 @@ import { capitalise } from "support/strings";
 import { otherAlliance, withVal } from "support/util";
 import { ALLIANCES, NEAR_FAR } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { Alliance, AllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
 
 type RefereePanelState = {
   match?: LoadedMatch,
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   access?: ArenaAccessRestriction,
   state?: ArenaState
 }
@@ -87,7 +87,7 @@ abstract class RefereePanelBase<P={}> extends WebsocketComponent<P, RefereePanel
 
 type RefereeTeamCardProps = {
   idx: number,
-  station: AllianceStation,
+  station: SerialisedAllianceStation,
   score: SnapshotScore,
   update: ( data: ScoreUpdate ) => void,
   endgame: boolean

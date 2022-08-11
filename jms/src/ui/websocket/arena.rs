@@ -2,7 +2,7 @@ use anyhow::{anyhow, bail};
 
 use jms_macros::define_websocket_msg;
 
-use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, ArenaSignal, ArenaState, AudienceDisplay, SharedArena, AllianceStation, ArenaAccessRestriction}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, ArenaSignal, ArenaState, AudienceDisplay, SharedArena, ArenaAccessRestriction, SerialisedAllianceStation}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
 
 define_websocket_msg!($ArenaMessage {
   $State {
@@ -10,7 +10,7 @@ define_websocket_msg!($ArenaMessage {
     recv Signal(ArenaSignal)
   },
   $Alliance {
-    send CurrentStations(Vec<AllianceStation>),
+    send CurrentStations(Vec<SerialisedAllianceStation>),
     recv UpdateAlliance {
       station: AllianceStationId,
       bypass: Option<bool>,
@@ -50,7 +50,7 @@ pub async fn ws_periodic_arena(s_arena: SharedArena) -> super::Result<Vec<ArenaM
 
   data.push(ArenaMessageMatch2UI::Current(arena.current_match.clone()).into());
   data.push(ArenaMessageState2UI::Current(arena.state.state.clone()).into());
-  data.push(ArenaMessageAlliance2UI::CurrentStations(arena.stations.clone()).into());
+  data.push(ArenaMessageAlliance2UI::CurrentStations(arena.stations.iter().map(|x| x.clone().into()).collect()).into());
   data.push(ArenaMessageAudienceDisplay2UI::Current(arena.audience_display.clone()).into());
   data.push(ArenaMessageAccess2UI::Current(arena.access.clone()).into());
 

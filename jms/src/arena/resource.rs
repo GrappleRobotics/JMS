@@ -57,7 +57,9 @@ pub struct Resource {
   #[serde(default)]
   pub fta: bool,    // For Panels
   #[serde(default)]
-  pub ready: bool
+  pub ready: bool,
+  #[serde(default)]
+  pub ready_requested: bool
 }
 
 #[derive(Debug, Clone, serde::Serialize, schemars::JsonSchema)]
@@ -69,7 +71,7 @@ pub struct TaggedResource {
 
 impl Resource {
   pub fn default(role: ResourceRole) -> Self {
-    Self { role, fta: false, ready: false }
+    Self { role, fta: false, ready: false, ready_requested: false }
   }
 
   pub fn tag(self, id: String) -> TaggedResource {
@@ -120,6 +122,13 @@ impl Resources {
 
   pub fn all(&self) -> Vec<&TaggedResource> {
     self.0.values().collect()
+  }
+
+  pub fn reset_all(&mut self) {
+    for (_, v) in self.0.iter_mut() {
+      v.r.ready = false;
+      v.r.ready_requested = false;
+    }
   }
 }
 
@@ -186,6 +195,27 @@ pub struct ResourceRequirementStatus {
 }
 
 impl ResourceRequirements {
+  pub fn request_ready(&self, resources: &mut Resources) {
+    match self {
+      ResourceRequirements::And(all) => {
+        for el in all {
+          el.request_ready(resources)
+        }
+      },
+      ResourceRequirements::Or(all) => {
+        for el in all {
+          el.request_ready(resources)
+        }
+      },
+      ResourceRequirements::Quota(q) => {
+        for (_, res) in resources.0.iter_mut() {
+          if res.r.meets_requirements_of(&q.template) && !res.r.ready_satisfied(q.template.ready) {
+            res.r.ready_requested = true;
+          }
+        }
+      },
+    }
+  }
 
   pub fn status(self, resources: &Resources) -> ResourceRequirementStatus {
     match self.clone() {

@@ -64,12 +64,12 @@ async fn main() -> anyhow::Result<()> {
 
     let network = settings.network.create()?;
 
-    let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, network)));
+    let resources: SharedResources = Arc::new(Mutex::new(Resources::new()));
+    let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, network, resources.clone())));
     let match_workers: SharedMatchGenerators = Arc::new(Mutex::new(MatchGenerators { 
       quals: MatchGenerationWorker::new(QualsMatchGenerator::new()), 
       playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new()) 
     }));
-    let resources: SharedResources = Arc::new(Mutex::new(Resources::new()));
 
     let a2 = arena.clone();
     let arena_fut = async move {
@@ -94,7 +94,7 @@ async fn main() -> anyhow::Result<()> {
       resources: resources.clone()
     };
 
-    let ws = Websockets::new(ws_params, Duration::from_millis(200));
+    let ws = Websockets::new(ws_params, Duration::from_millis(300));
     let ws_fut = ws.begin();
 
     let port = match matches.value_of("port") {

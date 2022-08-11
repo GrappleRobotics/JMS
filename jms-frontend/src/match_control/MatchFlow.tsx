@@ -1,6 +1,8 @@
+import confirmBool from 'components/elements/Confirm';
+import { ResourceRequirementMinimap } from 'components/ResourceComponents';
 import React from 'react';
 import { Button, ButtonProps, Col, Row } from 'react-bootstrap';
-import { ArenaMessageAudienceDisplaySet2JMS, ArenaSignal, ArenaState } from 'ws-schema';
+import { SerialisedAllianceStation, ArenaMessageAudienceDisplaySet2JMS, ArenaSignal, ArenaState, ResourceRequirementStatus } from 'ws-schema';
 
 class MatchFlowButton extends React.PureComponent<ButtonProps & { arenaState?: ArenaState, targetState: ArenaState["state"] }> {
   render() {
@@ -19,12 +21,29 @@ type MatchFlowProps = {
   onSignal: (signal: ArenaSignal) => void,
   onAudienceDisplay: (display: ArenaMessageAudienceDisplaySet2JMS) => void,
   state?: ArenaState,
-  matchLoaded: boolean
+  matchLoaded: boolean,
+  resources?: ResourceRequirementStatus,
+  stations: SerialisedAllianceStation[]
 };
 
 export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
+  forceArm = (resources: ResourceRequirementStatus) => {
+    confirmBool(<div className="text-center">
+        <h3 className="text-danger"> <strong>RESOURCES ARE NOT READY</strong> </h3>
+        <p> Are you sure you want to <strong className="text-danger"> ARM MATCH? </strong> </p>
+        <br />
+        <ResourceRequirementMinimap status={resources} />
+        <br />
+      </div>,
+      { title: undefined, okText: "Ignore Resource Requirements", okVariant: "hazard-red", size: "lg" }
+    ).then(b => b ? this.props.onSignal({ MatchArm: true }) : {});
+  }
+
   render() {
-    let { state, onSignal, matchLoaded } = this.props;
+    let { state, onSignal, matchLoaded, resources, stations } = this.props;
+    const teamsOk = stations.every(s => s.can_arm);
+    const resourceOk = resources ? resources.ready : true;
+
     return <Row>
       <Col>
         <Row>
@@ -53,9 +72,11 @@ export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
             <MatchFlowButton 
               arenaState={state} 
               targetState="MatchArmed"
-              variant="hazard-yellow"
-              onClick={() => this.props.onSignal("MatchArm")}
-              disabled={!(state?.state === "Prestart" && state.ready)}
+              variant={resourceOk ? "hazard-yellow" : "hazard-red"}
+              onClick={() => {
+                resourceOk ? this.props.onSignal({ MatchArm: false }) : this.forceArm(resources!)
+              }}
+              disabled={!(state?.state === "Prestart" && state.ready && teamsOk)}
             >
               Arm Match
             </MatchFlowButton>

@@ -22,51 +22,6 @@
         "red"
       ]
     },
-    "AllianceStation": {
-      "type": "object",
-      "required": [
-        "astop",
-        "bypass",
-        "estop",
-        "occupancy",
-        "station"
-      ],
-      "properties": {
-        "astop": {
-          "type": "boolean"
-        },
-        "bypass": {
-          "type": "boolean"
-        },
-        "ds_report": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/AllianceStationDSReport"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "estop": {
-          "type": "boolean"
-        },
-        "occupancy": {
-          "$ref": "#/definitions/AllianceStationOccupancy"
-        },
-        "station": {
-          "$ref": "#/definitions/AllianceStationId"
-        },
-        "team": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint16",
-          "minimum": 0.0
-        }
-      }
-    },
     "AllianceStationDSReport": {
       "type": "object",
       "required": [
@@ -378,7 +333,7 @@
             "CurrentStations": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/AllianceStation"
+                "$ref": "#/definitions/SerialisedAllianceStation"
               }
             }
           },
@@ -563,14 +518,29 @@
       ]
     },
     "ArenaSignal": {
-      "type": "string",
-      "enum": [
-        "Estop",
-        "EstopReset",
-        "Prestart",
-        "MatchArm",
-        "MatchPlay",
-        "MatchCommit"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Estop",
+            "EstopReset",
+            "Prestart",
+            "MatchPlay",
+            "MatchCommit"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "MatchArm"
+          ],
+          "properties": {
+            "MatchArm": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "ArenaState": {
@@ -2123,6 +2093,10 @@
           "default": false,
           "type": "boolean"
         },
+        "ready_requested": {
+          "default": false,
+          "type": "boolean"
+        },
         "role": {
           "$ref": "#/definitions/ResourceRole"
         }
@@ -2165,6 +2139,18 @@
                 "string",
                 "null"
               ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetReady"
+          ],
+          "properties": {
+            "SetReady": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false
@@ -2677,6 +2663,55 @@
         "CD"
       ]
     },
+    "SerialisedAllianceStation": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "can_arm",
+        "estop",
+        "occupancy",
+        "station"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "can_arm": {
+          "type": "boolean"
+        },
+        "ds_report": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AllianceStationDSReport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "occupancy": {
+          "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "station": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
     "SerialisedMatchGeneration": {
       "type": "object",
       "required": [
@@ -2866,6 +2901,10 @@
           "type": "string"
         },
         "ready": {
+          "default": false,
+          "type": "boolean"
+        },
+        "ready_requested": {
           "default": false,
           "type": "boolean"
         },

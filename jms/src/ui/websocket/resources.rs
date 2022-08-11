@@ -10,6 +10,7 @@ define_websocket_msg!($ResourceMessage {
   recv SetID(String),
   recv SetRole(ResourceRole),
   recv SetFTA(Option<String>),
+  recv SetReady(bool),
 
   $Requirements {
     send Current(Option<ResourceRequirementStatus>),
@@ -74,6 +75,11 @@ pub async fn ws_recv_resources(msg: &ResourceMessage2JMS, resources: SharedResou
       ResourceMessageRequirements2JMS::SetActive(rr) => {
         DBResourceRequirements(rr).insert(&db::database())?;
       },
+    },
+    ResourceMessage2JMS::SetReady(ready) => {
+      if let Some(resource) = resources.get_mut(resource_id.as_deref()) {
+        resource.r.ready = ready;
+      }
     },
   };
 

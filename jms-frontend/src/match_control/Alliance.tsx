@@ -5,7 +5,7 @@ import BufferedFormControl from 'components/elements/BufferedFormControl';
 import SimpleTooltip from 'components/elements/SimpleTooltip';
 import React from 'react';
 import { Button, Col, Row } from 'react-bootstrap';
-import { AllianceStation, AllianceStationDSReport, AllianceStationOccupancy, ArenaMessageAlliance2JMS, ArenaState, DSMode, SnapshotScore } from 'ws-schema';
+import { SerialisedAllianceStation, AllianceStationDSReport, AllianceStationOccupancy, ArenaMessageAlliance2JMS, ArenaState, DSMode, SnapshotScore } from 'ws-schema';
 
 type IndicatorProps = React.HTMLAttributes<HTMLDivElement>;
 
@@ -59,7 +59,7 @@ const DSModeIndicator = ( { className, report, ...props }: IndicatorProps & { re
 type AllianceStationProps = {
   matchLoaded: boolean,
   arenaState: ArenaState,
-  station: AllianceStation,
+  station: SerialisedAllianceStation,
   onUpdate: (update: ArenaMessageAlliance2JMS["UpdateAlliance"]) => void
 }
 
@@ -157,7 +157,7 @@ type AllianceProps = {
   matchLoaded: boolean,
   arenaState?: ArenaState,
   matchScore?: SnapshotScore,
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   onStationUpdate: (update: ArenaMessageAlliance2JMS["UpdateAlliance"]) => void
 }
 

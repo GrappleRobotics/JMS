@@ -1,14 +1,14 @@
 import confirmBool from "components/elements/Confirm";
 import { FieldResourceSelector } from "components/FieldPosSelector";
 import React from "react";
-import { Button, Col, Container } from "react-bootstrap";
-import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Button } from "react-bootstrap";
+import { Link, Route, Routes } from "react-router-dom";
 import { capitalise } from "support/strings";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { AllianceStation } from "ws-schema";
+import { SerialisedAllianceStation } from "ws-schema";
 
 type TeamEstopProps = {
-  station: AllianceStation,
+  station: SerialisedAllianceStation,
   onTrigger: (which: "astop" | "estop") => void
 }
 
@@ -70,7 +70,7 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
 }
 
 type TeamEstopsState = {
-  stations: AllianceStation[]
+  stations: SerialisedAllianceStation[]
 };
 
 export class TeamEstops extends WebsocketComponent<{}, TeamEstopsState> {

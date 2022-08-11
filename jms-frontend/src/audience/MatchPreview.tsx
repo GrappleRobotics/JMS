@@ -2,12 +2,12 @@ import React from "react";
 import { Card, Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
 import { ALLIANCES } from "support/ws-additional";
-import { AllianceStation, LoadedMatch, Alliance, Team, TeamRanking } from "ws-schema";
+import { SerialisedAllianceStation, LoadedMatch, Alliance, Team, TeamRanking } from "ws-schema";
 import AudienceCard from "./AudienceCard";
 import BaseAudienceScene from "./BaseAudienceScene";
 
 type AudienceSceneMatchPreviewState = {
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   match?: LoadedMatch,
   teams: Team[],
   rankings: TeamRanking[]
