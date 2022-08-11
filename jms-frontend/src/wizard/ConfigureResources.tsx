@@ -2,7 +2,7 @@ import { faAdd, faCheck, faCrown, faInfoCircle, faPencil, faTimes, faTrash } fro
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { confirmModal, withConfirm } from "components/elements/Confirm";
 import EnumToggleGroup from "components/elements/EnumToggleGroup";
-import { ResourceRoleLabel } from "components/elements/ResourceComponents";
+import { ResourceRequirementMinimap, ResourceRequirementMinimapAccordion, ResourceRoleLabel } from "components/ResourceComponents";
 import SimpleTooltip from "components/elements/SimpleTooltip";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import update, { Spec } from "immutability-helper";
@@ -11,7 +11,7 @@ import { Accordion, Button, Card, Col, Form, ListGroup, Row, Table } from "react
 import { interleave, VariantKeys, withVal, withValU } from "support/util";
 import { ALLIANCES, ALLIANCE_STATIONS, ROLES } from "support/ws-additional";
 import { WebsocketComponent } from "support/ws-component";
-import { Alliance, ResourceRequirements, ResourceRequirementStatus, TaggedResource, RefereeID, ScorerID, MappedResourceQuota, ResourceQuota, ResourceRole } from "ws-schema";
+import { ResourceRequirements, ResourceRequirementStatus, TaggedResource, RefereeID, ScorerID, MappedResourceQuota, ResourceQuota, ResourceRole } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 import { nullIfEmpty } from "support/strings";
 
@@ -151,9 +151,11 @@ export default class ConfigureResources extends WebsocketComponent<{}, Configure
       <br />
 
       {
-        withVal(requirement_status, status => (
+        withVal(requirement_status, status => <React.Fragment>
+          <ResourceRequirementMinimapAccordion defaultOpen status={status} />
+          <br />
           <RequirementStatusComponent status={status} onUpdate={this.load} />
-        ))
+        </React.Fragment>)
       }
 
     </EventWizardPageContent>
@@ -326,7 +328,7 @@ class ResourceQuotaComponent extends React.PureComponent<ResourceQuotaComponentP
           }
         </Col>
         {
-          withVal(onUpdate, onUp => <Col md={1}>
+          withVal(onUpdate, onUp => <Col md="auto">
             <a className="text-muted" onClick={() => this.edit(onUp)}> <FontAwesomeIcon icon={faPencil} /> </a>
             &nbsp;&nbsp;
             <a className="text-danger" onClick={() => onUp(null)}> <FontAwesomeIcon icon={faTrash} /> </a>

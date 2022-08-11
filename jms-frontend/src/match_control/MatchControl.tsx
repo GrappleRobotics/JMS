@@ -1,7 +1,10 @@
+import { ResourceRequirementMinimap, ResourceRequirementMinimapAccordion } from 'components/ResourceComponents';
 import update from 'immutability-helper';
+import React from 'react';
 import { Button, Col, Container, Row } from "react-bootstrap";
+import { withVal } from 'support/util';
 import { WebsocketComponent } from "support/ws-component";
-import { AllianceStation, ArenaState, LoadedMatch, SerialisedMatchGeneration, SerializedMatch } from "ws-schema";
+import { AllianceStation, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedMatchGeneration, SerializedMatch } from "ws-schema";
 import AllianceDash from "./Alliance";
 import MatchFlow from "./MatchFlow";
 import MatchScheduleView from "./MatchScheduleView";
@@ -20,7 +23,8 @@ type FullMatches = {
 
 type MatchControlState = {
   arena: FullArena,
-  matches: FullMatches
+  matches: FullMatches,
+  resource_status?: ResourceRequirementStatus
 }
 
 export default class MatchControl extends WebsocketComponent<{}, MatchControlState> {
@@ -43,12 +47,13 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
       this.listenFn<SerialisedMatchGeneration>("Match/Playoffs/Generation", 
         msg => this.setState(state => update(state, { matches: { playoffs: { $set: msg.matches } } }))),
       this.listenFn<SerializedMatch | null>("Match/Next", 
-        msg => this.setState(state => update(state, { matches: { next: { $set: msg || undefined } } })))
+        msg => this.setState(state => update(state, { matches: { next: { $set: msg || undefined } } }))),
+      this.listen("Resource/Requirements/Current", "resource_status")
     ];
   }
 
   render() {
-    const { arena, matches } = this.state;
+    const { arena, matches, resource_status } = this.state;
     const has_match = !!arena.match;
 
     return <Container>
@@ -75,8 +80,8 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
         </Col>
       </Row>
       <br />
-      <Row >
-        <Col>
+      <Row>
+        <Col className="match-control-main">
           <Row>
             <Col>
               <AllianceDash
@@ -107,10 +112,14 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
             onAudienceDisplay={scene => this.send({ Arena: { AudienceDisplay: { Set: scene } } })}
           />
         </Col>
-      </Row>
-      <br />
-      <Row>
-        <Col>
+        {
+          withVal(resource_status, status => <Col className="match-control-map" md="auto">
+            <Row>
+              <ResourceRequirementMinimap status={status} />
+            </Row>
+          </Col>)
+        }
+        <Col className="match-control-schedule">
           <MatchScheduleView
             arenaState={arena.state}
             currentMatch={arena.match}

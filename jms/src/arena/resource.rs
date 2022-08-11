@@ -149,7 +149,7 @@ impl ResourceQuota {
       quota: self.clone(), 
       resource_ids: res.map(|r| r.id.clone()).collect(), 
       satisfied: min_ok && max_ok,
-      ready: all_ready
+      ready: min_ok && max_ok && all_ready
     }
   }
 }

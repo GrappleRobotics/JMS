@@ -1,15 +1,28 @@
 .pos-selector-container {
+  max-height: 100%;
+  max-width: 100%;
+  height: auto;
+  width: auto;
+
   display: flex;
   flex-direction: column;
   padding: 0;
 
   .pos-selector-row {
     display: flex;
+    max-height: 100%;
     // overflow: none;
 
+    > .col {
+      display: flex;
+      justify-content: center;
+    }
+
     .pos-selector-image-container {
-      max-height: 100%;
+      max-height: calc(min(100%, 100vh - 200px - 4rem));
       max-width: 100%;
+      height: auto;
+      width: auto;
       display: flex;
 
       justify-content: center;
@@ -17,41 +30,126 @@
 
       .pos-selector-image {
         display: block;
-        max-width: calc(100vw - 100px - 10rem);
-        max-height: calc(100vh - 200px - 4rem);
+        max-height: 100%;
+        max-width: 100%;
+        // max-width: calc(100vw - 100px - 10rem);
+        // max-height: calc(100vh - 200px - 4rem);
         height: auto;
         width: auto;
       }
 
-      .btn {
+      // .pos-selector-children {
+      //   width: 100%;
+      //   height: 100%;
+      //   min-width: 100%;
+      //   min-height: 100%;
+      //   position: absolute;
+      //   top: 0;
+      //   left: 0;
+
+      > :not(.pos-selector-image) {
         position: absolute;
-        font-size: 1.25rem;
+        // font-size: 1.25rem;
         transform: translate(-50%, 50%);
-        border: 0.15em solid black;
+        // border: 0.15em solid black;
       }
+      // }
     }
   }
 }
 
-.team-selector {
-  .btn {
-    max-width: 5em;
-    &[data-alliance=blue] {
-      @extend .btn-blue;
-      left: 10%;
+$b-near: calc(50% - 35% - 2em);
+$b-far: calc(50% + 35% + 2em);
+$l-red: 90%;
+$l-blue: 10%;
 
-      &[data-position="1"] { bottom: 70%; }
-      &[data-position="2"] { bottom: 55%; }
-      &[data-position="3"] { bottom: 40%; }
+$year-role-locations: (
+  "scorer-ABl": (calc(50% - 3% - 1.2rem), 50% - 15%),
+  "scorer-ABh": (calc(50% - 3% + 1.2rem), 50% - 15%),
+  "scorer-CDl": (calc(50% + 3% - 1.2rem), 50% + 15%),
+  "scorer-CDh": (calc(50% + 3% + 1.2rem), 50% + 15%)
+);
+
+$role-locations: map-merge((
+  "estop-red-1": ($l-red, 30%),
+  "estop-red-2": ($l-red, 45%),
+  "estop-red-3": ($l-red, 60%),
+  "estop-blue-1": ($l-blue, 70%),
+  "estop-blue-2": ($l-blue, 55%),
+  "estop-blue-3": ($l-blue, 40%),
+  "ref-head": (50%, $b-near),
+  "ref-blue-near": (50% - 20%, $b-near),
+  "ref-red-near": (50% + 20%, $b-near),
+  "ref-blue-far": (50% - 20%, $b-far),
+  "ref-red-far": (50% + 20%, $b-far),
+), $year-role-locations);
+
+.field-pos-resource {
+  &[data-role] {
+    display: none;  // Hide anything we don't have a role for
+    .btn {
+      font-size: 1.25rem;
+      border: 0.15em solid black;
+      max-width: 5em;
     }
+  }
 
-    &[data-alliance=red] {
-      @extend .btn-red;
-      left: 90%;
+  @each $key, $rloc in $role-locations {
+    &[data-role=#{$key}] {
+      display: block;
+      left: nth($rloc, 1);
+      bottom: nth($rloc, 2);
+    }
+  }
 
-      &[data-position="3"] { bottom: 60%; }
-      &[data-position="2"] { bottom: 45%; }
-      &[data-position="1"] { bottom: 30%; }
+  &[data-fta=true] {
+    display: block;
+    left: 60%;
+    bottom: $b-near;
+  }
+
+  &[data-role*="-red-"] {
+    .btn { @extend .btn-red; }
+  }
+  &[data-role*="-blue-"] {
+    .btn { @extend .btn-blue; }
+  }
+}
+
+.resource-indicator {
+  width: 2rem;
+  height: 2rem;
+  margin: 0.1rem 0.1rem 0 0.1rem;
+  border: 1px solid darken(theme-color("dark"), 10%);
+  border-radius: 0.2rem;
+  background-color: lighten(theme-color("dark"), 10%);
+  display: flex;
+  color: $gray-400;
+  font-weight: bold;
+  font-size: 1.2rem;
+
+  justify-content: center;
+  align-items: center;
+
+  &[data-satisfied=false] {
+    background-color: theme-color("bad");
+    color: darken(theme-color("bad"), 30%);
+  }
+
+  &[data-ready=true] {
+    background-color: theme-color("good");
+    color: darken(theme-color("good"), 20%);
+  }
+
+  &[data-fta=true] {
+    border: 3px solid lighten(theme-color("gold"), 10%);
+  }
+}
+
+.resource-accordion-header {
+  &[data-ready=true] {
+    .accordion-button {
+      background-color: darken(theme-color("good"), 20%);
     }
   }
 }

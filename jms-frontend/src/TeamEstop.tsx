@@ -1,5 +1,5 @@
 import confirmBool from "components/elements/Confirm";
-import { TeamSelector } from "components/FieldPosSelector";
+import { FieldResourceSelector } from "components/FieldPosSelector";
 import React from "react";
 import { Button, Col, Container } from "react-bootstrap";
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
@@ -80,9 +80,21 @@ export class TeamEstops extends WebsocketComponent<{}, TeamEstopsState> {
     this.listen("Arena/Alliance/CurrentStations", "stations")
   ]
 
+  selector = () => {
+    const { stations } = this.state;
+    return <FieldResourceSelector
+      title="Select Team"
+      options={ stations.map(s => ( { TeamEStop: s.station } )) }
+      labels={ stations.map(s => (
+        `${capitalise(s.station.alliance)} ${s.station.station} ${ s.team ? ` - ${s.team}` : "" }`
+      )) }
+      wrap={(r, child) => <Link to={`${r.TeamEStop.alliance}-${r.TeamEStop.station}`}> { child } </Link>}
+    />
+  }
+
   render() {
     return <Routes>
-      <Route path="/" element={ <TeamSelector stations={this.state.stations} /> }/>
+      <Route path="/" element={ this.selector() }/>
 
       {
       this.state.stations.map((s, i) => (

@@ -142,7 +142,7 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.navFor("awards") }
             </Nav>
           </Col>
-          <Col md>
+          <Col md={9}>
             <Tab.Content>
               <br />
               { this.paneFor("welcome", <Welcome />) }

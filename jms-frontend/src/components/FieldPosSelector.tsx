@@ -2,13 +2,15 @@ import React from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { capitalise } from "support/strings";
-import { withVal } from "support/util";
-import { AllianceStation, AllianceStationId } from "ws-schema";
+import { unpackToData, withVal, withValU } from "support/util";
+import { role2id, role2string } from "support/ws-additional";
+import { AllianceStation, AllianceStationId, ResourceRole } from "ws-schema";
+import { ResourceRoleLabel } from "./ResourceComponents";
 
 type PosSelectorProps = {
   title?: React.ReactNode,
   className?: string,
-  children?: React.ReactNode[],
+  children?: React.ReactNode | React.ReactNode[],
   leftChildren?: React.ReactNode | React.ReactNode[],
   rightChildren?: React.ReactNode | React.ReactNode[],
   img?: string
@@ -25,66 +27,60 @@ export class PosSelector extends React.PureComponent<PosSelectorProps> {
       </Row>) }
 
       <Row className="pos-selector-row">
-        <Col className="pos-selector-left"> { leftChildren } </Col>
-        <Col className="pos-selector-image-container">
-          { children }
-          <img className="pos-selector-image" src={img} />
+        {
+          withValU(leftChildren, left => <Col md={2} className="pos-selector-left"> { left } </Col>)
+        }
+        <Col>
+          <div className="pos-selector-image-container">
+            { children }
+            <img className="pos-selector-image" src={img} />
+          </div>
         </Col>
-        <Col className="pos-selector-right"> { rightChildren } </Col>
+        {
+          withValU(rightChildren, right => <Col md={2} className="pos-selector-right"> { right } </Col>)
+        }
       </Row>
     </Col>
   }
 }
 
+export function FieldResource(props: { role: ResourceRole, fta?: boolean, children?: React.ReactNode | React.ReactNode[] }) {
+  return <div className="field-pos-resource" data-role={role2id(props.role)} data-fta={props.fta}>
+    { props.children }
+  </div>
+}
 
 export const FIELD_IMG = "/img/game/field.png";
+
+export type FieldPosSelectorProps = Omit<PosSelectorProps, 'img'>;
 
 export default function FieldPosSelector(props: Omit<PosSelectorProps, 'img'>) {
   return <PosSelector img={FIELD_IMG} className={`field-pos-selector ${props.className || ''}`} {...props} />
 }
 
-type FieldStationSelectorProps = {
-  title: React.ReactNode,
-  className?: string,
-  stations: AllianceStation[],
-  onSelect?: (v: AllianceStation) => void,
-  children?: React.ReactNode[]
-};
+export type FieldResourceSelectorProps<T extends ResourceRole> = {
+  options: T[],
+  labels?: React.ReactNode[],
+  wrap?: (role: T, child: React.ReactNode) => React.ReactNode,
+  onSelect?: (role: T) => void
+} & FieldPosSelectorProps;
 
-export class TeamSelector extends React.PureComponent<FieldStationSelectorProps> {
-  static defaultProps = {
-    title: "Select Alliance Station"
-  };
+export function FieldResourceSelector<T extends ResourceRole>(props: FieldResourceSelectorProps<T>) {
+  const { options, onSelect, labels, wrap, ...p } = props;
 
-  render() {
-    const { title, className, stations, onSelect, children } = this.props;
-
-    return <FieldPosSelector className={`team-selector ${className || ""}`} title={title}>
-      {
-        stations.map((s, i) => {
-          const alliance = s.station.alliance;
-          const position = s.station.station;
-          const team = s.team;
-          
-          const btnContent = <React.Fragment>
-            { capitalise(alliance) } { position } { team }
-          </React.Fragment>
-
-          if (onSelect) {
-            return <Button key={i} data-alliance={alliance} data-position={position} onClick={() => onSelect(s)}>
-              { btnContent }
-            </Button>
-          } else {
-            return <Link key={i} to={`${alliance}-${position}`}>
-              <Button data-alliance={alliance} data-position={position}>
-                { btnContent }
-              </Button>
-            </Link>
+  return <FieldPosSelector { ...p }>
+    {
+      options.map((r, i) => (
+        <FieldResource key={i} role={r}>
+          {
+            (wrap || ((r: T, child: React.ReactNode) => child))(r, <Button onClick={() => onSelect ? onSelect(r) : {}}>
+              {
+                labels ? labels[i] : <ResourceRoleLabel role={r} />
+              }
+            </Button>)
           }
-        })
-      }
-      
-      { children }
-    </FieldPosSelector>
-  }
+        </FieldResource>
+      ))
+    }
+  </FieldPosSelector>
 }
