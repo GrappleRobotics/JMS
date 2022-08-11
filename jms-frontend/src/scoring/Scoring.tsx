@@ -19,6 +19,11 @@ type ScorerPanelState = {
   match?: LoadedMatch
 };
 
+const GOAL_IDX = {
+  "AB": [0, 1],
+  "CD": [2, 3]
+};
+
 export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPanelState> {
   readonly state: ScorerPanelState = {};
 
@@ -84,8 +89,8 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
       data-pair={pair} 
       data-height={height} 
       img={"/img/game/hub_" + height.toLowerCase() + ".png"}
-      leftChildren={this.scoreFlank(parseInt(pair[0])! - 1, match, update)}
-      rightChildren={this.scoreFlank(parseInt(pair[1])! - 1, match, update)}
+      leftChildren={this.scoreFlank(GOAL_IDX[pair][0] - 1, match, update)}
+      rightChildren={this.scoreFlank(GOAL_IDX[pair][1] - 1, match, update)}
     >
       <div className="scorer-label" data-pos="left"> { pair[0] }{ height[0].toUpperCase() } </div>
       <div className="scorer-label" data-pos="right"> { pair[1] }{ height[0].toUpperCase() } </div>
