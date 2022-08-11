@@ -1,30 +1,5 @@
 // Referees
 
-.referee-selector {
-  .btn {
-    &[data-alliance=blue] {
-      @extend .btn-blue;
-      left: 50% - 20%;
-    }
-    &[data-alliance=red] {
-      @extend .btn-red;
-      left: 50% + 20%;
-    }
-    &[data-position=near] {
-      bottom: calc(50% - 35% - 2em);
-    }
-    &[data-position=far] {
-      bottom: calc(50% + 35% + 2em);
-    }
-
-    &[data-head-referee=true] {
-      @extend .btn-orange;
-      left: 50%;
-      bottom: calc(50% - 35% - 2em);
-    }
-  }
-}
-
 .btn-penalty {
   font-weight: bold;
   font-size: 1.45em;
@@ -104,36 +79,6 @@
 }
 
 // Scorers
-
-.scorer-selector {
-  .btn {
-    font-size: 1.75rem !important;
-
-    &[data-score-pair="AB"] {
-      @extend .btn-blue;
-      left: 50% - 2.5%;
-      bottom: 50% - 15%;
-    }
-    &[data-score-pair="CD"] {
-      @extend .btn-red;
-      left: 50% + 2.5%;
-      bottom: 50% + 15%;
-    }
-
-    &[data-score-height="high"] {
-      @extend .btn-green;
-      left: 50%;
-      bottom: 70%;
-    }
-
-    &[data-score-height="low"] {
-      @extend .btn-red;
-      left: 50%;
-      bottom: 10%;
-    }
-  }
-}
-
 .scorer-panel {
   .scorer-label {
     position: absolute;

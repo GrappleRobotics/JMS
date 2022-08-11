@@ -1,7 +1,7 @@
 import React from "react";
 import { Accordion } from "react-bootstrap";
 import { capitalise } from "support/strings";
-import { role2string } from "support/ws-additional";
+import { role2id, role2string } from "support/ws-additional";
 import { MappedResourceQuota, ResourceRequirementStatus, ResourceRole } from "ws-schema";
 import SimpleTooltip from "./elements/SimpleTooltip";
 import FieldPosSelector, { FieldResource } from "./FieldPosSelector";
@@ -42,7 +42,7 @@ export class ResourceRequirementMinimap extends React.PureComponent<ResourceRequ
       {
         quotas.map(q => <FieldResource role={q.template.role} fta={q.template.fta}>
           <SimpleTooltip tip={ <ResourceRoleLabel fta={q.template.fta} role={q.template.role} /> }>
-            <div className="resource-indicator" data-fta={q.template.fta} data-satisfied={q.satisfied} data-ready={q.ready}>
+            <div className="resource-indicator" data-role={role2id(q.template.role)} data-fta={q.template.fta} data-satisfied={q.satisfied} data-ready={q.ready}>
               { q.resource_ids.length }
             </div>
           </SimpleTooltip>

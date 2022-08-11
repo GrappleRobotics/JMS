@@ -81,6 +81,7 @@ const DEFAULTS: { [k: string]: ResourceRequirements } = {
       { Quota: { template: { role: "ScorekeeperPanel" }, min: 1, max: 1 } },
       { Quota: { template: { role: "TimerPanel" }, min: 2 } },
       { Quota: { template: { role: "AudienceDisplay" }, min: 1 } },
+      { Quota: { template: { role: "MonitorPanel" }, min: 1 } },
       ELECTRONICS_OR_ESTOPS,
       ...ALL_REFS,
       ...ALL_SCORERS

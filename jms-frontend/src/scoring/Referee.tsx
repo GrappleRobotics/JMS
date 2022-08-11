@@ -1,7 +1,7 @@
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EnumToggleGroup from "components/elements/EnumToggleGroup";
-import FieldPosSelector from "components/FieldPosSelector";
+import { FieldResourceSelector } from "components/FieldPosSelector";
 import _ from "lodash";
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
@@ -275,23 +275,19 @@ export class HeadReferee extends RefereePanelBase {
 
 class RefereeSelector extends React.PureComponent {
   render() {
-    return <FieldPosSelector className="referee-selector" title="Referee Selection">
-      {
-        [ "blue", "red" ].map(alliance => [ "near", "far" ].map(position => (
-          <Link to={`${alliance}/${position}`}>
-            <Button data-alliance={alliance} data-position={position}>
-              { capitalise(alliance) } { capitalise(position) }
-            </Button>
-          </Link>
-        )))
-      }
-
-      <Link to="head">
-        <Button data-head-referee="true">
-          Head Referee
-        </Button>
-      </Link>
-    </FieldPosSelector>
+    return <Col>
+      <FieldResourceSelector
+        title="Select Referee"
+        options={[
+          { RefereePanel: "HeadReferee" },
+          { RefereePanel: { Alliance: [ "red", "near" ] } },
+          { RefereePanel: { Alliance: [ "red", "far" ] } },
+          { RefereePanel: { Alliance: [ "blue", "near" ] } },
+          { RefereePanel: { Alliance: [ "blue", "far" ] } },
+        ]}
+        wrap={(r, child) => <Link to={r.RefereePanel === "HeadReferee" ? "head" : `${r.RefereePanel.Alliance.join("/")}`}> { child } </Link>}
+      />
+    </Col>
   }
 }
 

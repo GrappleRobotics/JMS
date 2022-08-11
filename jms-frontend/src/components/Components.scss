@@ -1,18 +1,11 @@
 .pos-selector-container {
-  max-height: 100%;
-  max-width: 100%;
-  height: auto;
-  width: auto;
-
   display: flex;
   flex-direction: column;
   padding: 0;
 
   .pos-selector-row {
     display: flex;
-    max-height: 100%;
-    // overflow: none;
-
+    
     > .col {
       display: flex;
       justify-content: center;
@@ -32,28 +25,14 @@
         display: block;
         max-height: 100%;
         max-width: 100%;
-        // max-width: calc(100vw - 100px - 10rem);
-        // max-height: calc(100vh - 200px - 4rem);
         height: auto;
         width: auto;
       }
 
-      // .pos-selector-children {
-      //   width: 100%;
-      //   height: 100%;
-      //   min-width: 100%;
-      //   min-height: 100%;
-      //   position: absolute;
-      //   top: 0;
-      //   left: 0;
-
       > :not(.pos-selector-image) {
         position: absolute;
-        // font-size: 1.25rem;
         transform: translate(-50%, 50%);
-        // border: 0.15em solid black;
       }
-      // }
     }
   }
 }
@@ -64,10 +43,10 @@ $l-red: 90%;
 $l-blue: 10%;
 
 $year-role-locations: (
-  "scorer-ABl": (calc(50% - 3% - 1.2rem), 50% - 15%),
-  "scorer-ABh": (calc(50% - 3% + 1.2rem), 50% - 15%),
-  "scorer-CDl": (calc(50% + 3% - 1.2rem), 50% + 15%),
-  "scorer-CDh": (calc(50% + 3% + 1.2rem), 50% + 15%)
+  "scorer-ABh": (calc(50% - 3% - 1.2rem), 50% - 15%),
+  "scorer-ABl": (calc(50% - 3% + 1.2rem), 50% - 23%),
+  "scorer-CDh": (calc(50% + 3% - 1.2rem), 50% + 23%),
+  "scorer-CDl": (calc(50% + 3% + 1.2rem), 50% + 15%)
 );
 
 $role-locations: map-merge((
@@ -82,15 +61,14 @@ $role-locations: map-merge((
   "ref-red-near": (50% + 20%, $b-near),
   "ref-blue-far": (50% - 20%, $b-far),
   "ref-red-far": (50% + 20%, $b-far),
+  "monitor": (40%, $b-near),
 ), $year-role-locations);
 
 .field-pos-resource {
   &[data-role] {
     display: none;  // Hide anything we don't have a role for
     .btn {
-      font-size: 1.25rem;
       border: 0.15em solid black;
-      max-width: 5em;
     }
   }
 
@@ -113,6 +91,9 @@ $role-locations: map-merge((
   }
   &[data-role*="-blue-"] {
     .btn { @extend .btn-blue; }
+  }
+  &[data-role="ref-head"] {
+    .btn { @extend .btn-purple; }
   }
 }
 
@@ -143,6 +124,10 @@ $role-locations: map-merge((
 
   &[data-fta=true] {
     border: 3px solid lighten(theme-color("gold"), 10%);
+  }
+
+  &[data-role="ref-head"] {
+    border: 3px solid lighten(theme-color("purple"), 10%);
   }
 }
 

@@ -26,9 +26,9 @@ export function role2string(role: ResourceRole) {
   if (typeof role === "object") {
     if ("RefereePanel" in role) {
       if (role.RefereePanel === "HeadReferee")
-        return "Referee: Head Ref";
+        return "Head Referee";
       else 
-        return `Referee: ${capitalise(role.RefereePanel.Alliance[0])} ${capitalise(role.RefereePanel.Alliance[1])}`;
+        return `${capitalise(role.RefereePanel.Alliance[0])} ${capitalise(role.RefereePanel.Alliance[1])} Referee`;
     } else if ("ScorerPanel" in role) {
       return `Scorer: ${role.ScorerPanel.goals}${role.ScorerPanel.height[0].toUpperCase()}`
     } else if ("TeamEStop" in role) {

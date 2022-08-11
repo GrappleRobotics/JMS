@@ -1,4 +1,4 @@
-import FieldPosSelector, { PosSelector } from "components/FieldPosSelector";
+import { FieldResourceSelector, PosSelector } from "components/FieldPosSelector";
 import React from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import { Routes, Route, Link } from "react-router-dom";
@@ -71,7 +71,7 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
     
     const title = <React.Fragment>
       <h3 className="mb-0"> { match?.match_meta?.name || "Waiting for Scorekeeper..." } </h3>
-      <i className="text-muted"> { pair }{ height[0] } Scorer </i>
+      <i className="text-muted"> { pair }{ height[0].toUpperCase() } Scorer </i>
     </React.Fragment>
 
     const update = (u: ScoreUpdateData) => {
@@ -87,49 +87,27 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
       leftChildren={this.scoreFlank(parseInt(pair[0])! - 1, match, update)}
       rightChildren={this.scoreFlank(parseInt(pair[1])! - 1, match, update)}
     >
-      <div className="scorer-label" data-pos="left"> { pair[0] }{ height[0] } </div>
-      <div className="scorer-label" data-pos="right"> { pair[1] }{ height[0] } </div>
+      <div className="scorer-label" data-pos="left"> { pair[0] }{ height[0].toUpperCase() } </div>
+      <div className="scorer-label" data-pos="right"> { pair[1] }{ height[0].toUpperCase() } </div>
     </PosSelector>
   }
 };
 
-type ScorerSelectorState = {
-  pair?: ScorerPair
-};
-
-class ScorerSelector extends React.PureComponent<{}, ScorerSelectorState> {
-  readonly state: ScorerSelectorState = { };
-
-  renderSelectPair = () => {
-    return <FieldPosSelector className="scorer-selector" title="Scorer Selection">
-      {
-        SCORER_PAIRS.map(pair => (
-          <Button data-score-pair={pair} onClick={ () => this.setState({ pair }) }>
-            {pair}
-          </Button>
-        ))
-      }
-    </FieldPosSelector>
-  }
-
-  renderSelectHeight(pair: ScorerPair) {
-    return <PosSelector className="scorer-selector" title={`Scorer Selection (${pair})`} img="/img/game/hub.png">
-      {
-        GOAL_HEIGHTS.map(height => (
-          <Link to={`${pair}${height[0]}`}>
-            <Button data-score-height={height}>
-              { height.toUpperCase() }
-            </Button>
-          </Link>
-        ))
-      }
-    </PosSelector>
-  }
-
+class ScorerSelector extends React.PureComponent {
   render() {
-    const currentPair = this.state.pair;
-
-    return currentPair ? this.renderSelectHeight(currentPair) : this.renderSelectPair();
+    return <Col>
+      <FieldResourceSelector
+        title="Select Scorer"
+        options={[
+          { ScorerPanel: { goals: "AB", height: "low" } },
+          { ScorerPanel: { goals: "AB", height: "high" } },
+          { ScorerPanel: { goals: "CD", height: "low" } },
+          { ScorerPanel: { goals: "CD", height: "high" } },
+        ]}
+        labels={[ "ABL", "ABH", "CDL", "CDH" ]}
+        wrap={(r, child) => <Link to={`${r.ScorerPanel.goals}/${r.ScorerPanel.height}`}>{child}</Link>}
+      />
+    </Col>
   }
 }
 
@@ -138,7 +116,7 @@ export function ScoringRouter() {
     <Route path="/" element={ <ScorerSelector /> } />
     {
       SCORER_PAIRS.map(pair => GOAL_HEIGHTS.map(height => (
-        <Route path={`${pair}${height[0]}`} element={ 
+        <Route path={`${pair}/${height}`} element={ 
           withRole({ ScorerPanel: { goals: pair, height: height } }, <ScorerPanel pair={pair} height={height} />)
         } />
       )))
