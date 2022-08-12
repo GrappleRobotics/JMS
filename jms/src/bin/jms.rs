@@ -21,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
 
   let matches = App::new("JMS")
     .about("An Alternative Field-Management-System for FRC Offseason Events.")
-    .arg(Arg::with_name("debug").short("d").help("Enable debug logging."))
+    .arg(Arg::with_name("debug").long("debug").short("d").help("Enable debug logging."))
     .arg(
       Arg::with_name("new-cfg")
         .long("new-cfg")
@@ -38,6 +38,11 @@ async fn main() -> anyhow::Result<()> {
         .value_name("SCHEMA_FILE")
         .takes_value(true)
         .help("Only generate the JSON schema for websocket communication")
+    )
+    .arg(
+      Arg::with_name("no-network")
+        .long("no-network")
+        .help("Disable Networking"),
     )
     .arg(
       Arg::with_name("port")
@@ -62,7 +67,10 @@ async fn main() -> anyhow::Result<()> {
 
     FTAKey::get(&db::database())?;  // Init the FTA key if it isn't ready
 
-    let network = settings.network.create()?;
+    let network = match matches.is_present("no-network") {
+      false => settings.network.create()?,
+      true => None
+    };
 
     let resources: SharedResources = Arc::new(Mutex::new(Resources::new()));
     let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(3, network, resources.clone())));

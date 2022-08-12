@@ -53,7 +53,6 @@ pub struct DSLogData {
   pub can_usage: f64,
   pub wifi_db: f64,
   pub bandwidth: f64,
-  pub pdp: Bytes,
 }
 
 #[derive(Debug)]
@@ -119,102 +118,101 @@ impl Decoder for DSTCPCodec {
       // Have whole frame - decode
       let id = buf.get_u8();
       let mut pkt = Ds2FmsTCP { tags: vec![] };
-      let mut tags_ok = true;
-      while buf.has_remaining() && tags_ok {
-        let size = buf.remaining(); // Full size of current tag class (including all tags)
-        let tag: Option<Ds2FmsTCPTags> = match id {
-          0x00 => {
-            // WPILib Version
-            Some(Ds2FmsTCPTags::WPILibVersion(utf8_str_with_len(&mut buf, size)?))
-          }
-          0x01 => {
-            // RIO Version
-            Some(Ds2FmsTCPTags::RIOVersion(utf8_str_with_len(&mut buf, size)?))
-          }
-          0x02 => {
-            // DS Version
-            Some(Ds2FmsTCPTags::DSVersion(utf8_str_with_len(&mut buf, size)?))
-          }
-          0x16 => {
-            // Log Data
-            let mut dat: DSLogData = Default::default();
-            dat.rtt = (buf.get_u8() as f64) / 2.0; // TODO: Is this /2 or /15
-            dat.lost_percent = (buf.get_u8() as f64) * 4.0;
 
-            {
-              let ones = buf.get_u8();
-              let decs = buf.get_u8();
-              dat.battery = (ones as f64) + (decs as f64) / 256.0;
-            }
-
-            dat.rio_cpu = (buf.get_u8() as f64) / 2.0;
-
-            {
-              let status = !buf.get_u8();
-              let bv = status.view_bits::<Msb0>();
-              dat.brownout = bv[0];
-              dat.watchdog = bv[1];
-              dat.ds_teleop = bv[2];
-              dat.ds_auto = bv[3];
-              dat.ds_disable = bv[4];
-              dat.robot_teleop = bv[5];
-              dat.robot_auto = bv[6];
-              dat.robot_disable = bv[7];
-            }
-
-            dat.can_usage = (buf.get_u8() as f64) / 2.0;
-            dat.wifi_db = (buf.get_u8() as f64) / 2.0;
-            dat.bandwidth = (buf.get_u16() as f64) / 256.0;
-
-            // Unknown
-            buf.get_u8();
-
-            // PDP - TODO
-            dat.pdp = buf.copy_to_bytes(24);
-
-            Some(Ds2FmsTCPTags::LogData(dat))
-          }
-          0x17 => {
-            // Error / events data
-            tags_ok = false;
-            None
-            // TODO: Having some out of bounds issues here
-            // let count = buf.get_u32();
-            // let msgs: Result<Vec<TimestampedMessage>, Self::Error> = (0..count)
-            //   .map(|_| {
-            //     let secs_since_1904 = buf.get_u64() as i64;
-            //     /* Offset to the unix epoch */
-            //     let datetime = NaiveDateTime::from_timestamp(secs_since_1904 - 2_082_844_800, 0);
-
-            //     buf.get_u64(); // Unknown bytes
-            //     let msg_len = buf.get_u32();
-
-            //     Ok(TimestampedMessage {
-            //       timestamp: DateTime::<Utc>::from_utc(datetime, Utc),
-            //       message: utf8_str_with_len(&mut buf, msg_len as usize)?,
-            //     })
-            //   })
-            //   .collect();
-
-            // Some(Ds2FmsTCPTags::ErrorData(msgs?))
-          }
-          0x18 => {
-            // Team Number
-            Some(Ds2FmsTCPTags::TeamNumber(buf.get_u16()))
-          }
-          0x1c => Some(Ds2FmsTCPTags::Ping),
-          0x1d => {
-            buf.get_u8(); // Don't know why but this has an extra '0' almost always
-            Some(Ds2FmsTCPTags::Ping)
-          }
-          unknown => {
-            tags_ok = false;
-            Some(Ds2FmsTCPTags::Unknown(unknown, buf.remaining()))
-          }
-        };
-        if let Some(t) = tag {
-          pkt.tags.push(t);
+      let size = buf.remaining(); // Full size of current tag class (including all tags)
+      let tag: Option<Ds2FmsTCPTags> = match id {
+        0x00 => {
+          // WPILib Version
+          Some(Ds2FmsTCPTags::WPILibVersion(utf8_str_with_len(&mut buf, size)?))
         }
+        0x01 => {
+          // RIO Version
+          Some(Ds2FmsTCPTags::RIOVersion(utf8_str_with_len(&mut buf, size)?))
+        }
+        0x02 => {
+          // DS Version
+          Some(Ds2FmsTCPTags::DSVersion(utf8_str_with_len(&mut buf, size)?))
+        }
+        0x16 => {
+          // Log Data
+          let mut dat: DSLogData = Default::default();
+          dat.rtt = (buf.get_u8() as f64) / 2.0; // TODO: Is this /2 or /15
+          dat.lost_percent = (buf.get_u8() as f64) * 4.0;
+
+          {
+            let ones = buf.get_u8();
+            let decs = buf.get_u8();
+            dat.battery = (ones as f64) + (decs as f64) / 256.0;
+          }
+
+          dat.rio_cpu = (buf.get_u8() as f64) / 2.0;
+
+          {
+            let status = !buf.get_u8();
+            let bv = status.view_bits::<Msb0>();
+            dat.brownout = bv[0];
+            dat.watchdog = bv[1];
+            dat.ds_teleop = bv[2];
+            dat.ds_auto = bv[3];
+            dat.ds_disable = bv[4];
+            dat.robot_teleop = bv[5];
+            dat.robot_auto = bv[6];
+            dat.robot_disable = bv[7];
+          }
+
+          dat.can_usage = (buf.get_u8() as f64) / 2.0;
+          dat.wifi_db = (buf.get_u8() as f64) / 2.0;
+          dat.bandwidth = (buf.get_u16() as f64) / 256.0;
+
+          // TODO: Broken in 2022 - because of new rev? Only 3 bytes available when robot d/c
+          
+          // Unknown
+          // buf.get_u8();
+
+          // PDP - TODO
+          // dat.pdp = buf.copy_to_bytes(24);
+
+          Some(Ds2FmsTCPTags::LogData(dat))
+        }
+        0x17 => {
+          // Error / events data
+          None
+          // TODO: Having some out of bounds issues here
+          // let count = buf.get_u32();
+          // let msgs: Result<Vec<TimestampedMessage>, Self::Error> = (0..count)
+          //   .map(|_| {
+          //     let secs_since_1904 = buf.get_u64() as i64;
+          //     /* Offset to the unix epoch */
+          //     let datetime = NaiveDateTime::from_timestamp(secs_since_1904 - 2_082_844_800, 0);
+
+          //     buf.get_u64(); // Unknown bytes
+          //     let msg_len = buf.get_u32();
+
+          //     Ok(TimestampedMessage {
+          //       timestamp: DateTime::<Utc>::from_utc(datetime, Utc),
+          //       message: utf8_str_with_len(&mut buf, msg_len as usize)?,
+          //     })
+          //   })
+          //   .collect();
+
+          // Some(Ds2FmsTCPTags::ErrorData(msgs?))
+        }
+        0x18 => {
+          // Team Number
+          Some(Ds2FmsTCPTags::TeamNumber(buf.get_u16()))
+        }
+        0x1c => Some(Ds2FmsTCPTags::Ping),
+        0x1d => {
+          buf.get_u8(); // Don't know why but this has an extra '0' almost always
+          Some(Ds2FmsTCPTags::Ping)
+        }
+        unknown => {
+          Some(Ds2FmsTCPTags::Unknown(unknown, buf.remaining()))
+        }
+      };
+
+      if let Some(t) = tag {
+        pkt.tags.push(t);
       }
 
       self.decode_frame_len = 0;
