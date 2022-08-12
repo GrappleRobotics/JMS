@@ -648,7 +648,7 @@ th {
 
   .team-estop-indicators {
     @extend .text-muted;
-    font-size: 2em;
+    font-size: 1.5em;
     
     .col {
       &[data-ok=false], &[data-estop=true] {

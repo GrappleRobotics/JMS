@@ -1,4 +1,4 @@
-import { faCarBattery, faWifi } from "@fortawesome/free-solid-svg-icons";
+import { faCarBattery, faCode, faRobot, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool from "components/elements/Confirm";
 import { FieldResourceSelector } from "components/FieldPosSelector";
@@ -47,15 +47,20 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
     return <Row className="team-estop-indicators">
       <Col data-ok={report?.radio_ping}>
         <FontAwesomeIcon icon={faWifi} /> &nbsp;
-        { (report?.rtt?.toString() || "---").padStart(3, "\u00A0") }ms
+        { report?.radio_ping ? 
+          `${(report?.rtt?.toString() || "---").padStart(3, "\u00A0")}ms`
+          : "NO RADIO"
+        }
       </Col>
       <Col data-ok={report?.rio_ping}>
-        RIO { report?.rio_ping ? "OK" : "BAD" }
+        <FontAwesomeIcon icon={faRobot} /> &nbsp;
+        { report?.rio_ping ? "RIO OK" : "NO RIO" }
       </Col>
       <Col data-ok={report?.robot_ping}>
-        CODE { report?.robot_ping ? "OK" : "DEAD" }
+        <FontAwesomeIcon icon={faCode} /> &nbsp;
+        { report?.robot_ping ? "CODE OK" : "NO CODE" }
       </Col>
-      <Col data-ok={report?.battery}>
+      <Col data-ok={report?.battery || 0 > 10}>
         <FontAwesomeIcon icon={faCarBattery} /> &nbsp;
         { report?.battery?.toFixed(2) || "--.--" } V
       </Col>
