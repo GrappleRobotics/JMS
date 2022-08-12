@@ -5,7 +5,7 @@ use ipnetwork::Ipv4Network;
 use tokio::try_join;
 
 use crate::arena::station::AllianceStationId;
-use crate::arena::AllianceStation;
+use crate::arena::station::AllianceStation;
 use crate::db::{self, TableType};
 use crate::models::{self, Alliance};
 use crate::network::radio::TeamRadioConfig;

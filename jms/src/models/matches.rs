@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::{db::{self, DBDateTime, TableType, DBDuration}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
 
 use super::TeamRanking;
@@ -170,6 +172,21 @@ impl From<Match> for SerializedMatch {
       match_meta: m
     }
   }
+}
+
+pub fn serialize_match<S>(m: &Match, s: S) -> Result<S::Ok, S::Error>
+where
+  S: serde::Serializer
+{
+  SerializedMatch::from(m.clone()).serialize(s)
+}
+
+pub fn serialize_match_score<S>(m: &MatchScore, s: S) -> Result<S::Ok, S::Error>
+where
+  S: serde::Serializer
+{
+  let snapshot: MatchScoreSnapshot = m.clone().into();
+  snapshot.serialize(s)
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

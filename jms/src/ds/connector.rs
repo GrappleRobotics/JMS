@@ -12,7 +12,7 @@ use tokio_util::udp::UdpFramed;
 
 use crate::arena::matches::MatchPlayState;
 use crate::arena::station::AllianceStationId;
-use crate::arena::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy, ArenaState, SharedArena};
+use crate::arena::{station::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy}, ArenaState, SharedArena};
 use crate::ds::{self, Fms2DsTCP, Fms2DsUDP};
 use crate::models;
 

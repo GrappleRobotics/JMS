@@ -7,11 +7,11 @@ use schemars::JsonSchema;
 
 use crate::{arena::exceptions::MatchWrongState, db, models, scoring::scores::{MatchScore, MatchScoreSnapshot}};
 
-use serde::{Serialize, Serializer};
+use serde::{Serialize, Deserialize};
 
 use super::exceptions::MatchIllegalStateChange;
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Display, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Display, Serialize, Deserialize, JsonSchema)]
 pub enum MatchPlayState {
   Waiting,
   Warmup,
@@ -36,13 +36,14 @@ pub struct MatchConfig {
 
 #[derive(Clone, Debug, Serialize, JsonSchema)]
 pub struct LoadedMatch {
-  #[serde(serialize_with = "serialize_match")]
+  #[serde(serialize_with = "models::serialize_match")]
   #[schemars(with = "models::SerializedMatch")]
   pub match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
+  match_time: Duration,
 
-  #[serde(serialize_with = "serialize_match_score")]
+  #[serde(serialize_with = "models::serialize_match_score")]
   #[schemars(with = "MatchScoreSnapshot")]
   pub score: MatchScore,
 
@@ -55,68 +56,6 @@ pub struct LoadedMatch {
   endgame: bool,
 }
 
-fn serialize_match<S>(m: &models::Match, s: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer
-{
-  models::SerializedMatch::from(m.clone()).serialize(s)
-}
-
-fn serialize_match_score<S>(m: &MatchScore, s: S) -> Result<S::Ok, S::Error>
-where
-  S: Serializer
-{
-  let snapshot: MatchScoreSnapshot = m.clone().into();
-  snapshot.serialize(s)
-}
-
-// mod serialised_loaded_match {
-//   // use crate::models::SerializedMatch;
-
-//   // pub fn schema(gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-//   //   <SerializedMatch>::json_schema(gen).into()
-//   // }
-// }
-
-// #[derive(Clone, Debug, Serialize, JsonSchema)]
-// pub struct SerializedLoadedMatch {
-//   #[serde(rename="match")]
-//   match_meta: models::Match,
-//   id: Option<String>,
-//   name: String,
-//   state: MatchPlayState,
-//   remaining_time: Duration,
-//   score: MatchScore,
-//   config: MatchConfig,
-//   endgame: bool
-// }
-
-// impl From<LoadedMatch> for SerializedLoadedMatch {
-//   fn from(lm: LoadedMatch) -> Self {
-//     let LoadedMatch { match_meta, state, remaining_time, score, state_first, state_start_time, config, endgame  } = lm;
-//     Self {
-//       match_meta, id: match_meta.id(), name: match_meta.name(),
-//       state, remaining_time, score, config, endgame
-//     }
-//   }
-// }
-
-// impl Serialize for LoadedMatch {
-//   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//   where
-//     S: serde::Serializer
-//   {
-//     let mut state = serializer.serialize_struct("LoadedMatch", 6)?;
-//     state.serialize_field("match", &models::SerializedMatch(self.match_meta.clone()))?;
-//     state.serialize_field("state", &self.state)?;
-//     state.serialize_field("remaining_time", &self.remaining_time)?;
-//     state.serialize_field("score", &self.score)?;
-//     state.serialize_field("config", &self.config)?;
-//     state.serialize_field("endgame", &self.endgame)?;
-//     state.end()
-//   }
-// }
-
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
@@ -126,6 +65,7 @@ impl LoadedMatch {
       state_first: true,
       state_start_time: Instant::now(),
       remaining_time: Duration::from_secs(0),
+      match_time: Duration::from_secs(0),
       config: MatchConfig {
         warmup_cooldown_time: Duration::from_secs(3),
         auto_time: Duration::from_secs(15),
@@ -181,6 +121,8 @@ impl LoadedMatch {
     let elapsed = self.elapsed();
 
     let mut endgame = false;
+
+    self.match_time = elapsed;
 
     match self.state {
       MatchPlayState::Waiting => (),
@@ -242,7 +184,7 @@ impl LoadedMatch {
     }
   }
 
-  fn elapsed(&self) -> Duration {
+  pub fn elapsed(&self) -> Duration {
     return Instant::now() - self.state_start_time;
   }
 }

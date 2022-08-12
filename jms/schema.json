@@ -1498,6 +1498,7 @@
         "config",
         "endgame",
         "match_meta",
+        "match_time",
         "remaining_time",
         "score",
         "state"
@@ -1511,6 +1512,9 @@
         },
         "match_meta": {
           "$ref": "#/definitions/SerializedMatch"
+        },
+        "match_time": {
+          "$ref": "#/definitions/Duration"
         },
         "remaining_time": {
           "$ref": "#/definitions/Duration"

@@ -2,7 +2,7 @@ pub mod onboard;
 pub mod radio;
 
 use crate::{
-  arena::AllianceStation,
+  arena::station::AllianceStation,
   config::{enum_interactive, Interactive},
 };
 
