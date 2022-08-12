@@ -1507,6 +1507,59 @@
         "high"
       ]
     },
+    "HistorianMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Load"
+          ],
+          "properties": {
+            "Load": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MatchStationStatusRecordKey"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "HistorianMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Keys"
+          ],
+          "properties": {
+            "Keys": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MatchStationStatusRecordKey"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Load"
+          ],
+          "properties": {
+            "Load": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MatchStationStatusRecord"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "LiveScore": {
       "type": "object",
       "required": [
@@ -1963,6 +2016,47 @@
         },
         "red": {
           "$ref": "#/definitions/SnapshotScore"
+        }
+      }
+    },
+    "MatchStationStatusRecord": {
+      "type": "object",
+      "required": [
+        "key",
+        "record"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/definitions/MatchStationStatusRecordKey"
+        },
+        "record": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StampedAllianceStationStatus"
+          }
+        }
+      }
+    },
+    "MatchStationStatusRecordKey": {
+      "type": "object",
+      "required": [
+        "match_id",
+        "station"
+      ],
+      "properties": {
+        "match_id": {
+          "type": "string"
+        },
+        "station": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
         }
       }
     },
@@ -2980,6 +3074,64 @@
         }
       }
     },
+    "StampedAllianceStationStatus": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "estop",
+        "match_state",
+        "match_time",
+        "occupancy",
+        "station",
+        "time"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "ds_report": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AllianceStationDSReport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "match_state": {
+          "$ref": "#/definitions/MatchPlayState"
+        },
+        "match_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "occupancy": {
+          "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "station": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "time": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "TaggedResource": {
       "type": "object",
       "required": [
@@ -3201,6 +3353,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Historian"
+          ],
+          "properties": {
+            "Historian": {
+              "$ref": "#/definitions/HistorianMessage2JMS"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -3281,6 +3445,18 @@
           "properties": {
             "Resource": {
               "$ref": "#/definitions/ResourceMessage2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Historian"
+          ],
+          "properties": {
+            "Historian": {
+              "$ref": "#/definitions/HistorianMessage2UI"
             }
           },
           "additionalProperties": false

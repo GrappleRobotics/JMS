@@ -45,6 +45,7 @@ impl TryFrom<&WebsocketMessage2UI> for SerialisedMessage {
       WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
       WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
       WebsocketMessage2UI::Match(match_msg) => [ &["Match"], match_msg.ws_path().as_slice() ].concat(),
+      WebsocketMessage2UI::Historian(hist) => [ &["Historian"], hist.ws_path().as_slice() ].concat(),
     };
 
     Ok(Self {

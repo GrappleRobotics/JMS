@@ -24,6 +24,9 @@ export type WebsocketMessage2UI =
     }
   | {
       Resource: ResourceMessage2UI;
+    }
+  | {
+      Historian: HistorianMessage2UI;
     };
 export type DebugMessage2UI = {
   ReplyTest: string;
@@ -256,6 +259,13 @@ export type ResourceRequirements =
   | {
       Quota: ResourceQuota;
     };
+export type HistorianMessage2UI =
+  | {
+      Keys: MatchStationStatusRecordKey[];
+    }
+  | {
+      Load: MatchStationStatusRecord[];
+    };
 export type WebsocketMessage2JMS =
   | ("Ping" | "Pong")
   | {
@@ -275,6 +285,9 @@ export type WebsocketMessage2JMS =
     }
   | {
       Resource: ResourceMessage2JMS;
+    }
+  | {
+      Historian: HistorianMessage2JMS;
     };
 export type DebugMessage2JMS =
   | {
@@ -467,6 +480,11 @@ export type ResourceMessage2JMS =
 export type ResourceMessageRequirements2JMS = {
   SetActive: ResourceRequirements | null;
 };
+export type HistorianMessage2JMS =
+  | "GetKeys"
+  | {
+      Load: MatchStationStatusRecordKey[];
+    };
 
 export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
@@ -688,6 +706,27 @@ export interface ResourceQuota {
   max?: number | null;
   min: number;
   template: Resource;
+}
+export interface MatchStationStatusRecordKey {
+  match_id: string;
+  station: AllianceStationId;
+  team?: number | null;
+}
+export interface MatchStationStatusRecord {
+  key: MatchStationStatusRecordKey;
+  record: StampedAllianceStationStatus[];
+}
+export interface StampedAllianceStationStatus {
+  astop: boolean;
+  bypass: boolean;
+  ds_report?: AllianceStationDSReport | null;
+  estop: boolean;
+  match_state: MatchPlayState;
+  match_time: Duration;
+  occupancy: AllianceStationOccupancy;
+  station: AllianceStationId;
+  team?: number | null;
+  time: number;
 }
 export interface RecvMeta {
   msg: WebsocketMessage2JMS;

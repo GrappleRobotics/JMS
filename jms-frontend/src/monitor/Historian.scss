@@ -1,0 +1,20 @@
+.historian-row {
+  height: 250px;
+  text-align: center;
+  margin-bottom: 10px;
+  padding: 10px 5px;
+  border-radius: 10px;
+  overflow: hidden;
+  
+  @each $alliance in $alliances {
+    &[data-alliance=#{$alliance}] {
+      background-color: darken(theme-color($alliance), 50%);
+      border: 2px solid theme-color($alliance);
+    }
+  }
+
+  .station-name {
+    font-size: 1.2em;
+    color: $gray-300;
+  }
+}

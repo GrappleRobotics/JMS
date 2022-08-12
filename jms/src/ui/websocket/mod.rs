@@ -21,7 +21,7 @@ use tokio_tungstenite::tungstenite;
 
 use crate::{arena::resource::SharedResources, ui::websocket::ws::Websocket};
 
-use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext}};
+use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext}, historian::{HistorianMessage2UI, HistorianMessage2JMS}};
 
 define_websocket_msg!($WebsocketMessage {
   Ping, Pong,
@@ -43,6 +43,9 @@ define_websocket_msg!($WebsocketMessage {
 
   send Resource(ResourceMessage2UI),
   recv Resource(ResourceMessage2JMS),
+
+  send Historian(HistorianMessage2UI),
+  recv Historian(HistorianMessage2JMS)
 });
 
 impl From<DebugMessage2UI> for WebsocketMessage2UI {
@@ -72,6 +75,12 @@ impl From<MatchMessage2UI> for WebsocketMessage2UI {
 impl From<ResourceMessage2UI> for WebsocketMessage2UI {
   fn from(msg: ResourceMessage2UI) -> Self {
     WebsocketMessage2UI::Resource(msg)
+  }
+}
+
+impl From<HistorianMessage2UI> for WebsocketMessage2UI {
+  fn from(msg: HistorianMessage2UI) -> Self {
+    WebsocketMessage2UI::Historian(msg)
   }
 }
 
@@ -136,7 +145,7 @@ impl Websockets {
             tokio::spawn(async move {
               let mut ws = Websocket::new(context.clone());
 
-              if let Err(e) = ws.run(stream, Duration::from_millis(1500)).await {
+              if let Err(e) = ws.run(stream, Duration::from_millis(2500)).await {
                 match e.downcast_ref::<tungstenite::Error>() {
                   Some(tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8) => (),
                   _ => error!("Websocket Error: {}", e),

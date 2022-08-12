@@ -6,7 +6,8 @@ import Home from 'Home';
 import update from 'immutability-helper';
 import MatchControl from 'match_control/MatchControl';
 import FieldMonitor from 'monitor/FieldMonitor';
-import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
+import Historian from 'monitor/Historian';
+import * as P from 'paths';
 import Rankings from 'rankings/Rankings';
 import React from 'react';
 import { Alert, Col, Navbar, Row } from 'react-bootstrap';
@@ -74,19 +75,20 @@ export default class App extends WebsocketComponent<{}, AppState> {
   render() {
     const fta = this.state.fta;
     return <Routes>
-      <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
-      <Route path={MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl />)) } />
-      <Route path={MONITOR} element={ withRole("MonitorPanel", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
-      <Route path={AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />
-      <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
-      <Route path={`${SCORING}/*`} element={ this.wrapView(<ScoringRouter />) } />
-      <Route path={AUDIENCE} element={ withRole("AudienceDisplay", this.wrapView(<Audience />, { fullscreen: true, nonav: true })) } />
-      <Route path={RANKINGS} element={ this.wrapView(<Rankings />, { fullscreen: true, nonav: true }) } />
-      <Route path={RANKINGS_NO_SCROLL} element={ this.wrapView(<Rankings scroll={false} />, { fullscreen: true }) } />
-      <Route path={`${ESTOPS}/*`} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
-      <Route path={DEBUG} element={ this.wrapView(<Debug fta={fta} />) } />
-      <Route path={REPORTS} element={ this.wrapView(<Reports fta={fta} />) } />
-      <Route path={TIMER} element={ withRole("TimerPanel", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
+      <Route path={P.EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
+      <Route path={P.MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl />)) } />
+      <Route path={P.MONITOR} element={ withRole("MonitorPanel", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
+      <Route path={P.HISTORIAN} element={ this.wrapView(<Historian />) } />
+      <Route path={P.AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />
+      <Route path={`${P.REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
+      <Route path={`${P.SCORING}/*`} element={ this.wrapView(<ScoringRouter />) } />
+      <Route path={P.AUDIENCE} element={ withRole("AudienceDisplay", this.wrapView(<Audience />, { fullscreen: true, nonav: true })) } />
+      <Route path={P.RANKINGS} element={ this.wrapView(<Rankings />, { fullscreen: true, nonav: true }) } />
+      <Route path={P.RANKINGS_NO_SCROLL} element={ this.wrapView(<Rankings scroll={false} />, { fullscreen: true }) } />
+      <Route path={`${P.ESTOPS}/*`} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
+      <Route path={P.DEBUG} element={ this.wrapView(<Debug fta={fta} />) } />
+      <Route path={P.REPORTS} element={ this.wrapView(<Reports fta={fta} />) } />
+      <Route path={P.TIMER} element={ withRole("TimerPanel", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
       <Route path="/" element={ this.wrapView(<Home fta={fta} />) } />
     </Routes>
   }

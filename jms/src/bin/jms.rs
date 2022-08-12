@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
+use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, historian::WSHistorianHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -100,6 +100,9 @@ async fn main() -> anyhow::Result<()> {
     let electronics_service = FieldElectronicsService::new(arena.clone(), resources.clone(), settings.electronics).await;
     let electronics_fut = electronics_service.begin();
 
+    // TODO: Drive the Arena and Resource off time, drive DB handlers using a sled watch
+    // Perhaps having a mpsc channel for each handler that we can trigger to do an update
+    // is a good way to go
     let ws = Websockets::new(resources.clone()).await;
     {
       ws.register(Duration::from_millis(1000), WSResourceHandler(resources.clone())).await;
@@ -107,6 +110,7 @@ async fn main() -> anyhow::Result<()> {
       ws.register(Duration::from_millis(300), WSArenaHandler(arena.clone())).await;
       ws.register(Duration::from_millis(1000), WSEventHandler {}).await;
       ws.register(Duration::from_millis(2000), WSDebugHandler {}).await;
+      ws.register(Duration::from_millis(2000), WSHistorianHandler {}).await;
     }
     let ws_fut = ws.begin();
 
