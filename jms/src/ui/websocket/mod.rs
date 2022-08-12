@@ -20,7 +20,7 @@ use tokio_tungstenite::tungstenite;
 
 use crate::{arena::resource::SharedResources, ui::websocket::ws::Websocket};
 
-use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::DebugMessage2JMS, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext}};
+use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext}};
 
 define_websocket_msg!($WebsocketMessage {
   Ping, Pong,
@@ -28,7 +28,7 @@ define_websocket_msg!($WebsocketMessage {
   send Error(String),
   recv Subscribe(Vec<String>),
 
-  // send Debug(DebugMessage2UI),
+  send Debug(DebugMessage2UI),
   recv Debug(DebugMessage2JMS),
 
   send Event(EventMessage2UI),
@@ -43,6 +43,12 @@ define_websocket_msg!($WebsocketMessage {
   send Resource(ResourceMessage2UI),
   recv Resource(ResourceMessage2JMS),
 });
+
+impl From<DebugMessage2UI> for WebsocketMessage2UI {
+  fn from(msg: DebugMessage2UI) -> Self {
+    WebsocketMessage2UI::Debug(msg)
+  }
+}
 
 impl From<EventMessage2UI> for WebsocketMessage2UI {
   fn from(msg: EventMessage2UI) -> Self {

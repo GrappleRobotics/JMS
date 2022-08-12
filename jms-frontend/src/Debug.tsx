@@ -37,7 +37,17 @@ export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugSta
       {
         !this.props.fta ? <React.Fragment /> : <React.Fragment>
           <Row>
-            <Col>
+            <Col md="auto" className="mx-3">
+              <h4> Tests </h4>
+              <Button onClick={() => {
+                this.transact<String>({ Debug: { ReplyTest: "Hello World!" } }, "Debug/ReplyTest")
+                  .then(data => alert(JSON.stringify(data)))
+                  .catch(reason => alert(`CATCH: ${reason}`))
+              }}>
+                Test Reply
+              </Button>
+            </Col>
+            <Col md="auto" className="mx-3">
               <h4> Matches </h4>
               <Button
                 onClick={() => this.send({ Debug: { Match: "FillRandomScores" } })}
@@ -53,11 +63,6 @@ export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugSta
               >
                 DELETE ALL (DANGER)
               </Button>
-            </Col>
-          </Row>
-          <Row>
-            <Col>
-              <textarea disabled value={JSON.stringify(this.state, null, 2)} style={ { width: 500, height: 500 } } />
             </Col>
           </Row>
         </React.Fragment>

@@ -61,6 +61,7 @@ schemars = { version = "0.8", features=["chrono"] }
 tokio-serial = "5.4.1"
 sha2 = "0.10.2"
 base64 = "0.13.0"
+atomic-counter = "1.0.1"
 
 [build-dependencies]
 anyhow = "1.0.42"

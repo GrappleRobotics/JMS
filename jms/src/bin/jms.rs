@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
+use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -12,7 +12,11 @@ struct AllWebsocketMessages {
   #[allow(dead_code)]
   jms2ui: WebsocketMessage2UI,
   #[allow(dead_code)]
-  ui2jms: WebsocketMessage2JMS
+  ui2jms: WebsocketMessage2JMS,
+  #[allow(dead_code)]
+  send_meta: SendMeta,
+  #[allow(dead_code)]
+  recv_meta: RecvMeta
 }
 
 #[tokio::main]

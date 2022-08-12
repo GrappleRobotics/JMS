@@ -11,6 +11,9 @@ export type WebsocketMessage2UI =
       Error: string;
     }
   | {
+      Debug: DebugMessage2UI;
+    }
+  | {
       Event: EventMessage2UI;
     }
   | {
@@ -22,6 +25,9 @@ export type WebsocketMessage2UI =
   | {
       Resource: ResourceMessage2UI;
     };
+export type DebugMessage2UI = {
+  ReplyTest: string;
+};
 export type EventMessage2UI =
   | {
       Details: EventMessageDetails2UI;
@@ -270,9 +276,13 @@ export type WebsocketMessage2JMS =
   | {
       Resource: ResourceMessage2JMS;
     };
-export type DebugMessage2JMS = {
-  Match: DebugMessageMatch2JMS;
-};
+export type DebugMessage2JMS =
+  | {
+      Match: DebugMessageMatch2JMS;
+    }
+  | {
+      ReplyTest: string;
+    };
 export type DebugMessageMatch2JMS = "FillRandomScores" | "DeleteAll";
 export type EventMessage2JMS =
   | {
@@ -460,6 +470,8 @@ export type ResourceMessageRequirements2JMS = {
 
 export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
+  recv_meta: RecvMeta;
+  send_meta: SendMeta;
   ui2jms: WebsocketMessage2JMS;
 }
 export interface EventDetails {
@@ -677,6 +689,10 @@ export interface ResourceQuota {
   min: number;
   template: Resource;
 }
+export interface RecvMeta {
+  msg: WebsocketMessage2JMS;
+  seq: number;
+}
 export interface ScoreUpdateData {
   alliance: Alliance;
   update: ScoreUpdate;
@@ -684,4 +700,10 @@ export interface ScoreUpdateData {
 export interface QualsMatchGeneratorParams {
   station_anneal_steps: number;
   team_anneal_steps: number;
+}
+export interface SendMeta {
+  bcast: boolean;
+  msg: WebsocketMessage2UI;
+  reply?: number | null;
+  seq: number;
 }

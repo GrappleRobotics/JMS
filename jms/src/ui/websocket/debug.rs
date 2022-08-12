@@ -8,7 +8,8 @@ define_websocket_msg!($DebugMessage {
   recv $Match {
     FillRandomScores,
     DeleteAll
-  }
+  },
+  ReplyTest(String)
 });
 
 pub struct WSDebugHandler;
@@ -36,7 +37,8 @@ impl WebsocketHandler for WSDebugHandler {
             }
           },
           DebugMessageMatch2JMS::DeleteAll => models::Match::table(&db::database())?.clear()?,
-        }
+        },
+        DebugMessage2JMS::ReplyTest(word) => { ws.reply::<DebugMessage2UI>(DebugMessage2UI::ReplyTest(word)).await }
       }
     }
 

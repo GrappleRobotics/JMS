@@ -4,11 +4,19 @@
   "type": "object",
   "required": [
     "jms2ui",
+    "recv_meta",
+    "send_meta",
     "ui2jms"
   ],
   "properties": {
     "jms2ui": {
       "$ref": "#/definitions/WebsocketMessage2UI"
+    },
+    "recv_meta": {
+      "$ref": "#/definitions/RecvMeta"
+    },
+    "send_meta": {
+      "$ref": "#/definitions/SendMeta"
     },
     "ui2jms": {
       "$ref": "#/definitions/WebsocketMessage2JMS"
@@ -891,6 +899,34 @@
           "properties": {
             "Match": {
               "$ref": "#/definitions/DebugMessageMatch2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ReplyTest"
+          ],
+          "properties": {
+            "ReplyTest": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DebugMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "ReplyTest"
+          ],
+          "properties": {
+            "ReplyTest": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -2059,6 +2095,23 @@
         }
       }
     },
+    "RecvMeta": {
+      "type": "object",
+      "required": [
+        "msg",
+        "seq"
+      ],
+      "properties": {
+        "msg": {
+          "$ref": "#/definitions/WebsocketMessage2JMS"
+        },
+        "seq": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "RefereeID": {
       "oneOf": [
         {
@@ -2675,6 +2728,35 @@
         "CD"
       ]
     },
+    "SendMeta": {
+      "type": "object",
+      "required": [
+        "bcast",
+        "msg",
+        "seq"
+      ],
+      "properties": {
+        "bcast": {
+          "type": "boolean"
+        },
+        "msg": {
+          "$ref": "#/definitions/WebsocketMessage2UI"
+        },
+        "reply": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "seq": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "SerialisedAllianceStation": {
       "type": "object",
       "required": [
@@ -3139,6 +3221,18 @@
           "properties": {
             "Error": {
               "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Debug"
+          ],
+          "properties": {
+            "Debug": {
+              "$ref": "#/definitions/DebugMessage2UI"
             }
           },
           "additionalProperties": false

@@ -1,5 +1,6 @@
 use std::{collections::HashSet, time::Duration, sync::Arc};
 
+use atomic_counter::AtomicCounter;
 use futures::{StreamExt, SinkExt, stream::FuturesUnordered};
 use tokio::{sync::{broadcast, mpsc, Mutex}, net::TcpStream, time::{interval, Interval}};
 use tokio_tungstenite::{accept_async, tungstenite};
@@ -23,10 +24,12 @@ pub struct DecoratedWebsocketHandler {
 pub type Handlers = Vec<DecoratedWebsocketHandler>;
 pub type SharedHandlers = Arc<Mutex<Handlers>>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(transparent)]
 pub struct SerialisedMessage {
+  #[serde(skip)]
   pub path: Vec<String>,
-  pub message: String
+  pub message: serde_json::Value
 }
 
 impl TryFrom<&WebsocketMessage2UI> for SerialisedMessage {
@@ -37,6 +40,7 @@ impl TryFrom<&WebsocketMessage2UI> for SerialisedMessage {
       WebsocketMessage2UI::Error(_) => vec!["Error"],
       WebsocketMessage2UI::Ping => vec!["Ping", "Ping"],
       WebsocketMessage2UI::Pong => vec!["Ping", "Pong"],
+      WebsocketMessage2UI::Debug(debug) => [ &["Debug"], debug.ws_path().as_slice() ].concat(),
       WebsocketMessage2UI::Resource(resource) => [ &["Resource"], resource.ws_path().as_slice() ].concat(),
       WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
       WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
@@ -45,9 +49,25 @@ impl TryFrom<&WebsocketMessage2UI> for SerialisedMessage {
 
     Ok(Self {
       path: path.into_iter().map(|x| x.to_owned()).collect(),
-      message: serde_json::to_string(msg)?
+      message: serde_json::to_value(msg)?
     })
   }
+}
+
+#[derive(Clone, Debug, serde::Serialize, schemars::JsonSchema)]
+pub struct SendMeta {
+  #[schemars(with = "WebsocketMessage2UI")]
+  pub msg: SerialisedMessage,
+  pub seq: usize,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub reply: Option<usize>,
+  pub bcast: bool
+}
+
+#[derive(Clone, Debug, serde::Deserialize, schemars::JsonSchema)]
+pub struct RecvMeta {
+  pub msg: WebsocketMessage2JMS,
+  pub seq: usize
 }
 
 #[derive(Clone)]
@@ -78,8 +98,10 @@ pub struct Websocket {
   pub resource_id: Option<String>,
   pub context: WebsocketContext,
   subscriptions: HashSet<Vec<String>>,
-  send_tx: mpsc::Sender<SerialisedMessage>,
-  send_rx: mpsc::Receiver<SerialisedMessage>
+  send_tx: mpsc::Sender<SendMeta>,
+  send_rx: mpsc::Receiver<SendMeta>,
+  seq_num: atomic_counter::ConsistentCounter,
+  last_recv_seq: usize
 }
 
 impl Websocket {
@@ -91,7 +113,9 @@ impl Websocket {
       context,
       subscriptions: HashSet::new(),
       send_tx,
-      send_rx
+      send_rx,
+      seq_num: atomic_counter::ConsistentCounter::new(0),
+      last_recv_seq: 0
     }
   }
 
@@ -112,7 +136,17 @@ impl Websocket {
 
   pub async fn send<T: Into<WebsocketMessage2UI>>(&self, msg: T) {
     match SerialisedMessage::try_from(&msg.into()) {
-      Ok(msg) => match self.send_tx.send(msg).await {
+      Ok(msg) => match self.send_tx.send(SendMeta { msg, seq: self.seq_num.inc(), reply: None, bcast: false }).await {
+        Ok(_) => (),
+        Err(err) => error!("Could not send: {}", err)
+      },
+      Err(err) => error!("Could not serialise: {}", err),
+    }
+  }
+
+  pub async fn reply<T: Into<WebsocketMessage2UI>>(&self, msg: T) {
+    match SerialisedMessage::try_from(&msg.into()) {
+      Ok(msg) => match self.send_tx.send(SendMeta { msg, seq: self.seq_num.inc(), reply: Some(self.last_recv_seq), bcast: false }).await {
         Ok(_) => (),
         Err(err) => error!("Could not send: {}", err)
       },
@@ -169,14 +203,17 @@ impl Websocket {
         recvd = bcast_rx.recv() => match recvd {
           // Broadcast Message
           Ok(msg) => if self.is_subscribed(&msg) {
-            ws.send(tungstenite::Message::Text(msg.message)).await?;
+            let full = serde_json::to_string(&SendMeta {
+              msg, seq: self.seq_num.inc(), reply: None, bcast: true
+            })?;
+            ws.send(tungstenite::Message::Text(full)).await?;
           },
           Err(e) => error!("WS Broadcast Recv Error: {}", e),
         },
         recvd = self.send_rx.recv() => match recvd {
           // Unicast Message
-          Some(msg) => if self.is_subscribed(&msg) {
-            ws.send(tungstenite::Message::Text(msg.message)).await?;
+          Some(msg) => if msg.reply.is_some() || self.is_subscribed(&msg.msg) {
+            ws.send(tungstenite::Message::Text(serde_json::to_string(&msg)?)).await?;
           },
           None => error!("WS Send Closed"),
         },
@@ -187,10 +224,12 @@ impl Websocket {
               tungstenite::Message::Text(msg_str) => {
                 timeout_int.reset();
 
-                let m: WebsocketMessage2JMS = serde_json::from_str(&msg_str)?;
+                let m: RecvMeta = serde_json::from_str(&msg_str)?;
+                self.last_recv_seq = m.seq;
+
                 let handlers = handlers_mtx.lock().await;
 
-                match m {
+                match m.msg {
                   WebsocketMessage2JMS::Ping => { self.send(WebsocketMessage2UI::Pong).await },
                   WebsocketMessage2JMS::Subscribe(topic) => {
                     if !self.subscriptions.insert(topic) {
@@ -205,7 +244,7 @@ impl Websocket {
                   _ => {
                     // Pass to handlers
                     for h in handlers.iter() {
-                      if let Err(e) = h.handler.handle(&m, self).await {
+                      if let Err(e) = h.handler.handle(&m.msg, self).await {
                         self.send(WebsocketMessage2UI::Error(format!("{}", e))).await;
                       }
                     }
