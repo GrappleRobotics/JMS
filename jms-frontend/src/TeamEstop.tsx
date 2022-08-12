@@ -8,7 +8,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import { capitalise } from "support/strings";
 import { withValU } from "support/util";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { AllianceStationDSReport, SerialisedAllianceStation } from "ws-schema";
+import { AllianceStationDSReport, AllianceStationOccupancy, SerialisedAllianceStation } from "ws-schema";
 
 type TeamEstopProps = {
   station: SerialisedAllianceStation,
@@ -43,30 +43,41 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
     }
   }
 
-  renderDsReport = (report?: AllianceStationDSReport | null) => {
+  renderDsReport = (occupancy: AllianceStationOccupancy, report?: AllianceStationDSReport | null) => {
+    const occupancy_str = {
+      "Vacant": "No Driver Station Connected",
+      "WrongMatch": "Wrong Team Number - Wrong Match?",
+      "WrongStation": "Wrong Station - Move!"
+    };
+
     return <Row className="team-estop-indicators">
-      <Col data-ok={report?.radio_ping}>
-        <FontAwesomeIcon icon={faWifi} /> &nbsp;
-        { report?.radio_ping ? 
-          `${(report?.rtt?.toString() || "---").padStart(3, "\u00A0")}ms`
-          : "NO RADIO"
-        }
-      </Col>
-      <Col data-ok={report?.rio_ping}>
-        <FontAwesomeIcon icon={faRobot} /> &nbsp;
-        { report?.rio_ping ? "RIO OK" : "NO RIO" }
-      </Col>
-      <Col data-ok={report?.robot_ping}>
-        <FontAwesomeIcon icon={faCode} /> &nbsp;
-        { report?.robot_ping ? "CODE OK" : "NO CODE" }
-      </Col>
-      <Col data-ok={report?.battery || 0 > 10}>
-        <FontAwesomeIcon icon={faCarBattery} /> &nbsp;
-        { report?.battery?.toFixed(2) || "--.--" } V
-      </Col>
-      <Col data-estop={report?.estop}>
-        { report?.estop ? "ROBOT ESTOP" : (report?.mode || "---").toUpperCase() }
-      </Col>
+      {
+        occupancy !== "Occupied" ? <Col data-ok={false}> { occupancy_str[occupancy] } </Col>
+        : <React.Fragment>
+            <Col data-ok={report?.radio_ping}>
+              <FontAwesomeIcon icon={faWifi} /> &nbsp;
+              { report?.radio_ping ? 
+                `${(report?.rtt?.toString() || "---").padStart(3, "\u00A0")}ms`
+                : "NO RADIO"
+              }
+            </Col>
+            <Col data-ok={report?.rio_ping}>
+              <FontAwesomeIcon icon={faRobot} /> &nbsp;
+              { report?.rio_ping ? "RIO OK" : "NO RIO" }
+            </Col>
+            <Col data-ok={report?.robot_ping}>
+              <FontAwesomeIcon icon={faCode} /> &nbsp;
+              { report?.robot_ping ? "CODE OK" : "NO CODE" }
+            </Col>
+            <Col data-ok={report?.battery || 0 > 10}>
+              <FontAwesomeIcon icon={faCarBattery} /> &nbsp;
+              { report?.battery?.toFixed(2) || "--.--" } V
+            </Col>
+            <Col data-estop={report?.estop}>
+              { report?.estop ? "ROBOT ESTOP" : (report?.mode || "---").toUpperCase() }
+            </Col>
+        </React.Fragment>
+      }
     </Row>
   }
 
@@ -75,7 +86,7 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
     return <div className="team-estop">
       <h3> { capitalise(station.station.alliance) } { station.station.station } - { station.team || "No Team" } </h3>
       <br />
-      { this.renderDsReport(station.ds_report) }
+      { this.renderDsReport(station.occupancy, station.ds_report) }
       <br />
       <Button
         size="lg"

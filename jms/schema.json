@@ -1007,9 +1007,17 @@
     "EventDetails": {
       "type": "object",
       "required": [
+        "av_chroma_key",
+        "av_event_colour",
         "webcasts"
       ],
       "properties": {
+        "av_chroma_key": {
+          "type": "string"
+        },
+        "av_event_colour": {
+          "type": "string"
+        },
         "code": {
           "type": [
             "string",

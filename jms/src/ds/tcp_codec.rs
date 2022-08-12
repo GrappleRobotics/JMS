@@ -1,5 +1,5 @@
 use bitvec::prelude::*;
-use bytes::{Buf, BufMut, Bytes};
+use bytes::{Buf, BufMut};
 use chrono::{DateTime, Utc};
 use tokio_util::codec::{Decoder, Encoder};
 

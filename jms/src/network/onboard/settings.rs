@@ -7,6 +7,7 @@ use super::netlink::LinkMetadata;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct OnboardNetworkSettings {
+  pub wan_access: bool,
   pub iface_wan: String,
   pub iface_admin: String,
   pub ifaces_blue: Vec<String>,
@@ -35,6 +36,8 @@ impl Interactive for OnboardNetworkSettings {
     let handle = netlink::handle()?;
     let mut ifaces = netlink::get_all_ifaces(&handle).await?;
     ifaces.sort_by(|a, b| a.name.cmp(&b.name));
+
+    let wan_access = inquire::Confirm::new("Do you want the JMS UI to be accessible from WAN (this is dangerous!)?").with_default(false).prompt()?;
 
     let iface_wan = select_iface("WAN Interface (VLAN 150)", 150, &ifaces)?.name.clone();
     let iface_admin = select_iface("Admin Interface (VLAN 100)", 100, &ifaces)?.name.clone();
@@ -76,6 +79,7 @@ impl Interactive for OnboardNetworkSettings {
     };
 
     Ok(Self {
+      wan_access,
       iface_wan,
       iface_admin,
       ifaces_blue,

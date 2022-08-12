@@ -1,5 +1,10 @@
+.audience-root {
+  --chroma-key-colour: #f0f;
+  --event-colour: #e9ab01;
+}
+
 .audience {
-  background-color: #f0f;
+  background-color: var(--chroma-key-colour);
   width: 100vw;
   height: 100vh;
   margin: 0;
@@ -18,11 +23,11 @@
 
 .audience-card {
   // $border-colour: #9c00be;
-  $border-colour: #e9ab01;
+  $border-colour: var(--event-colour);
   // $border-colour: $gray-700;
   
   @extend .audience;
-  background-color: desaturate(darken($border-colour, 30%), 20%);
+  // background-color: desaturate(darken($border-colour, 30%), 20%);
 
   .audience-card-inner {
     background-color: $gray-300;

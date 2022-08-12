@@ -5,6 +5,8 @@ pub struct EventDetails {
   pub code: Option<String>,
   pub event_name: Option<String>,
   pub webcasts: Vec<String>,
+  pub av_chroma_key: String,
+  pub av_event_colour: String
 }
 
 impl db::TableType for EventDetails {
@@ -25,7 +27,7 @@ impl EventDetails {
     match first {
       Some(ed) => Ok(ed),
       None => {
-        let mut ed = EventDetails { code: None, event_name: None, webcasts: vec![] };
+        let mut ed = EventDetails { code: None, event_name: None, webcasts: vec![], av_chroma_key: "#f0f".to_owned(), av_event_colour: "#e9ab01".to_owned() };
         ed.insert(store)?;
         Ok(ed)
       },

@@ -463,6 +463,8 @@ export interface AllWebsocketMessages {
   ui2jms: WebsocketMessage2JMS;
 }
 export interface EventDetails {
+  av_chroma_key: string;
+  av_event_colour: string;
   code?: string | null;
   event_name?: string | null;
   webcasts: string[];
@@ -539,6 +541,7 @@ export interface LoadedMatch {
   config: MatchConfig;
   endgame: boolean;
   match_meta: SerializedMatch;
+  match_time: Duration;
   remaining_time: Duration;
   score: MatchScoreSnapshot;
   state: MatchPlayState;

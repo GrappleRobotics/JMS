@@ -122,6 +122,11 @@ impl OnboardNetwork {
       server: Some(self.v4_network(ADMIN_IP)?),
     };
 
+    let wan_cfg = firewall::WanConfig {
+      iface: self.settings.iface_wan.clone(),
+      access: self.settings.wan_access
+    };
+
     let station_cfgs: Vec<firewall::TeamFirewallConfig> = stations
       .iter()
       .map(|s| firewall::TeamFirewallConfig {
@@ -135,7 +140,7 @@ impl OnboardNetwork {
       })
       .collect();
 
-    firewall::configure_firewall(self.settings.iface_wan.clone(), admin_cfg, &station_cfgs[..]).await?;
+    firewall::configure_firewall(wan_cfg, admin_cfg, &station_cfgs[..]).await?;
 
     Ok(())
   }
