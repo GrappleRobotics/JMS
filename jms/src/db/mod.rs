@@ -6,7 +6,7 @@ mod bindings;
 
 pub use store::*;
 pub use table::*;
-pub use types::Integer;
+pub use types::*;
 pub use bindings::*;
 
 pub type Result<T> = anyhow::Result<T>;

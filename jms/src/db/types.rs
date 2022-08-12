@@ -1,29 +1,46 @@
 use std::{fmt::Display, mem};
 
-use uuid::Uuid;
-
-pub trait Key: Sized + std::fmt::Debug + AsRef<[u8]> + Clone {
+pub trait Key: Sized + std::fmt::Debug + Clone {
+  fn to_raw(&self) -> Vec<u8>;
   fn from_raw(r: &[u8]) -> Self;
-  fn generate(db: &super::Store) -> Self;
 }
 
 impl Key for Integer {
-  fn from_raw(r: &[u8]) -> Self {
-    Integer::from(r)
+  fn to_raw(&self) -> Vec<u8> {
+    Vec::from(self.0)
   }
 
-  fn generate(db: &super::Store) -> Self {
-    Integer::from(db.generate_id().unwrap())
+  fn from_raw(r: &[u8]) -> Self {
+    Integer::from(r)
   }
 }
 
 impl Key for String {
+  fn to_raw(&self) -> Vec<u8> {
+    Vec::from(self.as_bytes())
+  }
+
   fn from_raw(r: &[u8]) -> Self {
     std::str::from_utf8(r).unwrap().to_string()
   }
+}
 
-  fn generate(_: &super::Store) -> Self {
-    Uuid::new_v4().to_string()
+#[derive(Debug, Clone)]
+pub struct JsonKey<T: serde::Serialize + serde::de::DeserializeOwned>(pub T);
+
+impl<T: serde::Serialize + serde::de::DeserializeOwned + Clone + std::fmt::Debug> Key for JsonKey<T> {
+  fn to_raw(&self) -> Vec<u8> {
+    serde_json::to_vec(&self.0).unwrap()
+  }
+  
+  fn from_raw(r: &[u8]) -> Self {
+    JsonKey(serde_json::from_slice(r).unwrap())
+  }
+}
+
+impl<T: serde::Serialize + serde::de::DeserializeOwned> From<T> for JsonKey<T> {
+  fn from(t: T) -> Self {
+    JsonKey(t)
   }
 }
 

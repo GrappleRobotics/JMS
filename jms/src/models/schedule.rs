@@ -11,7 +11,7 @@ pub enum ScheduleBlockType {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct ScheduleBlock {
-  pub id: Option<usize>,
+  pub id: Option<u64>,
   pub block_type: ScheduleBlockType,
   pub name: String,
   pub start_time: DBDateTime,
@@ -27,8 +27,9 @@ impl db::TableType for ScheduleBlock {
     self.id.map(|id| id.into())
   }
 
-  fn set_id(&mut self, id: Self::Id) {
-    self.id = Some(id.into())
+  fn generate_id(&mut self, store: &db::Store) -> db::Result<()> {
+    self.id = Some(store.generate_id()?);
+    Ok(())
   }
 }
 

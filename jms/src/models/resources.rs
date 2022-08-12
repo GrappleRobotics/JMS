@@ -12,8 +12,6 @@ impl db::TableType for DBResourceRequirements {
   fn id(&self) -> Option<Self::Id> {
     Some(1.into())
   }
-
-  fn set_id(&mut self, _id: Self::Id) {}
 }
 
 impl DBResourceRequirements {

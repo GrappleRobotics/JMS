@@ -819,7 +819,7 @@
             "integer",
             "null"
           ],
-          "format": "uint",
+          "format": "uint64",
           "minimum": 0.0
         },
         "name": {
@@ -2541,7 +2541,7 @@
             "integer",
             "null"
           ],
-          "format": "uint",
+          "format": "uint64",
           "minimum": 0.0
         },
         "name": {

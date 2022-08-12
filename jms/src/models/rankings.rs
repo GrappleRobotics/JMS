@@ -26,10 +26,6 @@ impl db::TableType for TeamRanking {
   fn id(&self) -> Option<Self::Id> {
     Some(self.team.into())
   }
-
-  fn set_id(&mut self, id: Self::Id) {
-    self.team = id.into()
-  }
 }
 
 impl TeamRanking {

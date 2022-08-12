@@ -8,7 +8,8 @@ pub trait TableType: serde::Serialize + serde::de::DeserializeOwned {
   type Id: types::Key;
 
   fn id(&self) -> Option<Self::Id>;
-  fn set_id(&mut self, id: Self::Id);
+
+  fn generate_id(&mut self, _: &super::Store) -> super::Result<()> { Ok(()) }
 
   fn table(db: &super::Store) -> super::Result<Table<Self>> {
     Table::<Self>::instance(db)
@@ -72,11 +73,13 @@ impl<'a, T: TableType> Table<T> {
   }
 
   pub fn contains<X: Into<T::Id>>(&self, key: X) -> super::Result<bool> {
-    Ok(self.0.contains_key(key.into())?)
+    let k: T::Id = key.into();
+    Ok(self.0.contains_key(k.to_raw())?)
   }
 
   pub fn get<X: Into<T::Id>>(&self, key: X) -> super::Result<Option<T>> {
-    let v = self.0.get(key.into())?;
+    let k: T::Id = key.into();
+    let v = self.0.get(k.to_raw())?;
     Ok(match v {
       Some(v) => Some(serde_json::from_slice(&v)?),
       None => None,
@@ -87,19 +90,23 @@ impl<'a, T: TableType> Table<T> {
     let key = match value.id() {
       Some(id) => id,
       None => {
-        let new_id = T::Id::generate(db);
-        value.set_id(new_id.clone());
-        new_id
+        value.generate_id(&db)?;
+
+        match value.id() {
+          Some(id) => id,
+          None => anyhow::bail!("No ID given or generated during insert")
+        }
       },
     };
 
     let bytes = serde_json::to_vec(&value)?;
-    self.0.insert(key.as_ref(), bytes)?;
+    self.0.insert(key.to_raw(), bytes)?;
     Ok(value)
   }
 
   pub fn remove<X: Into<T::Id>>(&self, key: X) -> super::Result<Option<T>> {
-    let removed = self.0.remove(key.into())?;
+    let k: T::Id = key.into();
+    let removed = self.0.remove(k.to_raw())?;
     Ok(match removed {
       Some(v) => Some(serde_json::from_slice(&v)?),
       None => None,
@@ -123,7 +130,8 @@ impl<'a, T: TableType> Table<T> {
   }
 
   pub fn watch_prefix<X: Into<T::Id>>(&self, prefix: X) -> Watch<T> {
-    Watch(self.0.watch_prefix(prefix.into()), PhantomData)
+    let pfx: T::Id = prefix.into();
+    Watch(self.0.watch_prefix(pfx.to_raw()), PhantomData)
   }
 
   pub fn watch_all(&self) -> Watch<T> {
@@ -251,20 +259,23 @@ impl<T: TableType> Batch<T> {
     let key = match value.id() {
       Some(id) => id,
       None => {
-        let new_id = T::Id::generate(db);
-        value.set_id(new_id.clone());
-        new_id
+        value.generate_id(&db)?;
+
+        match value.id() {
+          Some(id) => id,
+          None => anyhow::bail!("No ID given or generated during insert")
+        }
       },
     };
 
     let bytes = serde_json::to_vec(&value)?;
-    self.0.insert(key.as_ref(), bytes);
+    self.0.insert(key.to_raw(), bytes);
     Ok(value)
   }
 
   pub fn remove<X: Into<T::Id>>(&mut self, key: X) -> super::Result<()> {
     let a: T::Id = key.into();
-    self.0.remove(a.as_ref());
+    self.0.remove(a.to_raw());
     Ok(())
   }
 }

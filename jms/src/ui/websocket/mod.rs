@@ -3,6 +3,7 @@ pub mod event;
 pub mod matches;
 pub mod debug;
 pub mod resources;
+pub mod historian;
 pub mod ws;
 
 use jms_macros::define_websocket_msg;

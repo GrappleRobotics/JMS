@@ -14,10 +14,6 @@ impl db::TableType for PlayoffAlliance {
   fn id(&self) -> Option<Self::Id> {
     Some(self.id.into())
   }
-
-  fn set_id(&mut self, id: Self::Id) {
-    self.id = id.into();
-  }
 }
 
 impl PlayoffAlliance {

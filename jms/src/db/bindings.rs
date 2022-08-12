@@ -27,7 +27,7 @@ pub enum ShallowInner<T> {
 impl<T: TableType> From<Shallow<T>> for ShallowInner<T> {
   fn from(shallow: Shallow<T>) -> Self {
     match shallow.0.id() {
-      Some(id) => ShallowInner::FK(id.as_ref().to_vec()),
+      Some(id) => ShallowInner::FK(id.to_raw()),
       None => ShallowInner::WRAPPED(shallow.0),
     }
   }

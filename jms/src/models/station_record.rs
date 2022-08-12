@@ -4,7 +4,7 @@ use chrono::Local;
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 
-use crate::{db::{DBDateTime, self}, arena::{station::{AllianceStation, AllianceStationId}, matches::{MatchPlayState, LoadedMatch}}};
+use crate::{db::{DBDateTime, self, JsonKey}, arena::{station::{AllianceStation, AllianceStationId}, matches::{MatchPlayState, LoadedMatch}}};
 
 use super::Match;
 
@@ -31,32 +31,37 @@ impl StampedAllianceStationStatus {
 pub type StationStatusRecord = Vec<StampedAllianceStationStatus>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct MatchStationStatusRecordKey {
+  pub team: Option<u16>,
+  pub station: AllianceStationId,
+  pub match_id: String
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct MatchStationStatusRecord {
   pub record: StationStatusRecord,
-  pub station: AllianceStationId,
-  #[serde(serialize_with = "super::serialize_match")]
-  #[schemars(with = "super::SerializedMatch")]
-  pub match_meta: Match
+  pub key: MatchStationStatusRecordKey
 }
 
 impl MatchStationStatusRecord {
-  pub fn new(station: AllianceStationId, record: StationStatusRecord, m: Match) -> Self {
+  pub fn new(station: &AllianceStation, record: StationStatusRecord, match_id: String) -> Self {
     Self {
       record,
-      station,
-      match_meta: m
+      key: MatchStationStatusRecordKey {
+        station: station.station,
+        team: station.team,
+        match_id
+      }
     }
   }
 }
 
 impl db::TableType for MatchStationStatusRecord {
   const TABLE: &'static str = "match_station_records";
-  type Id = String;
+  type Id = JsonKey<MatchStationStatusRecordKey>;
 
   fn id(&self) -> Option<Self::Id> {
-    Some(format!("{}-{}", self.match_meta.id().unwrap_or("unknown".to_owned()), self.station.to_id()))
+    Some(self.key.clone().into())
   }
-
-  fn set_id(&mut self, _id: Self::Id) { }
 }
 
