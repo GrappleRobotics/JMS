@@ -202,7 +202,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
           <Row className="score-row">
             <AllianceScore
               alliance="red"
-              img="game/wide-white.png"
+              img="game/game.png"
               score={match.score.red}
               stations={stations.filter(s => s.station.alliance === "red")}
               has_rp={has_rp}
