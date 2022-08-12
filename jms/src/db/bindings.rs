@@ -2,8 +2,7 @@ use std::convert::TryFrom;
 
 use chrono::{DateTime, Duration, NaiveDateTime};
 
-use super::TableType;
-use super::types::Key;
+use super::{FromRaw, TableType, ToRaw};
 
 // A shallow DB type used to bind to another table as a foreign key,
 // to be reloaded upon deserialisation

@@ -411,7 +411,7 @@ input[type=number] {
 }
 
 .vr-right {
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 1px solid rgba(white, 0.1);
 }
 
 [data-buffer-diff=true] {
@@ -665,3 +665,4 @@ th {
 @import "wizard/EventWizard.scss";
 @import "scoring/Scoring.scss";
 @import "monitor/FieldMonitor.scss";
+@import "monitor/Historian.scss";

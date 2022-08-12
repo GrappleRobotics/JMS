@@ -4,9 +4,7 @@ use chrono::Local;
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 
-use crate::{db::{DBDateTime, self, JsonKey}, arena::{station::{AllianceStation, AllianceStationId}, matches::{MatchPlayState, LoadedMatch}}};
-
-use super::Match;
+use crate::{db::{DBDateTime, self, Json}, arena::{station::{AllianceStation, AllianceStationId}, matches::{MatchPlayState, LoadedMatch}}};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct StampedAllianceStationStatus {
@@ -58,7 +56,7 @@ impl MatchStationStatusRecord {
 
 impl db::TableType for MatchStationStatusRecord {
   const TABLE: &'static str = "match_station_records";
-  type Id = JsonKey<MatchStationStatusRecordKey>;
+  type Id = Json<MatchStationStatusRecordKey>;
 
   fn id(&self) -> Option<Self::Id> {
     Some(self.key.clone().into())

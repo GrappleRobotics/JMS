@@ -83,7 +83,7 @@ impl Match {
   }
 
   pub fn by_type(mtype: MatchType, store: &db::Store) -> db::Result<Vec<Match>> {
-    let mut v = Self::table(store)?.iter().filter(|a| {
+    let mut v = Self::table(store)?.iter_values().filter(|a| {
       a.as_ref().map(|sb| sb.match_type == mtype ).unwrap_or(false)
     }).collect::<db::Result<Vec<Match>>>()?;
     v.sort_by(|a, b| a.start_time.cmp(&b.start_time));

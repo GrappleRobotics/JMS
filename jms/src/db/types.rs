@@ -1,46 +1,55 @@
 use std::{fmt::Display, mem};
 
-pub trait Key: Sized + std::fmt::Debug + Clone {
+pub trait ToRaw {
   fn to_raw(&self) -> Vec<u8>;
+}
+
+pub trait FromRaw {
   fn from_raw(r: &[u8]) -> Self;
 }
 
-impl Key for Integer {
+impl ToRaw for Integer {
   fn to_raw(&self) -> Vec<u8> {
     Vec::from(self.0)
   }
+}
 
+impl FromRaw for Integer {
   fn from_raw(r: &[u8]) -> Self {
     Integer::from(r)
   }
 }
 
-impl Key for String {
+impl ToRaw for String {
   fn to_raw(&self) -> Vec<u8> {
     Vec::from(self.as_bytes())
   }
+}
 
+impl FromRaw for String {
   fn from_raw(r: &[u8]) -> Self {
     std::str::from_utf8(r).unwrap().to_string()
   }
 }
 
 #[derive(Debug, Clone)]
-pub struct JsonKey<T: serde::Serialize + serde::de::DeserializeOwned>(pub T);
+pub struct Json<T>(pub T);
 
-impl<T: serde::Serialize + serde::de::DeserializeOwned + Clone + std::fmt::Debug> Key for JsonKey<T> {
+impl<T: serde::Serialize> ToRaw for Json<T> {
   fn to_raw(&self) -> Vec<u8> {
     serde_json::to_vec(&self.0).unwrap()
   }
-  
+}
+
+impl <T: serde::de::DeserializeOwned> FromRaw for Json<T> {
   fn from_raw(r: &[u8]) -> Self {
-    JsonKey(serde_json::from_slice(r).unwrap())
+    Json(serde_json::from_slice(r).unwrap()) 
   }
 }
 
-impl<T: serde::Serialize + serde::de::DeserializeOwned> From<T> for JsonKey<T> {
+impl<T> From<T> for Json<T> {
   fn from(t: T) -> Self {
-    JsonKey(t)
+    Json(t)
   }
 }
 

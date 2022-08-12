@@ -40,7 +40,7 @@ impl ScheduleBlock {
   }
 
   pub fn by_type(block_type: ScheduleBlockType, store: &db::Store) -> db::Result<Vec<ScheduleBlock>> {
-    let mut v: Vec<ScheduleBlock> = Self::table(store)?.iter().filter(|a| {
+    let mut v: Vec<ScheduleBlock> = Self::table(store)?.iter_values().filter(|a| {
       a.as_ref().map(|sb| sb.block_type == block_type ).unwrap_or(false)
     }).collect::<db::Result<Vec<ScheduleBlock>>>()?;
     v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
