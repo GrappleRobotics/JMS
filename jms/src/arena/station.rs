@@ -98,6 +98,7 @@ pub struct AllianceStation {
   pub bypass: bool,
   pub estop: bool,
   pub astop: bool,
+  pub ds_eth: bool,
   pub ds_report: Option<AllianceStationDSReport>,
   pub occupancy: AllianceStationOccupancy,
 }
@@ -117,6 +118,7 @@ impl AllianceStation {
       bypass: false,
       estop: false,
       astop: false,
+      ds_eth: false,
       ds_report: None,
       occupancy: AllianceStationOccupancy::Vacant,
     };

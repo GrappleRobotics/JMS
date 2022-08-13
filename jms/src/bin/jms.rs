@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey};
+use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey, network::snmp::snmp::SNMPService};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -97,6 +97,9 @@ async fn main() -> anyhow::Result<()> {
     let mut ds_service = DSConnectionService::new(arena.clone()).await;
     let ds_fut = ds_service.run().map_err(|e| anyhow::anyhow!("DS Error: {}", e));
 
+    let mut snmp_service = SNMPService::new(arena.clone());
+    let snmp_fut = snmp_service.run();
+
     let electronics_service = FieldElectronicsService::new(arena.clone(), resources.clone(), settings.electronics).await;
     let electronics_fut = electronics_service.begin();
 
@@ -121,9 +124,9 @@ async fn main() -> anyhow::Result<()> {
       let tba_worker = tba::TBAWorker::new(tba_client);
       let tba_fut = tba_worker.begin();
 
-      try_join!(arena_fut, ds_fut, electronics_fut, ws_fut, web_fut, tba_fut)?;
+      try_join!(arena_fut, ds_fut, snmp_fut, electronics_fut, ws_fut, web_fut, tba_fut)?;
     } else {
-      try_join!(arena_fut, ds_fut, electronics_fut, ws_fut, web_fut)?;
+      try_join!(arena_fut, ds_fut, snmp_fut, electronics_fut, ws_fut, web_fut)?;
     }
   }
 

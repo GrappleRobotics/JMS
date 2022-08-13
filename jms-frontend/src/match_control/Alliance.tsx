@@ -1,5 +1,5 @@
 import { IconProp } from '@fortawesome/fontawesome-svg-core';
-import { faBan, faBugSlash, faCode, faGear, faShuffle, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faBan, faBugSlash, faCode, faEthernet, faGear, faNetworkWired, faShuffle, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import BufferedFormControl from 'components/elements/BufferedFormControl';
 import SimpleTooltip from 'components/elements/SimpleTooltip';
@@ -16,9 +16,9 @@ class Indicator extends React.PureComponent<IndicatorProps> {
   }
 }
 
-const DSStatusIndicator = ( { className, occupancy, ...props }: IndicatorProps & { occupancy: AllianceStationOccupancy } ) => {
+const DSStatusIndicator = ( { className, eth, occupancy, ...props }: IndicatorProps & { eth: boolean, occupancy: AllianceStationOccupancy } ) => {
   const status_map = {
-    "Vacant": { icon: undefined, tip: "Driver Station Vacant" },
+    "Vacant": { icon: eth ? faNetworkWired : undefined, tip: eth ? "Eth Connected, No DS" : "Driver Station Vacant" },
     "Occupied": { icon: undefined, tip: "Driver Station OK" },
     "WrongStation": { icon: faShuffle, tip: "Wrong Station" },
     "WrongMatch": { icon: faXmark, tip: "Wrong Match" }
@@ -27,8 +27,8 @@ const DSStatusIndicator = ( { className, occupancy, ...props }: IndicatorProps &
   const status = status_map[occupancy];
 
   return <SimpleTooltip id="ds-status-tt" tip={ status.tip }>
-    <Indicator className={`ds-status ${className || ""}`} data-occupancy={occupancy} {...props}>
-      { status.icon ? <FontAwesomeIcon icon={status.icon} />  : <React.Fragment /> }
+    <Indicator className={`ds-status ${className || ""}`} data-eth-ok={eth} data-occupancy={occupancy} {...props}>
+      { status.icon ? <FontAwesomeIcon icon={status.icon} size="sm" />  : <React.Fragment /> }
     </Indicator>
   </SimpleTooltip>
 }
@@ -117,7 +117,7 @@ class AllianceStationComponent extends React.PureComponent<AllianceStationProps>
         />
       </Col>
       <Col sm="1">
-        <DSStatusIndicator occupancy={station.occupancy} />
+        <DSStatusIndicator eth={station.ds_eth} occupancy={station.occupancy} />
       </Col>
       <Col sm="2">
         <SimpleTooltip id="robot-ping-tt" tip={report?.robot_ping ? "Robot Comms OK" : "No Robot Comms"}>

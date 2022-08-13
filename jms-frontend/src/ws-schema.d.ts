@@ -528,6 +528,7 @@ export interface SerialisedAllianceStation {
   astop: boolean;
   bypass: boolean;
   can_arm: boolean;
+  ds_eth: boolean;
   ds_report?: AllianceStationDSReport | null;
   estop: boolean;
   occupancy: AllianceStationOccupancy;

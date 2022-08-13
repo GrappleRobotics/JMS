@@ -12,6 +12,8 @@ use crate::network::radio::TeamRadioConfig;
 
 use self::settings::OnboardNetworkSettings;
 
+use super::ADMIN_IP;
+use super::ADMIN_ROUTER;
 use super::radio::FieldRadio;
 use super::NetworkProvider;
 
@@ -19,9 +21,6 @@ pub mod dhcp;
 pub mod firewall;
 pub mod netlink;
 pub mod settings;
-
-const ADMIN_IP: &'static str = "10.0.100.5/24";
-const ADMIN_ROUTER: &'static str = "10.0.100.1/24";
 
 pub struct OnboardNetwork {
   settings: OnboardNetworkSettings,

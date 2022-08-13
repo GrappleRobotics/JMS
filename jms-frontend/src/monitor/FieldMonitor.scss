@@ -74,6 +74,13 @@
           }
         }
 
+        .monitor-eth {
+          padding-right: 0;
+          &[data-eth-ok=true] {
+            color: theme-color("good")
+          }
+        }
+
         .monitor-occupancy {
           &[data-occupancy="Vacant"] {
             &:before { content: "NO DS" }

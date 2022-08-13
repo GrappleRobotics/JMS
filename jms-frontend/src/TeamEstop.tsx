@@ -43,9 +43,9 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
     }
   }
 
-  renderDsReport = (occupancy: AllianceStationOccupancy, report?: AllianceStationDSReport | null) => {
+  renderDsReport = (eth: boolean, occupancy: AllianceStationOccupancy, report?: AllianceStationDSReport | null) => {
     const occupancy_str = {
-      "Vacant": "No Driver Station Connected",
+      "Vacant": eth ? "Ethernet Connected, Driver Station Not Connected" : "No Driver Station Connected",
       "WrongMatch": "Wrong Team Number - Wrong Match?",
       "WrongStation": "Wrong Station - Move!"
     };
@@ -86,7 +86,7 @@ class TeamEstop extends React.PureComponent<TeamEstopProps> {
     return <div className="team-estop">
       <h3> { capitalise(station.station.alliance) } { station.station.station } - { station.team || "No Team" } </h3>
       <br />
-      { this.renderDsReport(station.occupancy, station.ds_report) }
+      { this.renderDsReport(station.ds_eth, station.occupancy, station.ds_report) }
       <br />
       <Button
         size="lg"

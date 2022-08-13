@@ -2763,6 +2763,7 @@
         "astop",
         "bypass",
         "can_arm",
+        "ds_eth",
         "estop",
         "occupancy",
         "station"
@@ -2775,6 +2776,9 @@
           "type": "boolean"
         },
         "can_arm": {
+          "type": "boolean"
+        },
+        "ds_eth": {
           "type": "boolean"
         },
         "ds_report": {

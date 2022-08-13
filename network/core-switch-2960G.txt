@@ -255,6 +255,9 @@ interface Vlan100
 !
 ip http server
 ip http secure-server
+snmp-server community public RO
+snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
+snmp-server host 10.0.100.5 public
 !
 control-plane
 !

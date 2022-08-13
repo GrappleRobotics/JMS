@@ -1,4 +1,4 @@
-import { faCode, faRobot, faWifi } from "@fortawesome/free-solid-svg-icons";
+import { faCode, faNetworkWired, faRobot, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool from "components/elements/Confirm";
 import React from "react";
@@ -63,7 +63,7 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
     if (estop) return "E-STOPPED";
 
     if (stn.team === null) return "NO TEAM";
-    if (stn.occupancy == "Vacant") return "NO DS";
+    if (stn.occupancy == "Vacant") return stn.ds_eth ? "ETH OK NO DS" : "NO DS";
     if (stn.occupancy == "WrongMatch") return "WRONG MATCH";
     if (stn.occupancy == "WrongStation") return "WRONG STATION";
 
@@ -104,6 +104,7 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
         {
           s.bypass ? <React.Fragment /> : 
             <Row className="monitor-data-header">
+              <Col className="monitor-eth" md="auto" data-eth-ok={s.ds_eth}> <FontAwesomeIcon icon={faNetworkWired} /> </Col>
               <Col className="monitor-occupancy" data-occupancy={s.occupancy} />
               <Col className="monitor-team">
                 { s.team || "" }
