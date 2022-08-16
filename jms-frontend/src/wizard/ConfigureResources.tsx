@@ -308,7 +308,7 @@ class ResourceQuotaComponent extends React.PureComponent<ResourceQuotaComponentP
           { quota.template.fta ? "[FTA]" : undefined } <ResourceRoleLabel role={quota.template.role} />
         </Col>
         <Col md={2} className="wizard-resource-status-count" data-satisfied={quota.satisfied}>
-          <SimpleTooltip tip={ quota.resource_ids.map(r => <p key={r} className="m-0"> { r }</p>) } disabled={quota.resource_ids.length === 0}>
+          <SimpleTooltip id="qr" tip={ quota.resource_ids.map(r => <p key={r} className="m-0"> { r }</p>) } disabled={quota.resource_ids.length === 0}>
             { quota.resource_ids.length > 0 ? String(quota.resource_ids.length) : "--" }
             &nbsp;&nbsp;
             <span className="text-muted">

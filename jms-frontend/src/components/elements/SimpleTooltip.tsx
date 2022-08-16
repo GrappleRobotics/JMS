@@ -3,6 +3,7 @@ import { OverlayTrigger, Tooltip, TooltipProps } from "react-bootstrap";
 import { Combine } from "support/util";
 
 type SimpleTooltipProps = Combine<{
+  id: string,
   tip: React.ReactNode | string,
   children: React.ReactNode,
   disabled?: boolean

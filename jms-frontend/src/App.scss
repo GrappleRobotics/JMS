@@ -107,6 +107,7 @@ a {
 html, body, #root {
   height: 100%;
   touch-action: manipulation;
+  overflow: hidden;   // Needed to stop the scroll bar showing up whilst hovering on popover
 }
 
 #root {

@@ -41,7 +41,7 @@ export class ResourceRequirementMinimap extends React.PureComponent<ResourceRequ
     return <FieldPosSelector>
       {
         quotas.map(q => <FieldResource role={q.template.role} fta={q.template.fta}>
-          <SimpleTooltip tip={ <ResourceRoleLabel fta={q.template.fta} role={q.template.role} /> }>
+          <SimpleTooltip id={role2id(q.template.role)} tip={ <ResourceRoleLabel fta={q.template.fta} role={q.template.role} /> }>
             <div className="resource-indicator" data-role={role2id(q.template.role)} data-fta={q.template.fta} data-satisfied={q.satisfied} data-ready={q.ready}>
               { q.resource_ids.length }
             </div>
