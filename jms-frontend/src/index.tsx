@@ -9,6 +9,13 @@ import './App.scss';
 // Ensure only the current loaded page has a resource id attached - duplicates should be cleared
 resource_id_lock();
 
+// Small address bar on iOS 
+window.addEventListener("load",function() {
+    setTimeout(function(){
+        window.scrollTo(0, 1);
+    }, 0);
+})
+
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 root.render(

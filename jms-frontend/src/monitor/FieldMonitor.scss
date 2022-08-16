@@ -12,7 +12,7 @@
         > .monitor-station-id {
           background-color: desaturate(darken($tc, 25%), 25%);
           text-align: center;
-          font-size: 30px;
+          font-size: 2rem;
           font-weight: bold;
           padding: 0.25em;
           color: desaturate($tc, 25%);
@@ -21,7 +21,7 @@
         > .monitor-data {
           align-content: stretch;
           
-          font-size: 25px;
+          font-size: 1.5rem;
           font-weight: bold;
           color: theme-color("secondary");
 
@@ -34,13 +34,12 @@
           }
 
           > .row {
-            flex: 1 !important;
             padding: 4px;
           }
           
           .monitor-data-header {
-            flex-grow: 0 !important;
             background-color: black;
+            flex-grow: 0;
           }
 
           .monitor-team {
@@ -49,8 +48,9 @@
           }
 
           .monitor-jumbo {
+            flex-grow: 1 !important;
             text-align: center;
-            font-size: 40px;
+            font-size: 1.8em;
             color: theme-color("success");
             &[data-error] {
               color: theme-color("danger");
@@ -64,12 +64,12 @@
           }
 
           .monitor-indicators {
-            flex-grow: 0 !important;
             padding: 5px 0;
             background-color: black;
             margin: 0;
-            > .col {
-              padding: 0;
+            flex-grow: 0;
+            > * {
+              padding: 0 0.5em;
             }
           }
         }
@@ -131,6 +131,7 @@
 .monitor-estop-toggle {
   height: 10vh;
   max-height: 10vh;
+  min-height: 7vh;
   .btn {
     font-size: 2em;
     font-weight: bold;

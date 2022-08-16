@@ -19,7 +19,7 @@ type TopNavbarState = {
   readyModal: boolean
 };
 
-export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
+export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref<HTMLDivElement> }, TopNavbarState> {
   readonly state: TopNavbarState = { readyModal: false };
 
   componentDidMount = () => this.handles = [
@@ -116,6 +116,7 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
     const { arena_state, match, resource, readyModal } = this.state;
 
     return <Navbar
+      ref={this.props.innerRef}
       className="top-nav"
       variant="dark"
       fixed="top"

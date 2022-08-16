@@ -109,6 +109,12 @@ html, body, #root {
   touch-action: manipulation;
 }
 
+#root {
+  @media screen and (max-width: 1080px) {
+    font-size: 0.8rem;
+  }
+}
+
 .wrapper {
   min-height: 100vh;
   min-height: -webkit-fill-available;
@@ -146,18 +152,24 @@ html, body, #root {
 }
 
 .navbar {
+  @media screen and (max-width: 1080px) {
+    padding: 0.5rem 1rem;
+  }
   padding: 1rem;
+  background-color: theme-color("dark");
 }
 
 .navbar-padding-top {
-  padding-top: 75px;
+  // padding-top: calc(1rem + 1rem + 2*0.375rem);
+  // padding-top: calc(2rem + 20px);
+  padding-top: var(--nav-height, calc(2rem + 20px));
   > .col {
     height: 0;
   }
 }
 
 .navbar-padding-bottom {
-  padding-top: 30px + 16px*2;
+  padding-top: var(--nav-height, calc(1rem + 20px));
   > .col {
     height: 0;
   }
@@ -223,11 +235,15 @@ html, body, #root {
   @include hazard-btn(theme-color("hazard-yellow"));
 }
 
+.modal-xl {
+  max-width: 80vw !important;
+}
+
 .estop-big {
   display: block;
   width: 100%;
   padding: 5rem;
-  font-size: 4rem;
+  font-size: 6vw;
   font-weight: bold;
   margin-bottom: 1rem;
 }
@@ -246,7 +262,7 @@ html, body, #root {
   display: block;
   width: 100%;
   padding: 5rem;
-  font-size: 4rem;
+  font-size: 5vw;
   font-weight: bold;
   margin-bottom: 1rem;
 }
@@ -255,7 +271,7 @@ html, body, #root {
   display: block;
   width: 100%;
   padding: 1rem;
-  font-size: 2rem;
+  font-size: 2vw;
 }
 
 // .bg-hazard-dark {
@@ -352,11 +368,11 @@ html, body, #root {
       border-color: theme-color("gold");
 
       .home-tile-bg-img {
-        opacity: 35%;
+        opacity: 0.35;
       }
 
       .card-subtitle {
-        opacity: 85%;
+        opacity: 0.85;
       }
 
       .card-img-overlay {
@@ -368,6 +384,7 @@ html, body, #root {
   .home-tile-bg-img {
     transition: opacity 0.2s ease;
 
+    opacity: 0.2;
     border-radius: 20px;
     object-fit: cover;
     width: 100%;
@@ -389,7 +406,7 @@ html, body, #root {
     padding: 10px;
     font-size: 18px;
     font-style: italic;
-    opacity: 50%;
+    opacity: 0.5;
     text-align: center;
   }
 

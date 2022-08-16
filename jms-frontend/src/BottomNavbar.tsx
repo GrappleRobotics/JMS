@@ -10,7 +10,7 @@ type BottomNavbarState = {
   next_match?: SerializedMatch
 }
 
-export default class BottomNavbar extends WebsocketComponent<{}, BottomNavbarState> {
+export default class BottomNavbar extends WebsocketComponent<{ innerRef?: React.Ref<HTMLDivElement> }, BottomNavbarState> {
   readonly state: BottomNavbarState = { };
 
   componentDidMount = () => {
@@ -46,7 +46,7 @@ export default class BottomNavbar extends WebsocketComponent<{}, BottomNavbarSta
   }
 
   render() {
-    return <Navbar bg="dark" variant="dark" className="flex" fixed="bottom">
+    return <Navbar ref={this.props.innerRef} bg="dark" variant="dark" className="flex" fixed="bottom">
       <Col>
         <Navbar.Brand>
           { this.state.current_match?.match_meta?.name || <i> No Match Loaded </i> }

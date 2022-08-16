@@ -28,6 +28,8 @@ type AppState = {
 
 export default class App extends WebsocketComponent<{}, AppState> {
   readonly state: AppState = { errors: [], fta: false };
+  private topnavRef = React.createRef<HTMLDivElement>();
+  private bottomnavRef = React.createRef<HTMLDivElement>();
 
   componentDidMount = () => this.handles = [
     this.listenFn("Resource/Current", (r: TaggedResource) => this.setState({ fta: r.fta || false })),
@@ -43,9 +45,9 @@ export default class App extends WebsocketComponent<{}, AppState> {
 
     return <div className="wrapper">
       {
-        nonav ? this.renderNoNavbar() : <Row className="navbar-padding-top">
+        nonav ? this.renderNoNavbar() : <Row className="navbar-padding-top" style={ { "--nav-height": `${this.topnavRef.current?.clientHeight}px` } as React.CSSProperties }>
           <Col>
-            <TopNavbar />
+            <TopNavbar innerRef={this.topnavRef} />
           </Col>
         </Row>
       }
@@ -62,9 +64,9 @@ export default class App extends WebsocketComponent<{}, AppState> {
         {/* </Col> */}
       </Row>
       {
-        nonav ? <React.Fragment /> : <Row className="navbar-padding-bottom">
+        nonav ? <React.Fragment /> : <Row className="navbar-padding-bottom" style={ { "--nav-height": `${this.bottomnavRef.current?.clientHeight}px` } as React.CSSProperties }>
           <Col>
-            <BottomNavbar />
+            <BottomNavbar innerRef={this.bottomnavRef} />
           </Col>
         </Row>
       }

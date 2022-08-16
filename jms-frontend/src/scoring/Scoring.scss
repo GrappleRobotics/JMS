@@ -29,6 +29,7 @@
   margin: 0.5em;
   padding: 1em;
   border-radius: 1em;
+  font-size: 0.8em;
 
   @each $alliance in $alliances {
     $tc: theme-color($alliance);
@@ -96,6 +97,8 @@
   &[data-height="low"] {
     .scorer-label { bottom: 30%; color: theme-color("red"); }
   }
+
+  @extend .col-full;
 
   .pos-selector-left, .pos-selector-right {
     text-align: center;
