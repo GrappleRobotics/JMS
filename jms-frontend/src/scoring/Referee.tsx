@@ -275,7 +275,7 @@ export class HeadReferee extends RefereePanelBase {
 
 class RefereeSelector extends React.PureComponent {
   render() {
-    return <Col>
+    return <Col className="col-full">
       <FieldResourceSelector
         title="Select Referee"
         options={[

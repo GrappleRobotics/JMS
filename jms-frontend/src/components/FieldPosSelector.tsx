@@ -11,12 +11,68 @@ type PosSelectorProps = {
   children?: React.ReactNode | React.ReactNode[],
   leftChildren?: React.ReactNode | React.ReactNode[],
   rightChildren?: React.ReactNode | React.ReactNode[],
-  img?: string
+  img?: string,
+  pad?: number
 };
 
-export class PosSelector extends React.PureComponent<PosSelectorProps> {
+type PosSelectorState = {
+  top: number,
+  left: number,
+  width: number|string,
+  height: number|string,
+  fontSize: string
+};
+
+export class PosSelector extends React.Component<PosSelectorProps, PosSelectorState> {
+  private imgRef = React.createRef<HTMLImageElement>();
+  private colRef = React.createRef<HTMLDivElement>();
+
+  readonly state: PosSelectorState = {
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    fontSize: "1rem",
+  };
+
+  componentDidMount = () => {
+    // this.colRef.current!.addEventListener("resize", () => this.recalcSize());
+    window.addEventListener("resize", () => this.recalcSize());
+    setTimeout(() => this.recalcSize(), 100);
+  }
+
+  recalcSize = () => {
+    let col = this.colRef.current!;
+    let img = this.imgRef.current!;
+
+    let width = col.clientWidth;
+    let height = col.clientHeight;
+
+    let aspect = img.naturalHeight / img.naturalWidth;
+    let hfith = width * aspect;
+    
+    if (height && hfith > height) {
+      let vfitw = height / aspect;
+
+      // Fit to height
+      this.setState({
+        top: 0, height: "100%",
+        width: vfitw, left: (width - vfitw) / 2,
+        fontSize: `${height / 500.0}rem`
+      });
+    } else {
+      // Fit to width
+      this.setState({
+        top: (height ? (height - hfith) / 2 : 0), height: hfith,
+        width: "100%", left: 0,
+        fontSize: `${hfith / 500.0}rem`
+      });
+    }
+  }
+
   render() {
     const { title, className, children, img, leftChildren, rightChildren, ...props } = this.props;
+
     return <Col className={`pos-selector-container ${className || ''}`} { ...props }>
       { withVal(title, t => <Row className="pos-selector-title">
         {
@@ -28,10 +84,17 @@ export class PosSelector extends React.PureComponent<PosSelectorProps> {
         {
           withValU(leftChildren, left => <Col md={2} className="pos-selector-left"> { left } </Col>)
         }
-        <Col>
-          <div className="pos-selector-image-container">
+        <Col ref={this.colRef} className="middle">
+          <div
+            className="pos-selector-image-container"
+            style={{
+              top: this.state.top, left: this.state.left,
+              height: this.state.height, width: this.state.width,
+              fontSize: this.state.fontSize
+            }}
+          >
             { children }
-            <img className="pos-selector-image" src={img} />
+            <img ref={this.imgRef} width="100%" height="100%" className="pos-selector-image" src={img} />
           </div>
         </Col>
         {

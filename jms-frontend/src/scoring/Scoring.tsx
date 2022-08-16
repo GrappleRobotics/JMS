@@ -100,7 +100,7 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
 
 class ScorerSelector extends React.PureComponent {
   render() {
-    return <Col>
+    return <Col className="col-full">
       <FieldResourceSelector
         title="Select Scorer"
         options={[

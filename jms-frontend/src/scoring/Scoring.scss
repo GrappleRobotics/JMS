@@ -98,8 +98,6 @@
     .scorer-label { bottom: 30%; color: theme-color("red"); }
   }
 
-  @extend .col-full;
-
   .pos-selector-left, .pos-selector-right {
     text-align: center;
     display: flex;
