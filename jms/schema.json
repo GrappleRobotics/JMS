@@ -389,7 +389,8 @@
             "Field",
             "MatchPreview",
             "MatchPlay",
-            "AllianceSelection"
+            "AllianceSelection",
+            "PlayoffBracket"
           ]
         },
         {
@@ -772,6 +773,20 @@
         {
           "type": "object",
           "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "PlayoffBracket"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
             "params",
             "scene"
           ],
@@ -934,10 +949,28 @@
       ]
     },
     "DebugMessageMatch2JMS": {
-      "type": "string",
-      "enum": [
-        "FillRandomScores",
-        "DeleteAll"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "DeleteAll"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "FillRandomScores"
+          ],
+          "properties": {
+            "FillRandomScores": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "DerivedScore": {
@@ -2846,6 +2879,7 @@
         "match_type",
         "name",
         "played",
+        "ready",
         "red_teams",
         "set_number"
       ],
@@ -2907,6 +2941,9 @@
           "type": "string"
         },
         "played": {
+          "type": "boolean"
+        },
+        "ready": {
           "type": "boolean"
         },
         "red_alliance": {

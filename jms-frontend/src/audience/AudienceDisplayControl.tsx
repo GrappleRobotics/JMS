@@ -95,9 +95,10 @@ export default class AudienceDisplayControl extends WebsocketComponent<{}, Audie
         ]
       },
       {
-        title: "Alliance Selections",
+        title: "Playoffs",
         scenes: [
-          { id: "alliance_selection", name: "Alliance Selections", scene: "AllianceSelection" }
+          { id: "alliance_selection", name: "Alliance Selections", scene: "AllianceSelection" },
+          { id: "playoff_bracket", name: "Playoff Bracket", scene: "PlayoffBracket" }
         ]
       }
     ];

@@ -75,6 +75,7 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
               data-played={match.played || undefined} 
               data-next={this.isNextMatch(match) || undefined} 
               data-winner={ match.winner?.toLowerCase() }
+              data-ready={match.ready}
             >
               {/* Time */}
               <td> 
@@ -101,7 +102,7 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
                   match.played ? "Played..." 
                   : <Button 
                       className="load-match"
-                      disabled={arenaState?.state !== "Idle" || match.played || this.isLoaded(match)}
+                      disabled={arenaState?.state !== "Idle" || match.played || this.isLoaded(match) || !match.ready}
                       // variant={this.isNextMatch(match) ? "success" : "primary"}
                       onClick={() => onLoadMatch(match.id || "--")} 
                       size="sm"

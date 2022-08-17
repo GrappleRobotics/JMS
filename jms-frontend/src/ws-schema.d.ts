@@ -151,6 +151,9 @@ export type AudienceDisplay =
       scene: "AllianceSelection";
     }
   | {
+      scene: "PlayoffBracket";
+    }
+  | {
       params: Award;
       scene: "Award";
     }
@@ -283,7 +286,11 @@ export type DebugMessage2JMS =
   | {
       ReplyTest: string;
     };
-export type DebugMessageMatch2JMS = "FillRandomScores" | "DeleteAll";
+export type DebugMessageMatch2JMS =
+  | "DeleteAll"
+  | {
+      FillRandomScores: string | null;
+    };
 export type EventMessage2JMS =
   | {
       Details: EventMessageDetails2JMS;
@@ -418,7 +425,7 @@ export type ArenaMessageAudienceDisplay2JMS = {
   Set: ArenaMessageAudienceDisplaySet2JMS;
 };
 export type ArenaMessageAudienceDisplaySet2JMS =
-  | ("Field" | "MatchPreview" | "MatchPlay" | "AllianceSelection")
+  | ("Field" | "MatchPreview" | "MatchPlay" | "AllianceSelection" | "PlayoffBracket")
   | {
       MatchResults: string | null;
     }
@@ -580,6 +587,7 @@ export interface SerializedMatch {
   match_type: MatchType;
   name: string;
   played: boolean;
+  ready: boolean;
   red_alliance?: number | null;
   red_teams: (number | null)[];
   score?: MatchScore | null;

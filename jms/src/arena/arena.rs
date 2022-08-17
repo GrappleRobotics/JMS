@@ -81,6 +81,7 @@ pub enum AudienceDisplay {
   MatchPlay,
   MatchResults(models::SerializedMatch),
   AllianceSelection,
+  PlayoffBracket,
   Award(models::Award),
   CustomMessage(String),
 }

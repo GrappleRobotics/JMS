@@ -10,15 +10,14 @@ pub mod round_robin;
 
 #[derive(Debug)]
 pub enum GenerationUpdate {
-  NoUpdate,
-  NewMatches(Vec<IncompleteMatch>),
+  MatchUpdates(Vec<IncompleteMatch>),
   TournamentWon(PlayoffAlliance, PlayoffAlliance),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct IncompleteMatch {
-  red: usize,
-  blue: usize,
+  red: Option<usize>,
+  blue: Option<usize>,
   playoff_type: MatchSubtype,
   set: usize,
   match_num: usize,
@@ -28,7 +27,7 @@ fn create_tiebreaker(red: usize, blue: usize, matches: &Vec<Match>, playoff_type
   let last_match_for_this_pair = matches
     .iter()
     .filter(|&m| {
-      m.match_subtype == Some(playoff_type)
+      m.played && m.match_subtype == Some(playoff_type)
         && ((m.blue_alliance == Some(red) && m.red_alliance == Some(blue))
           || (m.red_alliance == Some(red) && m.blue_alliance == Some(blue)))
     })
@@ -37,11 +36,11 @@ fn create_tiebreaker(red: usize, blue: usize, matches: &Vec<Match>, playoff_type
 
   let set = last_match_for_this_pair.set_number;
   // let last_match_in_set = matches.iter().filter(|&m| m.set_number == set).last().unwrap();
-  let highest_match_num = matches.iter().filter(|&m| m.set_number == set).map(|m| m.match_number).max();
+  let highest_match_num = matches.iter().filter(|&m| m.match_subtype == Some(playoff_type) && m.set_number == set).map(|m| m.match_number).max();
 
   IncompleteMatch {
-    red,
-    blue,
+    red: Some(red),
+    blue: Some(blue),
     playoff_type,
     set,
     // match_num: last_match_in_set.match_number + 1,

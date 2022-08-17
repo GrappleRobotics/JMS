@@ -75,6 +75,7 @@ impl QualsMatchGenerator {
           score_time: None,
           winner: None,
           played: false,
+          ready: true
         };
         m.insert(&db::database())?;
         match_i += 1;

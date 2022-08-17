@@ -1,9 +1,10 @@
+import PlayoffBracketGraph, { as_playoffs } from "components/PlayoffBracket";
 import moment from "moment";
 import React from "react";
 import { Col, Container, Row, Table } from "react-bootstrap";
 import { Element, scroller } from "react-scroll";
 import { WebsocketComponent } from "support/ws-component";
-import { EventDetails, SerializedMatch, TeamRanking } from "ws-schema";
+import { EventDetails, SerialisedMatchGeneration, SerializedMatch, TeamRanking } from "ws-schema";
 
 const SCROLL_TIME = 20000;
 const SCROLL_RESET_TIME = 2500;
@@ -15,6 +16,7 @@ type RankingsProps = {
 type RankingsState = {
   rankings: TeamRanking[],
   event_details?: EventDetails,
+  playoffs?: SerialisedMatchGeneration,
   next_match?: SerializedMatch
 }
 
@@ -31,6 +33,7 @@ export default class Rankings extends WebsocketComponent<RankingsProps, Rankings
     this.handles = [
       this.listen("Event/Ranking/CurrentAll", "rankings"),
       this.listen("Event/Details/Current", "event_details"),
+      this.listen("Match/Playoffs/Generation", "playoffs"),
       this.listen("Match/Next", "next_match"),
     ];
     if (this.props.scroll)
@@ -87,14 +90,16 @@ export default class Rankings extends WebsocketComponent<RankingsProps, Rankings
   }
 
   render() {
-    const { event_details, rankings, next_match } = this.state;
+    const { event_details, rankings, playoffs, next_match } = this.state;
+    const playoff_data = as_playoffs(playoffs?.record?.data);
+
     return <Container className="wrapper">
       <Row className="my-4">
         <Col>
           <h2> Team Standings - { event_details?.event_name || "Unnamed Event" } </h2>
           {
             next_match ? <h4 className="text-muted"> 
-              Next Match: { next_match.name } &nbsp; ({ moment.unix(next_match.start_time || 0).calendar() })
+              Next Match: { next_match.name } &nbsp; ({ next_match.start_time ? moment.unix(next_match.start_time).calendar() : "soon" })
             </h4> : <React.Fragment />
           }
         </Col>
@@ -103,7 +108,11 @@ export default class Rankings extends WebsocketComponent<RankingsProps, Rankings
         <Col>
             <Element name="top" />
             {
-              rankings.length > 0 ? this.renderRankings() : <h4> No Rankings Available - waiting for matches to begin... </h4>
+              playoff_data ? 
+                <PlayoffBracketGraph dark_mode gen_record={playoffs!} next={next_match} />
+              : rankings.length > 0 ?
+                this.renderRankings()
+                : <h4> No Rankings Available - waiting for matches to begin... </h4>
             }
             <Element name="bottom" />
         </Col>

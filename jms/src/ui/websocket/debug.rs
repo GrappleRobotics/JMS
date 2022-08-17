@@ -6,7 +6,7 @@ use super::{ws::{WebsocketHandler, Websocket}, WebsocketMessage2JMS};
 
 define_websocket_msg!($DebugMessage {
   recv $Match {
-    FillRandomScores,
+    FillRandomScores(Option<String>),
     DeleteAll
   },
   ReplyTest(String)
@@ -24,9 +24,9 @@ impl WebsocketHandler for WSDebugHandler {
 
       match msg.clone() {
         DebugMessage2JMS::Match(msg) => match msg {
-          DebugMessageMatch2JMS::FillRandomScores => {
+          DebugMessageMatch2JMS::FillRandomScores(selected_match) => {
             for mut m in models::Match::all(&db::database())? {
-              if !m.played {
+              if m.ready && !m.played && selected_match.as_ref().map(|id| m.id().as_ref() == Some(id)).unwrap_or(true) {
                 let score = MatchScore {
                   red: LiveScore::randomise(),
                   blue: LiveScore::randomise()

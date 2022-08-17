@@ -8,6 +8,7 @@ import AudienceSceneCustomMessage from "./CustomMessage";
 import AudienceSceneMatchPlay from "./MatchPlay";
 import AudienceSceneMatchPreview from "./MatchPreview";
 import AudienceSceneMatchResults from "./MatchResults";
+import AudienceScenePlayoffBracket from "./PlayoffBracket";
 
 type AudienceState = {
   scene?: AudienceDisplay,
@@ -37,6 +38,7 @@ export default class Audience extends WebsocketComponent<{}, AudienceState> {
         <AudienceSceneMatchPlay details={event_details} props={scene.scene === "MatchPlay" ? {} : undefined} />
         <AudienceSceneMatchResults details={event_details} props={scene.scene === "MatchResults" ? { match: scene.params } : undefined} />
         <AudienceSceneAllianceSelection details={event_details} props={scene.scene === "AllianceSelection" ? {} : undefined} />
+        <AudienceScenePlayoffBracket details={event_details} props={scene.scene === "PlayoffBracket" ? {} : undefined} />
     </div>
     } else {
       return <React.Fragment />

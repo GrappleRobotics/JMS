@@ -36,6 +36,7 @@ define_websocket_msg!($ArenaMessage {
       MatchPlay,
       MatchResults(Option<String>),
       AllianceSelection,
+      PlayoffBracket,
       Award(usize),
       CustomMessage(String)
     }
@@ -123,6 +124,7 @@ impl WebsocketHandler for WSArenaHandler {
                 },
               },
               ArenaMessageAudienceDisplaySet2JMS::AllianceSelection => AudienceDisplay::AllianceSelection,
+              ArenaMessageAudienceDisplaySet2JMS::PlayoffBracket => AudienceDisplay::PlayoffBracket,
               ArenaMessageAudienceDisplaySet2JMS::Award(award_id) => AudienceDisplay::Award(models::Award::get_or_err(award_id, &db::database())?),
               ArenaMessageAudienceDisplaySet2JMS::CustomMessage(custom_msg) => AudienceDisplay::CustomMessage(custom_msg),
             }

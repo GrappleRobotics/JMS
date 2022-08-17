@@ -490,6 +490,13 @@ tr.match {
     font-weight: bold;
   }
 
+  &[data-ready=false] {
+    * {
+      color: $gray-600;
+      font-style: italic;
+    }
+  }
+
   &.active {
     background-color: rgb(0, 85, 85) !important;
     font-weight: bold;

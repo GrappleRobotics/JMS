@@ -38,6 +38,7 @@ pub struct Match {
 
   pub winner: Option<Alliance>, // Will be None if tie, but means nothing if the match isn't played yet
   pub played: bool,
+  pub ready: bool
 }
 
 // To send to frontend, as the impls of serde::Serialize are for DB storage and not
@@ -67,6 +68,7 @@ impl Match {
       score_time: None,
       winner: None,
       played: false,
+      ready: true
     }
   }
 
@@ -90,10 +92,27 @@ impl Match {
     Ok(v)
   }
 
+  pub fn by_set_match(mtype: MatchType, st: Option<MatchSubtype>, set: usize, match_num: usize, store: &db::Store) -> db::Result<Option<Match>> {
+    Ok(Self::table(store)?.iter_values().find_map(|a| {
+      a.ok().filter(|sb| sb.match_type == mtype && sb.match_subtype == st && sb.set_number == set && sb.match_number == match_num)
+    }))
+  }
+
   pub fn sorted(store: &db::Store) -> db::Result<Vec<Match>> {
     let mut v = Self::all(store)?;
-    v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+    // v.sort_by(|a, b| a.subtype_idx().cmp(&b.subtype_idx()));
+    // v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+    v.sort();
     Ok(v)
+  }
+
+  pub fn subtype_idx(&self) -> usize {
+    match self.match_subtype {
+      None => 0,
+      Some(MatchSubtype::Quarterfinal) => 1,
+      Some(MatchSubtype::Semifinal) => 2,
+      Some(MatchSubtype::Final) => 3,
+    }
   }
 
   pub async fn commit<'a>(&'a mut self, score: &MatchScore, db: &db::Store) -> db::Result<&'a Self> {

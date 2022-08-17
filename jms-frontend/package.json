@@ -44,6 +44,7 @@
     "react-csv-importer": "^0.7.1",
     "react-datetime": "^3.0.4",
     "react-dom": "^18.0.6",
+    "react-flow-renderer": "9.6.9",
     "react-frontend": "^1.0.0-security",
     "react-router-dom": "^6.3.0",
     "react-scripts": "5.0.1",
