@@ -130,13 +130,6 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
           <Col>
             {
               s.bypass ? `BYPASS ${s.team || ""}`
-                : s.estop ? "E-STOPPED"
-                : this.props.mode === "Estop" ?
-                  <Button
-                    className="btn-block monitor-team-btn"
-                    variant="estop"
-                    onClick={this.triggerEstop}
-                  > E-STOP { s.team || "" } </Button>
                 : (s.team && this.props.mode === "Flag") ?
                   <Button
                     className="btn-block monitor-team-btn"
@@ -145,6 +138,13 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
                   >
                     FLAG ISSUE FOR CSA
                   </Button>
+                : s.estop ? "E-STOPPED"
+                : this.props.mode === "Estop" ?
+                  <Button
+                    className="btn-block monitor-team-btn"
+                    variant="estop"
+                    onClick={this.triggerEstop}
+                  > E-STOP { s.team || "" } </Button>
                 : error ? error
                 : (report?.mode?.toUpperCase() || "READY")
             }

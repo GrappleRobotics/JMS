@@ -154,8 +154,9 @@ class TicketLogView extends WebsocketComponent<{ ticket: SupportTicket }, Ticket
       team: this.props.ticket.team,
       match_id: this.props.ticket.match_id!
     };
+    const localStorageKey = JSON.stringify({ type: "matchLog", key: key });
 
-    const cached = localStorage.getItem(JSON.stringify(key));
+    const cached = localStorage.getItem(localStorageKey);
     if (cached != null) {
       this.setState({ data: JSON.parse(cached) });
     } else {
@@ -165,7 +166,7 @@ class TicketLogView extends WebsocketComponent<{ ticket: SupportTicket }, Ticket
         }, "Ticket/Logs/Load")
         .then(data => {
           if (data.msg != null) {
-            localStorage.setItem(JSON.stringify(key), JSON.stringify(data.msg));
+            localStorage.setItem(localStorageKey, JSON.stringify(data.msg));
             this.setState({ loading: false, data: data.msg });
           } else {
             this.setState({ loading: false, error: "No Record Exists" });
