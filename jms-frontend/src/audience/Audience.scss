@@ -264,7 +264,7 @@
         }
 
         &[data-estop="true"] {
-          // @extend .bg-hazard-dark-active;
+          @include hazard-btn(theme-color("hazard-red"));
         }
 
         &[data-alive="false"] {

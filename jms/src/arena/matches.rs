@@ -41,12 +41,14 @@ pub struct LoadedMatch {
   pub match_meta: models::Match,
   state: MatchPlayState,
   remaining_time: Duration,
-  match_time: Duration,
+  pub match_time: Option<Duration>,
 
   #[serde(serialize_with = "models::serialize_match_score")]
   #[schemars(with = "MatchScoreSnapshot")]
   pub score: MatchScore,
 
+  #[serde(skip)]
+  match_start_time: Option<Instant>,
   #[serde(skip)]
   state_first: bool,
   #[serde(skip)]
@@ -64,8 +66,9 @@ impl LoadedMatch {
       match_meta: m,
       state_first: true,
       state_start_time: Instant::now(),
+      match_start_time: None,
       remaining_time: Duration::from_secs(0),
-      match_time: Duration::from_secs(0),
+      match_time: None,
       config: MatchConfig {
         warmup_cooldown_time: Duration::from_secs(3),
         auto_time: Duration::from_secs(15),
@@ -122,7 +125,9 @@ impl LoadedMatch {
 
     let mut endgame = false;
 
-    self.match_time = elapsed;
+    if let Some(start) = self.match_start_time {
+      self.match_time = Some(Instant::now() - start);
+    }
 
     match self.state {
       MatchPlayState::Waiting => (),
@@ -133,6 +138,7 @@ impl LoadedMatch {
         }
       }
       MatchPlayState::Auto => {
+        self.match_start_time = Some(Instant::now());
         self.remaining_time = self.config.auto_time.saturating_sub(elapsed);
         if self.remaining_time == Duration::ZERO {
           self.do_change_state(MatchPlayState::Pause);

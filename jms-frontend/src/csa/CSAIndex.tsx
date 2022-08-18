@@ -118,7 +118,7 @@ export default class CSAIndex extends WebsocketComponent<CSAIndexProps, CSAIndex
             <Col>
               <h4> My Tickets </h4>
               {
-                this.renderTickets(tickets.filter(t => my_name != null && t.assigned_to?.toLowerCase() === my_name.toLowerCase()))
+                this.renderTickets(tickets.filter(t => my_name != null && !t.resolved && t.assigned_to?.toLowerCase() === my_name.toLowerCase()))
               }
             </Col>
           </Row>
@@ -131,7 +131,7 @@ export default class CSAIndex extends WebsocketComponent<CSAIndexProps, CSAIndex
         </Col>
         <Col>
           <h4> Other Tickets </h4>
-          { this.renderTickets(tickets.filter(t => my_name === null || (t.assigned_to != null && t.assigned_to?.toLowerCase() != my_name.toLowerCase()))) }
+          { this.renderTickets(tickets.filter(t => my_name === null || (t.assigned_to != null && (t.resolved || t.assigned_to?.toLowerCase() != my_name.toLowerCase())))) }
         </Col>
       </Row>
     </Container>

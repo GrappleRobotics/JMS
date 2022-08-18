@@ -1,17 +1,18 @@
 import { Spec } from "immutability-helper";
 import React from "react";
-import { Button, Card, Col, Container, Row } from "react-bootstrap";
+import { Button, Card, Col, Row } from "react-bootstrap";
 import { withValU } from "support/util";
 import { WebsocketComponent } from "support/ws-component";
-import { MatchStationStatusRecord, MatchStationStatusRecordKey, SerializedMatch, SupportTicket, TicketComment, TicketMessageLogs2UI } from "ws-schema";
+import { SerializedMatch, SupportTicket, TicketComment } from "ws-schema";
 import { get_csa_name } from "./CSAIndex";
 import update from "immutability-helper";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheck, faChevronCircleLeft, faCircleNotch, faDownload, faTimes, faTriangleExclamation, faUserCheck, faUserSlash } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faChevronCircleLeft, faTimes, faUserCheck, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import moment from "moment";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import { nullIfEmpty } from "support/strings";
 import { Link } from "react-router-dom";
+import MatchLogView from "monitor/MatchLogView";
 
 type TicketProps = {
   id: number,
@@ -49,7 +50,7 @@ export default class TicketView extends WebsocketComponent<TicketProps, TicketSt
     return <React.Fragment>
       <Row className="ticket-header">
         <Col>
-          <h3>
+          <h4>
             <Link to="../">
               <Button
                 variant="secondary"
@@ -58,9 +59,9 @@ export default class TicketView extends WebsocketComponent<TicketProps, TicketSt
             Team {ticket.team} - { ticket.issue_type }
             { withValU(match, m => ` in ${m.name}`) }
             { ticket.resolved ? <span className="text-success">
-              &nbsp; [<FontAwesomeIcon icon={faCheck} />&nbsp;RESOLVED]
+              &nbsp; [RESOLVED]
             </span> : undefined }
-          </h3>
+          </h4>
           <p className="text-muted">
             { withValU(ticket.assigned_to, a => `Assigned to: ${a}`) || "Awaiting Assignment" }
           </p>
@@ -126,8 +127,12 @@ export default class TicketView extends WebsocketComponent<TicketProps, TicketSt
             </Card>)
           }
         </Col>
-        <Col>
-          <TicketLogView ticket={ticket} />
+        <Col md={9}>
+          {
+            ticket.match_id ? <MatchLogView autoload team={ticket.team} match_id={ticket.match_id} /> :
+              <h6 className="text-muted"> No Logs Available - No Associated Match </h6>
+          }
+          
         </Col>
       </Row>
     </React.Fragment>
@@ -137,62 +142,5 @@ export default class TicketView extends WebsocketComponent<TicketProps, TicketSt
     return <Col className="col-full">
       { this.state.ticket ? this.renderTicket(this.state.ticket) : <h3> Loading... </h3> }
     </Col>
-  }
-}
-
-type TicketLogViewState = {
-  data?: MatchStationStatusRecord,
-  loading: boolean,
-  error?: string
-}
-
-class TicketLogView extends WebsocketComponent<{ ticket: SupportTicket }, TicketLogViewState> {
-  readonly state: TicketLogViewState = { loading: false };
- 
-  loadLogs = () => {
-    const key: MatchStationStatusRecordKey = {
-      team: this.props.ticket.team,
-      match_id: this.props.ticket.match_id!
-    };
-    const localStorageKey = JSON.stringify({ type: "matchLog", key: key });
-
-    const cached = localStorage.getItem(localStorageKey);
-    if (cached != null) {
-      this.setState({ data: JSON.parse(cached) });
-    } else {
-      this.setState({ loading: true }, () => (
-        this.transact<MatchStationStatusRecord | null>({
-          Ticket: { Logs: { Load: key } }
-        }, "Ticket/Logs/Load")
-        .then(data => {
-          if (data.msg != null) {
-            localStorage.setItem(localStorageKey, JSON.stringify(data.msg));
-            this.setState({ loading: false, data: data.msg });
-          } else {
-            this.setState({ loading: false, error: "No Record Exists" });
-          }
-        }).catch((reason) => this.setState({ loading: false, error: reason }))
-      ));
-    }
-  }
-  
-  render() {
-    const { data, loading, error } = this.state;
-    return error ? (
-      <h4 className="text-warning">
-        <FontAwesomeIcon icon={faTriangleExclamation} />
-        &nbsp; Could not load record: { error }
-      </h4>)
-      : loading || data == null ? (
-        <Button size="lg" onClick={this.loadLogs} disabled={loading}>
-          <FontAwesomeIcon icon={loading ? faCircleNotch : faDownload} spin={loading} />
-          &nbsp;&nbsp;Load Match Logs
-        </Button>
-      ) : (
-        <React.Fragment>
-
-        </React.Fragment> 
-      )
-
   }
 }

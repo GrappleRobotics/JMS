@@ -20,7 +20,7 @@ impl StampedAllianceStationStatus {
     Self {
       time: Local::now().into(),
       match_state: m.current_state(),
-      match_time: m.elapsed(),
+      match_time: m.match_time.unwrap_or(Duration::from_secs(0)),
       data: stn
     }
   }
