@@ -1,12 +1,13 @@
 import Audience from 'audience/Audience';
 import AudienceDisplayControl from 'audience/AudienceDisplayControl';
 import BottomNavbar from 'BottomNavbar';
+import CSAIndex, { CSARouter } from 'csa/CSAIndex';
 import Debug from 'Debug';
 import Home from 'Home';
 import update from 'immutability-helper';
 import MatchControl from 'match_control/MatchControl';
 import FieldMonitor from 'monitor/FieldMonitor';
-import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
+import { AUDIENCE, AUDIENCE_CONTROL, CSA, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
 import Rankings from 'rankings/Rankings';
 import React from 'react';
 import { Alert, Col, Navbar, Row } from 'react-bootstrap';
@@ -88,6 +89,7 @@ export default class App extends WebsocketComponent<{}, AppState> {
       <Route path={`${ESTOPS}/*`} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
       <Route path={DEBUG} element={ this.wrapView(<Debug fta={fta} />) } />
       <Route path={REPORTS} element={ this.wrapView(<Reports fta={fta} />) } />
+      <Route path={`${CSA}/*`} element={ this.wrapView(<CSARouter fta={fta} />) } />
       <Route path={TIMER} element={ withRole("TimerPanel", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
       <Route path="/" element={ this.wrapView(<Home fta={fta} />) } />
     </Routes>

@@ -402,8 +402,10 @@ impl Arena {
 
           let stn_records = std::mem::take(&mut self.station_records);
           for (stn, record) in self.stations.iter().zip(stn_records.into_iter()) {
-            if let Err(e) = MatchStationStatusRecord::new(&stn, record, m.match_meta.id().unwrap()).insert(&db::database()) {
-              error!("Could not save match station record: {}", e)
+            if let Some(team) = stn.team {
+              if let Err(e) = MatchStationStatusRecord::new(team, record, m.match_meta.id().unwrap()).insert(&db::database()) {
+                error!("Could not save match station record: {}", e)
+              }
             }
           }
         }

@@ -49,6 +49,7 @@ pub struct SerializedMatch {
   pub match_meta: Match,
   pub id: Option<String>,
   pub name: String,
+  pub short_name: String,
   pub full_score: Option<MatchScoreSnapshot>
 }
 
@@ -80,6 +81,18 @@ impl Match {
         MatchSubtype::Quarterfinal => format!("Quarterfinal {}-{}", self.set_number, self.match_number),
         MatchSubtype::Semifinal => format!("Semifinal {}-{}", self.set_number, self.match_number),
         MatchSubtype::Final => format!("Final {}-{}", self.set_number, self.match_number),
+      },
+    }
+  }
+
+  pub fn short_name(&self) -> String {
+    match self.match_type {
+      MatchType::Test => "Test".to_owned(),
+      MatchType::Qualification => format!("Q{}", self.match_number),
+      MatchType::Playoff => match self.match_subtype.unwrap() {
+        MatchSubtype::Quarterfinal => format!("QF{}-{}", self.set_number, self.match_number),
+        MatchSubtype::Semifinal => format!("SF{}-{}", self.set_number, self.match_number),
+        MatchSubtype::Final => format!("F{}-{}", self.set_number, self.match_number),
       },
     }
   }
@@ -185,6 +198,7 @@ impl From<Match> for SerializedMatch {
     Self {
       id: m.id(),
       name: m.name(),
+      short_name: m.short_name(),
       full_score: m.score.clone().map(Into::into),
       match_meta: m
     }

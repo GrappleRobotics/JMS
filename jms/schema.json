@@ -1999,6 +1999,41 @@
         }
       }
     },
+    "MatchStationStatusRecord": {
+      "type": "object",
+      "required": [
+        "key",
+        "record"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/definitions/MatchStationStatusRecordKey"
+        },
+        "record": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StampedAllianceStationStatus"
+          }
+        }
+      }
+    },
+    "MatchStationStatusRecordKey": {
+      "type": "object",
+      "required": [
+        "match_id",
+        "team"
+      ],
+      "properties": {
+        "match_id": {
+          "type": "string"
+        },
+        "team": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
     "MatchSubtype": {
       "type": "string",
       "enum": [
@@ -2881,7 +2916,8 @@
         "played",
         "ready",
         "red_teams",
-        "set_number"
+        "set_number",
+        "short_name"
       ],
       "properties": {
         "blue_alliance": {
@@ -2987,6 +3023,9 @@
           "format": "uint",
           "minimum": 0.0
         },
+        "short_name": {
+          "type": "string"
+        },
         "start_time": {
           "type": [
             "integer",
@@ -3021,6 +3060,68 @@
         }
       }
     },
+    "StampedAllianceStationStatus": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "ds_eth",
+        "estop",
+        "match_state",
+        "match_time",
+        "occupancy",
+        "station",
+        "time"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "ds_eth": {
+          "type": "boolean"
+        },
+        "ds_report": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AllianceStationDSReport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "match_state": {
+          "$ref": "#/definitions/MatchPlayState"
+        },
+        "match_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "occupancy": {
+          "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "station": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "time": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "SupportTicket": {
       "type": "object",
       "required": [
@@ -3045,7 +3146,7 @@
             "integer",
             "null"
           ],
-          "format": "uint",
+          "format": "uint64",
           "minimum": 0.0
         },
         "issue_type": {
@@ -3244,6 +3345,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Logs"
+          ],
+          "properties": {
+            "Logs": {
+              "$ref": "#/definitions/TicketMessageLogs2JMS"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -3260,6 +3373,57 @@
               "items": {
                 "$ref": "#/definitions/SupportTicket"
               }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Logs"
+          ],
+          "properties": {
+            "Logs": {
+              "$ref": "#/definitions/TicketMessageLogs2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TicketMessageLogs2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Load"
+          ],
+          "properties": {
+            "Load": {
+              "$ref": "#/definitions/MatchStationStatusRecordKey"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TicketMessageLogs2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Load"
+          ],
+          "properties": {
+            "Load": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/MatchStationStatusRecord"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "additionalProperties": false

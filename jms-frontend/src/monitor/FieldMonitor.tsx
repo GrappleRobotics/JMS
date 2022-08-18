@@ -10,6 +10,7 @@ import { SerialisedAllianceStation, ArenaState, LoadedMatch, SupportTicket } fro
 import update from "immutability-helper";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import moment from "moment";
+import newTicket from "csa/NewTicket";
 
 type FieldMonitorMode = "View" | "Estop" | "Flag";
 
@@ -21,19 +22,6 @@ type FieldMonitorStationState = {
   do_estop: () => void,
   new_ticket: (ticket: SupportTicket) => void
 }
-
-const ISSUE_TYPES = [
-  "CODE",
-  "ROBORIO",
-  "RADIO",
-  "LAPTOP",
-  "POWER",
-  "CAN",
-  "E-STOP",
-  "E-STOP (FTA)",
-  "UNSAFE",
-  "OTHER"
-];
 
 class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> {
   triggerEstop = async () => {
@@ -65,47 +53,7 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
   }
 
   flag = async (station: SerialisedAllianceStation) => {
-    confirmModal("", {
-      data: {
-        team: station.team!,
-        match_id: this.props.match?.match_meta?.id,
-        issue_type: "OTHER",
-        author: "FTA",
-        notes: [{
-          author: "FTA",
-          time: 0,
-          comment: ""
-        }],
-        resolved: false
-      },
-      size: "lg",
-      title: `Create Ticket for Team ${station.team}`,
-      okText: "Submit Ticket",
-      renderInner: (ticket: SupportTicket, onUpdate) => <React.Fragment>
-        <EnumToggleGroup
-          className="flex-wrap"
-          name="issue_group"
-          values={ISSUE_TYPES}
-          value={ticket.issue_type}
-          onChange={(v) => onUpdate(update(ticket, { issue_type: { $set: v } }))}
-          variant="outline-warning"
-          variantActive="danger"
-        />
-        <br /> <br />
-        <Form.Label> Notes </Form.Label>
-        <BufferedFormControl
-          instant
-          autofocus
-          as="textarea"
-          placeholder="Team lost battery on field..."
-          value={ticket.notes[0].comment}
-          onUpdate={(v) => onUpdate(update(ticket, { notes: { 0: { comment: { $set: String(v) } } } }))}
-        />
-      </React.Fragment>
-    }).then(ticket => {
-      ticket.notes[0].time = moment().utc().unix();
-      this.props.new_ticket(ticket)
-    })
+    newTicket("FTA", station.team!, this.props.match!.match_meta, this.props.new_ticket);
   }
   
   lostPktPercent = (lost: number, sent: number) => (lost) / ((lost + sent) || 1) * 100;

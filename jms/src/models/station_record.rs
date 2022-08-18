@@ -4,7 +4,7 @@ use chrono::Local;
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};
 
-use crate::{db::{DBDateTime, self, Json}, arena::{station::{AllianceStation, AllianceStationId}, matches::{MatchPlayState, LoadedMatch}}};
+use crate::{db::{DBDateTime, self, Json}, arena::{station::AllianceStation, matches::{MatchPlayState, LoadedMatch}}};
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct StampedAllianceStationStatus {
@@ -30,8 +30,7 @@ pub type StationStatusRecord = Vec<StampedAllianceStationStatus>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct MatchStationStatusRecordKey {
-  pub team: Option<u16>,
-  pub station: AllianceStationId,
+  pub team: u16,
   pub match_id: String
 }
 
@@ -42,12 +41,11 @@ pub struct MatchStationStatusRecord {
 }
 
 impl MatchStationStatusRecord {
-  pub fn new(station: &AllianceStation, record: StationStatusRecord, match_id: String) -> Self {
+  pub fn new(team: u16, record: StationStatusRecord, match_id: String) -> Self {
     Self {
       record,
       key: MatchStationStatusRecordKey {
-        station: station.station,
-        team: station.team,
+        team,
         match_id
       }
     }

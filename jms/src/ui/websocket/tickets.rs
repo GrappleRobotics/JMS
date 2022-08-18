@@ -1,12 +1,17 @@
 use jms_macros::define_websocket_msg;
 
-use crate::{models, db::{self, TableType}};
+use crate::{models::{self, MatchStationStatusRecordKey, MatchStationStatusRecord}, db::{self, TableType}};
 
 use super::{ws::{WebsocketContext, WebsocketHandler, Websocket}, WebsocketMessage2JMS};
 
 define_websocket_msg!($TicketMessage {
   recv Insert(models::SupportTicket),
   send All(Vec<models::SupportTicket>),
+  
+  $Logs {
+    recv Load(MatchStationStatusRecordKey),
+    send Load(Option<MatchStationStatusRecord>),
+  },
 });
 
 pub struct WSTicketHandler;
@@ -18,7 +23,7 @@ impl WebsocketHandler for WSTicketHandler {
     Ok(())
   }
 
-  async fn handle(&self, msg: &WebsocketMessage2JMS, _ws: &mut Websocket) -> anyhow::Result<()> {
+  async fn handle(&self, msg: &WebsocketMessage2JMS, ws: &mut Websocket) -> anyhow::Result<()> {
     if let WebsocketMessage2JMS::Ticket(msg) = msg {
       match msg.clone() {
         TicketMessage2JMS::Insert(mut ticket) => {
@@ -30,8 +35,15 @@ impl WebsocketHandler for WSTicketHandler {
             });
           }
           ticket.insert(&db::database())?;
+        },
+        TicketMessage2JMS::Logs(msg) => match msg {
+          TicketMessageLogs2JMS::Load(key) => {
+            let record = MatchStationStatusRecord::get(key, &db::database())?;
+            ws.reply(TicketMessage2UI::Logs(TicketMessageLogs2UI::Load(record))).await;
+          },
         }
       }
+      self.broadcast(&ws.context).await?;
     }
     Ok(())
   }

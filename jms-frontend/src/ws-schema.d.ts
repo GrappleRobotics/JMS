@@ -262,8 +262,15 @@ export type ResourceRequirements =
   | {
       Quota: ResourceQuota;
     };
-export type TicketMessage2UI = {
-  All: SupportTicket[];
+export type TicketMessage2UI =
+  | {
+      All: SupportTicket[];
+    }
+  | {
+      Logs: TicketMessageLogs2UI;
+    };
+export type TicketMessageLogs2UI = {
+  Load: MatchStationStatusRecord | null;
 };
 export type WebsocketMessage2JMS =
   | ("Ping" | "Pong")
@@ -483,8 +490,15 @@ export type ResourceMessage2JMS =
 export type ResourceMessageRequirements2JMS = {
   SetActive: ResourceRequirements | null;
 };
-export type TicketMessage2JMS = {
-  Insert: SupportTicket;
+export type TicketMessage2JMS =
+  | {
+      Insert: SupportTicket;
+    }
+  | {
+      Logs: TicketMessageLogs2JMS;
+    };
+export type TicketMessageLogs2JMS = {
+  Load: MatchStationStatusRecordKey;
 };
 
 export interface AllWebsocketMessages {
@@ -605,6 +619,7 @@ export interface SerializedMatch {
   score?: MatchScore | null;
   score_time?: number | null;
   set_number: number;
+  short_name: string;
   start_time?: number | null;
   winner?: Alliance | null;
 }
@@ -723,6 +738,27 @@ export interface SupportTicket {
 export interface TicketComment {
   author: string;
   comment: string;
+  time: number;
+}
+export interface MatchStationStatusRecord {
+  key: MatchStationStatusRecordKey;
+  record: StampedAllianceStationStatus[];
+}
+export interface MatchStationStatusRecordKey {
+  match_id: string;
+  team: number;
+}
+export interface StampedAllianceStationStatus {
+  astop: boolean;
+  bypass: boolean;
+  ds_eth: boolean;
+  ds_report?: AllianceStationDSReport | null;
+  estop: boolean;
+  match_state: MatchPlayState;
+  match_time: Duration;
+  occupancy: AllianceStationOccupancy;
+  station: AllianceStationId;
+  team?: number | null;
   time: number;
 }
 export interface RecvMeta {
