@@ -348,10 +348,10 @@ html, body, #root {
 .home-tile {
   * { color: white; }
   margin: 10px;
-  min-width: 250px;
-  min-height: 200px;
-  max-width: 250px;
-  max-height: 200px;
+  min-width: 200px;
+  min-height: 150px;
+  max-width: 200px;
+  max-height: 150px;
   padding: 0;
 
   .card {
@@ -395,17 +395,17 @@ html, body, #root {
 
   .card-title {
     text-align: center;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 5px;
+    margin-bottom: 2px;
   }
 
   .card-subtitle {
     transition: opacity 0.2s ease;
 
-    padding: 10px;
-    font-size: 18px;
+    padding: 10px 0;
+    font-size: 16px;
     font-style: italic;
     opacity: 0.5;
     text-align: center;

@@ -12,3 +12,4 @@ export const TIMER = "/timer";
 export const ESTOPS = "/estops";
 export const DEBUG = "/debug";
 export const CSA = "/csa";
+export const LOGS = "/logs";

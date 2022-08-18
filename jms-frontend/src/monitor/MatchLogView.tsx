@@ -15,7 +15,13 @@ type MatchLogViewState = {
   width: number
 }
 
-export default class MatchLogView extends WebsocketComponent<{ team: number, match_id: string, autoload?: boolean }, MatchLogViewState> {
+type MatchLogViewProps = {
+  team: number,
+  match_id: string,
+  autoload?: boolean
+};
+
+export default class MatchLogView extends WebsocketComponent<MatchLogViewProps, MatchLogViewState> {
   readonly state: MatchLogViewState = { loading: false, width: 500 };
  
   private ref = React.createRef<HTMLDivElement>();
@@ -26,6 +32,12 @@ export default class MatchLogView extends WebsocketComponent<{ team: number, mat
     setTimeout(() => this.recalcSize(), 100);
 
     if (this.props.autoload) {
+      this.loadLogs();
+    }
+  }
+
+  componentDidUpdate = (prevProps: MatchLogViewProps) => {
+    if (this.props.match_id != prevProps.match_id || this.props.team != prevProps.team) {
       this.loadLogs();
     }
   }

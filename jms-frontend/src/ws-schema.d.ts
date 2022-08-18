@@ -269,9 +269,13 @@ export type TicketMessage2UI =
   | {
       Logs: TicketMessageLogs2UI;
     };
-export type TicketMessageLogs2UI = {
-  Load: MatchStationStatusRecord | null;
-};
+export type TicketMessageLogs2UI =
+  | {
+      Keys: MatchStationStatusRecordKey[];
+    }
+  | {
+      Load: MatchStationStatusRecord | null;
+    };
 export type WebsocketMessage2JMS =
   | ("Ping" | "Pong")
   | {
@@ -497,9 +501,11 @@ export type TicketMessage2JMS =
   | {
       Logs: TicketMessageLogs2JMS;
     };
-export type TicketMessageLogs2JMS = {
-  Load: MatchStationStatusRecordKey;
-};
+export type TicketMessageLogs2JMS =
+  | "Keys"
+  | {
+      Load: MatchStationStatusRecordKey;
+    };
 
 export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
@@ -587,7 +593,7 @@ export interface LoadedMatch {
   config: MatchConfig;
   endgame: boolean;
   match_meta: SerializedMatch;
-  match_time: Duration;
+  match_time?: Duration | null;
   remaining_time: Duration;
   score: MatchScoreSnapshot;
   state: MatchPlayState;
@@ -740,13 +746,13 @@ export interface TicketComment {
   comment: string;
   time: number;
 }
-export interface MatchStationStatusRecord {
-  key: MatchStationStatusRecordKey;
-  record: StampedAllianceStationStatus[];
-}
 export interface MatchStationStatusRecordKey {
   match_id: string;
   team: number;
+}
+export interface MatchStationStatusRecord {
+  key: MatchStationStatusRecordKey;
+  record: StampedAllianceStationStatus[];
 }
 export interface StampedAllianceStationStatus {
   astop: boolean;

@@ -1575,7 +1575,6 @@
         "config",
         "endgame",
         "match_meta",
-        "match_time",
         "remaining_time",
         "score",
         "state"
@@ -1591,7 +1590,14 @@
           "$ref": "#/definitions/SerializedMatch"
         },
         "match_time": {
-          "$ref": "#/definitions/Duration"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "remaining_time": {
           "$ref": "#/definitions/Duration"
@@ -3394,6 +3400,12 @@
     "TicketMessageLogs2JMS": {
       "oneOf": [
         {
+          "type": "string",
+          "enum": [
+            "Keys"
+          ]
+        },
+        {
           "type": "object",
           "required": [
             "Load"
@@ -3409,6 +3421,21 @@
     },
     "TicketMessageLogs2UI": {
       "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Keys"
+          ],
+          "properties": {
+            "Keys": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MatchStationStatusRecordKey"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
         {
           "type": "object",
           "required": [

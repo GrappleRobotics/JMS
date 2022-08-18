@@ -9,6 +9,8 @@ define_websocket_msg!($TicketMessage {
   send All(Vec<models::SupportTicket>),
   
   $Logs {
+    recv Keys,
+    send Keys(Vec<MatchStationStatusRecordKey>),
     recv Load(MatchStationStatusRecordKey),
     send Load(Option<MatchStationStatusRecord>),
   },
@@ -41,6 +43,10 @@ impl WebsocketHandler for WSTicketHandler {
             let record = MatchStationStatusRecord::get(key, &db::database())?;
             ws.reply(TicketMessage2UI::Logs(TicketMessageLogs2UI::Load(record))).await;
           },
+          TicketMessageLogs2JMS::Keys => {
+            let keys = MatchStationStatusRecord::keys(&db::database())?;
+            ws.reply(TicketMessage2UI::Logs(TicketMessageLogs2UI::Keys(keys.into_iter().map(|k| k.0).collect()))).await;
+          }
         }
       }
       self.broadcast(&ws.context).await?;
