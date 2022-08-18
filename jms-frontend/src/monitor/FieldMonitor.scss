@@ -1,5 +1,43 @@
+.field-monitor {
+  font-size: 0.7rem;
+  @media (orientation: portrait) {
+    .monitor-alliance {
+      min-width: 80%;
+    }
+    font-size: 1.4rem;
+  }
+
+  @include media-breakpoint-up(lg) {
+    font-size: 1rem;
+  }
+
+  @include media-breakpoint-up(xl) {
+    font-size: 1.25rem;
+  }
+}
+
+.monitor-fta-controls {
+  max-width: 5rem;
+  min-width: 5rem;
+
+  .btn {
+    margin-bottom: 15px;
+    font-size: 2em;
+  }
+
+  @media (orientation: portrait) {
+    max-width: 8rem;
+    .btn {
+      font-size: 2.5em;
+      padding: 0.1em 0.3em;
+    }
+  }
+  padding-top: 20px;
+}
+
 .monitor-alliance {
   align-content: stretch;
+
   @each $alliance in $alliances {
     $tc: theme-color($alliance);
     &[data-alliance=#{$alliance}] {
@@ -12,7 +50,7 @@
         > .monitor-station-id {
           background-color: desaturate(darken($tc, 25%), 25%);
           text-align: center;
-          font-size: 2rem;
+          font-size: 2em;
           font-weight: bold;
           padding: 0.25em;
           color: desaturate($tc, 25%);
@@ -21,7 +59,7 @@
         > .monitor-data {
           align-content: stretch;
           
-          font-size: 1.5rem;
+          font-size: 1.5em;
           font-weight: bold;
           color: theme-color("secondary");
 
@@ -56,9 +94,9 @@
               color: theme-color("danger");
             }
 
-            .monitor-team-estop {
+            .monitor-team-btn {
               height: 100%;
-              font-size: 1em;
+              font-size: 0.6em;
               font-weight: bold;
             }
           }

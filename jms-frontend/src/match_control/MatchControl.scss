@@ -1,6 +1,19 @@
 .match-control-main {
-  min-width: 1200px;
+  min-width: 750px;
   margin-bottom: 1rem;
+}
+
+.match-control-main {
+  .match-control-alliances {
+    > .col {
+      min-width: 600px;
+      margin-bottom: 10px;
+    }
+  }
+
+  @media screen and (min-width: 1300px) {
+    min-width: 1200px;
+  }
 }
 
 .match-control-map {

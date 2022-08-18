@@ -97,7 +97,7 @@ class AllianceScore extends React.PureComponent<AllianceScoreProps> {
         { score.derived.total_score }
         {
           withVal((has_rp && score.derived.total_bonus_rp) || undefined, bonus => <span className="total-score-bonus-rp">
-            +{ score.derived.total_bonus_rp } RP
+            +{ bonus } RP
           </span>)
         }
       </Col>

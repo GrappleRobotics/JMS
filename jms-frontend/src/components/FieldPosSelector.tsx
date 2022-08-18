@@ -42,31 +42,33 @@ export class PosSelector extends React.Component<PosSelectorProps, PosSelectorSt
   }
 
   recalcSize = () => {
-    let col = this.colRef.current!;
-    let img = this.imgRef.current!;
+    if (this.colRef && this.imgRef) {
+      let col = this.colRef.current!;
+      let img = this.imgRef.current!;
 
-    let width = col.clientWidth;
-    let height = col.clientHeight;
+      let width = col.clientWidth;
+      let height = col.clientHeight;
 
-    let aspect = img.naturalHeight / img.naturalWidth;
-    let hfith = width * aspect;
-    
-    if (height && hfith > height) {
-      let vfitw = height / aspect;
+      let aspect = img.naturalHeight / img.naturalWidth;
+      let hfith = width * aspect;
+      
+      if (height && hfith > height) {
+        let vfitw = height / aspect;
 
-      // Fit to height
-      this.setState({
-        top: 0, height: "100%",
-        width: vfitw, left: (width - vfitw) / 2,
-        fontSize: `${height / 500.0}rem`
-      });
-    } else {
-      // Fit to width
-      this.setState({
-        top: (height ? (height - hfith) / 2 : 0), height: hfith,
-        width: "100%", left: 0,
-        fontSize: `${hfith / 500.0}rem`
-      });
+        // Fit to height
+        this.setState({
+          top: 0, height: "100%",
+          width: vfitw, left: (width - vfitw) / 2,
+          fontSize: `${height / 500.0}rem`
+        });
+      } else {
+        // Fit to width
+        this.setState({
+          top: (height ? (height - hfith) / 2 : 0), height: hfith,
+          width: "100%", left: 0,
+          fontSize: `${hfith / 500.0}rem`
+        });
+      }
     }
   }
 

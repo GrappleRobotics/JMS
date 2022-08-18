@@ -4,6 +4,7 @@ pub mod matches;
 pub mod debug;
 pub mod resources;
 pub mod ws;
+pub mod tickets;
 
 use jms_macros::define_websocket_msg;
 
@@ -20,7 +21,7 @@ use tokio_tungstenite::tungstenite;
 
 use crate::{arena::resource::SharedResources, ui::websocket::ws::Websocket};
 
-use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext}};
+use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext}, tickets::{TicketMessage2JMS, TicketMessage2UI}};
 
 define_websocket_msg!($WebsocketMessage {
   Ping, Pong,
@@ -28,51 +29,13 @@ define_websocket_msg!($WebsocketMessage {
   send Error(String),
   recv Subscribe(Vec<String>),
 
-  send Debug(DebugMessage2UI),
-  recv Debug(DebugMessage2JMS),
-
-  send Event(EventMessage2UI),
-  recv Event(EventMessage2JMS),
-
-  send Arena(ArenaMessage2UI),
-  recv Arena(ArenaMessage2JMS),
-
-  send Match(MatchMessage2UI),
-  recv Match(MatchMessage2JMS),
-
-  send Resource(ResourceMessage2UI),
-  recv Resource(ResourceMessage2JMS),
+  ext Debug(DebugMessage),
+  ext Event(EventMessage),
+  ext Arena(ArenaMessage),
+  ext Match(MatchMessage),
+  ext Resource(ResourceMessage),
+  ext Ticket(TicketMessage),
 });
-
-impl From<DebugMessage2UI> for WebsocketMessage2UI {
-  fn from(msg: DebugMessage2UI) -> Self {
-    WebsocketMessage2UI::Debug(msg)
-  }
-}
-
-impl From<EventMessage2UI> for WebsocketMessage2UI {
-  fn from(msg: EventMessage2UI) -> Self {
-    WebsocketMessage2UI::Event(msg)
-  }
-}
-
-impl From<ArenaMessage2UI> for WebsocketMessage2UI {
-  fn from(msg: ArenaMessage2UI) -> Self {
-    WebsocketMessage2UI::Arena(msg)
-  }
-}
-
-impl From<MatchMessage2UI> for WebsocketMessage2UI {
-  fn from(msg: MatchMessage2UI) -> Self {
-    WebsocketMessage2UI::Match(msg)
-  }
-}
-
-impl From<ResourceMessage2UI> for WebsocketMessage2UI {
-  fn from(msg: ResourceMessage2UI) -> Self {
-    WebsocketMessage2UI::Resource(msg)
-  }
-}
 
 pub struct Websockets {
   context: WebsocketContext,

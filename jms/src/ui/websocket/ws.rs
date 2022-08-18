@@ -36,16 +36,7 @@ impl TryFrom<&WebsocketMessage2UI> for SerialisedMessage {
   type Error = serde_json::Error;
 
   fn try_from(msg: &WebsocketMessage2UI) -> serde_json::Result<Self> {
-    let path = match msg {
-      WebsocketMessage2UI::Error(_) => vec!["Error"],
-      WebsocketMessage2UI::Ping => vec!["Ping", "Ping"],
-      WebsocketMessage2UI::Pong => vec!["Ping", "Pong"],
-      WebsocketMessage2UI::Debug(debug) => [ &["Debug"], debug.ws_path().as_slice() ].concat(),
-      WebsocketMessage2UI::Resource(resource) => [ &["Resource"], resource.ws_path().as_slice() ].concat(),
-      WebsocketMessage2UI::Event(event) => [ &["Event"], event.ws_path().as_slice() ].concat(),
-      WebsocketMessage2UI::Arena(arena) => [ &["Arena"], arena.ws_path().as_slice() ].concat(),
-      WebsocketMessage2UI::Match(match_msg) => [ &["Match"], match_msg.ws_path().as_slice() ].concat(),
-    };
+    let path = msg.ws_path();
 
     Ok(Self {
       path: path.into_iter().map(|x| x.to_owned()).collect(),

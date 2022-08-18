@@ -3,10 +3,10 @@ import Paginate from "components/elements/Paginate";
 import React from "react";
 import { Button, Col, Container, Modal, Row } from "react-bootstrap";
 import { WebsocketComponent } from "support/ws-component";
-import { SerializedMatch, TaggedResource } from "ws-schema";
+import { SerializedMatch, SupportTicket } from "ws-schema";
 
 type DebugState = {
-  resources?: TaggedResource[],
+  tickets?: SupportTicket[],
   matches: SerializedMatch[]
 };
 
@@ -14,7 +14,7 @@ export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugSta
   readonly state: DebugState = { matches: [] };
 
   componentDidMount = () => this.handles = [
-    this.listen("Resource/All", "resources"),
+    this.listen("Ticket/All", "tickets"),
     this.listen("Match/All", "matches")
   ];
 
@@ -100,6 +100,11 @@ export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugSta
           </Row>
         </React.Fragment>
       }
+      <Row>
+        <Col>
+          <code> { JSON.stringify(this.state.tickets || {}, null, 2) } </code>
+        </Col>
+      </Row>
     </Container>
   }
 }

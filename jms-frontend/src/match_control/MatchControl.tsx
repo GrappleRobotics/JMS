@@ -82,7 +82,7 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
       <br />
       <Row>
         <Col className="match-control-main">
-          <Row>
+          <Row className="match-control-alliances">
             <Col>
               <AllianceDash
                 colour="blue"

@@ -24,6 +24,9 @@ export type WebsocketMessage2UI =
     }
   | {
       Resource: ResourceMessage2UI;
+    }
+  | {
+      Ticket: TicketMessage2UI;
     };
 export type DebugMessage2UI = {
   ReplyTest: string;
@@ -259,6 +262,9 @@ export type ResourceRequirements =
   | {
       Quota: ResourceQuota;
     };
+export type TicketMessage2UI = {
+  All: SupportTicket[];
+};
 export type WebsocketMessage2JMS =
   | ("Ping" | "Pong")
   | {
@@ -278,6 +284,9 @@ export type WebsocketMessage2JMS =
     }
   | {
       Resource: ResourceMessage2JMS;
+    }
+  | {
+      Ticket: TicketMessage2JMS;
     };
 export type DebugMessage2JMS =
   | {
@@ -473,6 +482,9 @@ export type ResourceMessage2JMS =
     };
 export type ResourceMessageRequirements2JMS = {
   SetActive: ResourceRequirements | null;
+};
+export type TicketMessage2JMS = {
+  Insert: SupportTicket;
 };
 
 export interface AllWebsocketMessages {
@@ -697,6 +709,21 @@ export interface ResourceQuota {
   max?: number | null;
   min: number;
   template: Resource;
+}
+export interface SupportTicket {
+  assigned_to?: string | null;
+  author: string;
+  id?: number | null;
+  issue_type: string;
+  match_id?: string | null;
+  notes: TicketComment[];
+  resolved: boolean;
+  team: number;
+}
+export interface TicketComment {
+  author: string;
+  comment: string;
+  time: number;
 }
 export interface RecvMeta {
   msg: WebsocketMessage2JMS;

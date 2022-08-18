@@ -3021,6 +3021,58 @@
         }
       }
     },
+    "SupportTicket": {
+      "type": "object",
+      "required": [
+        "author",
+        "issue_type",
+        "notes",
+        "resolved",
+        "team"
+      ],
+      "properties": {
+        "assigned_to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "author": {
+          "type": "string"
+        },
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "issue_type": {
+          "type": "string"
+        },
+        "match_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TicketComment"
+          }
+        },
+        "resolved": {
+          "type": "boolean"
+        },
+        "team": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "TaggedResource": {
       "type": "object",
       "required": [
@@ -3159,6 +3211,61 @@
         }
       }
     },
+    "TicketComment": {
+      "type": "object",
+      "required": [
+        "author",
+        "comment",
+        "time"
+      ],
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "time": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "TicketMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Insert"
+          ],
+          "properties": {
+            "Insert": {
+              "$ref": "#/definitions/SupportTicket"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TicketMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SupportTicket"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "WebsocketMessage2JMS": {
       "oneOf": [
         {
@@ -3242,6 +3349,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Ticket"
+          ],
+          "properties": {
+            "Ticket": {
+              "$ref": "#/definitions/TicketMessage2JMS"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -3322,6 +3441,18 @@
           "properties": {
             "Resource": {
               "$ref": "#/definitions/ResourceMessage2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Ticket"
+          ],
+          "properties": {
+            "Ticket": {
+              "$ref": "#/definitions/TicketMessage2UI"
             }
           },
           "additionalProperties": false

@@ -27,3 +27,6 @@ pub use resources::*;
 
 mod station_record;
 pub use station_record::*;
+
+mod tickets;
+pub use tickets::*;
