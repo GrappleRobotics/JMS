@@ -1,9 +1,8 @@
 mod imager;
 
-use std::{cell::RefCell, rc::Rc, collections::HashMap, sync::{Arc, Mutex}};
+use std::collections::HashMap;
 
-use crossbeam::channel;
-use cursive::{views::{Dialog, SelectView, TextView, Panel, LinearLayout, EditView, Checkbox, PaddedView}, view::{Scrollable, Resizable, Identifiable, Margins}, Cursive, theme::{Effect, ColorStyle, Color, BaseColor}, With};
+use cursive::{views::{Dialog, SelectView, TextView, LinearLayout, EditView, PaddedView}, view::{Scrollable, Resizable, Identifiable, Margins}, Cursive, theme::{ColorStyle, Color, BaseColor}};
 use imager::image;
 use jms_util::net::{self, LinkMetadata};
 
@@ -106,9 +105,6 @@ async fn main() -> anyhow::Result<()> {
               }
               let mut but = s.find_name::<Dialog>("dialog").unwrap();
               but.buttons_mut().for_each(|b| b.enable());
-
-              let mut team = s.find_name::<EditView>("team").unwrap();
-              team.set_content("");
             }))
           });
         }
@@ -145,6 +141,6 @@ where
 
 async fn load_keys() -> anyhow::Result<HashMap<u16, String>> {
   let mut map: HashMap<u16, String> = HashMap::new();
-  map.insert(4788, "abcd".to_owned());
+  map.insert(5333, "TdURGDYwwgZTpr0mGFnkmpx1MxbMTk".to_owned());
   return Ok(map)
 }

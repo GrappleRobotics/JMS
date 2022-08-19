@@ -20,7 +20,7 @@ pub async fn image(iface: LinkMetadata, team: u16, key: String) -> anyhow::Resul
 }
 
 async fn write_img(team: u16, key: String) -> anyhow::Result<()> {
-  let msg = format!("B5,{},{},{},N,Y,Y,0,0,,\n", team, team, key);
+  let msg = format!("B5,{},{},{},N,Y,Y,0,0,,\n\n", team, team, key);
 
   let mut stream = TcpStream::connect((ROUTER_IP, 8888)).await?;
   stream.write_all(msg.as_bytes()).await?;
