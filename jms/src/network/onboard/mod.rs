@@ -19,12 +19,11 @@ use super::NetworkProvider;
 
 pub mod dhcp;
 pub mod firewall;
-pub mod netlink;
 pub mod settings;
 
 pub struct OnboardNetwork {
   settings: OnboardNetworkSettings,
-  nl_handle: rtnetlink::Handle,
+  nl_handle: jms_util::net::Handle,
   station_ifaces: HashMap<AllianceStationId, String>,
   radio: Option<FieldRadio>,
 }
@@ -53,14 +52,14 @@ impl OnboardNetwork {
 
     Ok(OnboardNetwork {
       settings,
-      nl_handle: netlink::handle()?,
+      nl_handle: jms_util::net::handle()?,
       station_ifaces,
       radio,
     })
   }
 
   async fn configure_ip_addrs(&self, stations: &[AllianceStation]) -> super::NetworkResult<()> {
-    netlink::configure_addresses(
+    jms_util::net::configure_addresses(
       &self.nl_handle,
       self.settings.iface_admin.as_str(),
       vec![
@@ -83,7 +82,7 @@ impl OnboardNetwork {
         addrs.push(self.team_ip(team)?)
       }
 
-      netlink::configure_addresses(&self.nl_handle, iface, addrs).await?;
+      jms_util::net::configure_addresses(&self.nl_handle, iface, addrs).await?;
     }
 
     Ok(())

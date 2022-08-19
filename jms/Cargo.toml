@@ -10,7 +10,7 @@ build = "build/main.rs"
 
 [dependencies]
 jms-macros = { path = "jms-macros" }
-rtnetlink = "0.7.0"
+jms-util = { path = "../jms-util" }
 log = "0.4.14"
 env_logger = "0.8.3"
 chrono = "0.4.19"
