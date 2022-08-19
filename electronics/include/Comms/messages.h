@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "lib/tagged_variant.h"
+#include <tagged_variant.h>
 
 template<class It>
 void _unpack(It &&it, uint16_t &u16) {

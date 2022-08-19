@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "messages.h"
+#include "Comms/messages.h"
 
 template<class Vec1, class Vec2>
 void expect_vec_eq(const Vec1 &a, const Vec2 &b) {

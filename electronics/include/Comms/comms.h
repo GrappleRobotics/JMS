@@ -1,38 +1,13 @@
 #pragma once
 
+#include <optional.h>
 #include "messages.h"
-#include "lib/optional.h"
-
-#ifdef ARDUINO
-#include <Arduino.h>
-struct CommsSerial {
-  static void start() {
-    Serial.begin(115200);
-  }
-
-  static void write(uint8_t *buf, size_t count) {
-    Serial.write(buf, count);
-  }
-
-  static size_t available() {
-    return Serial.available();
-  }
-
-  static uint8_t read1() {
-    return Serial.read();
-  }
-
-  static uint8_t read(uint8_t *buf, size_t count) {
-    return Serial.readBytes(buf, count);
-  }
-};
-#endif
 
 template<class T>
 class Comms {
  public:
-  void start() {
-    T::start();
+  void start(long baud) {
+    T::start(baud);
     _to_read = 0;
     _n_read = 0;
   }
