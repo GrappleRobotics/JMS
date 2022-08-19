@@ -92,7 +92,7 @@ struct tagged_variant {
 
   template<typename T>
   const T& get() const {
-    // DANGER
+    // DANGER (i live dangerously bitch)
     return *reinterpret_cast<const T*>(&_raw);
   }
 

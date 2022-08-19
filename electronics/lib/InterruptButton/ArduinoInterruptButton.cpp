@@ -9,7 +9,7 @@ InterruptButton::InterruptButton(const int pin, void (*onInterrupt)(void), bool 
     pinMode(pin, INPUT);
   }
 
-  attachInterrupt(digitalPinToInterrupt(pin), onInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(pin), onInterrupt, CHANGE);
   _intAttached = true;
 }
 
@@ -29,7 +29,7 @@ void InterruptButton::attachInterruptFunction(void (*onInterrupt)(void)) {
 
 bool InterruptButton::isTriggered() {
   const int state = digitalRead(_pin);
-  return state == HIGH ? true : false;
+  return state == HIGH ? false : true;
 }
 
 #endif

@@ -5,10 +5,13 @@
 
 class ScoringTable : public NodeBase {
  public:
-  ScoringTable(long serial_br, long can_br);
+  ScoringTable(unsigned long serial_br, unsigned long can_br);
 
   void init() override;
   void onUpdate() override;
+
+  void pollLights();
+  void pollButtons();
 
  private:
   InterruptButton *e_r1;

@@ -2,13 +2,13 @@
 
 class NodeBase {
  public:
-  NodeBase(long serial_br, long can_br) {};
+  NodeBase(unsigned long serial_br, unsigned long can_br) : _serial_br(serial_br), _can_br(can_br) {};
   ~NodeBase() {};
 
   virtual void init() {};
   virtual void onUpdate() {};
 
  protected:
-  long _serial_br;
-  long _can_br;
+  unsigned long _serial_br;
+  unsigned long _can_br;
 };
