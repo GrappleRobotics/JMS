@@ -45,7 +45,7 @@ crypto pki certificate chain TP-self-signed-3648561664
   E9B34FA3 46772660 31011DF9 02FE489B 4FFA1ECB E4E53DBA 03A12B13 10E8AB39 
   2FC33CBC 890C0926 315E2C05 0AD7EB3B 9DD10497 94
   quit
-!         
+!
 !
 !
 !
@@ -59,61 +59,66 @@ ip ssh version 2
 !
 !
 interface GigabitEthernet0/1
-!
-interface GigabitEthernet0/2
  switchport access vlan 60
  switchport mode access
-!         
-interface GigabitEthernet0/3
- switchport access vlan 150
+!
+interface GigabitEthernet0/2
  switchport mode access
 !
-interface GigabitEthernet0/4
+interface GigabitEthernet0/3
  switchport access vlan 50
  switchport mode access
 !
-interface GigabitEthernet0/5
- switchport mode trunk
+interface GigabitEthernet0/4
+ switchport access vlan 150
+ switchport mode access
 !
-interface GigabitEthernet0/6
+interface GigabitEthernet0/5
  switchport access vlan 40
  switchport mode access
 !
-interface GigabitEthernet0/7
+interface GigabitEthernet0/6
+ switchport access vlan 40
  switchport mode trunk
-!         
-interface GigabitEthernet0/8
+!
+interface GigabitEthernet0/7
  switchport access vlan 100
  switchport mode access
 !
-interface GigabitEthernet0/9
+interface GigabitEthernet0/8
+ switchport access vlan 100
  switchport mode trunk
+!
+interface GigabitEthernet0/9
+ switchport access vlan 100
+ switchport mode access
 !
 interface GigabitEthernet0/10
  switchport access vlan 100
- switchport mode access
+ switchport mode trunk
 !
 interface GigabitEthernet0/11
- switchport mode trunk
+ switchport access vlan 10
+ switchport mode access
 !
 interface GigabitEthernet0/12
  switchport access vlan 10
- switchport mode access
-!         
+ switchport mode trunk
+!
 interface GigabitEthernet0/13
- switchport access vlan 100
+ switchport access vlan 20
  switchport mode access
 !
 interface GigabitEthernet0/14
  switchport access vlan 20
- switchport mode access
+ switchport mode trunk
 !
 interface GigabitEthernet0/15
- switchport access vlan 100
+ switchport access vlan 30
  switchport mode access
 !
 interface GigabitEthernet0/16
- switchport access vlan 30
+ switchport access vlan 99
  switchport mode access
 !
 interface GigabitEthernet0/17
@@ -135,7 +140,7 @@ interface GigabitEthernet0/20
 interface GigabitEthernet0/21
  switchport access vlan 100
  switchport mode access
-!         
+!
 interface GigabitEthernet0/22
  switchport access vlan 100
  switchport mode access
@@ -147,7 +152,7 @@ interface GigabitEthernet0/23
 interface GigabitEthernet0/24
  switchport access vlan 100
  switchport mode access
-!
+!         
 interface GigabitEthernet0/25
  switchport access vlan 100
  switchport mode access
@@ -171,7 +176,7 @@ interface GigabitEthernet0/29
 interface GigabitEthernet0/30
  switchport access vlan 100
  switchport mode access
-!         
+!
 interface GigabitEthernet0/31
  switchport access vlan 100
  switchport mode access
@@ -207,7 +212,7 @@ interface GigabitEthernet0/38
 interface GigabitEthernet0/39
  switchport access vlan 100
  switchport mode access
-!         
+!
 interface GigabitEthernet0/40
  switchport access vlan 100
  switchport mode access
@@ -229,20 +234,16 @@ interface GigabitEthernet0/44
  switchport mode access
 !
 interface GigabitEthernet0/45
- switchport access vlan 100
- switchport mode access
+ switchport mode trunk
 !
 interface GigabitEthernet0/46
- switchport access vlan 100
- switchport mode access
+ switchport mode trunk
 !
 interface GigabitEthernet0/47
- switchport access vlan 100
- switchport mode access
+ switchport mode trunk
 !
 interface GigabitEthernet0/48
- switchport access vlan 100
- switchport mode access
+ switchport mode trunk
 !         
 interface Vlan1
  no ip address
@@ -257,7 +258,7 @@ ip http server
 ip http secure-server
 snmp-server community public RO
 snmp-server enable traps snmp authentication linkdown linkup coldstart warmstart
-snmp-server host 10.0.100.5 public
+snmp-server host 10.0.100.5 public 
 !
 control-plane
 !
