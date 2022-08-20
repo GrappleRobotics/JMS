@@ -4,7 +4,8 @@ use ipnetwork::Ipv4Network;
 pub struct LinkMetadata {
   pub name: String,
   pub vlan: Option<u16>,
-  pub addrs: Vec<Ipv4Network>
+  pub addrs: Vec<Ipv4Network>,
+  pub(crate) extra: crate::platform::net::ExtraData
 }
 
 impl std::fmt::Display for LinkMetadata {

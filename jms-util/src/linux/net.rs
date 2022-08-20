@@ -6,6 +6,7 @@ use ipnetwork::Ipv4Network;
 use crate::net::LinkMetadata;
 
 pub type Handle = rtnetlink::Handle;
+pub type ExtraData = ();
 
 pub fn handle() -> std::io::Result<Handle> {
   match rtnetlink::new_connection() {
