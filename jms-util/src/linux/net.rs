@@ -76,6 +76,7 @@ pub async fn get_all_ifaces(handle: &Handle) -> Result<Vec<LinkMetadata>, rtnetl
         name: link_name,
         vlan,
         addrs,
+        extra: ()
       });
     }
   }

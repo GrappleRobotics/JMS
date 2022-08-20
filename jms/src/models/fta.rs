@@ -22,8 +22,7 @@ impl FTAKey {
   }
 
   pub fn get(store: &db::Store) -> db::Result<Self> {
-    let first = Self::table(store)?.first()?;
-    match first {
+    match Self::first(store)? {
       Some(key) => Ok(key),
       None => {
         warn!("No FTA Key Set! Creating one now...");

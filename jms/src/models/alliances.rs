@@ -23,22 +23,22 @@ impl PlayoffAlliance {
     let rankings = TeamRanking::sorted(store)?;
     let mut rankings_it = rankings.iter();
 
-    let mut batch = db::Batch::new();
+    // let mut batch = db::Batch::new();
     for i in 1..=n {
       let team = rankings_it.next().map(|tr| tr.team);
-      batch.insert(store, &mut PlayoffAlliance {
+      PlayoffAlliance {
         id: i,
         teams: vec![ team.clone(), None, None, None ],
         ready: false
-      })?;
+      }.insert(store)?;
     }
-    Self::table(store)?.apply_batch(batch)?;
 
     Ok(())
   }
 
   pub fn promote(store: &db::Store) -> db::Result<()> {
-    let alliances = Self::table(store)?.all()?;
+    // let alliances = Self::table(store)?.all()?;
+    let alliances = Self::all(store)?;
     let chosen: Vec<usize> = alliances
       .iter()
       .flat_map(|a| a.teams.iter().filter_map(|x| *x))

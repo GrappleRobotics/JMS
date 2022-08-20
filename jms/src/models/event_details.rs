@@ -20,9 +20,9 @@ impl db::TableType for EventDetails {
 
 impl EventDetails {
   pub fn get(store: &db::Store) -> db::Result<EventDetails> {
-    let first = Self::table(store)?.first()?;
+    // let first = Self::table(store)?.first()?;
 
-    match first {
+    match Self::first(store)? {
       Some(ed) => Ok(ed),
       None => {
         let mut ed = EventDetails { code: None, event_name: None, webcasts: vec![], av_chroma_key: "#f0f".to_owned(), av_event_colour: "#e9ab01".to_owned() };

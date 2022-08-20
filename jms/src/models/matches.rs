@@ -246,7 +246,7 @@ impl MatchGenerationRecord {
     let first = Self::table(store)?.get(match_type.to_string())?;
 
     match first {
-      Some(mgr) => Ok(mgr),
+      Some(mgr) => Ok(mgr.data),
       None => {
         let mut mgr = MatchGenerationRecord { match_type, data: None };
         mgr.insert(store)?;

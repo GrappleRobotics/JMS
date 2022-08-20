@@ -65,7 +65,7 @@ impl ScheduleBlock {
     // TODO: Validate, can't do it if the schedule is locked in
     let mut start = Local::today().and_hms(9, 00, 00);
 
-    let mut all = Self::table(store)?.all()?;
+    let mut all = Self::all(store)?;
     all.sort_by(|a, b| a.start_time.cmp(&b.start_time));
 
     if let Some(last) = all.last() {
@@ -106,74 +106,72 @@ impl ScheduleBlock {
 
     let cycle_time = DBDuration(Duration::minutes(13));
     
-    let mut batch = db::Batch::new();
     // Day 1
-    batch.insert(store, &mut ScheduleBlock {
+    ScheduleBlock {
       id: None, name: "Opening Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
       start_time: day1.and_hms(08, 30, 00).into(),
       end_time: day1.and_hms(09, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    batch.insert(store, &mut ScheduleBlock {
+    }.insert(store)?;
+    ScheduleBlock {
       id: None, name: "Field Tests & Practice".to_owned(),
       block_type: ScheduleBlockType::General,
       start_time: day1.and_hms(09, 00, 00).into(),
       end_time: day1.and_hms(12, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    batch.insert(store, &mut ScheduleBlock {
+    }.insert(store)?;
+    ScheduleBlock {
       id: None, name: "Qualifications".to_owned(),
       block_type: ScheduleBlockType::Qualification,
       start_time: day1.and_hms(13, 00, 00).into(),
       end_time: day1.and_hms(17, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    batch.insert(store, &mut ScheduleBlock {
+    }.insert(store)?;
+    ScheduleBlock {
       id: None, name: "Awards & Closing Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
       start_time: day1.and_hms(17, 30, 00).into(),
       end_time: day1.and_hms(18, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
+    }.insert(store)?;
 
     // Day 2
-    batch.insert(store, &mut ScheduleBlock {
+    ScheduleBlock {
       id: None, name: "Opening Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
       start_time: day2.and_hms(08, 30, 00).into(),
       end_time: day2.and_hms(09, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    batch.insert(store, &mut ScheduleBlock {
+    }.insert(store)?;
+    ScheduleBlock {
       id: None, name: "Qualifications (cont'd)".to_owned(),
       block_type: ScheduleBlockType::Qualification,
       start_time: day2.and_hms(09, 00, 00).into(),
       end_time: day2.and_hms(12, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    batch.insert(store, &mut ScheduleBlock {
+    }.insert(store)?;
+    ScheduleBlock {
       id: None, name: "Alliance Selections".to_owned(),
       block_type: ScheduleBlockType::General,
       start_time: day2.and_hms(12, 00, 00).into(),
       end_time: day2.and_hms(12, 30, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    batch.insert(store, &mut ScheduleBlock {
+    }.insert(store)?;
+    ScheduleBlock {
       id: None, name: "Playoffs".to_owned(),
       block_type: ScheduleBlockType::Playoff,
       start_time: day2.and_hms(13, 30, 00).into(),
       end_time: day2.and_hms(17, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    batch.insert(store, &mut ScheduleBlock {
+    }.insert(store)?;
+    ScheduleBlock {
       id: None, name: "Awards & Closing Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
       start_time: day2.and_hms(17, 30, 00).into(),
       end_time: day2.and_hms(18, 00, 00).into(),
       cycle_time: cycle_time.clone()
-    })?;
-    Self::table(store)?.apply_batch(batch)?;
+    }.insert(store)?;
 
     Ok(())
   }

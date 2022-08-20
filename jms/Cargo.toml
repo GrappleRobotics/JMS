@@ -63,6 +63,7 @@ sha2 = "0.10.2"
 base64 = "0.13.0"
 atomic-counter = "1.0.1"
 asn1-rs = "0.5.1"
+serenity = { version = "0.11", features=["http"] }
 
 [build-dependencies]
 anyhow = "1.0.42"

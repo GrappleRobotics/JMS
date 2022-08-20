@@ -99,7 +99,7 @@ impl TBAWorker {
         event = matches.get() => {
           match event? {
             db::WatchEvent::Insert(m) => {
-              let mut tba_match = matches::TBAMatch::try_from(m.clone())?;
+              let mut tba_match = matches::TBAMatch::try_from(m.data.clone())?;
               match tba_match.issue(&self.client).await {
                 Ok(_) => (),
                 Err(_) => {

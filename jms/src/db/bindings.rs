@@ -42,7 +42,7 @@ impl<T: TableType> TryFrom<ShallowInner<T>> for Shallow<T> {
         let coerced_id = T::Id::from_raw(id);
         let got = T::table(super::database())?.get(coerced_id)?;
         match got {
-          Some(t) => Ok(Shallow(t)),
+          Some(t) => Ok(Shallow(t.data)),
           None => Err(anyhow::anyhow!("No ID {:?} exists in table {}", id, T::TABLE)),
         }
       },

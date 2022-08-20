@@ -16,9 +16,7 @@ impl db::TableType for DBResourceRequirements {
 
 impl DBResourceRequirements {
   pub fn get(store: &db::Store) -> db::Result<Self> {
-    let first = Self::table(store)?.first()?;
-
-    match first {
+    match Self::first(store)? {
       Some(rr) => Ok(rr),
       None => {
         let mut rr = DBResourceRequirements(None);

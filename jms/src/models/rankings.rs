@@ -30,7 +30,8 @@ impl db::TableType for TeamRanking {
 
 impl TeamRanking {
   pub fn get(team_num: usize, store: &db::Store) -> db::Result<TeamRanking> {
-    let record = TeamRanking::table(store)?.get(team_num)?;
+    // let record = TeamRanking::table(store)?.get(team_num)?;
+    let record = <TeamRanking as db::TableType>::get(team_num, store)?;
     match record {
       Some(rank) => Ok(rank),
       None => {
@@ -79,8 +80,7 @@ impl TeamRanking {
   }
 
   pub fn sorted(store: &db::Store) -> db::Result<Vec<TeamRanking>> {
-    let all = Self::table(store)?.all();
-    match all {
+    match Self::all(store) {
       Ok(mut als) => {
         als.sort();
         Ok(als)

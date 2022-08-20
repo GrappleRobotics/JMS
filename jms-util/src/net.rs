@@ -5,6 +5,7 @@ pub struct LinkMetadata {
   pub name: String,
   pub vlan: Option<u16>,
   pub addrs: Vec<Ipv4Network>,
+  #[allow(dead_code)]
   pub(crate) extra: crate::platform::net::ExtraData
 }
 
