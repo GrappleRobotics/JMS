@@ -1,33 +1,111 @@
 mod imager;
 
-use std::collections::HashMap;
-
-use cursive::{views::{Dialog, SelectView, TextView, LinearLayout, EditView, PaddedView}, view::{Scrollable, Resizable, Identifiable, Margins}, Cursive, theme::{ColorStyle, Color, BaseColor}};
+use clap::Parser;
 use imager::image;
-use jms_util::net::{self, LinkMetadata};
+use jms_util::{net::{self, LinkMetadata}, WPAKeys};
+use tokio::{net::TcpStream, io::AsyncReadExt};
 
-use tokio::runtime::Handle as AsyncHandle;
+#[derive(Parser, Debug)]
+struct Args {
+  /// The interface to run the imager on. If not provided, will prompt.
+  #[clap(short, long, value_parser)]
+  iface: Option<String>,
+  /// The CSV file of keys. If not provided, will query JMS at 10.0.100.5
+  #[clap(short, long, value_parser)]
+  keys: Option<String>,
+  /// Print the keys and exit
+  #[clap(short, long, action)]
+  show_keys: bool,
+  /// The team to image. If not provided, will run in interactive mode
+  #[clap(value_parser)]
+  team: Option<u16>,
+}
 
-struct Data {
+#[derive(serde::Deserialize)]
+struct CSVLine {
   team: u16,
-  teams: HashMap<u16, String>
+  key: String
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  let mut siv = cursive::crossterm();
+  let handle = net::handle()?;
+  let valid_ifaces = net::get_all_ifaces(&handle).await?;
+  let mut all_keys: WPAKeys = WPAKeys::new();
 
-  let ifaces = net::get_all_ifaces(&net::handle().unwrap()).await?;
-  let teams = load_keys().await?;
-  
-  siv.set_user_data(Data {
-    team: 0,
-    teams
+  let args = Args::parse();
+  let iface = args.iface.and_then(|i| valid_ifaces.iter().find(|iface| iface.name == i));
+  let iface = iface.cloned().unwrap_or_else(|| {
+    inquire::Select::<LinkMetadata>::new("Select Interface", valid_ifaces).prompt().unwrap()
   });
 
+  match args.keys {
+    Some(keyfile) => {
+      // Load from CSV
+      let mut reader = csv::ReaderBuilder::new().has_headers(false).from_path(&keyfile)?;
+      for result in reader.deserialize() {
+        let record: CSVLine = result?;
+        all_keys.insert(record.team, record.key);
+      }
+    },
+    None => {
+      // Load from JMS
+      let mut stream = TcpStream::connect("10.0.100.5:6789").await?;
+      let len = stream.read_u32().await? as usize;
+
+      let mut buf = vec![0; len];
+      stream.read_exact(&mut buf).await?;
+
+      all_keys = serde_json::from_slice(&buf)?;
+    },
+  };
+
+  if args.show_keys {
+    println!("===== WPA Keys Start =====");
+    for (team, key) in all_keys.iter() {
+      println!("{}: {}", team, key);
+    }
+    println!("====== WPA Keys End ======");
+    return Ok(())
+  }
+
+  match args.team {
+    Some(team) => {
+      if let Some(key) = all_keys.get(&team) {
+        println!("Imaging Team {}...", team);
+        image(iface, team, key.clone()).await?;
+        println!("Radio imaged successfully!");
+      } else {
+        println!("No key for team {}", team)
+      }
+    },
+    None => interactive::run_interactive(iface, all_keys)?,
+  }
+
+  Ok(())
+}
+
+mod interactive {
+  use cursive::{views::{Dialog, TextView, LinearLayout, EditView, PaddedView}, view::{Resizable, Identifiable, Margins}, theme::{ColorStyle, Color, BaseColor}};
+  use jms_util::{net, WPAKeys};
+
+  use crate::{imager::image};
+
+  #[derive(Clone)]
+  struct Data {
+    keys: WPAKeys,
+    team: u16
+  }
   
-  prompt_iface(&mut siv,  ifaces, |s, iface| {
-    s.add_layer(Dialog::new()
+  pub fn run_interactive(iface: net::LinkMetadata, keys: WPAKeys) -> anyhow::Result<()> {
+    let mut siv = cursive::crossterm();
+    
+    siv.set_user_data(Data {
+      team: 0,
+      keys
+    });
+    
+    siv.add_layer(Dialog::new()
       .title("Radio Imaging Tool")
       .padding(Margins::lrtb(1, 1, 1, 0))
       .content(
@@ -40,7 +118,7 @@ async fn main() -> anyhow::Result<()> {
                 let t = {
                   let dat = s.user_data::<Data>().unwrap();
                   dat.team = number.parse().unwrap_or(0);
-                 (dat.team, dat.teams.contains_key(&dat.team))
+                  (dat.team, dat.keys.contains_key(&dat.team))
                 };
 
                 let mut tv = s.find_name::<TextView>("msg").unwrap();
@@ -69,10 +147,10 @@ async fn main() -> anyhow::Result<()> {
         let cb = s.cb_sink().clone();
 
         let dat = {
-          s.user_data::<Data>().unwrap()
+          s.user_data::<Data>().unwrap().clone()
         };
 
-        if let Some(key) = dat.teams.get(&dat.team) {
+        if let Some(key) = dat.keys.get(&dat.team) {
           let team = dat.team;
           let key = key.clone();
           let i = iface.clone();
@@ -81,12 +159,13 @@ async fn main() -> anyhow::Result<()> {
             let mut tv = s.find_name::<TextView>("msg").unwrap();
             tv.set_content("Imaging Radio...");
             tv.set_style(ColorStyle::front(Color::Light(BaseColor::Magenta)));
-
+          }
+          {
             let mut but = s.find_name::<Dialog>("dialog").unwrap();
             but.buttons_mut().for_each(|b| b.disable());
           }
 
-          let ah = AsyncHandle::current();
+          let ah = tokio::runtime::Handle::current();
           // let (tx, rx) = channel::bounded(1);
           ah.spawn(async move {
             let result = image(i, team, key).await;
@@ -109,38 +188,10 @@ async fn main() -> anyhow::Result<()> {
           });
         }
       }).with_name("dialog")
-    )
-  })?;
+    );
 
-  siv.run();
+    siv.run();
 
-  Ok(())
-}
-
-fn prompt_iface<F>(s: &mut Cursive, ifaces: Vec<LinkMetadata>, cb: F) -> anyhow::Result<()>
-where
-  F: Fn(&mut Cursive, LinkMetadata) + 'static
-{
-  let mut select_view = SelectView::<LinkMetadata>::new().autojump();
-  // select_view.add_all_str(ifaces.iter().map(|x| format!("{}", x)));
-  select_view.add_all(ifaces.into_iter().map(|x| ( format!("{}", x), x )));
-
-  select_view.set_on_submit(move |s, iface| {
-    s.pop_layer();
-    cb(s, iface.clone())
-  });
-
-  s.add_layer(
-    Dialog::around(
-      select_view.scrollable()
-    ).title("Select Interface")
-  );
-
-  Ok(())
-}
-
-async fn load_keys() -> anyhow::Result<HashMap<u16, String>> {
-  let mut map: HashMap<u16, String> = HashMap::new();
-  map.insert(5333, "TdURGDYwwgZTpr0mGFnkmpx1MxbMTk".to_owned());
-  return Ok(map)
+    Ok(())
+  }
 }

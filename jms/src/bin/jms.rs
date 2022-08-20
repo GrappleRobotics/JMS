@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::TryFutureExt;
-use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey, network::snmp::snmp::SNMPService};
+use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::FTAKey, network::snmp::snmp::SNMPService, imaging::ImagingKeyService};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -120,14 +120,17 @@ async fn main() -> anyhow::Result<()> {
     };
     let web_fut = ui::web::begin(port);
 
+    let mut imaging_service = ImagingKeyService::new();
+    let imaging_fut = imaging_service.run().map_err(|e| anyhow::anyhow!("Imaging Service Error: {}", e));
+
     if let Some(tba_client) = settings.tba {
       info!("TBA Enabled");
       let tba_worker = tba::TBAWorker::new(tba_client);
       let tba_fut = tba_worker.begin();
 
-      try_join!(arena_fut, ds_fut, snmp_fut, electronics_fut, ws_fut, web_fut, tba_fut)?;
+      try_join!(arena_fut, ds_fut, snmp_fut, electronics_fut, ws_fut, web_fut, imaging_fut, tba_fut)?;
     } else {
-      try_join!(arena_fut, ds_fut, snmp_fut, electronics_fut, ws_fut, web_fut)?;
+      try_join!(arena_fut, ds_fut, snmp_fut, electronics_fut, ws_fut, web_fut, imaging_fut)?;
     }
   }
 

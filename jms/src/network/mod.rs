@@ -11,8 +11,8 @@ use async_trait::async_trait;
 
 use self::onboard::{settings::OnboardNetworkSettings, OnboardNetwork};
 
-const ADMIN_IP: &'static str = "10.0.100.5/24";
-const ADMIN_ROUTER: &'static str = "10.0.100.1/24";
+pub const ADMIN_IP: &'static str = "10.0.100.5/24";
+pub const ADMIN_ROUTER: &'static str = "10.0.100.1/24";
 
 pub type NetworkResult<T> = anyhow::Result<T>;
 
