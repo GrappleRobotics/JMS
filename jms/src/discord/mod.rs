@@ -13,8 +13,6 @@ pub struct DiscordSettings {
 #[async_trait::async_trait]
 impl Interactive for DiscordSettings {
   async fn interactive() -> anyhow::Result<Self> {
-    info!("Invite JMS to your server: https://discord.com/oauth2/authorize?client_id=1010552366602387487&permissions=133120&scope=bot");
-
     let app_id = inquire::CustomType::<u64>::new("Discord Application ID")
       .with_formatter(&|i| format!("{}", i))
       .with_error_message("Not a valid number!")
