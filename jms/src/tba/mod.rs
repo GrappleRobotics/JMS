@@ -57,7 +57,7 @@ impl TBAWorker {
   }
 
   // TBA Errors shouldn't stop the whole system
-  pub async fn begin(&self) -> anyhow::Result<()> {
+  pub async fn begin(self) -> anyhow::Result<()> {
     if let Err(e) = self.run().await {
       error!("TBA Fatal Error: {}", e);
     }

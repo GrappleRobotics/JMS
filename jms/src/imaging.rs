@@ -11,7 +11,7 @@ impl ImagingKeyService {
     Self { }
   }
 
-  pub async fn run(&mut self) -> Result<()> {
+  pub async fn run(self) -> Result<()> {
     let server = TcpListener::bind(("0.0.0.0", 6789)).await?;
     // let mut rx = self.bcast.subscribe();
     loop {

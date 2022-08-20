@@ -158,7 +158,7 @@ impl SNMPService {
     }
   }
 
-  pub async fn run(&mut self) -> anyhow::Result<()> {
+  pub async fn run(self) -> anyhow::Result<()> {
     let socket = UdpSocket::bind(("0.0.0.0", 162)).await?;
     let mut framed = UdpFramed::new(socket, SNMPCodec::new());
 

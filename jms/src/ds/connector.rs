@@ -1,5 +1,5 @@
 use std::time::Instant;
-use std::{error::Error, net::SocketAddr};
+use std::net::SocketAddr;
 
 use chrono::Local;
 use futures::SinkExt;
@@ -378,14 +378,14 @@ impl DSConnectionService {
     DSConnectionService { arena, udp_tx }
   }
 
-  pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
+  pub async fn run(self) -> anyhow::Result<()> {
     let fut_tcp = Self::tcp(self.arena.clone(), &self.udp_tx);
     let fut_udp = Self::udp_recv(self.arena.clone(), &self.udp_tx);
     try_join!(fut_tcp, fut_udp)?;
     Ok(())
   }
 
-  async fn tcp(arena: SharedArena, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> Result<(), Box<dyn Error>> {
+  async fn tcp(arena: SharedArena, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> anyhow::Result<()> {
     let server = TcpListener::bind("0.0.0.0:1750").await?;
     loop {
       info!("Listening for connections...");
@@ -403,7 +403,7 @@ impl DSConnectionService {
     }
   }
 
-  async fn udp_recv(_arena: SharedArena, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> Result<(), Box<dyn Error>> {
+  async fn udp_recv(_arena: SharedArena, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> anyhow::Result<()> {
     let socket = UdpSocket::bind("0.0.0.0:1160").await?;
     let mut framed = UdpFramed::new(socket, DSUDPCodec::new());
     loop {

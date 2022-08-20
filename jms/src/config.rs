@@ -5,7 +5,7 @@ use std::{
   str::FromStr,
 };
 
-use crate::{network::NetworkSettings, tba, electronics::settings::ElectronicsSettings};
+use crate::{network::NetworkSettings, tba, electronics::settings::ElectronicsSettings, discord};
 
 use log::warn;
 use strum::IntoEnumIterator;
@@ -16,7 +16,8 @@ const CONFIG_PATH: &'static str = "/etc/jms/jms.yml";
 pub struct JMSSettings {
   pub network: NetworkSettings,
   pub electronics: ElectronicsSettings,
-  pub tba: Option<tba::TBAClient>
+  pub tba: Option<tba::TBAClient>,
+  pub discord: Option<discord::DiscordSettings>
 }
 
 #[async_trait::async_trait]
@@ -34,10 +35,19 @@ impl Interactive for JMSSettings {
       false => None,
     };
 
+    let do_discord = inquire::Confirm::new("Do you want to configure a Discord Bot for notifying CSAs of new tickets?")
+      .with_default(false).prompt()?;
+
+    let discord = match do_discord {
+      true => Some(discord::DiscordSettings::interactive().await?),
+      false => None,
+    };
+
     Ok(Self {
       network,
       electronics,
-      tba
+      tba,
+      discord
     })
   }
 }

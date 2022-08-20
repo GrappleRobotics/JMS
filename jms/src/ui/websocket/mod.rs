@@ -61,7 +61,7 @@ impl Websockets {
     });
   }
 
-  pub async fn begin(&self) -> Result<()> {
+  pub async fn begin(self) -> Result<()> {
     let listener = TcpListener::bind("0.0.0.0:9000").await?;
     info!("WebSockets started...");
 

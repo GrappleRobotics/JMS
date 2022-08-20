@@ -56,7 +56,6 @@ pub trait TableType: serde::Serialize + serde::de::DeserializeOwned {
     X: Into<Self::Id> + Clone,
     I: Iterator<Item = X>
   {
-    let t = Self::table(db)?;
     ids.map(|id| Self::get(id, db)).collect()
   }
 

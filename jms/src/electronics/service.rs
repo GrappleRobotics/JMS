@@ -24,7 +24,7 @@ impl FieldElectronicsService {
     }
   }
 
-  pub async fn begin(&self) -> anyhow::Result<()> {
+  pub async fn begin(self) -> anyhow::Result<()> {
     match &self.settings.0 {
       Some(settings) => {
         info!("Starting Field Electronics Server");
@@ -69,6 +69,7 @@ impl FieldElectronicsService {
           for msg in msgs {
             let mut buf = bytes::BytesMut::with_capacity(64);
             msg.pack(&mut buf);
+            
             port.write_u8(buf.len() as u8).await?;
             port.write_buf(&mut buf).await?;
           }
