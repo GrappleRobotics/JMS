@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use crate::{config::Interactive, models, db::{TableType, self}};
+use crate::{config::Interactive, models::{self, SupportTicket}, db::{TableType, self}};
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct DiscordSettings {
@@ -52,20 +52,83 @@ impl DiscordBot {
 
     loop {
       match watch.get().await? {
-        crate::db::WatchEvent::Insert(ticket) if ticket.new => {
+        crate::db::WatchEvent::Insert(ticket) => {
           let t = ticket.data;
 
-          let msg = json!({
-            "content": format!("<@&{}> New Ticket Opened by {}. Team: {}, Type: {}, Match: {}. http://10.0.100.5/csa/{}", self.settings.csa_role, t.author, t.team, t.issue_type, t.match_id.unwrap_or("None".to_owned()), t.id.unwrap())
+          let msg_args = json!({
+            "content": DiscordTicketMessage::format(self.settings.csa_role, &t)
           });
-          let result = self.client.send_message(self.settings.csa_channel, &msg).await;
-          match result {
-            Ok(_) => (),
-            Err(e) => error!("Discord CSA Message Error: {}", e)
-          }
+
+          let channel = self.settings.csa_channel;
+
+          match DiscordTicketMessage::get(t.id.unwrap(), &db::database())? {
+            Some(past_msg) => {
+              match self.client.edit_message(channel, past_msg.message_id, &msg_args).await {
+                Ok(_) => (),
+                Err(e) => {
+                  error!("Could not edit message: {}", e);
+                  if e.to_string().contains("Unknown Message") {
+                    // Remove the message - it's been deleted
+                    past_msg.remove(&db::database())?;
+                    warn!("Message Record Deleted for Ticket - {}", t.id.unwrap())
+                  }
+                },
+              }
+            },
+            None => {
+              match self.client.send_message(channel, &msg_args).await {
+                Ok(reply) => {
+                  DiscordTicketMessage {
+                    ticket_id: t.id.unwrap(),
+                    message_id: reply.id.0
+                  }.insert(&db::database())?;
+                },
+                Err(e) => error!("Could not send message: {}", e)
+              } 
+            }
+          };
         },
         _ => ()
       }
     }
+  }
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct DiscordTicketMessage {
+  pub ticket_id: u64,
+  pub message_id: u64
+}
+
+impl DiscordTicketMessage {
+  fn format(role: u64, t: &SupportTicket) -> String {
+    let note = t.notes.last().map(|n| n.comment.clone()).unwrap_or("".to_owned());
+    let emoji = match (t.resolved, &t.assigned_to) {
+      (true, _) => "✅".to_owned(),
+      (false, None) => "[⚠️ NEW]".to_owned(),
+      (false, Some(person)) => format!("[👤{}]", person)
+    };
+
+    let mut msg = vec![
+      format!("<@&{}> {} Team {} - {}", role, emoji, t.team, t.issue_type)
+    ];
+    if note.trim().len() > 0 {
+      msg.push(format!("\"{}\"", note.trim()));
+    }
+    if let Some(mid) = &t.match_id {
+      msg.push(format!("Match {}", mid));
+    }
+    msg.push(format!("http://10.0.100.5/csa/{}", t.id.unwrap()));
+
+    msg.join(". ")
+  }
+}
+
+impl TableType for DiscordTicketMessage {
+  const TABLE: &'static str = "discord_ticket_msgs";
+  type Id = db::Integer;
+
+  fn id(&self) -> Option<Self::Id> {
+    Some(self.ticket_id.into())
   }
 }
