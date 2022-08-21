@@ -5,6 +5,7 @@ import AudienceCard from "./AudienceCard";
 import BaseAudienceScene from "./BaseAudienceScene";
 import PlayoffBracketGraph, { as_playoffs } from "components/PlayoffBracket";
 import React from "react";
+import PlayoffRoundRobin from "components/PlayoffRoundRobin";
 
 type AudienceScenePlayoffBracketState = {
   gen_record?: SerialisedMatchGeneration,
@@ -25,9 +26,6 @@ export default class AudienceScenePlayoffBracket extends BaseAudienceScene<{}, A
     const data = as_playoffs(gen_record?.record?.data);
 
     return <AudienceCard event_name={this.props.details.event_name} className="audience-playoff-bracket">
-      <Row>
-        <Col md={7} className="audience-card-title"> Playoff Bracket </Col>
-      </Row>
       <Row className="grow">
         {
           data?.mode === "Bracket"
@@ -35,7 +33,10 @@ export default class AudienceScenePlayoffBracket extends BaseAudienceScene<{}, A
                 gen_record={gen_record!}
                 next={next}
               /> : data?.mode === "RoundRobin"
-            ? undefined : undefined
+            ? <PlayoffRoundRobin
+                gen_record={gen_record!}
+                next={next}
+              /> : undefined
         }
       </Row>
     </AudienceCard>

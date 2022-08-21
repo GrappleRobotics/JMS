@@ -1,4 +1,5 @@
 import PlayoffBracketGraph, { as_playoffs } from "components/PlayoffBracket";
+import PlayoffRoundRobin from "components/PlayoffRoundRobin";
 import moment from "moment";
 import React from "react";
 import { Col, Container, Row, Table } from "react-bootstrap";
@@ -105,12 +106,17 @@ export default class Rankings extends WebsocketComponent<RankingsProps, Rankings
         </Col>
       </Row>
       <Row id="rankings-container" className="app-viewport">
-        <Col>
+        <Col className="col-full">
             <Element name="top" />
             {
-              playoff_data ? 
-                <PlayoffBracketGraph dark_mode gen_record={playoffs!} next={next_match} />
-              : rankings.length > 0 ?
+              playoff_data ? (
+                playoff_data?.mode === "Bracket"
+                  ? <PlayoffBracketGraph dark_mode gen_record={playoffs!} next={next_match} />
+                  : <Row className="grow" style={{ fontSize: "2.5vw", maxHeight: "80vh" }}>
+                      <PlayoffRoundRobin dark_mode gen_record={playoffs!} next={next_match} />
+                    </Row>
+              ) :
+              rankings.length > 0 ?
                 this.renderRankings()
                 : <h4> No Rankings Available - waiting for matches to begin... </h4>
             }

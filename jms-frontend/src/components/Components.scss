@@ -254,3 +254,114 @@ $role-locations: map-merge((
     }
   }
 }
+
+// Playoff Round Robin
+.round-robin-title {
+  font-weight: bold;
+  font-size: 1.3em;
+  margin-bottom: 0.25em;
+  margin-left: 0.5em;
+}
+
+.round-robin-standings {
+  font-size: 0.65em;
+  max-width: 33%;
+
+  &[data-has-leaderboard=false] {
+    display: none;
+  }
+
+  background-color: white;
+  color: theme-color("dark");
+  &[data-dark-mode=true] {
+    background-color: theme-color("dark");
+    color: white;
+  }
+
+  border-radius: 0.5em;
+  padding: 0.5em 1em;
+  margin-left: 0.5em;
+
+  .round-robin-standings-title {
+    font-size: 1em;
+    font-weight: bold;
+  }
+
+  .round-robin-standings-entry {
+    font-size: 0.9em;
+    margin-bottom: 0.2em;
+  }
+}
+
+.round-robin-matches {
+  font-size: 0.65em;
+  border-radius: 0.5em;
+  padding: 0.5em 1em;
+  overflow: hidden;
+  max-height: 100%;
+
+  background-color: white;
+  color: theme-color("dark");
+
+  &[data-dark-mode=true] {
+    background-color: theme-color("dark");
+    color: white;
+    .round-robin-alliance-num {
+      background-color: white !important;
+      color: $gray-600 !important;
+    }
+  }
+  
+  .round-robin-match {
+    margin-bottom: 0.5em;
+
+    opacity: 0.6 - 0.04*10;
+    @for $i from 1 through 10 {
+      &:nth-child(1n + #{$i}) {
+        opacity: 0.6 - 0.04*$i
+      }
+    }
+
+    &[data-next=true] {
+      opacity: 1;
+    }
+    
+    .round-robin-match-name {
+      max-width: 4em;
+      padding: 0.5em;
+    }
+    
+    .round-robin-alliance {
+      color: white;
+      text-align: center;
+      margin-left: 0.5em;
+      padding: 0;
+      border-radius: 0.5em;
+      overflow: hidden;
+
+      > .row {
+        height: 100%;
+        align-items: center;
+      }
+
+      @each $alliance in $alliances {
+        &[data-alliance=#{$alliance}] {
+          background-color: theme-color($alliance);
+        }
+        padding-right: 0.5em;
+      }
+
+      .round-robin-alliance-num {
+        height: 100%;
+        
+        padding-top: 0.5em;
+        padding-left: 0.75em;
+        padding-right: 0.25em;
+        margin: 0;
+        text-align: end;
+        background-color: theme-color("dark");
+        color: $gray-500;
+      }
+    }
+  }
+}
