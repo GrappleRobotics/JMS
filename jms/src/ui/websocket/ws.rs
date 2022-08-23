@@ -125,6 +125,13 @@ impl Websocket {
     }
   }
 
+  pub async fn require_fta(&self) -> anyhow::Result<()> {
+    match self.is_fta().await {
+      true => Ok(()),
+      false => anyhow::bail!("You need to be an FTA to do that!")
+    }
+  }
+
   pub async fn send<T: Into<WebsocketMessage2UI>>(&self, msg: T) {
     match SerialisedMessage::try_from(&msg.into()) {
       Ok(msg) => match self.send_tx.send(SendMeta { msg, seq: self.seq_num.inc(), reply: None, bcast: false }).await {

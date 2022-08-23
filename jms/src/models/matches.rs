@@ -2,8 +2,6 @@ use serde::Serialize;
 
 use crate::{db::{self, DBDateTime, TableType, DBDuration}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
 
-use super::TeamRanking;
-
 #[derive(Debug, strum_macros::EnumString, Display, EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all="snake_case")]
 pub enum Alliance {
@@ -111,6 +109,13 @@ impl Match {
     }))
   }
 
+  pub fn reset(&mut self) {
+    self.played = false;
+    self.score = None;
+    self.score_time = None;
+    self.winner = None;
+  }
+
   pub fn sorted(store: &db::Store) -> db::Result<Vec<Match>> {
     let mut v = Self::all(store)?;
     // v.sort_by(|a, b| a.subtype_idx().cmp(&b.subtype_idx()));
@@ -147,20 +152,7 @@ impl Match {
     if self.match_type != MatchType::Test {
       self.insert(db)?;
 
-      if self.match_type == MatchType::Qualification {
-        // Update rankings
-        for team in &self.blue_teams {
-          if let Some(team) = team {
-            TeamRanking::get(*team, &db)?.update(&blue, &db)?;
-          }
-        }
-
-        for team in &self.red_teams {
-          if let Some(team) = team {
-            TeamRanking::get(*team, &db)?.update(&red, &db)?;
-          }
-        }
-      } else if self.match_type == MatchType::Playoff {
+      if self.match_type == MatchType::Playoff {
         // TODO: This should be event based
         let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
         let record = worker.record();

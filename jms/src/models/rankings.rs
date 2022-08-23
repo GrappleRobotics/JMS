@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+
 use rand::Rng;
 
 use crate::db::{self, TableType};
 use crate::scoring::scores::{DerivedScore, WinStatus};
+
+use super::MatchType;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TeamRanking {
@@ -29,54 +33,70 @@ impl db::TableType for TeamRanking {
 }
 
 impl TeamRanking {
-  pub fn get(team_num: usize, store: &db::Store) -> db::Result<TeamRanking> {
-    // let record = TeamRanking::table(store)?.get(team_num)?;
-    let record = <TeamRanking as db::TableType>::get(team_num, store)?;
-    match record {
-      Some(rank) => Ok(rank),
-      None => {
-        let mut rng = rand::thread_rng();
-        // Insert default
-        let mut tr = TeamRanking {
-          team: team_num,
-          rp: 0, auto_points: 0,
-          endgame_points: 0, teleop_points: 0,
-          random_num: rng.gen(),
-          win: 0, loss: 0, tie: 0, played: 0
-        };
-
-        tr.insert(store)?;
-        Ok(tr)
-      },
+  // Update the rankings cache whenever a new match is added / removed
+  pub async fn run() -> anyhow::Result<()> {
+    let mut watch = super::Match::table(&db::database())?.watch_all();
+    loop {
+      let _event = watch.get().await?;
+      Self::update()?;
     }
   }
 
-  pub fn update(
-    &mut self,
-    us_score: &DerivedScore,
-    store: &db::Store,
-  ) -> db::Result<()> {
-    if us_score.win_status == WinStatus::WIN {
-      self.rp += 2;
-      self.win += 1;
-    } else if us_score.win_status == WinStatus::LOSS {
-      self.loss += 1;
-    } else {
-      self.rp += 1;
-      self.tie += 1;
+  pub fn update() -> db::Result<()> {
+    let mut rmap = HashMap::new();
+    for m in super::Match::all(&db::database())? {
+      if m.played && m.match_type == MatchType::Qualification {
+        if let Some(score) = m.score {
+          let score_red = score.red.derive(&score.blue);
+          let score_blue = score.blue.derive(&score.red);
+
+          for team in m.red_teams.into_iter().filter_map(|t| t) {
+            Self::update_single(team, &score_red, &mut rmap);
+          }
+
+          for team in m.blue_teams.into_iter().filter_map(|t| t) {
+            Self::update_single(team, &score_blue, &mut rmap);
+          }
+        }
+      }
     }
 
-    self.rp += us_score.total_bonus_rp;
-
-    self.auto_points += us_score.mode_score.auto;
-    self.teleop_points += us_score.mode_score.teleop;
-    self.endgame_points += us_score.endgame_points;
-
-    self.played += 1;
-
-    self.insert(store)?;
-
+    Self::clear(&db::database())?;
+    let r: db::Result<Vec<()>> = rmap.into_values().map(|mut r| r.insert(&db::database()).map(|_| ())).collect();
+    r?;
     Ok(())
+  }
+
+  fn update_single(team: usize, score: &DerivedScore, current: &mut HashMap<usize, TeamRanking>) {
+    let mut rng = rand::thread_rng();
+    let mut existing = current.get(&team).cloned().unwrap_or(TeamRanking {
+      team, rp: 0, auto_points: 0,
+      endgame_points: 0, teleop_points: 0,
+      random_num: rng.gen(),
+      win: 0, loss: 0, tie: 0, played: 0
+    });
+
+    existing.rp += score.total_bonus_rp;
+    existing.auto_points += score.mode_score.auto;
+    existing.teleop_points += score.mode_score.teleop;
+    existing.endgame_points += score.endgame_points;
+    existing.played += 1;
+
+    match score.win_status {
+      WinStatus::WIN => {
+        existing.rp += 2;
+        existing.win += 1;
+      },
+      WinStatus::LOSS => {
+        existing.loss += 1;
+      },
+      WinStatus::TIE => {
+        existing.rp += 1;
+        existing.tie += 1;
+      },
+    }
+
+    current.insert(team, existing);
   }
 
   pub fn sorted(store: &db::Store) -> db::Result<Vec<TeamRanking>> {

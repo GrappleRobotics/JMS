@@ -27,7 +27,7 @@ type MatchControlState = {
   resource_status?: ResourceRequirementStatus
 }
 
-export default class MatchControl extends WebsocketComponent<{}, MatchControlState> {
+export default class MatchControl extends WebsocketComponent<{ fta: boolean }, MatchControlState> {
   readonly state: MatchControlState = { arena: {}, matches: {} };
 
   componentDidMount = () => {
@@ -123,12 +123,14 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
         }
         <Col className="match-control-schedule">
           <MatchScheduleView
+            fta={this.props.fta}
             arenaState={arena.state}
             currentMatch={arena.match}
             quals={matches.quals || []}
             playoffs={matches.playoffs || []}
             nextMatch={matches.next}
             onLoadMatch={match_id => this.send({ Arena: { Match: { Load: match_id } } })}
+            onResetMatch={match_id => this.send({ Match: { Reset: match_id } })}
           />
         </Col>
       </Row>

@@ -79,7 +79,7 @@ export default class App extends WebsocketComponent<{}, AppState> {
     const fta = this.state.fta;
     return <Routes>
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
-      <Route path={MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl />)) } />
+      <Route path={MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl fta={fta} />)) } />
       <Route path={MONITOR} element={ withRole("MonitorPanel", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
       <Route path={AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />
       <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />

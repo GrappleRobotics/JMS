@@ -464,6 +464,9 @@ export type MatchMessage2JMS =
     }
   | {
       Playoffs: MatchMessagePlayoffs2JMS;
+    }
+  | {
+      Reset: string;
     };
 export type MatchMessageQuals2JMS =
   | "Clear"

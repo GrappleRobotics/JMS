@@ -5,7 +5,6 @@ pub mod quals;
 pub mod worker;
 
 pub mod bracket;
-pub mod randomiser;
 pub mod round_robin;
 
 #[derive(Debug)]

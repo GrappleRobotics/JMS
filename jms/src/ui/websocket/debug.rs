@@ -18,9 +18,7 @@ pub struct WSDebugHandler;
 impl WebsocketHandler for WSDebugHandler {
   async fn handle(&self, msg: &WebsocketMessage2JMS, ws: &mut Websocket) -> anyhow::Result<()> {
     if let WebsocketMessage2JMS::Debug(msg) = msg {
-      if !ws.is_fta().await {
-        anyhow::bail!("You need to be an FTA to do that!");
-      }
+      ws.require_fta().await?;
 
       match msg.clone() {
         DebugMessage2JMS::Match(msg) => match msg {

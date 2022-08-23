@@ -2,7 +2,7 @@ use anyhow::bail;
 use jms_macros::define_websocket_msg;
 
 use crate::{
-  db, models,
+  db::{self, TableType}, models,
   schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::{SerialisedMatchGeneration, MatchGenerator, SharedMatchGenerators}},
 };
 
@@ -19,6 +19,7 @@ define_websocket_msg!($MatchMessage {
     recv Clear,
     recv Generate(<PlayoffMatchGenerator as MatchGenerator>::ParamType)
   },
+  recv Reset(String),
   send All(Vec<models::SerializedMatch>),
   send Next(Option<models::SerializedMatch>),
   send Last(Option<models::SerializedMatch>)
@@ -57,6 +58,13 @@ impl WebsocketHandler for WSMatchHandler {
           MatchMessagePlayoffs2JMS::Clear => bail!("Cannot clear match generator after matches have started!"),
           MatchMessagePlayoffs2JMS::Generate(p) => gen.playoffs.generate(p).await,
         },
+        MatchMessage2JMS::Reset(id) => {
+          ws.require_fta().await?;
+          if let Some(mut m) = models::Match::get(id, &db::database())? {
+            m.reset();
+            m.insert(&db::database())?;
+          }
+        }
       }
 
       // Broadcast any new changes
