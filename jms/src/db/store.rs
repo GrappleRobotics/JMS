@@ -35,4 +35,8 @@ impl Store {
   pub fn import(&self, export: Vec<(Vec<u8>, Vec<u8>, impl Iterator<Item = Vec<Vec<u8>>>)>) {
     self.db.import(export)
   }
+
+  pub fn config(&self) -> sled::Config {
+    self.config.clone()
+  }
 }

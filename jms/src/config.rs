@@ -5,7 +5,7 @@ use std::{
   str::FromStr,
 };
 
-use crate::{network::NetworkSettings, tba, electronics::settings::ElectronicsSettings, discord};
+use crate::{network::NetworkSettings, tba, electronics::settings::ElectronicsSettings, discord, db::backup::DBBackupSettings};
 
 use log::warn;
 use strum::IntoEnumIterator;
@@ -14,6 +14,7 @@ const CONFIG_PATH: &'static str = "/etc/jms/jms.yml";
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct JMSSettings {
+  pub backup: DBBackupSettings,
   pub network: NetworkSettings,
   pub electronics: ElectronicsSettings,
   pub tba: Option<tba::TBAClient>,
@@ -23,6 +24,7 @@ pub struct JMSSettings {
 #[async_trait::async_trait]
 impl Interactive for JMSSettings {
   async fn interactive() -> anyhow::Result<Self> {
+    let backup = DBBackupSettings::interactive().await?;
     let network = NetworkSettings::interactive().await?;
 
     let electronics = ElectronicsSettings::interactive().await?;
@@ -44,6 +46,7 @@ impl Interactive for JMSSettings {
     };
 
     Ok(Self {
+      backup,
       network,
       electronics,
       tba,

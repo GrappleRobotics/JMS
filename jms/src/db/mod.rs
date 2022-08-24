@@ -3,6 +3,7 @@ mod store;
 mod table;
 mod types;
 mod bindings;
+pub mod backup;
 
 pub use store::*;
 pub use table::*;

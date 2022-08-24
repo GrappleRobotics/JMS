@@ -69,6 +69,9 @@ base64 = "0.13.0"
 atomic-counter = "1.0.1"
 asn1-rs = "0.5.1"
 serenity = { version = "0.11", features=["http"] }
+humantime = "2.1.0"
+walkdir = "2.3.2"
+zip = "0.6.2"
 
 [build-dependencies]
 anyhow = "1.0.42"

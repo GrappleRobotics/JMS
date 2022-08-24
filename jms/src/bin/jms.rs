@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::{TryFutureExt, future, FutureExt};
-use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord};
+use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db::{self, backup::DBBackup}, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -47,6 +47,11 @@ async fn main() -> anyhow::Result<()> {
       Arg::with_name("no-network")
         .long("no-network")
         .help("Disable Networking"),
+    )
+    .arg(
+      Arg::with_name("no-backup")
+        .long("no-backup")
+        .help("Disable Backups (not recommended)"),
     )
     .arg(
       Arg::with_name("port")
@@ -137,6 +142,12 @@ async fn main() -> anyhow::Result<()> {
       info!("Discord Enabled");
       let discord_bot = discord::DiscordBot::new(discord_conf);
       futs.push(discord_bot.run().boxed());
+    }
+
+    if !matches.is_present("no-backup") {
+      info!("Backups Enabled");
+      let backups = DBBackup::new(settings.backup);
+      futs.push(backups.run().boxed());
     }
 
     let all_futs = future::try_join_all(futs);
