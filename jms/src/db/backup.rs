@@ -74,7 +74,7 @@ pub struct DBBackupSettings {
 #[async_trait::async_trait]
 impl Interactive for DBBackupSettings {
   async fn interactive() -> anyhow::Result<Self> {
-    let path = inquire::Text::new("Database backup path:").with_default("~/JMS_BACKUP").prompt()?;
+    let path = inquire::Text::new("Database backup path:").with_default("JMS_BACKUP").prompt()?;
     let frequency = inquire::CustomType::<Duration> {
       message: "How often should database backups occur?",
       formatter: &|val| format_duration(val).to_string(),

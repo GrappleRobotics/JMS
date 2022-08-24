@@ -51,7 +51,7 @@ impl FieldElectronicsService {
   pub async fn start(&self, settings: &InnerElectronicsSettings) -> anyhow::Result<()> {
     let mut port = tokio_serial::new(&settings.port, settings.baud as u32).open_native_async()?;
     let mut send_interval = time::interval(Duration::from_millis(250));
-    let mut recv_timeout = time::interval(Duration::from_millis(500));
+    let mut recv_timeout = time::interval(Duration::from_millis(2000));
 
     recv_timeout.reset();
 

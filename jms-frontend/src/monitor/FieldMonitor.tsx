@@ -1,4 +1,4 @@
-import { faBan, faCircleArrowLeft, faCode, faEye, faFlag, faNetworkWired, faRobot, faStop, faWifi, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faBan, faCircleArrowLeft, faCode, faEye, faFlag, faNetworkWired, faRobot, faStop, faUsers, faWifi, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import confirmBool, { confirmModal } from "components/elements/Confirm";
 import EnumToggleGroup from "components/elements/EnumToggleGroup";
@@ -6,13 +6,14 @@ import React from "react";
 import { Button, Col, Form, Row } from "react-bootstrap";
 import { withVal } from "support/util";
 import { WebsocketComponent } from "support/ws-component";
-import { SerialisedAllianceStation, ArenaState, LoadedMatch, SupportTicket } from "ws-schema";
+import { SerialisedAllianceStation, ArenaState, LoadedMatch, SupportTicket, ResourceRequirementStatus } from "ws-schema";
 import update from "immutability-helper";
 import BufferedFormControl from "components/elements/BufferedFormControl";
 import moment from "moment";
 import newTicket from "csa/NewTicket";
+import { ResourceRequirementMinimap } from "components/ResourceComponents";
 
-type FieldMonitorMode = "View" | "Estop" | "Flag";
+type FieldMonitorMode = "View" | "Estop" | "Flag" | "Resource";
 
 type FieldMonitorStationState = {
   station: SerialisedAllianceStation,
@@ -178,6 +179,7 @@ type FieldMonitorState = {
   stations: SerialisedAllianceStation[],
   state?: ArenaState,
   match?: LoadedMatch,
+  resource_status?: ResourceRequirementStatus,
   mode: FieldMonitorMode
 };
 
@@ -190,7 +192,8 @@ export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, F
   componentDidMount = () => this.handles = [
     this.listen("Arena/State/Current", "state"),
     this.listen("Arena/Match/Current", "match"),
-    this.listen("Arena/Alliance/CurrentStations", "stations")
+    this.listen("Arena/Alliance/CurrentStations", "stations"),
+    this.listen("Resource/Requirements/Current", "resource_status")
   ];
 
   renderAlliance = (stations: SerialisedAllianceStation[]) => {
@@ -220,6 +223,7 @@ export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, F
       { mode: "View", variant: "success", icon: faEye },
       { mode: "Estop", variant: "estop", icon: faBan },
       { mode: "Flag", variant: "warning", icon: faFlag },
+      { mode: "Resource", variant: "primary", icon: faUsers }
     ];
 
     return <React.Fragment>
@@ -242,7 +246,7 @@ export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, F
   }
 
   renderAvailable = () => {
-    const { stations } = this.state;
+    const { stations, mode, resource_status } = this.state;
     return <Row>
       {
         this.props.fta ? 
@@ -251,14 +255,19 @@ export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, F
           </Col> : undefined
       }
       <Col className="col-full">
-        <Row>
-          <Col className="col-full monitor-alliance" data-alliance="red">
-            { this.renderAlliance( stations.filter(s => s.station.alliance === "red") ) }
-          </Col>
-          <Col className="col-full monitor-alliance" data-alliance="blue">
-            { this.renderAlliance( stations.filter(s => s.station.alliance === "blue").reverse() ) }
-          </Col>
-        </Row>
+        {
+          mode === "Resource" && resource_status != null ?
+            <ResourceRequirementMinimap status={resource_status} />
+            : <Row>
+                <Col className="col-full monitor-alliance" data-alliance="red">
+                  { this.renderAlliance( stations.filter(s => s.station.alliance === "red") ) }
+                </Col>
+                <Col className="col-full monitor-alliance" data-alliance="blue">
+                  { this.renderAlliance( stations.filter(s => s.station.alliance === "blue").reverse() ) }
+                </Col>
+              </Row>
+            
+        }
       </Col>
 
     </Row>
