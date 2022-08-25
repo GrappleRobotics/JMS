@@ -4,28 +4,35 @@ import BufferedFormControl from 'components/elements/BufferedFormControl';
 import confirmBool, { confirmModal } from 'components/elements/Confirm';
 import _ from 'lodash';
 import React from 'react';
-import { Button, FormControl } from 'react-bootstrap';
+import { Button, FormControl, Modal } from 'react-bootstrap';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import { Link } from 'react-router-dom';
-import { undefinedIfEmpty } from 'support/strings';
+import { role2id } from 'support/ws-additional';
 import { WebsocketComponent } from 'support/ws-component';
-import { ArenaState, LoadedMatch, Panel } from 'ws-schema';
+import { ArenaState, LoadedMatch, SerializedMatch, TaggedResource } from 'ws-schema';
 
 type TopNavbarState = {
   arena_state?: ArenaState,
   match?: LoadedMatch,
-  panel?: Panel
+  resource?: TaggedResource,
+  readyModal: boolean
 };
 
-export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
-  readonly state: TopNavbarState = {};
+export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref<HTMLDivElement> }, TopNavbarState> {
+  readonly state: TopNavbarState = { readyModal: false };
 
   componentDidMount = () => this.handles = [
     this.listen("Arena/State/Current", "arena_state"),
     this.listen("Arena/Match/Current", "match"),
-    this.listen("Panel/Current", "panel")
+    this.listen("Resource/Current", "resource")
   ];
+
+  componentDidUpdate = (prevProps: {}, prevState: TopNavbarState) => {
+    if (this.state.resource?.ready_requested && !prevState.resource?.ready_requested && !this.state.resource?.ready && !this.state.readyModal) {
+      this.setState({ readyModal: true });
+    }
+  }
 
   triggerEstop = async () => {
     const subtitle = <p className="estop-subtitle text-muted">
@@ -100,28 +107,39 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
           onEnter={ok}
         />
       </React.Fragment>
-    }).then(pass => this.send({ Panel: { SetFTA: pass } }))
+    }).then(pass => this.send({ Resource: { SetFTA: pass } }))
   }
 
   render() {
     let fullscreen = document.fullscreenElement != null;
     const { connected } = this.context;
-    const { arena_state, match, panel } = this.state;
+    const { arena_state, match, resource, readyModal } = this.state;
 
     return <Navbar
+      ref={this.props.innerRef}
       className="top-nav"
       variant="dark"
       fixed="top"
-      data-fta={ panel?.fta }
+      data-fta={ resource?.fta }
+      data-role={ resource ? role2id(resource.role) : undefined }
+      data-ready-required={ resource?.ready_requested }
+      data-ready={ resource?.ready }
       data-connected={ connected }
       data-match-state={ match?.state }
       { ...Object.fromEntries(arena_state !== undefined ? Object.keys(arena_state).map(k => [ `data-arena-${k}`, (arena_state as any)[k] ]) : []) }
       // data-arena-state={ arena_state?.state }
     >
-      <Button variant="estop" disabled={!connected || arena_state?.state === "Estop"} onClick={this.triggerEstop}>
+      <Button className="me-3" variant="estop" disabled={!connected || arena_state?.state === "Estop"} onClick={this.triggerEstop}>
         E-STOP
       </Button>
-      <div className="me-3" />
+      {
+        resource?.ready_requested ? 
+          <Button
+            className="me-3"
+            variant={resource?.ready ? "bad" : "good"}
+            onClick={() => this.send({ Resource: { SetReady: !resource?.ready } })}
+          > { resource?.ready ? "Cancel Ready" : "SET READY" } </Button> : undefined
+      }
       <Navbar.Brand>
         <strong>JMS</strong>
       </Navbar.Brand>
@@ -136,9 +154,9 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
             Home
           </Link>
           {
-            panel?.fta ? <React.Fragment>
+            resource?.fta ? <React.Fragment>
               <Navbar.Brand className="brand-fta"> <strong>FTA</strong> </Navbar.Brand>
-              <Nav.Link onClick={() => this.send({ Panel: { SetFTA: null } })}>
+              <Nav.Link onClick={() => this.send({ Resource: { SetFTA: null } })}>
                 <FontAwesomeIcon icon={faRightFromBracket} /> Logout
               </Nav.Link>
             </React.Fragment> 
@@ -155,6 +173,21 @@ export default class TopNavbar extends WebsocketComponent<{}, TopNavbarState> {
           </Nav.Link>
         </Nav>
       </Navbar.Collapse>
+
+      <Modal show={readyModal} centered size="lg">
+        <Modal.Header> <Modal.Title> Are you ready? </Modal.Title> </Modal.Header>
+        <Modal.Body>
+          Before { match?.match_meta?.name || "the match" } can begin, you're required to notify the scorekeeper that you are <strong className="text-good"> READY </strong>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button className="ready-big" variant="good" onClick={() => { this.send({ Resource: { SetReady: true } }); this.setState({ readyModal: false }) }}>
+            I'M READY
+          </Button>
+          <Button className="ready-later" variant="secondary" onClick={() => this.setState({ readyModal: false })}>
+            LATER
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Navbar>
   }
 };

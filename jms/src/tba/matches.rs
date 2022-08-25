@@ -251,6 +251,7 @@ mod tests {
         red_alliance: None,
         blue_alliance: None,
         score_time: None,
+        ready: true
       };
   
       let tba_match: TBAMatch = m.try_into()?;

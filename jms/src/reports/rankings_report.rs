@@ -1,5 +1,5 @@
 use crate::{
-  db, models,
+  db::{self, DBSingleton}, models,
   reports::{pdf_table, report_pdf},
 };
 

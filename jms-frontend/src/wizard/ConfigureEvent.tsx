@@ -6,13 +6,14 @@ import { nullIfEmpty } from "support/strings";
 import { WebsocketComponent } from "support/ws-component";
 import { EventDetails } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
+import { SketchPicker } from 'react-color';
 
 type ConfigureEventState = {
   details: EventDetails
 }
 
 export default class ConfigureEvent extends WebsocketComponent<{ }, ConfigureEventState> {
-  readonly state: ConfigureEventState = { details: { webcasts: [] } };
+  readonly state: ConfigureEventState = { details: { webcasts: [], av_event_colour: "#fff", av_chroma_key: "#fff" } };
 
   componentDidMount = () => this.handles = [
     this.listen("Event/Details/Current", "details")
@@ -95,6 +96,40 @@ export default class ConfigureEvent extends WebsocketComponent<{ }, ConfigureEve
             }
           </Col>
         </Row>
+        <br />
+        <h4> A/V Setup </h4>
+        <Row className="mt-2">
+          <Col md="auto">
+            <Form.Label> Event Colour <span className="text-muted">(Audience Display)</span> </Form.Label>
+            <br />
+            <SketchPicker
+              disableAlpha={true}
+              presetColors={["#e9ab01", "#1f5fb9", "#901fb9"]}
+              color={ details.av_event_colour }
+              onChangeComplete={ c => this.changeEventDetails({ av_event_colour: c.hex }) }
+            />
+          </Col>
+          <Col md="auto">
+            <Form.Label> Chroma Key <span className="text-muted">(Background)</span> </Form.Label>
+            <br />
+            <SketchPicker
+              disableAlpha={true}
+              presetColors={["#000", "#f0f", "#0f0", "#333"]}
+              color={ details.av_chroma_key }
+              onChangeComplete={ c => this.changeEventDetails({ av_chroma_key: c.hex }) }
+            />
+          </Col>
+        </Row>
+        <br />
+        <p className="text-muted"> 
+          <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; 
+          If you're using OBS, you can use a "Browser Source" with the following custom CSS to make the window transparent instead of relying 
+          on a chroma key. This will also improve the look of fade transitions.
+          <pre>
+            {`.audience-root { --chroma-key-colour: rgba(0,0,0,0) !important; }\nbody { background: rgba(0,0,0,0); }`}
+          </pre>
+        </p>
+
       </Form>
     </EventWizardPageContent>
   }

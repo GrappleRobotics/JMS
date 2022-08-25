@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::bail;
 
-use crate::{config::Interactive, db::{self, TableType}, models};
+use crate::{config::Interactive, db::{self, TableType, DBSingleton}, models};
 
 pub mod eventinfo;
 pub mod alliances;
@@ -57,7 +57,7 @@ impl TBAWorker {
   }
 
   // TBA Errors shouldn't stop the whole system
-  pub async fn begin(&self) -> anyhow::Result<()> {
+  pub async fn begin(self) -> anyhow::Result<()> {
     if let Err(e) = self.run().await {
       error!("TBA Fatal Error: {}", e);
     }
@@ -66,7 +66,7 @@ impl TBAWorker {
 
   pub async fn run(&self) -> anyhow::Result<()> {
     let db = db::database();
-    let mut details = models::EventDetails::table(db)?.watch_all();
+    let mut details = models::EventDetails::watch(db)?;
     let mut teams = models::Team::table(db)?.watch_all();
     let mut matches = models::Match::table(db)?.watch_all();
     let mut rankings = models::TeamRanking::table(db)?.watch_all();
@@ -99,7 +99,7 @@ impl TBAWorker {
         event = matches.get() => {
           match event? {
             db::WatchEvent::Insert(m) => {
-              let mut tba_match = matches::TBAMatch::try_from(m.clone())?;
+              let mut tba_match = matches::TBAMatch::try_from(m.data.clone())?;
               match tba_match.issue(&self.client).await {
                 Ok(_) => (),
                 Err(_) => {

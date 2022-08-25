@@ -14,9 +14,9 @@ use log::{error, info};
 use schemars::JsonSchema;
 use tokio::sync::Mutex;
 
-use super::{exceptions::ArenaIllegalStateChange, lighting::{ArenaLighting, LightMode}, matches::MatchPlayState, station::AllianceStationId};
+use super::{exceptions::ArenaIllegalStateChange, lighting::{ArenaLighting, LightMode}, matches::MatchPlayState, station::{AllianceStationId, AllianceStation}, resource::SharedResources};
 
-use crate::{arena::{exceptions::CannotLoadMatchError, lighting::ArenaLightingSettings}, ds::DSMode, log_expect, models::{self, Alliance, MatchType}, network::{NetworkProvider, NetworkResult}};
+use crate::{arena::{exceptions::CannotLoadMatchError, lighting::ArenaLightingSettings}, log_expect, models::{self, Alliance, MatchType, DBResourceRequirements, MatchStationStatusRecord, StationStatusRecord}, network::{NetworkProvider, NetworkResult}, db::{self, TableType, DBSingleton}};
 
 use serde::{Deserialize, Serialize};
 
@@ -68,7 +68,7 @@ pub enum ArenaSignal {
   Estop,
   EstopReset,
   Prestart,
-  MatchArm,
+  MatchArm(bool),   // bool: force?
   MatchPlay,
   MatchCommit,
 }
@@ -81,6 +81,7 @@ pub enum AudienceDisplay {
   MatchPlay,
   MatchResults(models::SerializedMatch),
   AllianceSelection,
+  PlayoffBracket,
   Award(models::Award),
   CustomMessage(String),
 }
@@ -92,120 +93,26 @@ pub enum ArenaAccessRestriction {
   Teams,     // Teams can collect robots (green lights)
 }
 
-#[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
-pub struct AllianceStationDSReport {
-  pub robot_ping: bool,
-  pub rio_ping: bool,
-  pub radio_ping: bool,
-  pub battery: f64,
-
-  pub estop: bool,
-  pub mode: Option<DSMode>,
-
-  pub pkts_sent: u16,
-  pub pkts_lost: u16,
-  pub rtt: u8,
-}
-
-impl Default for AllianceStationDSReport {
-  fn default() -> Self {
-    Self {
-      robot_ping: false,
-      rio_ping: false,
-      radio_ping: false,
-      battery: 0.0f64,
-      estop: false,
-      mode: None,
-      pkts_sent: 0,
-      pkts_lost: 0,
-      rtt: 0,
-    }
-  }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, JsonSchema, PartialEq, Eq)]
-pub enum AllianceStationOccupancy {
-  Vacant,
-  Occupied,
-  WrongStation,
-  WrongMatch,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
-pub struct AllianceStation {
-  pub station: AllianceStationId,
-  pub team: Option<u16>,
-  pub bypass: bool,
-  pub estop: bool,
-  pub astop: bool, // TODO: Handle this
-  pub ds_report: Option<AllianceStationDSReport>,
-  pub occupancy: AllianceStationOccupancy,
-}
-
-impl AllianceStation {
-  pub fn new(id: AllianceStationId) -> AllianceStation {
-    return AllianceStation {
-      station: id,
-      team: None,
-      bypass: false,
-      estop: false,
-      astop: false,
-      ds_report: None,
-      occupancy: AllianceStationOccupancy::Vacant,
-    };
-  }
-
-  pub fn reset(&mut self) {
-    self.team = None;
-    self.bypass = false;
-    self.estop = false;
-    self.astop = false;
-    self.ds_report = None;
-    self.occupancy = AllianceStationOccupancy::Vacant;
-  }
-
-  pub fn can_arm_match(&self) -> bool {
-    self.bypass || self.estop || (self.occupancy == AllianceStationOccupancy::Occupied)
-  }
-
-  pub fn connection_ok(&self) -> bool {
-    let mut ok = true;
-    match &self.ds_report {
-      Some(ds) => {
-        if !ds.robot_ping || !ds.rio_ping || !ds.radio_ping {
-          ok = false;
-        }
-      },
-      None => ok = false
-    }
-    ok
-  }
-}
-
-#[derive(Serialize, JsonSchema)]
 pub struct Arena {
-  // network: Arc<Mutex<Option<Box<dyn NetworkProvider + Send>>>>,
-  #[serde(skip)]
   network: Option<Arc<Mutex<Box<dyn NetworkProvider + Send + Sync>>>>,
   pub state: BoundState,
-  #[serde(skip)]
   pending_state_change: Option<ArenaState>,
-  #[serde(skip)]
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
-  #[serde(rename = "match")]
   pub current_match: Option<LoadedMatch>,
   pub stations: Vec<AllianceStation>,
+  pub station_records: Vec<StationStatusRecord>,
   pub access: ArenaAccessRestriction,
-  #[serde(skip)]
   pub lighting: ArenaLighting,
 
   pub audience_display: AudienceDisplay,
+
+  pub resources: SharedResources
 }
 
 pub type SharedArena = Arc<Mutex<Arena>>;
 
 impl Arena {
-  pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send + Sync>>) -> Arena {
+  pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send + Sync>>, resources: SharedResources) -> Arena {
     let mut a = Arena {
       network: network.map(|x| Arc::new(Mutex::new(x))),
       state: BoundState {
@@ -217,9 +124,11 @@ impl Arena {
       pending_signal: Arc::new(Mutex::new(None)),
       current_match: None,
       stations: vec![],
+      station_records: vec![],
       access: ArenaAccessRestriction::NoRestriction,
       lighting: ArenaLighting::new(ArenaLightingSettings::default()),
       audience_display: AudienceDisplay::Field,
+      resources
     };
 
     for alliance in vec![Alliance::Blue, Alliance::Red] {
@@ -348,6 +257,15 @@ impl Arena {
     let first = self.state.first;
     let signal = self.current_signal().await;
 
+    let resource_requirements = DBResourceRequirements::get(&db::database())?.0;
+    let resources_ok = match &resource_requirements {
+      Some(req) => {
+        let res = self.resources.lock().await;
+        req.clone().status(&res).ready
+      },
+      None => true,
+    };
+
     // Need this as self is borrowed as mut below
     match self.state.state {
       ArenaState::Idle { ready: true } if first => self.unload_match()?,
@@ -382,6 +300,7 @@ impl Arena {
       (ArenaState::Idle { ready: true }, _) => {
         if first {
           info!("Idle ready!");
+          self.resources.lock().await.reset_all();
         } else if let Some(ArenaSignal::Prestart) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false })?;
         }
@@ -404,7 +323,12 @@ impl Arena {
       }
       (ArenaState::Prestart { ready: false }, StateData::Prestart(maybe_recv)) => {
         if first {
-          info!("Prestart begin...")
+          info!("Prestart begin...");
+          self.resources.lock().await.reset_all();
+          for stn in &mut self.stations {
+            stn.astop = false;
+            stn.estop = false;
+          }
         }
 
         if let Some(recv) = maybe_recv {
@@ -422,17 +346,26 @@ impl Arena {
       }
       (ArenaState::Prestart { ready: true }, _) => {
         if first {
-          info!("Prestart Ready!")
+          info!("Prestart Ready!");
+          if let Some(reqs) = &resource_requirements {
+            let mut resources = self.resources.lock().await;
+            reqs.request_ready(&mut resources);
+          }
         }
-        if let Some(ArenaSignal::MatchArm) = signal {
-          self.prepare_state_change(ArenaState::MatchArmed)?;
+        if let Some(ArenaSignal::MatchArm(force)) = signal {
+          if force || resources_ok {
+            self.prepare_state_change(ArenaState::MatchArmed)?;
+          } else {
+            bail!("Can't Arm Match unless all resources are ready");
+          }
         } else if let Some(ArenaSignal::Prestart) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false })?;
         }
       }
       (ArenaState::MatchArmed, _) => {
         if first {
-          info!("Match Armed!")
+          info!("Match Armed!");
+          self.resources.lock().await.reset_all();
         }
 
         if let Some(ArenaSignal::MatchPlay) = signal {
@@ -444,7 +377,13 @@ impl Arena {
         if first {
           info!("Match play!");
           self.audience_display = AudienceDisplay::MatchPlay;
+          // Create new records for this match
+          self.station_records = self.stations.iter().map(|_| vec![]).collect();
           m.start()?;
+        }
+
+        for (i, stn) in self.stations.iter().enumerate() {
+          self.station_records[i].push( models::StampedAllianceStationStatus::stamp(stn.clone(), &m) )
         }
 
         match m.current_state() {
@@ -457,7 +396,18 @@ impl Arena {
       }
       (ArenaState::MatchComplete { ready: false }, StateData::MatchComplete(maybe_recv)) => {
         if first {
-          info!("Match Complete... Resetting network.")
+          info!("Match Complete... Resetting network and saving records.");
+
+          let m = self.current_match.as_ref().unwrap();
+
+          let stn_records = std::mem::take(&mut self.station_records);
+          for (stn, record) in self.stations.iter().zip(stn_records.into_iter()) {
+            if let Some(team) = stn.team {
+              if let Err(e) = MatchStationStatusRecord::new(team, record, m.match_meta.id().unwrap()).insert(&db::database()) {
+                error!("Could not save match station record: {}", e)
+              }
+            }
+          }
         }
 
         if let Some(recv) = maybe_recv {

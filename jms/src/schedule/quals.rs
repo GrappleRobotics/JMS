@@ -1,11 +1,9 @@
 use std::error::Error;
 
 use crate::{db::{self, DBDateTime, TableType}, models::{self, MatchGenerationRecord, MatchGenerationRecordData, ScheduleBlock}};
+use jms_match_randomiser::{Annealer, GenerationResult, ScheduleGenerator, TeamSchedule};
 
-use super::{
-  randomiser::{Annealer, GenerationResult, ScheduleGenerator, TeamSchedule},
-  worker::MatchGenerator,
-};
+use super::worker::MatchGenerator;
 
 #[derive(Debug, Clone)]
 pub struct QualsMatchGenerator;
@@ -75,6 +73,7 @@ impl QualsMatchGenerator {
           score_time: None,
           winner: None,
           played: false,
+          ready: true
         };
         m.insert(&db::database())?;
         match_i += 1;

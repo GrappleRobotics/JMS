@@ -4,7 +4,7 @@ use genpdf::{
   style,
 };
 
-use crate::{db::{self, TableType}, models, reports::{pdf_table, render_header, report_pdf}};
+use crate::{db::{self, TableType, DBSingleton}, models, reports::{pdf_table, render_header, report_pdf}};
 
 fn render_team(team: Option<&Option<usize>>, highlight: Option<usize>, alliance: models::Alliance) -> style::StyledString {
   let team = team.and_then(|t| t.clone());

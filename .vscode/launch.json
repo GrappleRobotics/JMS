@@ -9,8 +9,14 @@
       "request": "launch",
       "name": "Debug",
       "program": "${workspaceFolder}/jms/target/debug/jms",
-      "args": ["--port", "9999"],
+      "args": ["--port", "9999", "-d", "--no-network"],
       "cwd": "${workspaceFolder}/jms"
+    },
+    {
+      "type": "lldb",
+      "request": "attach",
+      "pid": "${command:pickMyProcess}",
+      "name": "Attach"
     }
   ]
 }

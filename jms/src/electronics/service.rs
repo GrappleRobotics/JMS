@@ -3,35 +3,44 @@ use std::time::Duration;
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, time};
 use tokio_serial::SerialPortBuilderExt;
 
-use crate::{arena::{ArenaSignal, SharedArena, lighting::ArenaLighting, station::AllianceStationId}, models::{self, Alliance}, electronics::comms::{Packable, Unpackable}};
+use crate::{arena::{ArenaSignal, SharedArena, lighting::ArenaLighting, station::AllianceStationId, resource::{SharedResources, ResourceRole}}, models::{self, Alliance}, electronics::comms::{Packable, Unpackable}};
 
 use super::{ElectronicsMessageIn, ElectronicsMessageOut, AddressedElectronicsMessageOut, ElectronicsRole, AddressedElectronicsMessageIn, settings::{ElectronicsSettings, InnerElectronicsSettings}};
 
+const ELECTRONICS_RESOURCE_ID: &str = "__electronics__";
+
 pub struct FieldElectronicsService {
   arena: SharedArena,
+  resources: SharedResources,
   settings: ElectronicsSettings
 }
 
 impl FieldElectronicsService {
-  pub async fn new(arena: SharedArena, settings: ElectronicsSettings) -> Self {
+  pub async fn new(arena: SharedArena, resources: SharedResources, settings: ElectronicsSettings) -> Self {
     FieldElectronicsService {
       arena,
+      resources,
       settings,
     }
   }
 
-  pub async fn begin(&self) -> anyhow::Result<()> {
+  pub async fn begin(self) -> anyhow::Result<()> {
     match &self.settings.0 {
       Some(settings) => {
         info!("Starting Field Electronics Server");
         loop {
+          {
+            let mut r = self.resources.lock().await;
+            r.remove(ELECTRONICS_RESOURCE_ID);
+          }
+
           match self.start(settings).await {
             Err(err) => {
               self.arena.lock().await.signal(ArenaSignal::Estop).await;
               error!("Field Electronics Error: {}", err);
               tokio::time::sleep(Duration::from_millis(250)).await;
             },
-            Ok(_) => return Ok(())
+            Ok(_) => ()
           }
         }
       },
@@ -42,9 +51,15 @@ impl FieldElectronicsService {
   pub async fn start(&self, settings: &InnerElectronicsSettings) -> anyhow::Result<()> {
     let mut port = tokio_serial::new(&settings.port, settings.baud as u32).open_native_async()?;
     let mut send_interval = time::interval(Duration::from_millis(250));
-    let mut recv_timeout = time::interval(Duration::from_millis(500));
+    let mut recv_timeout = time::interval(Duration::from_millis(2000));
 
     recv_timeout.reset();
+
+    info!("Field Electronics Connected!");
+    {
+      let mut r = self.resources.lock().await;
+      r.register(ELECTRONICS_RESOURCE_ID, ResourceRole::FieldElectronics,  &None);
+    }
 
     loop {
       tokio::select! {
@@ -54,6 +69,7 @@ impl FieldElectronicsService {
           for msg in msgs {
             let mut buf = bytes::BytesMut::with_capacity(64);
             msg.pack(&mut buf);
+            
             port.write_u8(buf.len() as u8).await?;
             port.write_buf(&mut buf).await?;
           }

@@ -2,7 +2,7 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
-import { Alliance, AllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
 import BaseAudienceScene from "./BaseAudienceScene";
 
 type MatchProgressBarProps = {
@@ -65,7 +65,7 @@ type AllianceScoreProps = {
   has_rp: boolean,
   alliance: Alliance,
   score: SnapshotScore,
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   img?: string
 }
 
@@ -97,7 +97,7 @@ class AllianceScore extends React.PureComponent<AllianceScoreProps> {
         { score.derived.total_score }
         {
           withVal((has_rp && score.derived.total_bonus_rp) || undefined, bonus => <span className="total-score-bonus-rp">
-            +{ score.derived.total_bonus_rp } RP
+            +{ bonus } RP
           </span>)
         }
       </Col>
@@ -108,7 +108,7 @@ class AllianceScore extends React.PureComponent<AllianceScoreProps> {
 }
 
 type AudienceSceneMatchPlayState = {
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   match?: LoadedMatch,
   arenaState?: ArenaState
 };
@@ -202,7 +202,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
           <Row className="score-row">
             <AllianceScore
               alliance="red"
-              img="game/wide-white.png"
+              img="game/game.png"
               score={match.score.red}
               stations={stations.filter(s => s.station.alliance === "red")}
               has_rp={has_rp}

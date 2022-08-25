@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
+import { ALLIANCES } from "support/ws-additional";
 import { Alliance, DerivedScore, SerializedMatch, SnapshotScore } from "ws-schema";
 import AudienceCard from "./AudienceCard";
 import BaseAudienceScene from "./BaseAudienceScene";
@@ -121,7 +122,7 @@ export default class AudienceSceneMatchResults extends BaseAudienceScene<Audienc
 
       <Row className="results">
         {
-          ["red" as Alliance, "blue" as Alliance].map(alliance => <Col>
+          ALLIANCES.map(alliance => <Col>
             <Card data-alliance={alliance}>
               {
                 withVal(match[`${alliance}_alliance`], a => <Card.Header>

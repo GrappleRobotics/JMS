@@ -5,27 +5,25 @@ use ipnetwork::Ipv4Network;
 use tokio::try_join;
 
 use crate::arena::station::AllianceStationId;
-use crate::arena::AllianceStation;
+use crate::arena::station::AllianceStation;
 use crate::db::{self, TableType};
 use crate::models::{self, Alliance};
 use crate::network::radio::TeamRadioConfig;
 
 use self::settings::OnboardNetworkSettings;
 
+use super::ADMIN_IP;
+use super::ADMIN_ROUTER;
 use super::radio::FieldRadio;
 use super::NetworkProvider;
 
 pub mod dhcp;
 pub mod firewall;
-pub mod netlink;
 pub mod settings;
-
-const ADMIN_IP: &'static str = "10.0.100.5/24";
-const ADMIN_ROUTER: &'static str = "10.0.100.1/24";
 
 pub struct OnboardNetwork {
   settings: OnboardNetworkSettings,
-  nl_handle: rtnetlink::Handle,
+  nl_handle: jms_util::net::Handle,
   station_ifaces: HashMap<AllianceStationId, String>,
   radio: Option<FieldRadio>,
 }
@@ -54,14 +52,14 @@ impl OnboardNetwork {
 
     Ok(OnboardNetwork {
       settings,
-      nl_handle: netlink::handle()?,
+      nl_handle: jms_util::net::handle()?,
       station_ifaces,
       radio,
     })
   }
 
   async fn configure_ip_addrs(&self, stations: &[AllianceStation]) -> super::NetworkResult<()> {
-    netlink::configure_addresses(
+    jms_util::net::configure_addresses(
       &self.nl_handle,
       self.settings.iface_admin.as_str(),
       vec![
@@ -84,7 +82,7 @@ impl OnboardNetwork {
         addrs.push(self.team_ip(team)?)
       }
 
-      netlink::configure_addresses(&self.nl_handle, iface, addrs).await?;
+      jms_util::net::configure_addresses(&self.nl_handle, iface, addrs).await?;
     }
 
     Ok(())
@@ -122,6 +120,11 @@ impl OnboardNetwork {
       server: Some(self.v4_network(ADMIN_IP)?),
     };
 
+    let wan_cfg = firewall::WanConfig {
+      iface: self.settings.iface_wan.clone(),
+      access: self.settings.wan_access
+    };
+
     let station_cfgs: Vec<firewall::TeamFirewallConfig> = stations
       .iter()
       .map(|s| firewall::TeamFirewallConfig {
@@ -135,7 +138,7 @@ impl OnboardNetwork {
       })
       .collect();
 
-    firewall::configure_firewall(self.settings.iface_wan.clone(), admin_cfg, &station_cfgs[..]).await?;
+    firewall::configure_firewall(wan_cfg, admin_cfg, &station_cfgs[..]).await?;
 
     Ok(())
   }

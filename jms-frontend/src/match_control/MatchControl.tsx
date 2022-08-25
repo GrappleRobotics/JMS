@@ -1,14 +1,17 @@
+import { ResourceRequirementMinimap, ResourceRequirementMinimapAccordion } from 'components/ResourceComponents';
 import update from 'immutability-helper';
+import React from 'react';
 import { Button, Col, Container, Row } from "react-bootstrap";
+import { withVal } from 'support/util';
 import { WebsocketComponent } from "support/ws-component";
-import { AllianceStation, ArenaState, LoadedMatch, SerialisedMatchGeneration, SerializedMatch } from "ws-schema";
+import { SerialisedAllianceStation, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedMatchGeneration, SerializedMatch } from "ws-schema";
 import AllianceDash from "./Alliance";
 import MatchFlow from "./MatchFlow";
 import MatchScheduleView from "./MatchScheduleView";
 
 type FullArena = {
   state?: ArenaState,
-  stations?: AllianceStation[],
+  stations?: SerialisedAllianceStation[],
   match?: LoadedMatch,
 };
 
@@ -20,10 +23,11 @@ type FullMatches = {
 
 type MatchControlState = {
   arena: FullArena,
-  matches: FullMatches
+  matches: FullMatches,
+  resource_status?: ResourceRequirementStatus
 }
 
-export default class MatchControl extends WebsocketComponent<{}, MatchControlState> {
+export default class MatchControl extends WebsocketComponent<{ fta: boolean }, MatchControlState> {
   readonly state: MatchControlState = { arena: {}, matches: {} };
 
   componentDidMount = () => {
@@ -32,7 +36,7 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
       this.listenFn<ArenaState>("Arena/State/Current", 
         msg => this.setState(state => update(state, { arena: { state: { $set: msg } } }))),
       // Alliances
-      this.listenFn<AllianceStation[]>("Arena/Alliance/CurrentStations", 
+      this.listenFn<SerialisedAllianceStation[]>("Arena/Alliance/CurrentStations", 
         msg => this.setState(state => update(state, { arena: { stations: { $set: msg } } }))),
       // Current Match
       this.listenFn<LoadedMatch | null>("Arena/Match/Current", 
@@ -43,12 +47,13 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
       this.listenFn<SerialisedMatchGeneration>("Match/Playoffs/Generation", 
         msg => this.setState(state => update(state, { matches: { playoffs: { $set: msg.matches } } }))),
       this.listenFn<SerializedMatch | null>("Match/Next", 
-        msg => this.setState(state => update(state, { matches: { next: { $set: msg || undefined } } })))
+        msg => this.setState(state => update(state, { matches: { next: { $set: msg || undefined } } }))),
+      this.listen("Resource/Requirements/Current", "resource_status")
     ];
   }
 
   render() {
-    const { arena, matches } = this.state;
+    const { arena, matches, resource_status } = this.state;
     const has_match = !!arena.match;
 
     return <Container>
@@ -75,9 +80,9 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
         </Col>
       </Row>
       <br />
-      <Row >
-        <Col>
-          <Row>
+      <Row>
+        <Col className="match-control-main">
+          <Row className="match-control-alliances">
             <Col>
               <AllianceDash
                 colour="blue"
@@ -105,19 +110,27 @@ export default class MatchControl extends WebsocketComponent<{}, MatchControlSta
             matchLoaded={has_match}
             onSignal={sig => this.send({ Arena: { State: { Signal: sig } } })}
             onAudienceDisplay={scene => this.send({ Arena: { AudienceDisplay: { Set: scene } } })}
+            resources={ resource_status }
+            stations={arena.stations || []}
           />
         </Col>
-      </Row>
-      <br />
-      <Row>
-        <Col>
+        {
+          withVal(resource_status, status => <Col className="match-control-map" md="auto">
+            <Row>
+              <ResourceRequirementMinimap status={status} />
+            </Row>
+          </Col>)
+        }
+        <Col className="match-control-schedule">
           <MatchScheduleView
+            fta={this.props.fta}
             arenaState={arena.state}
             currentMatch={arena.match}
             quals={matches.quals || []}
             playoffs={matches.playoffs || []}
             nextMatch={matches.next}
             onLoadMatch={match_id => this.send({ Arena: { Match: { Load: match_id } } })}
+            onResetMatch={match_id => this.send({ Match: { Reset: match_id } })}
           />
         </Col>
       </Row>

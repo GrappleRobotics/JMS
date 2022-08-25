@@ -1,0 +1,7 @@
+{
+  "name": "JMS Field Management System",
+  "short_name": "FRC JMS",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
+}

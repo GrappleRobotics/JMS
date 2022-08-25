@@ -4,11 +4,19 @@
   "type": "object",
   "required": [
     "jms2ui",
+    "recv_meta",
+    "send_meta",
     "ui2jms"
   ],
   "properties": {
     "jms2ui": {
       "$ref": "#/definitions/WebsocketMessage2UI"
+    },
+    "recv_meta": {
+      "$ref": "#/definitions/RecvMeta"
+    },
+    "send_meta": {
+      "$ref": "#/definitions/SendMeta"
     },
     "ui2jms": {
       "$ref": "#/definitions/WebsocketMessage2JMS"
@@ -21,51 +29,6 @@
         "blue",
         "red"
       ]
-    },
-    "AllianceStation": {
-      "type": "object",
-      "required": [
-        "astop",
-        "bypass",
-        "estop",
-        "occupancy",
-        "station"
-      ],
-      "properties": {
-        "astop": {
-          "type": "boolean"
-        },
-        "bypass": {
-          "type": "boolean"
-        },
-        "ds_report": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/AllianceStationDSReport"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "estop": {
-          "type": "boolean"
-        },
-        "occupancy": {
-          "$ref": "#/definitions/AllianceStationOccupancy"
-        },
-        "station": {
-          "$ref": "#/definitions/AllianceStationId"
-        },
-        "team": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint16",
-          "minimum": 0.0
-        }
-      }
     },
     "AllianceStationDSReport": {
       "type": "object",
@@ -378,7 +341,7 @@
             "CurrentStations": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/AllianceStation"
+                "$ref": "#/definitions/SerialisedAllianceStation"
               }
             }
           },
@@ -426,7 +389,8 @@
             "Field",
             "MatchPreview",
             "MatchPlay",
-            "AllianceSelection"
+            "AllianceSelection",
+            "PlayoffBracket"
           ]
         },
         {
@@ -563,14 +527,29 @@
       ]
     },
     "ArenaSignal": {
-      "type": "string",
-      "enum": [
-        "Estop",
-        "EstopReset",
-        "Prestart",
-        "MatchArm",
-        "MatchPlay",
-        "MatchCommit"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Estop",
+            "EstopReset",
+            "Prestart",
+            "MatchPlay",
+            "MatchCommit"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "MatchArm"
+          ],
+          "properties": {
+            "MatchArm": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "ArenaState": {
@@ -794,6 +773,20 @@
         {
           "type": "object",
           "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "PlayoffBracket"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
             "params",
             "scene"
           ],
@@ -841,7 +834,7 @@
             "integer",
             "null"
           ],
-          "format": "uint",
+          "format": "uint64",
           "minimum": 0.0
         },
         "name": {
@@ -924,14 +917,60 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ReplyTest"
+          ],
+          "properties": {
+            "ReplyTest": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DebugMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "ReplyTest"
+          ],
+          "properties": {
+            "ReplyTest": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
     "DebugMessageMatch2JMS": {
-      "type": "string",
-      "enum": [
-        "FillRandomScores",
-        "DeleteAll"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "DeleteAll"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "FillRandomScores"
+          ],
+          "properties": {
+            "FillRandomScores": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "DerivedScore": {
@@ -1037,9 +1076,17 @@
     "EventDetails": {
       "type": "object",
       "required": [
+        "av_chroma_key",
+        "av_event_colour",
         "webcasts"
       ],
       "properties": {
+        "av_chroma_key": {
+          "type": "string"
+        },
+        "av_event_colour": {
+          "type": "string"
+        },
         "code": {
           "type": [
             "string",
@@ -1542,6 +1589,16 @@
         "match_meta": {
           "$ref": "#/definitions/SerializedMatch"
         },
+        "match_time": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "remaining_time": {
           "$ref": "#/definitions/Duration"
         },
@@ -1550,6 +1607,46 @@
         },
         "state": {
           "$ref": "#/definitions/MatchPlayState"
+        }
+      }
+    },
+    "MappedResourceQuota": {
+      "type": "object",
+      "required": [
+        "min",
+        "ready",
+        "resource_ids",
+        "satisfied",
+        "template"
+      ],
+      "properties": {
+        "max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "min": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "resource_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "satisfied": {
+          "type": "boolean"
+        },
+        "template": {
+          "$ref": "#/definitions/Resource"
         }
       }
     },
@@ -1702,6 +1799,18 @@
           "properties": {
             "Playoffs": {
               "$ref": "#/definitions/MatchMessagePlayoffs2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Reset"
+          ],
+          "properties": {
+            "Reset": {
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -1908,6 +2017,41 @@
         }
       }
     },
+    "MatchStationStatusRecord": {
+      "type": "object",
+      "required": [
+        "key",
+        "record"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/definitions/MatchStationStatusRecordKey"
+        },
+        "record": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StampedAllianceStationStatus"
+          }
+        }
+      }
+    },
+    "MatchStationStatusRecordKey": {
+      "type": "object",
+      "required": [
+        "match_id",
+        "team"
+      ],
+      "properties": {
+        "match_id": {
+          "type": "string"
+        },
+        "team": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
     "MatchSubtype": {
       "type": "string",
       "enum": [
@@ -1961,75 +2105,6 @@
       "enum": [
         "near",
         "far"
-      ]
-    },
-    "Panel": {
-      "type": "object",
-      "required": [
-        "fta",
-        "id",
-        "role"
-      ],
-      "properties": {
-        "fta": {
-          "type": "boolean"
-        },
-        "id": {
-          "type": "string"
-        },
-        "role": {
-          "$ref": "#/definitions/PanelRole"
-        }
-      }
-    },
-    "PanelRole": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": [
-            "Unknown",
-            "Scorekeeper",
-            "Monitor",
-            "Timer",
-            "AudienceDisplay"
-          ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "Referee"
-          ],
-          "properties": {
-            "Referee": {
-              "$ref": "#/definitions/RefereeID"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Scorer"
-          ],
-          "properties": {
-            "Scorer": {
-              "$ref": "#/definitions/ScorerID"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "EStop"
-          ],
-          "properties": {
-            "EStop": {
-              "$ref": "#/definitions/AllianceStationId"
-            }
-          },
-          "additionalProperties": false
-        }
       ]
     },
     "Penalties": {
@@ -2106,6 +2181,23 @@
         }
       }
     },
+    "RecvMeta": {
+      "type": "object",
+      "required": [
+        "msg",
+        "seq"
+      ],
+      "properties": {
+        "msg": {
+          "$ref": "#/definitions/WebsocketMessage2JMS"
+        },
+        "seq": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "RefereeID": {
       "oneOf": [
         {
@@ -2138,6 +2230,377 @@
         }
       ]
     },
+    "Resource": {
+      "type": "object",
+      "required": [
+        "role"
+      ],
+      "properties": {
+        "fta": {
+          "default": false,
+          "type": "boolean"
+        },
+        "ready": {
+          "default": false,
+          "type": "boolean"
+        },
+        "ready_requested": {
+          "default": false,
+          "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/definitions/ResourceRole"
+        }
+      }
+    },
+    "ResourceMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "SetID"
+          ],
+          "properties": {
+            "SetID": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetRole"
+          ],
+          "properties": {
+            "SetRole": {
+              "$ref": "#/definitions/ResourceRole"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetFTA"
+          ],
+          "properties": {
+            "SetFTA": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetReady"
+          ],
+          "properties": {
+            "SetReady": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Requirements"
+          ],
+          "properties": {
+            "Requirements": {
+              "$ref": "#/definitions/ResourceMessageRequirements2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TaggedResource"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/TaggedResource"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Requirements"
+          ],
+          "properties": {
+            "Requirements": {
+              "$ref": "#/definitions/ResourceMessageRequirements2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceMessageRequirements2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "SetActive"
+          ],
+          "properties": {
+            "SetActive": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/ResourceRequirements"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceMessageRequirements2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/ResourceRequirementStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceQuota": {
+      "type": "object",
+      "required": [
+        "min",
+        "template"
+      ],
+      "properties": {
+        "max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "min": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "template": {
+          "$ref": "#/definitions/Resource"
+        }
+      }
+    },
+    "ResourceRequirementStatus": {
+      "type": "object",
+      "required": [
+        "element",
+        "original",
+        "ready",
+        "satisfied"
+      ],
+      "properties": {
+        "element": {
+          "$ref": "#/definitions/ResourceRequirementStatusElement"
+        },
+        "original": {
+          "$ref": "#/definitions/ResourceRequirements"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "satisfied": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ResourceRequirementStatusElement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "And"
+          ],
+          "properties": {
+            "And": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirementStatus"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Or"
+          ],
+          "properties": {
+            "Or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirementStatus"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Quota"
+          ],
+          "properties": {
+            "Quota": {
+              "$ref": "#/definitions/MappedResourceQuota"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceRequirements": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "And"
+          ],
+          "properties": {
+            "And": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirements"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Or"
+          ],
+          "properties": {
+            "Or": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ResourceRequirements"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Quota"
+          ],
+          "properties": {
+            "Quota": {
+              "$ref": "#/definitions/ResourceQuota"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ResourceRole": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Unknown",
+            "Any",
+            "ScorekeeperPanel",
+            "MonitorPanel",
+            "TimerPanel",
+            "AudienceDisplay",
+            "FieldElectronics"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "RefereePanel"
+          ],
+          "properties": {
+            "RefereePanel": {
+              "$ref": "#/definitions/RefereeID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ScorerPanel"
+          ],
+          "properties": {
+            "ScorerPanel": {
+              "$ref": "#/definitions/ScorerID"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "TeamEStop"
+          ],
+          "properties": {
+            "TeamEStop": {
+              "$ref": "#/definitions/AllianceStationId"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "ScheduleBlock": {
       "type": "object",
       "required": [
@@ -2164,7 +2627,7 @@
             "integer",
             "null"
           ],
-          "format": "uint",
+          "format": "uint64",
           "minimum": 0.0
         },
         "name": {
@@ -2351,6 +2814,88 @@
         "CD"
       ]
     },
+    "SendMeta": {
+      "type": "object",
+      "required": [
+        "bcast",
+        "msg",
+        "seq"
+      ],
+      "properties": {
+        "bcast": {
+          "type": "boolean"
+        },
+        "msg": {
+          "$ref": "#/definitions/WebsocketMessage2UI"
+        },
+        "reply": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "seq": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "SerialisedAllianceStation": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "can_arm",
+        "ds_eth",
+        "estop",
+        "occupancy",
+        "station"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "can_arm": {
+          "type": "boolean"
+        },
+        "ds_eth": {
+          "type": "boolean"
+        },
+        "ds_report": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AllianceStationDSReport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "occupancy": {
+          "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "station": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
     "SerialisedMatchGeneration": {
       "type": "object",
       "required": [
@@ -2387,8 +2932,10 @@
         "match_type",
         "name",
         "played",
+        "ready",
         "red_teams",
-        "set_number"
+        "set_number",
+        "short_name"
       ],
       "properties": {
         "blue_alliance": {
@@ -2450,6 +2997,9 @@
         "played": {
           "type": "boolean"
         },
+        "ready": {
+          "type": "boolean"
+        },
         "red_alliance": {
           "type": [
             "integer",
@@ -2491,6 +3041,9 @@
           "format": "uint",
           "minimum": 0.0
         },
+        "short_name": {
+          "type": "string"
+        },
         "start_time": {
           "type": [
             "integer",
@@ -2522,6 +3075,147 @@
         },
         "live": {
           "$ref": "#/definitions/LiveScore"
+        }
+      }
+    },
+    "StampedAllianceStationStatus": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "ds_eth",
+        "estop",
+        "match_state",
+        "match_time",
+        "occupancy",
+        "station",
+        "time"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "ds_eth": {
+          "type": "boolean"
+        },
+        "ds_report": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AllianceStationDSReport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "match_state": {
+          "$ref": "#/definitions/MatchPlayState"
+        },
+        "match_time": {
+          "$ref": "#/definitions/Duration"
+        },
+        "occupancy": {
+          "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "station": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "time": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "SupportTicket": {
+      "type": "object",
+      "required": [
+        "author",
+        "issue_type",
+        "notes",
+        "resolved",
+        "team"
+      ],
+      "properties": {
+        "assigned_to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "author": {
+          "type": "string"
+        },
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "issue_type": {
+          "type": "string"
+        },
+        "match_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TicketComment"
+          }
+        },
+        "resolved": {
+          "type": "boolean"
+        },
+        "team": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "TaggedResource": {
+      "type": "object",
+      "required": [
+        "id",
+        "role"
+      ],
+      "properties": {
+        "fta": {
+          "default": false,
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "ready": {
+          "default": false,
+          "type": "boolean"
+        },
+        "ready_requested": {
+          "default": false,
+          "type": "boolean"
+        },
+        "role": {
+          "$ref": "#/definitions/ResourceRole"
         }
       }
     },
@@ -2636,25 +3330,153 @@
         }
       }
     },
-    "WebsocketMessage2JMS": {
+    "TicketComment": {
+      "type": "object",
+      "required": [
+        "author",
+        "comment",
+        "time"
+      ],
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "time": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "TicketMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Insert"
+          ],
+          "properties": {
+            "Insert": {
+              "$ref": "#/definitions/SupportTicket"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Logs"
+          ],
+          "properties": {
+            "Logs": {
+              "$ref": "#/definitions/TicketMessageLogs2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TicketMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "All"
+          ],
+          "properties": {
+            "All": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SupportTicket"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Logs"
+          ],
+          "properties": {
+            "Logs": {
+              "$ref": "#/definitions/TicketMessageLogs2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TicketMessageLogs2JMS": {
       "oneOf": [
         {
           "type": "string",
           "enum": [
-            "Ping"
+            "Keys"
           ]
         },
         {
           "type": "object",
           "required": [
-            "Panel"
+            "Load"
           ],
           "properties": {
-            "Panel": {
-              "$ref": "#/definitions/WebsocketMessagePanel2JMS"
+            "Load": {
+              "$ref": "#/definitions/MatchStationStatusRecordKey"
             }
           },
           "additionalProperties": false
+        }
+      ]
+    },
+    "TicketMessageLogs2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Keys"
+          ],
+          "properties": {
+            "Keys": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/MatchStationStatusRecordKey"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Load"
+          ],
+          "properties": {
+            "Load": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/MatchStationStatusRecord"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "WebsocketMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Ping",
+            "Pong"
+          ]
         },
         {
           "type": "object",
@@ -2718,6 +3540,30 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Resource"
+          ],
+          "properties": {
+            "Resource": {
+              "$ref": "#/definitions/ResourceMessage2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Ticket"
+          ],
+          "properties": {
+            "Ticket": {
+              "$ref": "#/definitions/TicketMessage2JMS"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -2726,20 +3572,9 @@
         {
           "type": "string",
           "enum": [
-            "Ping"
+            "Ping",
+            "Pong"
           ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "Panel"
-          ],
-          "properties": {
-            "Panel": {
-              "$ref": "#/definitions/WebsocketMessagePanel2UI"
-            }
-          },
-          "additionalProperties": false
         },
         {
           "type": "object",
@@ -2749,6 +3584,18 @@
           "properties": {
             "Error": {
               "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Debug"
+          ],
+          "properties": {
+            "Debug": {
+              "$ref": "#/definitions/DebugMessage2UI"
             }
           },
           "additionalProperties": false
@@ -2788,19 +3635,15 @@
             }
           },
           "additionalProperties": false
-        }
-      ]
-    },
-    "WebsocketMessagePanel2JMS": {
-      "oneOf": [
+        },
         {
           "type": "object",
           "required": [
-            "ID"
+            "Resource"
           ],
           "properties": {
-            "ID": {
-              "type": "string"
+            "Resource": {
+              "$ref": "#/definitions/ResourceMessage2UI"
             }
           },
           "additionalProperties": false
@@ -2808,57 +3651,11 @@
         {
           "type": "object",
           "required": [
-            "Role"
+            "Ticket"
           ],
           "properties": {
-            "Role": {
-              "$ref": "#/definitions/PanelRole"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "SetFTA"
-          ],
-          "properties": {
-            "SetFTA": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "WebsocketMessagePanel2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "All"
-          ],
-          "properties": {
-            "All": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/Panel"
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Current"
-          ],
-          "properties": {
-            "Current": {
-              "$ref": "#/definitions/Panel"
+            "Ticket": {
+              "$ref": "#/definitions/TicketMessage2UI"
             }
           },
           "additionalProperties": false

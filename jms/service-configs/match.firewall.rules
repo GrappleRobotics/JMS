@@ -1,6 +1,6 @@
 *nat
 
--A POSTROUTING -o {{ wan }} -j MASQUERADE
+-A POSTROUTING -o {{ wan.iface }} -j MASQUERADE
 
 COMMIT
 
@@ -14,16 +14,23 @@ COMMIT
 -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # Enable SSH on WAN
--A INPUT -p tcp -m state --state NEW --dport 22 -i {{ wan }} -j ACCEPT
+-A INPUT -p tcp -m state --state NEW --dport 22 -i {{ wan.iface }} -j ACCEPT
+
+# Enable JMS access on WAN (DEBUG)
+{{ #if wan.access }}
+-A INPUT -p tcp -m state --state NEW --dport 80 -i {{ wan.iface }} -j ACCEPT
+-A INPUT -p tcp -m state --state NEW --dport 3000 -i {{ wan.iface }} -j ACCEPT
+-A INPUT -p tcp -m state --state NEW --dport 9000 -i {{ wan.iface }} -j ACCEPT
+{{ /if }}
 
 # ADMIN Network Rules
 #   Allow access to whole admin network (as multiple addresses are served by this host)
 #   Allow outbound internet access
 -A INPUT -i {{ admin.iface }} -d {{ network admin.router }}/{{ netmask admin.router }} -j ACCEPT
--A FORWARD -i {{ admin.iface }} -o {{ wan }} -j ACCEPT
--A FORWARD -i {{ wan }} -o {{ admin.iface }} -j ACCEPT
-# -A FORWARD -o {{ wan }} -j ACCEPT
-# -A FORWARD -m state --state ESTABLISHED,RELATED -i {{ wan }} -j ACCEPT
+-A FORWARD -i {{ admin.iface }} -o {{ wan.iface }} -j ACCEPT
+-A FORWARD -i {{ wan.iface }} -o {{ admin.iface }} -j ACCEPT
+# -A FORWARD -o {{ wan.iface }} -j ACCEPT
+# -A FORWARD -m state --state ESTABLISHED,RELATED -i {{ wan.iface }} -j ACCEPT
 
 # Robot Networks - Router and Server access ONLY
 {{ #each stations }}

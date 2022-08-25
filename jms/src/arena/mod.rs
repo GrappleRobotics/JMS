@@ -9,4 +9,4 @@ pub mod station;
 
 pub mod lighting;
 
-pub mod panel;
+pub mod resource;

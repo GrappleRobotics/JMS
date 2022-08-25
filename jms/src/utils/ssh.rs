@@ -12,7 +12,7 @@ impl SSHSession {
     let user = user.to_owned();
     let password = password.to_owned();
 
-    tokio::spawn(async move {
+    tokio::task::spawn_blocking(move || {
       let tcp = std::net::TcpStream::connect(addr)?;
       let mut session = ssh2::Session::new()?;
       session.set_tcp_stream(tcp);
@@ -28,7 +28,7 @@ impl SSHSession {
     let command = command.to_owned();
     let session = self.session.clone();
 
-    tokio::spawn(async move {
+    tokio::task::spawn_blocking(move || {
       let mut channel = session.channel_session()?;
       channel.exec(&command)?;
 

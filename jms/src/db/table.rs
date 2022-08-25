@@ -1,14 +1,44 @@
 use std::marker::PhantomData;
 
-use super::types;
-use super::types::Key;
+use super::{FromRaw, ToRaw, Json};
+
+pub trait DBSingleton: serde::Serialize + serde::de::DeserializeOwned {
+  const ID: &'static str;
+
+  fn db_default() -> super::Result<Self>;
+
+  fn get(db: &super::Store) -> super::Result<Self> {
+    let tree = db.db.open_tree("__singletons__")?;
+    match tree.get(Self::ID)? {
+      Some(v) => Ok(Json::<Self>::from_raw(&v).0),
+      None => {
+        let mut v = Self::db_default()?;
+        v.insert(db)?;
+        Ok(v)
+      }
+    }
+  }
+
+  fn insert<'a>(&'a mut self, db: &super::Store) -> super::Result<&'a Self> {
+    let tree = db.db.open_tree("__singletons__")?;
+    let js = Json(self);
+    tree.insert(Self::ID, js.to_raw())?;
+    Ok(js.0)
+  }
+
+  fn watch(db: &super::Store) -> super::Result<Watch<Self>> {
+    let tree = db.db.open_tree("__singletons__")?;
+    Ok(Watch(tree.watch_prefix(Self::ID), PhantomData))
+  }
+}
 
 pub trait TableType: serde::Serialize + serde::de::DeserializeOwned {
   const TABLE: &'static str;
-  type Id: types::Key;
+  type Id: ToRaw + FromRaw;
 
   fn id(&self) -> Option<Self::Id>;
-  fn set_id(&mut self, id: Self::Id);
+
+  fn generate_id(&mut self, _: &super::Store) -> super::Result<()> { Ok(()) }
 
   fn table(db: &super::Store) -> super::Result<Table<Self>> {
     Table::<Self>::instance(db)
@@ -28,17 +58,35 @@ pub trait TableType: serde::Serialize + serde::de::DeserializeOwned {
 
   fn remove_by<X: Into<Self::Id>>(id: X, db: &super::Store) -> super::Result<Option<Self>> {
     let t = Self::table(db)?;
-    t.remove(id)
+    Ok(t.remove(id)?.map(|x| x.data))
+  }
+
+  fn first(db: &super::Store) -> super::Result<Option<Self>> {
+    let t = Self::table(db)?;
+    Ok(t.first()?.map(|x| x.data))
   }
 
   fn all(db: &super::Store) -> super::Result<Vec<Self>> {
     let t = Self::table(db)?;
-    t.all()
+    t.iter_values().collect()
+  }
+  
+  fn keys(db: &super::Store) -> super::Result<Vec<Self::Id>> {
+    let t = Self::table(db)?;
+    t.iter().map(|r| r.map(|x| x.0)).collect()
   }
 
   fn get<X: Into<Self::Id>>(id: X, db: &super::Store) -> super::Result<Option<Self>> {
     let t = Self::table(db)?;
-    t.get(id)
+    Ok(t.get(id)?.map(|x| x.data))
+  }
+
+  fn get_all<I, X>(ids: I, db: &super::Store) -> super::Result<Vec<Option<Self>>>
+  where
+    X: Into<Self::Id> + Clone,
+    I: Iterator<Item = X>
+  {
+    ids.map(|id| Self::get(id, db)).collect()
   }
 
   fn get_or_err<X: Into<Self::Id> + std::fmt::Debug + Clone>(id: X, db: &super::Store) -> super::Result<Self> {
@@ -54,11 +102,41 @@ pub trait TableType: serde::Serialize + serde::de::DeserializeOwned {
   }
 }
 
+// impl<T: TableType> ToRaw for T {
+//   fn to_raw(&self) -> Vec<u8> {
+//     Json(self).to_raw()
+//   }
+// }
+
+// impl<T: TableType> FromRaw for T {
+//   fn from_raw(r: &[u8]) -> Self {
+//     Json::<T>::from_raw(r).0
+//   }
+// }
+
 #[derive(Clone)]
-pub struct Table<T: TableType>(pub sled::Tree, PhantomData<T>);
+pub struct Table<T>(pub sled::Tree, PhantomData<T>);
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Decorated<T> {
+  pub data: T,
+  pub new: bool
+}
+
+impl<T: serde::Serialize> ToRaw for Decorated<T> {
+  fn to_raw(&self) -> Vec<u8> {
+    Json(self).to_raw()
+  }
+}
+
+impl<T> FromRaw for Decorated<T> where for<'a> T: serde::Deserialize<'a> {
+  fn from_raw(r: &[u8]) -> Self {
+    Json::<Decorated<T>>::from_raw(r).0
+  }
+}
 
 #[allow(dead_code)]
-impl<'a, T: TableType> Table<T> {  
+impl<'a, T: TableType> Table<T> {   
   pub fn new(t: sled::Tree) -> Self {
     Self(t, PhantomData)
   }
@@ -72,67 +150,70 @@ impl<'a, T: TableType> Table<T> {
   }
 
   pub fn contains<X: Into<T::Id>>(&self, key: X) -> super::Result<bool> {
-    Ok(self.0.contains_key(key.into())?)
+    let k: T::Id = key.into();
+    Ok(self.0.contains_key(k.to_raw())?)
   }
 
-  pub fn get<X: Into<T::Id>>(&self, key: X) -> super::Result<Option<T>> {
-    let v = self.0.get(key.into())?;
-    Ok(match v {
-      Some(v) => Some(serde_json::from_slice(&v)?),
-      None => None,
-    })
+  pub fn get<X: Into<T::Id>>(&self, key: X) -> super::Result<Option<Decorated<T>>> {
+    let k: T::Id = key.into();
+    Ok(self.0.get(k.to_raw())?.map(|v| Decorated::<T>::from_raw(&v)))
   }
 
   pub fn insert<'v>(&self, db: &super::Store, value: &'v mut T) -> super::Result<&'v T> {
     let key = match value.id() {
       Some(id) => id,
       None => {
-        let new_id = T::Id::generate(db);
-        value.set_id(new_id.clone());
-        new_id
+        value.generate_id(&db)?;
+
+        match value.id() {
+          Some(id) => id,
+          None => anyhow::bail!("No ID given or generated during insert")
+        }
       },
     };
 
-    let bytes = serde_json::to_vec(&value)?;
-    self.0.insert(key.as_ref(), bytes)?;
+    
+    self.0.insert(key.to_raw(), Decorated::<&T> {
+      data: value,
+      new: !self.0.contains_key(key.to_raw())?
+    }.to_raw())?;
     Ok(value)
   }
 
-  pub fn remove<X: Into<T::Id>>(&self, key: X) -> super::Result<Option<T>> {
-    let removed = self.0.remove(key.into())?;
-    Ok(match removed {
-      Some(v) => Some(serde_json::from_slice(&v)?),
-      None => None,
-    })
+  pub fn remove<X: Into<T::Id>>(&self, key: X) -> super::Result<Option<Decorated<T>>> {
+    let k: T::Id = key.into();
+    let removed = self.0.remove(k.to_raw())?;
+    Ok(removed.map(|r| Decorated::<T>::from_raw(&r)))
   }
 
-  pub fn first(&self) -> super::Result<Option<T>> {
-    let f = self.0.first()?;
-    Ok(match f {
-      Some((_, v)) => Some(serde_json::from_slice(&v)?),
-      None => None,
-    })
+  pub fn first(&self) -> super::Result<Option<Decorated<T>>> {
+    Ok(self.0.first()?.map(|(_, v)| Decorated::<T>::from_raw(&v)))
   }
 
-  pub fn iter(&self) -> Iter<T> {
-    Iter(self.0.iter(), PhantomData)
+  pub fn iter(&self) -> impl DoubleEndedIterator<Item = super::Result<(T::Id, Decorated<T>)>> {
+    // Iter(self.0.iter(), PhantomData)
+    self.0.iter().map(|el| el.map_err(|e| anyhow::anyhow!(e)).map(|(k, v)| ( T::Id::from_raw(&k), Decorated::<T>::from_raw(&v) ) ) )
   }
 
-  pub fn all(&self) -> super::Result<Vec<T>> {
-    self.iter().collect()
+  pub fn iter_data(&self) -> impl DoubleEndedIterator<Item = super::Result<(T::Id, T)>> {
+    self.iter().map(|x| x.map(|d| (d.0, d.1.data)))
   }
 
-  pub fn watch_prefix<X: Into<T::Id>>(&self, prefix: X) -> Watch<T> {
-    Watch(self.0.watch_prefix(prefix.into()), PhantomData)
+  pub fn iter_values(&self) -> impl DoubleEndedIterator<Item = super::Result<T>> {
+    self.iter_data().map(|x| x.map(|d| d.1))
   }
 
-  pub fn watch_all(&self) -> Watch<T> {
+  pub fn iter_keys(&self) -> impl DoubleEndedIterator<Item = super::Result<T::Id>> {
+    self.iter().map(|r| r.map(|(k, _)| k))
+  }
+
+  pub fn watch_prefix<X: Into<T::Id>>(&self, prefix: X) -> Watch<Decorated<T>> {
+    let pfx: T::Id = prefix.into();
+    Watch(self.0.watch_prefix(pfx.to_raw()), PhantomData)
+  }
+
+  pub fn watch_all(&self) -> Watch<Decorated<T>> {
     Watch(self.0.watch_prefix(vec![]), PhantomData)
-  }
-
-  pub fn apply_batch(&self, batch: Batch<T>) -> super::Result<()> {
-    self.0.apply_batch(batch.0)?;
-    Ok(())
   }
 
   // TODO: Transaction
@@ -159,64 +240,102 @@ impl<'a, T: TableType> Table<T> {
   }
 }
 
-pub struct Iter<T>(sled::Iter, PhantomData<T>);
 
-impl<T: TableType> Iterator for Iter<T> {
-  type Item = super::Result<T>;
+// pub struct FromRawIter<I: Iterator, T: FromRaw>(I, PhantomData<T>);
 
-  fn next(&mut self) -> Option<Self::Item> {
-    match self.0.next() {
-      Some(Ok((_, v))) => {
-        match serde_json::from_slice(&v) {
-          Ok(dat) => Some(Ok(dat)),
-          Err(e) => Some(Err(e.into())),
-        }
-      },
-      Some(Err(e)) => Some(Err(e.into())),
-      None => None,
-    }
-  }
-}
+// impl<T: FromRaw, I: Iterator> Iterator for FromRawIter<I, T> 
+// where
+//   T: FromRaw,
+//   I: Iterator,
+//   <I as Iterator>::Item: super::Result<sled::IVec>
+// {
+//   type Item = super::Result<T>;
 
-impl<T: TableType> DoubleEndedIterator for Iter<T> {
-  fn next_back(&mut self) -> Option<Self::Item> {
-    match self.0.next_back() {
-      Some(Ok((_, v))) => {
-        match serde_json::from_slice(&v) {
-          Ok(dat) => Some(Ok(dat)),
-          Err(e) => Some(Err(e.into())),
-        }
-      },
-      Some(Err(e)) => Some(Err(e.into())),
-      None => None,
-    }
-  }
-}
+//   fn next(&mut self) -> Option<Self::Item> {
+//     match self.0.next() {
+//       Some(v) => todo!(),
+//       None => None,
+//     }
+//   }
+// }
+
+// impl<T: TableType> Iterator for Iter<T> {
+//   type Item = super::Result<T>;
+
+//   fn next(&mut self) -> Option<Self::Item> {
+//     match self.0.next() {
+//       Some(Ok((_, v))) => {
+//         match serde_json::from_slice(&v) {
+//           Ok(dat) => Some(Ok(dat)),
+//           Err(e) => Some(Err(e.into())),
+//         }
+//       },
+//       Some(Err(e)) => Some(Err(e.into())),
+//       None => None,
+//     }
+//   }
+// }
+
+// impl<T: TableType> DoubleEndedIterator for Iter<T> {
+//   fn next_back(&mut self) -> Option<Self::Item> {
+//     match self.0.next_back() {
+//       Some(Ok((_, v))) => {
+//         match serde_json::from_slice(&v) {
+//           Ok(dat) => Some(Ok(dat)),
+//           Err(e) => Some(Err(e.into())),
+//         }
+//       },
+//       Some(Err(e)) => Some(Err(e.into())),
+//       None => None,
+//     }
+//   }
+// }
 
 pub struct Watch<T>(sled::Subscriber, PhantomData<T>);
 
-impl<T: TableType> Watch<T> {
+impl<T: TableType> Watch<Decorated<T>> {
   pub async fn get(&mut self) -> super::Result<WatchEvent<T>> {
     let i = (&mut self.0).await;
     match i {
       Some(sled::Event::Insert { key: _, value }) => {
-        match serde_json::from_slice(&value) {
-          Ok(dat) => Ok(WatchEvent::Insert(dat)),
-          Err(e) => Err(e.into()),
-        }
+        Ok(WatchEvent::Insert(Decorated::<T>::from_raw(&value)))
       },
       Some(sled::Event::Remove { key }) => {
-        let a: &[u8] = key.as_ref();
-        Ok(WatchEvent::Remove(T::Id::from_raw(a)))
+        Ok(WatchEvent::Remove(T::Id::from_raw(&key)))
       },
       None => Err(anyhow::anyhow!("No Data!")),
     }
   }
 }
 
+impl<T: DBSingleton> Watch<T> {
+  pub async fn get(&mut self) -> super::Result<WatchEventSingleton<T>> {
+    loop {
+      let i = (&mut self.0).await;
+      match i {
+        Some(sled::Event::Insert { key, value }) if key == T::ID => {
+          return Ok(WatchEventSingleton::Insert(Json::<T>::from_raw(&value).0));
+        },
+        Some(sled::Event::Remove { key }) if key == T::ID => {
+          return Ok(WatchEventSingleton::Remove);
+        },
+        Some(_) => (),  // Wrong prefix - try again
+        None => {
+          return Err(anyhow::anyhow!("No Data!"));
+        }
+      }
+    }
+  }
+}
+
 pub enum WatchEvent<T: TableType> {
-  Insert(T),
+  Insert(Decorated<T>),
   Remove(T::Id)
+}
+
+pub enum WatchEventSingleton<T: DBSingleton> {
+  Insert(T),
+  Remove
 }
 
 impl<T: TableType> Iterator for Watch<T> {
@@ -236,35 +355,5 @@ impl<T: TableType> Iterator for Watch<T> {
       },
       None => None,
     }
-  }
-}
-
-pub struct Batch<T>(sled::Batch, PhantomData<T>);
-
-#[allow(dead_code)]
-impl<T: TableType> Batch<T> {
-  pub fn new() -> Self {
-    Self(sled::Batch::default(), PhantomData)
-  }
-
-  pub fn insert<'a>(&mut self, db: &super::Store, value: &'a mut T) -> super::Result<&'a T> {
-    let key = match value.id() {
-      Some(id) => id,
-      None => {
-        let new_id = T::Id::generate(db);
-        value.set_id(new_id.clone());
-        new_id
-      },
-    };
-
-    let bytes = serde_json::to_vec(&value)?;
-    self.0.insert(key.as_ref(), bytes);
-    Ok(value)
-  }
-
-  pub fn remove<X: Into<T::Id>>(&mut self, key: X) -> super::Result<()> {
-    let a: T::Id = key.into();
-    self.0.remove(a.as_ref());
-    Ok(())
   }
 }

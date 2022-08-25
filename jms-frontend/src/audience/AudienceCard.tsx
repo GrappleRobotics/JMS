@@ -15,7 +15,7 @@ export default class AudienceCard extends React.PureComponent<AudienceCardProps>
       <div className="audience-card-inner">
         <Row className="event-name">
           <Col md="auto">
-            <img src="/img/game/wide-black.png" />
+            <img src="/img/game/game.png" />
           </Col>
           <Col className="d-flex align-items-center justify-content-center">
             { event_name || "" }
