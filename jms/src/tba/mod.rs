@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use anyhow::bail;
 
-use crate::{config::Interactive, db::{self, TableType}, models};
+use crate::{config::Interactive, db::{self, TableType, DBSingleton}, models};
 
 pub mod eventinfo;
 pub mod alliances;
@@ -66,7 +66,7 @@ impl TBAWorker {
 
   pub async fn run(&self) -> anyhow::Result<()> {
     let db = db::database();
-    let mut details = models::EventDetails::table(db)?.watch_all();
+    let mut details = models::EventDetails::watch(db)?;
     let mut teams = models::Team::table(db)?.watch_all();
     let mut matches = models::Match::table(db)?.watch_all();
     let mut rankings = models::TeamRanking::table(db)?.watch_all();

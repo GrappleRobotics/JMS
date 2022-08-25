@@ -3,7 +3,7 @@ use super::table::{Table, TableType};
 #[allow(dead_code)]
 pub struct Store {
   config: sled::Config,
-  db: sled::Db,
+  pub(crate) db: sled::Db,
 }
 
 #[allow(dead_code)]

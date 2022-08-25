@@ -1,6 +1,6 @@
 use jms_macros::define_websocket_msg;
 
-use crate::{arena::resource::{TaggedResource, ResourceRole, ResourceRequirementStatus, SharedResources, ResourceRequirements}, models::{FTAKey, DBResourceRequirements}, db::{self, TableType}};
+use crate::{arena::resource::{TaggedResource, ResourceRole, ResourceRequirementStatus, SharedResources, ResourceRequirements}, models::{FTAKey, DBResourceRequirements}, db::{self, DBSingleton}};
 
 use super::{ws::{WebsocketHandler, WebsocketContext, Websocket}, WebsocketMessage2JMS};
 

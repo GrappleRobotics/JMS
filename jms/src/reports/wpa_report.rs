@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::{db::{self, TableType}, models, reports::{pdf_table, report_pdf}};
+use crate::{db::{self, TableType, DBSingleton}, models, reports::{pdf_table, report_pdf}};
 
 pub fn wpa_report() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
   let mut buf = vec![];

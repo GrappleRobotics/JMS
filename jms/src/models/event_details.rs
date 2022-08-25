@@ -1,4 +1,4 @@
-use crate::db::{self, TableType};
+use crate::db::{DBSingleton, self};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct EventDetails {
@@ -9,26 +9,10 @@ pub struct EventDetails {
   pub av_event_colour: String
 }
 
-impl db::TableType for EventDetails {
-  const TABLE: &'static str = "event_details";
-  type Id = db::Integer;
+impl DBSingleton for EventDetails {
+  const ID: &'static str = "event_details";
 
-  fn id(&self) -> Option<Self::Id> {
-    Some(1.into())
-  }
-}
-
-impl EventDetails {
-  pub fn get(store: &db::Store) -> db::Result<EventDetails> {
-    // let first = Self::table(store)?.first()?;
-
-    match Self::first(store)? {
-      Some(ed) => Ok(ed),
-      None => {
-        let mut ed = EventDetails { code: None, event_name: None, webcasts: vec![], av_chroma_key: "#f0f".to_owned(), av_event_colour: "#e9ab01".to_owned() };
-        ed.insert(store)?;
-        Ok(ed)
-      },
-    }
+  fn db_default() -> db::Result<Self> {
+    Ok(Self { code: None, event_name: None, webcasts: vec![], av_chroma_key: "#f0f".to_owned(), av_event_colour: "#e9ab01".to_owned() })
   }
 }

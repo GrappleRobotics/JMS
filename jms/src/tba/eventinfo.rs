@@ -1,4 +1,4 @@
-use crate::{db::{self, TableType}, models};
+use crate::{db::{self, TableType, DBSingleton}, models};
 
 use super::TBAClient;
 

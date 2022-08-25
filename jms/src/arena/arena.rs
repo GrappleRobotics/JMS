@@ -16,7 +16,7 @@ use tokio::sync::Mutex;
 
 use super::{exceptions::ArenaIllegalStateChange, lighting::{ArenaLighting, LightMode}, matches::MatchPlayState, station::{AllianceStationId, AllianceStation}, resource::SharedResources};
 
-use crate::{arena::{exceptions::CannotLoadMatchError, lighting::ArenaLightingSettings}, log_expect, models::{self, Alliance, MatchType, DBResourceRequirements, MatchStationStatusRecord, StationStatusRecord}, network::{NetworkProvider, NetworkResult}, db::{self, TableType}};
+use crate::{arena::{exceptions::CannotLoadMatchError, lighting::ArenaLightingSettings}, log_expect, models::{self, Alliance, MatchType, DBResourceRequirements, MatchStationStatusRecord, StationStatusRecord}, network::{NetworkProvider, NetworkResult}, db::{self, TableType, DBSingleton}};
 
 use serde::{Deserialize, Serialize};
 

@@ -2,6 +2,36 @@ use std::marker::PhantomData;
 
 use super::{FromRaw, ToRaw, Json};
 
+pub trait DBSingleton: serde::Serialize + serde::de::DeserializeOwned {
+  const ID: &'static str;
+
+  fn db_default() -> super::Result<Self>;
+
+  fn get(db: &super::Store) -> super::Result<Self> {
+    let tree = db.db.open_tree("__singletons__")?;
+    match tree.get(Self::ID)? {
+      Some(v) => Ok(Json::<Self>::from_raw(&v).0),
+      None => {
+        let mut v = Self::db_default()?;
+        v.insert(db)?;
+        Ok(v)
+      }
+    }
+  }
+
+  fn insert<'a>(&'a mut self, db: &super::Store) -> super::Result<&'a Self> {
+    let tree = db.db.open_tree("__singletons__")?;
+    let js = Json(self);
+    tree.insert(Self::ID, js.to_raw())?;
+    Ok(js.0)
+  }
+
+  fn watch(db: &super::Store) -> super::Result<Watch<Self>> {
+    let tree = db.db.open_tree("__singletons__")?;
+    Ok(Watch(tree.watch_prefix(Self::ID), PhantomData))
+  }
+}
+
 pub trait TableType: serde::Serialize + serde::de::DeserializeOwned {
   const TABLE: &'static str;
   type Id: ToRaw + FromRaw;
@@ -278,9 +308,34 @@ impl<T: TableType> Watch<Decorated<T>> {
   }
 }
 
+impl<T: DBSingleton> Watch<T> {
+  pub async fn get(&mut self) -> super::Result<WatchEventSingleton<T>> {
+    loop {
+      let i = (&mut self.0).await;
+      match i {
+        Some(sled::Event::Insert { key, value }) if key == T::ID => {
+          return Ok(WatchEventSingleton::Insert(Json::<T>::from_raw(&value).0));
+        },
+        Some(sled::Event::Remove { key }) if key == T::ID => {
+          return Ok(WatchEventSingleton::Remove);
+        },
+        Some(_) => (),  // Wrong prefix - try again
+        None => {
+          return Err(anyhow::anyhow!("No Data!"));
+        }
+      }
+    }
+  }
+}
+
 pub enum WatchEvent<T: TableType> {
   Insert(Decorated<T>),
   Remove(T::Id)
+}
+
+pub enum WatchEventSingleton<T: DBSingleton> {
+  Insert(T),
+  Remove
 }
 
 impl<T: TableType> Iterator for Watch<T> {

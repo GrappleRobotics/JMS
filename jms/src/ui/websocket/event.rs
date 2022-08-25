@@ -1,7 +1,7 @@
 use chrono::{Local, TimeZone, NaiveDateTime};
 use jms_macros::define_websocket_msg;
 
-use crate::{db::{self, TableType}, models};
+use crate::{db::{self, TableType, DBSingleton}, models};
 
 use super::{ws::{WebsocketHandler, Websocket, WebsocketContext}, WebsocketMessage2JMS};
 
