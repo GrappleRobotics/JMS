@@ -1,5 +1,6 @@
 #pragma once
-
+#include "config.h"
+// #if NODE_TYPE==0
 #include <InterruptButton.h>
 #include "NodeBase/NodeBase.h"
 
@@ -24,3 +25,4 @@ class ScoringTable : public NodeBase {
 
   InterruptButton *e_mst;
 };
+// #endif
