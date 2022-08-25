@@ -1,19 +1,20 @@
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EnumToggleGroup from "components/elements/EnumToggleGroup";
-import FieldPosSelector from "components/FieldPosSelector";
+import { FieldResourceSelector } from "components/FieldPosSelector";
 import _ from "lodash";
 import React from "react";
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { Link, Route, Routes } from "react-router-dom";
 import { capitalise } from "support/strings";
 import { otherAlliance, withVal } from "support/util";
+import { ALLIANCES, NEAR_FAR } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { Alliance, AllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
 
 type RefereePanelState = {
   match?: LoadedMatch,
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   access?: ArenaAccessRestriction,
   state?: ArenaState
 }
@@ -86,7 +87,7 @@ abstract class RefereePanelBase<P={}> extends WebsocketComponent<P, RefereePanel
 
 type RefereeTeamCardProps = {
   idx: number,
-  station: AllianceStation,
+  station: SerialisedAllianceStation,
   score: SnapshotScore,
   update: ( data: ScoreUpdate ) => void,
   endgame: boolean
@@ -274,23 +275,19 @@ export class HeadReferee extends RefereePanelBase {
 
 class RefereeSelector extends React.PureComponent {
   render() {
-    return <FieldPosSelector className="referee-selector" title="Referee Selection">
-      {
-        [ "blue", "red" ].map(alliance => [ "near", "far" ].map(position => (
-          <Link to={`${alliance}/${position}`}>
-            <Button data-alliance={alliance} data-position={position}>
-              { capitalise(alliance) } { capitalise(position) }
-            </Button>
-          </Link>
-        )))
-      }
-
-      <Link to="head">
-        <Button data-head-referee="true">
-          Head Referee
-        </Button>
-      </Link>
-    </FieldPosSelector>
+    return <Col className="col-full">
+      <FieldResourceSelector
+        title="Select Referee"
+        options={[
+          { RefereePanel: "HeadReferee" },
+          { RefereePanel: { Alliance: [ "red", "near" ] } },
+          { RefereePanel: { Alliance: [ "red", "far" ] } },
+          { RefereePanel: { Alliance: [ "blue", "near" ] } },
+          { RefereePanel: { Alliance: [ "blue", "far" ] } },
+        ]}
+        wrap={(r, child) => <Link to={r.RefereePanel === "HeadReferee" ? "head" : `${r.RefereePanel.Alliance.join("/")}`}> { child } </Link>}
+      />
+    </Col>
   }
 }
 
@@ -298,12 +295,12 @@ export function RefereeRouter() {
   return <Routes>
     <Route path="/" element={ <RefereeSelector /> } />
     {
-      ["red" as Alliance, "blue" as Alliance].map(alliance => ["near" as NearFar, "far" as NearFar].map(nearfar => (
+      ALLIANCES.map(alliance => NEAR_FAR.map(nearfar => (
         <Route path={`${alliance}/${nearfar}`} element={
-          withRole({ Referee: { Alliance: [ alliance, nearfar ] } }, <AllianceReferee alliance={alliance} position={nearfar} />)
+          withRole({ RefereePanel: { Alliance: [ alliance, nearfar ] } }, <AllianceReferee alliance={alliance} position={nearfar} />)
         } />
       )))
     }
-    <Route path="head" element={ withRole({ Referee: "HeadReferee" }, <HeadReferee />) } />
+    <Route path="head" element={ withRole({ RefereePanel: "HeadReferee" }, <HeadReferee />) } />
   </Routes>
 }

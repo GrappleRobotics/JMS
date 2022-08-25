@@ -1,4 +1,4 @@
-use crate::{db::{self, TableType}, models};
+use crate::{db::{self, TableType, DBSingleton}, models};
 
 use super::TBAClient;
 
@@ -25,7 +25,7 @@ pub struct TBAWebcast {
 #[derive(serde::Serialize, Debug, Clone)]
 pub struct TBAEventInfoUpdate {
   pub first_code: Option<String>,
-  pub playoff_type: Option<TBAPlayoffType>,
+  pub playoff_type: TBAPlayoffType,
   pub webcasts: Vec<TBAWebcast>
 }
 
@@ -35,7 +35,7 @@ impl TBAEventInfoUpdate {
     if let Some(code) = ed.code {
       let update = TBAEventInfoUpdate {
         first_code: Some(code[4..].to_owned()),   // Substring away the year
-        playoff_type: Self::playoff_type(db)?,
+        playoff_type: Self::playoff_type(db)?.unwrap_or(TBAPlayoffType::Bracket8),
         webcasts: ed.webcasts.iter().map(|wc| TBAWebcast { url: wc.clone() }).collect()
       };
 

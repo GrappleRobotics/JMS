@@ -1,5 +1,6 @@
 import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { withConfirm } from "components/elements/Confirm";
 import moment from "moment";
 import { EVENT_WIZARD } from "paths";
 import React from "react";
@@ -12,7 +13,9 @@ type MatchScheduleProps = {
   quals: SerializedMatch[],
   playoffs: SerializedMatch[],
   nextMatch?: SerializedMatch,
-  onLoadMatch: (id: string) => void
+  fta: boolean,
+  onLoadMatch: (id: string) => void,
+  onResetMatch: (id: string) => void,
 }
 
 export default class MatchScheduleView extends React.Component<MatchScheduleProps> {
@@ -54,7 +57,7 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
   }
 
   renderSchedule = (matches: SerializedMatch[]) => {
-    let { onLoadMatch, arenaState } = this.props;
+    let { onLoadMatch, onResetMatch, arenaState, fta } = this.props;
     let max_teams = matches.flatMap(x => [x.blue_teams.length, x.red_teams.length]).reduce((a, b) => Math.max(a, b));
 
     return <Table className="match-schedule-control" bordered striped size="sm">
@@ -75,6 +78,7 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
               data-played={match.played || undefined} 
               data-next={this.isNextMatch(match) || undefined} 
               data-winner={ match.winner?.toLowerCase() }
+              data-ready={match.ready}
             >
               {/* Time */}
               <td> 
@@ -98,10 +102,16 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
               {/* Load buttons */}
               <td>
                 {
-                  match.played ? "Played..." 
+                  match.played ? 
+                    fta ? <Button
+                      variant="danger"
+                      onClick={() => withConfirm(() => onResetMatch(match.id || "--"), `Are you sure? This will clear the match score for ${match.name}`)}
+                      size="sm"
+                    > CLEAR </Button>
+                    : "Played..." 
                   : <Button 
                       className="load-match"
-                      disabled={arenaState?.state !== "Idle" || match.played || this.isLoaded(match)}
+                      disabled={arenaState?.state !== "Idle" || match.played || this.isLoaded(match) || !match.ready}
                       // variant={this.isNextMatch(match) ? "success" : "primary"}
                       onClick={() => onLoadMatch(match.id || "--")} 
                       size="sm"

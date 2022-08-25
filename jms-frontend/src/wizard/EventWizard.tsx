@@ -5,6 +5,7 @@ import { Col, Container, Nav, Row, Tab } from "react-bootstrap";
 import AllianceSelection from "./AllianceSelection";
 import ConfigureAwards from "./ConfigureAwards";
 import ConfigureEvent from "./ConfigureEvent";
+import ConfigureResources from "./ConfigureResources";
 import ConfigureSchedule from "./ConfigureSchedule";
 import ConfigureTeams from "./ConfigureTeams";
 import PlayoffGenerator from "./PlayoffGenerator";
@@ -79,7 +80,8 @@ type EventWizardMetaState = {
   qualGen?: EventWizardPageMeta,
   allianceSel?: EventWizardPageMeta,
   playoffGen?: EventWizardPageMeta,
-  awards?: EventWizardPageMeta
+  awards?: EventWizardPageMeta,
+  resources?: EventWizardPageMeta
 }
 
 type EventWizardState = {
@@ -130,6 +132,7 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.navFor("configEvent") }
               { this.navFor("configTeams") }
               { this.navFor("configSchedule") }
+              { this.navFor("resources") }
               <br /> <h6 className="text-muted">Qualifications</h6>
               { this.navFor("qualGen") }
               <br /> <h6 className="text-muted">Playoffs</h6>
@@ -139,13 +142,14 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.navFor("awards") }
             </Nav>
           </Col>
-          <Col md>
+          <Col md={9}>
             <Tab.Content>
               <br />
               { this.paneFor("welcome", <Welcome />) }
               { this.paneFor("configEvent", <ConfigureEvent />) }
               { this.paneFor("configTeams", <ConfigureTeams />) }
               { this.paneFor("configSchedule", <ConfigureSchedule />) }
+              { this.paneFor("resources", <ConfigureResources />) }
               { this.paneFor("qualGen", <QualGenerator />) }
               { this.paneFor("allianceSel", <AllianceSelection />) }
               { this.paneFor("playoffGen", <PlayoffGenerator />) }

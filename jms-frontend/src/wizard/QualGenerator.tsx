@@ -211,7 +211,7 @@ export default class QualGenerator extends WebsocketComponent<{}, QualGeneratorS
 
   render() {
     const has_generated = this.state.gen?.record?.data;
-    const prereq = this.state.teams.length > 6 && _.some(this.state.schedule, s => s.block_type === "Qualification");
+    const prereq = this.state.teams.length >= 6 && _.some(this.state.schedule, s => s.block_type === "Qualification");
     
     return <EventWizardPageContent tabLabel="Generate Qualification Matches" attention={!has_generated} disabled={!prereq}>
       <h4>Generate Qualification Match Schedule</h4>

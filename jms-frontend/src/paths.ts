@@ -11,3 +11,5 @@ export const AUDIENCE_CONTROL = "/audience/control";
 export const TIMER = "/timer";
 export const ESTOPS = "/estops";
 export const DEBUG = "/debug";
+export const CSA = "/csa";
+export const LOGS = "/logs";

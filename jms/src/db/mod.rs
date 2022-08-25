@@ -3,10 +3,11 @@ mod store;
 mod table;
 mod types;
 mod bindings;
+pub mod backup;
 
 pub use store::*;
 pub use table::*;
-pub use types::Integer;
+pub use types::*;
 pub use bindings::*;
 
 pub type Result<T> = anyhow::Result<T>;

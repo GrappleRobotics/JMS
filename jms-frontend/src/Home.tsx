@@ -1,4 +1,4 @@
-import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
+import { AUDIENCE, AUDIENCE_CONTROL, CSA, DEBUG, ESTOPS, EVENT_WIZARD, LOGS, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
 import React from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
@@ -48,6 +48,8 @@ export default class Home extends React.PureComponent<{ fta: boolean }> {
         <HomeTile name="Field Monitor" href={MONITOR} img="fieldmon.png"> Monitor the status of robots on the field. </HomeTile>
         <HomeTile name="Reports" href={REPORTS} img="reports.jpg"> Generate schedule, team, and advancement reports. </HomeTile>
         <HomeTile name="A/V Controls" href={AUDIENCE_CONTROL} img="audiencecontrol.jpg"> Control the Audience Display from the AV Desk. </HomeTile>
+        <HomeTile name="CSA" href={CSA}> See open tickets, support teams with their robots. </HomeTile>
+        <HomeTile name="Match Logs" href={LOGS}> See team match logs. </HomeTile>
         {
           fta ? <HomeTile name="DEBUG" href={DEBUG}> Debug Information </HomeTile> : <React.Fragment />
         }

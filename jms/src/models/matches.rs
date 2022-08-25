@@ -1,6 +1,6 @@
-use crate::{db::{self, DBDateTime, TableType, DBDuration}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
+use serde::Serialize;
 
-use super::TeamRanking;
+use crate::{db::{self, DBDateTime, TableType, DBDuration}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
 
 #[derive(Debug, strum_macros::EnumString, Display, EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all="snake_case")]
@@ -36,6 +36,7 @@ pub struct Match {
 
   pub winner: Option<Alliance>, // Will be None if tie, but means nothing if the match isn't played yet
   pub played: bool,
+  pub ready: bool
 }
 
 // To send to frontend, as the impls of serde::Serialize are for DB storage and not
@@ -46,6 +47,7 @@ pub struct SerializedMatch {
   pub match_meta: Match,
   pub id: Option<String>,
   pub name: String,
+  pub short_name: String,
   pub full_score: Option<MatchScoreSnapshot>
 }
 
@@ -65,6 +67,7 @@ impl Match {
       score_time: None,
       winner: None,
       played: false,
+      ready: true
     }
   }
 
@@ -80,18 +83,54 @@ impl Match {
     }
   }
 
+  pub fn short_name(&self) -> String {
+    match self.match_type {
+      MatchType::Test => "Test".to_owned(),
+      MatchType::Qualification => format!("Q{}", self.match_number),
+      MatchType::Playoff => match self.match_subtype.unwrap() {
+        MatchSubtype::Quarterfinal => format!("QF{}-{}", self.set_number, self.match_number),
+        MatchSubtype::Semifinal => format!("SF{}-{}", self.set_number, self.match_number),
+        MatchSubtype::Final => format!("F{}-{}", self.set_number, self.match_number),
+      },
+    }
+  }
+
   pub fn by_type(mtype: MatchType, store: &db::Store) -> db::Result<Vec<Match>> {
-    let mut v = Self::table(store)?.iter().filter(|a| {
+    let mut v = Self::table(store)?.iter_values().filter(|a| {
       a.as_ref().map(|sb| sb.match_type == mtype ).unwrap_or(false)
     }).collect::<db::Result<Vec<Match>>>()?;
     v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
     Ok(v)
   }
 
+  pub fn by_set_match(mtype: MatchType, st: Option<MatchSubtype>, set: usize, match_num: usize, store: &db::Store) -> db::Result<Option<Match>> {
+    Ok(Self::table(store)?.iter_values().find_map(|a| {
+      a.ok().filter(|sb| sb.match_type == mtype && sb.match_subtype == st && sb.set_number == set && sb.match_number == match_num)
+    }))
+  }
+
+  pub fn reset(&mut self) {
+    self.played = false;
+    self.score = None;
+    self.score_time = None;
+    self.winner = None;
+  }
+
   pub fn sorted(store: &db::Store) -> db::Result<Vec<Match>> {
     let mut v = Self::all(store)?;
-    v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+    // v.sort_by(|a, b| a.subtype_idx().cmp(&b.subtype_idx()));
+    // v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+    v.sort();
     Ok(v)
+  }
+
+  pub fn subtype_idx(&self) -> usize {
+    match self.match_subtype {
+      None => 0,
+      Some(MatchSubtype::Quarterfinal) => 1,
+      Some(MatchSubtype::Semifinal) => 2,
+      Some(MatchSubtype::Final) => 3,
+    }
   }
 
   pub async fn commit<'a>(&'a mut self, score: &MatchScore, db: &db::Store) -> db::Result<&'a Self> {
@@ -113,20 +152,7 @@ impl Match {
     if self.match_type != MatchType::Test {
       self.insert(db)?;
 
-      if self.match_type == MatchType::Qualification {
-        // Update rankings
-        for team in &self.blue_teams {
-          if let Some(team) = team {
-            TeamRanking::get(*team, &db)?.update(&blue, &db)?;
-          }
-        }
-
-        for team in &self.red_teams {
-          if let Some(team) = team {
-            TeamRanking::get(*team, &db)?.update(&red, &db)?;
-          }
-        }
-      } else if self.match_type == MatchType::Playoff {
+      if self.match_type == MatchType::Playoff {
         // TODO: This should be event based
         let worker = MatchGenerationWorker::new(PlayoffMatchGenerator::new());
         let record = worker.record();
@@ -157,8 +183,6 @@ impl db::TableType for Match {
       },
     })
   }
-
-  fn set_id(&mut self, _id: Self::Id) { }
 }
 
 impl From<Match> for SerializedMatch {
@@ -166,10 +190,26 @@ impl From<Match> for SerializedMatch {
     Self {
       id: m.id(),
       name: m.name(),
+      short_name: m.short_name(),
       full_score: m.score.clone().map(Into::into),
       match_meta: m
     }
   }
+}
+
+pub fn serialize_match<S>(m: &Match, s: S) -> Result<S::Ok, S::Error>
+where
+  S: serde::Serializer
+{
+  SerializedMatch::from(m.clone()).serialize(s)
+}
+
+pub fn serialize_match_score<S>(m: &MatchScore, s: S) -> Result<S::Ok, S::Error>
+where
+  S: serde::Serializer
+{
+  let snapshot: MatchScoreSnapshot = m.clone().into();
+  snapshot.serialize(s)
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -191,8 +231,6 @@ impl db::TableType for MatchGenerationRecord {
   fn id(&self) -> Option<Self::Id> {
     Some(self.match_type.to_string())
   }
-
-  fn set_id(&mut self, _id: Self::Id) { }
 }
 
 impl MatchGenerationRecord {
@@ -200,7 +238,7 @@ impl MatchGenerationRecord {
     let first = Self::table(store)?.get(match_type.to_string())?;
 
     match first {
-      Some(mgr) => Ok(mgr),
+      Some(mgr) => Ok(mgr.data),
       None => {
         let mut mgr = MatchGenerationRecord { match_type, data: None };
         mgr.insert(store)?;

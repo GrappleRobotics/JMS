@@ -3,7 +3,7 @@ use super::table::{Table, TableType};
 #[allow(dead_code)]
 pub struct Store {
   config: sled::Config,
-  db: sled::Db,
+  pub(crate) db: sled::Db,
 }
 
 #[allow(dead_code)]
@@ -34,5 +34,9 @@ impl Store {
 
   pub fn import(&self, export: Vec<(Vec<u8>, Vec<u8>, impl Iterator<Item = Vec<Vec<u8>>>)>) {
     self.db.import(export)
+  }
+
+  pub fn config(&self) -> sled::Config {
+    self.config.clone()
   }
 }

@@ -60,28 +60,42 @@ impl MatchGenerator for PlayoffMatchGenerator {
     };
 
     match update {
-      GenerationUpdate::NoUpdate => (),
-      GenerationUpdate::NewMatches(pending_matches) => {
-        for pending in pending_matches {
-          let alliance_blue = alliances.iter().find(|a| a.id == pending.blue).unwrap();
-          let alliance_red = alliances.iter().find(|a| a.id == pending.red).unwrap();
+      GenerationUpdate::MatchUpdates(updates) => {
+        for pending in updates {
+          // let alliance_blue = alliances.iter().find(|a| a.id == pending.blue).unwrap();
+          // let alliance_red = alliances.iter().find(|a| a.id == pending.red).unwrap();
+          let blue_teams = pending.blue.and_then(|id| alliances.iter().find_map(|a| (a.id == id).then(|| a.teams.clone()))).unwrap_or(vec![]);
+          let red_teams = pending.red.and_then(|id| alliances.iter().find_map(|a| (a.id == id).then(|| a.teams.clone()))).unwrap_or(vec![]);
 
-          let mut m = models::Match {
-            start_time: None,
-            match_type: models::MatchType::Playoff,
-            match_subtype: Some(pending.playoff_type),
-            set_number: pending.set,
-            match_number: pending.match_num,
-            blue_teams: alliance_blue.teams.clone(),
-            blue_alliance: Some(alliance_blue.id),
-            red_teams: alliance_red.teams.clone(),
-            red_alliance: Some(alliance_red.id),
-            score: None,
-            score_time: None,
-            winner: None,
-            played: false,
-          };
-          m.insert(&db::database())?;
+          if let Some(mut existing) = models::Match::by_set_match(models::MatchType::Playoff, Some(pending.playoff_type), pending.set, pending.match_num, &db::database())? {
+            if !existing.played {
+              existing.blue_teams = blue_teams;
+              existing.red_teams = red_teams;
+              existing.blue_alliance = pending.blue;
+              existing.red_alliance = pending.red;
+              existing.ready = pending.blue.is_some() && pending.red.is_some();
+              existing.insert(&db::database())?;
+            }
+          } else {
+            let mut m = models::Match {
+              start_time: None,
+              match_type: models::MatchType::Playoff,
+              match_subtype: Some(pending.playoff_type),
+              set_number: pending.set,
+              match_number: pending.match_num,
+              blue_teams: blue_teams,
+              blue_alliance: pending.blue,
+              red_teams: red_teams,
+              red_alliance: pending.red,
+              score: None,
+              score_time: None,
+              winner: None,
+              played: false,
+              ready: pending.blue.is_some() && pending.red.is_some()
+            };
+            m.insert(&db::database())?;
+          }
+
         }
       }
       GenerationUpdate::TournamentWon(winner, finalist) => {

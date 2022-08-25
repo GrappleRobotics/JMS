@@ -6,12 +6,12 @@
  */
 
 export type WebsocketMessage2UI =
-  | "Ping"
-  | {
-      Panel: WebsocketMessagePanel2UI;
-    }
+  | ("Ping" | "Pong")
   | {
       Error: string;
+    }
+  | {
+      Debug: DebugMessage2UI;
     }
   | {
       Event: EventMessage2UI;
@@ -21,40 +21,16 @@ export type WebsocketMessage2UI =
     }
   | {
       Match: MatchMessage2UI;
-    };
-export type WebsocketMessagePanel2UI =
-  | {
-      All: {
-        [k: string]: Panel;
-      };
     }
   | {
-      Current: Panel;
-    };
-export type PanelRole =
-  | ("Unknown" | "Scorekeeper" | "Monitor" | "Timer" | "AudienceDisplay")
-  | {
-      Referee: RefereeID;
+      Resource: ResourceMessage2UI;
     }
   | {
-      Scorer: ScorerID;
-    }
-  | {
-      EStop: AllianceStationId;
+      Ticket: TicketMessage2UI;
     };
-export type RefereeID =
-  | "HeadReferee"
-  | {
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      Alliance: [Alliance, NearFar];
-    };
-export type Alliance = "blue" | "red";
-export type NearFar = "near" | "far";
-export type ScorerPair = "AB" | "CD";
-export type GoalHeight = "low" | "high";
+export type DebugMessage2UI = {
+  ReplyTest: string;
+};
 export type EventMessage2UI =
   | {
       Details: EventMessageDetails2UI;
@@ -144,10 +120,11 @@ export type ArenaState =
       state: "MatchCommit";
     };
 export type ArenaMessageAlliance2UI = {
-  CurrentStations: AllianceStation[];
+  CurrentStations: SerialisedAllianceStation[];
 };
 export type DSMode = "Teleop" | "Test" | "Auto";
 export type AllianceStationOccupancy = "Vacant" | "Occupied" | "WrongStation" | "WrongMatch";
+export type Alliance = "blue" | "red";
 export type ArenaMessageMatch2UI = {
   Current: LoadedMatch | null;
 };
@@ -175,6 +152,9 @@ export type AudienceDisplay =
     }
   | {
       scene: "AllianceSelection";
+    }
+  | {
+      scene: "PlayoffBracket";
     }
   | {
       params: Award;
@@ -226,11 +206,78 @@ export type PlayoffMode = "Bracket" | "RoundRobin";
 export type MatchMessagePlayoffs2UI = {
   Generation: SerialisedMatchGeneration;
 };
-export type WebsocketMessage2JMS =
-  | "Ping"
+export type ResourceMessage2UI =
   | {
-      Panel: WebsocketMessagePanel2JMS;
+      All: TaggedResource[];
     }
+  | {
+      Current: TaggedResource;
+    }
+  | {
+      Requirements: ResourceMessageRequirements2UI;
+    };
+export type ResourceRole =
+  | ("Unknown" | "Any" | "ScorekeeperPanel" | "MonitorPanel" | "TimerPanel" | "AudienceDisplay" | "FieldElectronics")
+  | {
+      RefereePanel: RefereeID;
+    }
+  | {
+      ScorerPanel: ScorerID;
+    }
+  | {
+      TeamEStop: AllianceStationId;
+    };
+export type RefereeID =
+  | "HeadReferee"
+  | {
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      Alliance: [Alliance, NearFar];
+    };
+export type NearFar = "near" | "far";
+export type ScorerPair = "AB" | "CD";
+export type GoalHeight = "low" | "high";
+export type ResourceMessageRequirements2UI = {
+  Current: ResourceRequirementStatus | null;
+};
+export type ResourceRequirementStatusElement =
+  | {
+      And: ResourceRequirementStatus[];
+    }
+  | {
+      Or: ResourceRequirementStatus[];
+    }
+  | {
+      Quota: MappedResourceQuota;
+    };
+export type ResourceRequirements =
+  | {
+      And: ResourceRequirements[];
+    }
+  | {
+      Or: ResourceRequirements[];
+    }
+  | {
+      Quota: ResourceQuota;
+    };
+export type TicketMessage2UI =
+  | {
+      All: SupportTicket[];
+    }
+  | {
+      Logs: TicketMessageLogs2UI;
+    };
+export type TicketMessageLogs2UI =
+  | {
+      Keys: MatchStationStatusRecordKey[];
+    }
+  | {
+      Load: MatchStationStatusRecord | null;
+    };
+export type WebsocketMessage2JMS =
+  | ("Ping" | "Pong")
   | {
       Subscribe: string[];
     }
@@ -245,21 +292,25 @@ export type WebsocketMessage2JMS =
     }
   | {
       Match: MatchMessage2JMS;
-    };
-export type WebsocketMessagePanel2JMS =
-  | {
-      ID: string;
     }
   | {
-      Role: PanelRole;
+      Resource: ResourceMessage2JMS;
     }
   | {
-      SetFTA: string | null;
+      Ticket: TicketMessage2JMS;
     };
-export type DebugMessage2JMS = {
-  Match: DebugMessageMatch2JMS;
-};
-export type DebugMessageMatch2JMS = "FillRandomScores" | "DeleteAll";
+export type DebugMessage2JMS =
+  | {
+      Match: DebugMessageMatch2JMS;
+    }
+  | {
+      ReplyTest: string;
+    };
+export type DebugMessageMatch2JMS =
+  | "DeleteAll"
+  | {
+      FillRandomScores: string | null;
+    };
 export type EventMessage2JMS =
   | {
       Details: EventMessageDetails2JMS;
@@ -334,7 +385,11 @@ export type ArenaMessage2JMS =
 export type ArenaMessageState2JMS = {
   Signal: ArenaSignal;
 };
-export type ArenaSignal = "Estop" | "EstopReset" | "Prestart" | "MatchArm" | "MatchPlay" | "MatchCommit";
+export type ArenaSignal =
+  | ("Estop" | "EstopReset" | "Prestart" | "MatchPlay" | "MatchCommit")
+  | {
+      MatchArm: boolean;
+    };
 export type ArenaMessageAlliance2JMS = {
   UpdateAlliance: {
     astop?: boolean | null;
@@ -390,7 +445,7 @@ export type ArenaMessageAudienceDisplay2JMS = {
   Set: ArenaMessageAudienceDisplaySet2JMS;
 };
 export type ArenaMessageAudienceDisplaySet2JMS =
-  | ("Field" | "MatchPreview" | "MatchPlay" | "AllianceSelection")
+  | ("Field" | "MatchPreview" | "MatchPlay" | "AllianceSelection" | "PlayoffBracket")
   | {
       MatchResults: string | null;
     }
@@ -409,6 +464,9 @@ export type MatchMessage2JMS =
     }
   | {
       Playoffs: MatchMessagePlayoffs2JMS;
+    }
+  | {
+      Reset: string;
     };
 export type MatchMessageQuals2JMS =
   | "Clear"
@@ -420,25 +478,47 @@ export type MatchMessagePlayoffs2JMS =
   | {
       Generate: PlayoffMode;
     };
+export type ResourceMessage2JMS =
+  | {
+      SetID: string;
+    }
+  | {
+      SetRole: ResourceRole;
+    }
+  | {
+      SetFTA: string | null;
+    }
+  | {
+      SetReady: boolean;
+    }
+  | {
+      Requirements: ResourceMessageRequirements2JMS;
+    };
+export type ResourceMessageRequirements2JMS = {
+  SetActive: ResourceRequirements | null;
+};
+export type TicketMessage2JMS =
+  | {
+      Insert: SupportTicket;
+    }
+  | {
+      Logs: TicketMessageLogs2JMS;
+    };
+export type TicketMessageLogs2JMS =
+  | "Keys"
+  | {
+      Load: MatchStationStatusRecordKey;
+    };
 
 export interface AllWebsocketMessages {
   jms2ui: WebsocketMessage2UI;
+  recv_meta: RecvMeta;
+  send_meta: SendMeta;
   ui2jms: WebsocketMessage2JMS;
 }
-export interface Panel {
-  fta: boolean;
-  id: string;
-  role: PanelRole;
-}
-export interface ScorerID {
-  goals: ScorerPair;
-  height: GoalHeight;
-}
-export interface AllianceStationId {
-  alliance: Alliance;
-  station: number;
-}
 export interface EventDetails {
+  av_chroma_key: string;
+  av_event_colour: string;
   code?: string | null;
   event_name?: string | null;
   webcasts: string[];
@@ -486,9 +566,11 @@ export interface AwardRecipient {
   awardee?: string | null;
   team?: number | null;
 }
-export interface AllianceStation {
+export interface SerialisedAllianceStation {
   astop: boolean;
   bypass: boolean;
+  can_arm: boolean;
+  ds_eth: boolean;
   ds_report?: AllianceStationDSReport | null;
   estop: boolean;
   occupancy: AllianceStationOccupancy;
@@ -506,10 +588,15 @@ export interface AllianceStationDSReport {
   robot_ping: boolean;
   rtt: number;
 }
+export interface AllianceStationId {
+  alliance: Alliance;
+  station: number;
+}
 export interface LoadedMatch {
   config: MatchConfig;
   endgame: boolean;
   match_meta: SerializedMatch;
+  match_time?: Duration | null;
   remaining_time: Duration;
   score: MatchScoreSnapshot;
   state: MatchPlayState;
@@ -535,11 +622,13 @@ export interface SerializedMatch {
   match_type: MatchType;
   name: string;
   played: boolean;
+  ready: boolean;
   red_alliance?: number | null;
   red_teams: (number | null)[];
   score?: MatchScore | null;
   score_time?: number | null;
   set_number: number;
+  short_name: string;
   start_time?: number | null;
   winner?: Alliance | null;
 }
@@ -609,6 +698,82 @@ export interface MatchGenerationRecord {
   data?: MatchGenerationRecordData | null;
   match_type: MatchType;
 }
+export interface TaggedResource {
+  fta?: boolean;
+  id: string;
+  ready?: boolean;
+  ready_requested?: boolean;
+  role: ResourceRole;
+}
+export interface ScorerID {
+  goals: ScorerPair;
+  height: GoalHeight;
+}
+export interface ResourceRequirementStatus {
+  element: ResourceRequirementStatusElement;
+  original: ResourceRequirements;
+  ready: boolean;
+  satisfied: boolean;
+}
+export interface MappedResourceQuota {
+  max?: number | null;
+  min: number;
+  ready: boolean;
+  resource_ids: string[];
+  satisfied: boolean;
+  template: Resource;
+}
+export interface Resource {
+  fta?: boolean;
+  ready?: boolean;
+  ready_requested?: boolean;
+  role: ResourceRole;
+}
+export interface ResourceQuota {
+  max?: number | null;
+  min: number;
+  template: Resource;
+}
+export interface SupportTicket {
+  assigned_to?: string | null;
+  author: string;
+  id?: number | null;
+  issue_type: string;
+  match_id?: string | null;
+  notes: TicketComment[];
+  resolved: boolean;
+  team: number;
+}
+export interface TicketComment {
+  author: string;
+  comment: string;
+  time: number;
+}
+export interface MatchStationStatusRecordKey {
+  match_id: string;
+  team: number;
+}
+export interface MatchStationStatusRecord {
+  key: MatchStationStatusRecordKey;
+  record: StampedAllianceStationStatus[];
+}
+export interface StampedAllianceStationStatus {
+  astop: boolean;
+  bypass: boolean;
+  ds_eth: boolean;
+  ds_report?: AllianceStationDSReport | null;
+  estop: boolean;
+  match_state: MatchPlayState;
+  match_time: Duration;
+  occupancy: AllianceStationOccupancy;
+  station: AllianceStationId;
+  team?: number | null;
+  time: number;
+}
+export interface RecvMeta {
+  msg: WebsocketMessage2JMS;
+  seq: number;
+}
 export interface ScoreUpdateData {
   alliance: Alliance;
   update: ScoreUpdate;
@@ -616,4 +781,10 @@ export interface ScoreUpdateData {
 export interface QualsMatchGeneratorParams {
   station_anneal_steps: number;
   team_anneal_steps: number;
+}
+export interface SendMeta {
+  bcast: boolean;
+  msg: WebsocketMessage2UI;
+  reply?: number | null;
+  seq: number;
 }

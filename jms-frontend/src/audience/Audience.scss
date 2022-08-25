@@ -1,5 +1,44 @@
+.audience-scene-anim {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: none;
+}
+
+// Keep new one at full opacity, but put it behind the new one
+.audience-scene-anim-enter {
+  opacity: 1;
+  z-index: -1;
+}
+
+.audience-scene-anim-enter-active {
+  opacity: 1;
+  z-index: -1;
+}
+
+.audience-scene-anim-exit {
+  opacity: 1;
+  z-index: 2;
+}
+
+.audience-scene-anim-exit-active {
+  opacity: 0;
+  transition: opacity 300ms ease-in;
+  z-index: 2;
+}
+
+.audience-root {
+  --chroma-key-colour: #f0f;
+  --event-colour: #e9ab01;
+
+  // background-color: var(--chroma-key-colour);
+}
+
 .audience {
-  background-color: #f0f;
+  background-color: var(--chroma-key-colour);
   width: 100vw;
   height: 100vh;
   margin: 0;
@@ -18,11 +57,11 @@
 
 .audience-card {
   // $border-colour: #9c00be;
-  $border-colour: #e9ab01;
+  $border-colour: var(--event-colour);
   // $border-colour: $gray-700;
   
   @extend .audience;
-  background-color: desaturate(darken($border-colour, 30%), 20%);
+  // background-color: desaturate(darken($border-colour, 30%), 20%);
 
   .audience-card-inner {
     background-color: $gray-300;
@@ -57,6 +96,7 @@
       text-align: center;
       background-color: $border-colour;
       color: black;
+      min-height: 17.5vh;
 
       img {
         height: 12.5vh;
@@ -225,7 +265,7 @@
         }
 
         &[data-estop="true"] {
-          // @extend .bg-hazard-dark-active;
+          @include hazard-btn(theme-color("hazard-red"));
         }
 
         &[data-alive="false"] {

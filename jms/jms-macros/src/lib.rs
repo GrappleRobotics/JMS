@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, token, Ident, Variant, parse::{Parse, discouraged::Speculative}, punctuated::Punctuated, Path, braced};
+use syn::{parse_macro_input, token, Ident, Variant, parse::{Parse, discouraged::Speculative}, punctuated::Punctuated, Path, braced, parenthesized};
 enum WebsocketMessageDirection {
   Send,
   Recv,
@@ -57,6 +57,7 @@ impl Parse for WebsocketMessageDirection {
 
 enum WebsocketMessageField {
   Msg(WebsocketMessage),
+  ExtMsg(ExtWebsocketMessage),
   Data {
     dir: WebsocketMessageDirection,
     var: Variant
@@ -70,6 +71,9 @@ impl Parse for WebsocketMessageField {
     if let Ok(msg) = fork.parse() {
       input.advance_to(&fork);
       Ok(WebsocketMessageField::Msg(msg))
+    } else if let Ok(msg) = fork.parse() {
+      input.advance_to(&fork);
+      Ok(WebsocketMessageField::ExtMsg(msg))
     } else {
       // Speculation was wrong - drop the fork and parse dir / variant
       Ok(WebsocketMessageField::Data {
@@ -90,9 +94,24 @@ struct WebsocketMessage {
   children: Punctuated<WebsocketMessageField, token::Comma>
 }
 
+mod kw {
+  syn::custom_keyword!(ext);
+} 
+
+struct ExtWebsocketMessage {
+  #[allow(dead_code)]
+  ext: kw::ext,
+  dir: WebsocketMessageDirection,
+  name: Ident,
+  #[allow(dead_code)]
+  paren: token::Paren,
+  message_type: Ident
+}
+
 enum StructuredWebsocketMessageField {
   Msg(Ident, Ident),  // variant name, class name
-  Data(Variant)
+  Data(Variant),
+  // ExtMsg(Ident, Ident)    // variant name, class name
 }
 
 struct StructuredWebsocketMessage {
@@ -110,6 +129,24 @@ impl Parse for WebsocketMessage {
       brace_token: braced!(content in input),
       children: content.parse_terminated(WebsocketMessageField::parse)?
     })
+  }
+}
+
+impl Parse for ExtWebsocketMessage {
+  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+    let lookahead = input.lookahead1();
+    if lookahead.peek(kw::ext) {
+      let content;
+      Ok(ExtWebsocketMessage {
+        ext: input.parse()?,
+        dir: input.parse()?,
+        name: input.parse()?,
+        paren: parenthesized!(content in input),
+        message_type: content.parse()?,
+      })
+    } else {
+      Err(lookahead.error())
+    }
   }
 }
 
@@ -141,6 +178,10 @@ fn define_websocket_msg_inner(target_dir: WebsocketMessageDirection, msg: &Webso
           valid_messages.get(&child_msg_full_name).map(|_| {
             StructuredWebsocketMessageField::Msg(child_msg.name.clone(), Ident::new(&child_msg_full_name, child_msg.name.span()))
           })
+        },
+        WebsocketMessageField::ExtMsg(ext_msg) if target_dir.applies(&ext_msg.dir) => {
+          let child_msg_name = format!("{}{}", ext_msg.message_type.to_string(), target_dir.suffix());
+          Some(StructuredWebsocketMessageField::Msg(ext_msg.name.clone(), Ident::new(&child_msg_name, ext_msg.message_type.span())))
         },
         WebsocketMessageField::Data { dir, var } if target_dir.applies(&dir) => {
           Some(StructuredWebsocketMessageField::Data(var.clone()))

@@ -24,6 +24,12 @@ pub struct FirewallConfig {
 }
 
 #[derive(Serialize)]
+pub struct WanConfig {
+  pub iface: String,
+  pub access: bool,
+}
+
+#[derive(Serialize)]
 pub struct TeamFirewallConfig {
   pub station: AllianceStationId,
   pub team: Option<u16>,
@@ -31,7 +37,7 @@ pub struct TeamFirewallConfig {
 }
 
 pub async fn configure_firewall(
-  wan_iface: String,
+  wan_cfg: WanConfig,
   admin_cfg: FirewallConfig,
   stn_cfgs: &[TeamFirewallConfig],
 ) -> NetworkResult<()> {
@@ -39,7 +45,7 @@ pub async fn configure_firewall(
   let mut file = NamedTempFile::new()?;
 
   info!("Generating firewall rule file...");
-  generate_firewall_rules(file.as_file_mut(), wan_iface, admin_cfg, stn_cfgs).await?;
+  generate_firewall_rules(file.as_file_mut(), wan_cfg, admin_cfg, stn_cfgs).await?;
 
   info!("Reloading firewall...");
   reload_firewall(file.path()).await?;
@@ -50,7 +56,7 @@ pub async fn configure_firewall(
 
 async fn generate_firewall_rules(
   file: &mut File,
-  wan_iface: String,
+  wan_cfg: WanConfig,
   admin_cfg: FirewallConfig,
   stn_cfgs: &[TeamFirewallConfig],
 ) -> NetworkResult<()> {
@@ -65,9 +71,9 @@ async fn generate_firewall_rules(
       let result = hbars.render_template(
         template_str,
         &json!({
-          "wan": wan_iface,
+          "wan": wan_cfg,
           "admin": admin_cfg,
-          "stations": stn_cfgs
+          "stations": stn_cfgs,
         }),
       )?;
 

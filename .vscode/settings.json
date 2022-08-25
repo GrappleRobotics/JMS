@@ -10,5 +10,12 @@
     "vector": "cpp",
     "string_view": "cpp",
     "initializer_list": "cpp"
-  }
+  },
+  "spellright.language": [
+    "English (Australian)"
+  ],
+  "spellright.documentTypes": [
+    "markdown",
+    "latex"
+  ]
 }

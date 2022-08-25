@@ -95,7 +95,7 @@ export async function confirmModal<T>(confirmation: ReactConfirmProps["confirmat
 
 export default async function confirmBool(confirmation: ReactConfirmProps["confirmation"], options?: ConfirmModalOptions<{}>) {
   try {
-    await confirmBackend({ confirmation, ...(options || {}) });
+    await confirmBackend({ confirmation, title: "Are you sure?", okText: "Yes", okVariant: "danger", ...(options || {}) });
     return true;
   } catch {
     return false;
@@ -103,7 +103,7 @@ export default async function confirmBool(confirmation: ReactConfirmProps["confi
 }
 
 export async function withConfirm(fn: () => void, confirmation?: ReactConfirmProps["confirmation"], options?: ConfirmModalOptions<{}>) {
-  if (await confirmBool(confirmation || "Are you sure?", options || {})) {
+  if (await confirmBool(confirmation || "Are you sure?", options)) {
     fn();
   }
 }

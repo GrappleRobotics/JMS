@@ -2,8 +2,7 @@ use std::convert::TryFrom;
 
 use chrono::{DateTime, Duration, NaiveDateTime};
 
-use super::TableType;
-use super::types::Key;
+use super::{FromRaw, TableType, ToRaw};
 
 // A shallow DB type used to bind to another table as a foreign key,
 // to be reloaded upon deserialisation
@@ -27,7 +26,7 @@ pub enum ShallowInner<T> {
 impl<T: TableType> From<Shallow<T>> for ShallowInner<T> {
   fn from(shallow: Shallow<T>) -> Self {
     match shallow.0.id() {
-      Some(id) => ShallowInner::FK(id.as_ref().to_vec()),
+      Some(id) => ShallowInner::FK(id.to_raw()),
       None => ShallowInner::WRAPPED(shallow.0),
     }
   }
@@ -43,7 +42,7 @@ impl<T: TableType> TryFrom<ShallowInner<T>> for Shallow<T> {
         let coerced_id = T::Id::from_raw(id);
         let got = T::table(super::database())?.get(coerced_id)?;
         match got {
-          Some(t) => Ok(Shallow(t)),
+          Some(t) => Ok(Shallow(t.data)),
           None => Err(anyhow::anyhow!("No ID {:?} exists in table {}", id, T::TABLE)),
         }
       },

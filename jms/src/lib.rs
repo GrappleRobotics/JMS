@@ -12,6 +12,8 @@ pub mod utils;
 pub mod electronics;
 pub mod models;
 pub mod tba;
+pub mod imaging;
+pub mod discord;
 
 extern crate strum;
 #[macro_use]

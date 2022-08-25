@@ -1,18 +1,27 @@
-import { faCode, faRobot, faWifi } from "@fortawesome/free-solid-svg-icons";
+import { faBan, faCircleArrowLeft, faCode, faEye, faFlag, faNetworkWired, faRobot, faStop, faUsers, faWifi, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import confirmBool from "components/elements/Confirm";
+import confirmBool, { confirmModal } from "components/elements/Confirm";
+import EnumToggleGroup from "components/elements/EnumToggleGroup";
 import React from "react";
-import { Button, Col, Row } from "react-bootstrap";
+import { Button, Col, Form, Row } from "react-bootstrap";
 import { withVal } from "support/util";
 import { WebsocketComponent } from "support/ws-component";
-import { AllianceStation, ArenaState, LoadedMatch } from "ws-schema";
+import { SerialisedAllianceStation, ArenaState, LoadedMatch, SupportTicket, ResourceRequirementStatus } from "ws-schema";
+import update from "immutability-helper";
+import BufferedFormControl from "components/elements/BufferedFormControl";
+import moment from "moment";
+import newTicket from "csa/NewTicket";
+import { ResourceRequirementMinimap } from "components/ResourceComponents";
+
+type FieldMonitorMode = "View" | "Estop" | "Flag" | "Resource";
 
 type FieldMonitorStationState = {
-  station: AllianceStation,
+  station: SerialisedAllianceStation,
   state?: ArenaState,
   match?: LoadedMatch,
-  estop_mode: boolean,
-  do_estop: () => void
+  mode: FieldMonitorMode,
+  do_estop: () => void,
+  new_ticket: (ticket: SupportTicket) => void
 }
 
 class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> {
@@ -43,6 +52,10 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
       this.props.do_estop();
     }
   }
+
+  flag = async (station: SerialisedAllianceStation) => {
+    newTicket("FTA", station.team!, this.props.match!.match_meta, this.props.new_ticket);
+  }
   
   lostPktPercent = (lost: number, sent: number) => (lost) / ((lost + sent) || 1) * 100;
 
@@ -56,14 +69,14 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
     return percent.toFixed(0);
   }
 
-  whatError = (stn: AllianceStation, report: AllianceStation["ds_report"], estop: boolean) => {
+  whatError = (stn: SerialisedAllianceStation, report: SerialisedAllianceStation["ds_report"], estop: boolean) => {
     let playing_match = this.props.state?.state === "MatchPlay";
 
     if (stn.bypass) return null;
     if (estop) return "E-STOPPED";
 
     if (stn.team === null) return "NO TEAM";
-    if (stn.occupancy == "Vacant") return "NO DS";
+    if (stn.occupancy == "Vacant") return stn.ds_eth ? "ETH OK NO DS" : "NO DS";
     if (stn.occupancy == "WrongMatch") return "WRONG MATCH";
     if (stn.occupancy == "WrongStation") return "WRONG STATION";
 
@@ -104,6 +117,7 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
         {
           s.bypass ? <React.Fragment /> : 
             <Row className="monitor-data-header">
+              <Col className="monitor-eth" md="auto" data-eth-ok={s.ds_eth}> <FontAwesomeIcon icon={faNetworkWired} /> </Col>
               <Col className="monitor-occupancy" data-occupancy={s.occupancy} />
               <Col className="monitor-team">
                 { s.team || "" }
@@ -117,10 +131,18 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
           <Col>
             {
               s.bypass ? `BYPASS ${s.team || ""}`
-                : s.estop ? "E-STOPPED"
-                : this.props.estop_mode ?
+                : (s.team && this.props.mode === "Flag") ?
                   <Button
-                    className="btn-block monitor-team-estop"
+                    className="btn-block monitor-team-btn"
+                    variant="orange"
+                    onClick={() => this.flag(s)}
+                  >
+                    FLAG ISSUE FOR CSA
+                  </Button>
+                : s.estop ? "E-STOPPED"
+                : this.props.mode === "Estop" ?
+                  <Button
+                    className="btn-block monitor-team-btn"
                     variant="estop"
                     onClick={this.triggerEstop}
                   > E-STOP { s.team || "" } </Button>
@@ -154,35 +176,40 @@ class FieldMonitorStation extends React.PureComponent<FieldMonitorStationState> 
 }
 
 type FieldMonitorState = {
-  stations: AllianceStation[],
+  stations: SerialisedAllianceStation[],
   state?: ArenaState,
   match?: LoadedMatch,
-  estop_mode: boolean
+  resource_status?: ResourceRequirementStatus,
+  mode: FieldMonitorMode
 };
 
 export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, FieldMonitorState> {
   readonly state: FieldMonitorState = {
     stations: [],
-    estop_mode: false
+    mode: "View"
   };
 
   componentDidMount = () => this.handles = [
     this.listen("Arena/State/Current", "state"),
     this.listen("Arena/Match/Current", "match"),
-    this.listen("Arena/Alliance/CurrentStations", "stations")
+    this.listen("Arena/Alliance/CurrentStations", "stations"),
+    this.listen("Resource/Requirements/Current", "resource_status")
   ];
 
-  renderAlliance = (stations: AllianceStation[]) => {
+  renderAlliance = (stations: SerialisedAllianceStation[]) => {
     return <React.Fragment>
       {
         stations.map(s => (
           <FieldMonitorStation
-            estop_mode={this.state.estop_mode}
+            mode={this.state.mode}
             state={this.state?.state}
             match={this.state?.match}
             station={s}
             do_estop={() => this.send({
               Arena: { Alliance: { UpdateAlliance: { station: s.station, estop: true } } }
+            })}
+            new_ticket={ticket => this.send({
+              Ticket: { Insert: ticket }
             })}
           />
         ))
@@ -190,37 +217,68 @@ export default class FieldMonitor extends WebsocketComponent<{ fta: boolean }, F
     </React.Fragment>
   }
 
+  renderFTAControls = () => {
+    const { mode } = this.state;
+    const mode_btns: { mode: FieldMonitorMode, variant: string, icon: IconDefinition }[] = [
+      { mode: "View", variant: "success", icon: faEye },
+      { mode: "Estop", variant: "estop", icon: faBan },
+      { mode: "Flag", variant: "warning", icon: faFlag },
+      { mode: "Resource", variant: "primary", icon: faUsers }
+    ];
+
+    return <React.Fragment>
+      <Row>
+        <Col>
+          {
+            mode_btns.map(mb => (
+              <Button
+                variant={ mode === mb.mode ? "secondary" : mb.variant }
+                onClick={() => this.setState({ mode: mb.mode })}
+                disabled={mode === mb.mode}
+              >
+                <FontAwesomeIcon icon={mb.icon} />
+              </Button>
+            ))
+          }
+        </Col>
+      </Row>
+    </React.Fragment>
+  }
+
   renderAvailable = () => {
+    const { stations, mode, resource_status } = this.state;
     return <Row>
-      <Col className="col-full monitor-alliance" data-alliance="red">
-        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance === "red") ) }
+      {
+        this.props.fta ? 
+          <Col className="col-full monitor-fta-controls">
+            { this.renderFTAControls() }
+          </Col> : undefined
+      }
+      <Col className="col-full">
+        {
+          mode === "Resource" && resource_status != null ?
+            <ResourceRequirementMinimap status={resource_status} />
+            : <Row>
+                <Col className="col-full monitor-alliance" data-alliance="red">
+                  { this.renderAlliance( stations.filter(s => s.station.alliance === "red") ) }
+                </Col>
+                <Col className="col-full monitor-alliance" data-alliance="blue">
+                  { this.renderAlliance( stations.filter(s => s.station.alliance === "blue").reverse() ) }
+                </Col>
+              </Row>
+            
+        }
       </Col>
-      <Col className="col-full monitor-alliance" data-alliance="blue">
-        { this.renderAlliance( this.state.stations.filter(s => s.station.alliance === "blue").reverse() ) }
-      </Col>
+
     </Row>
   }
 
   render() {
-    const { estop_mode, stations } = this.state;
-    return <Col className="col-full">
+    const { stations } = this.state;
+    return <Col className="field-monitor col-full">
       {
         stations.length > 0 ? this.renderAvailable() : <h4 className="m-5"> Waiting... </h4>
       }
-      {
-        this.props.fta ? <Row className="monitor-estop-toggle">
-        <Col className="col-full">
-          <Button
-            className="btn-block"
-            variant={estop_mode ? "estop-reset" : "estop"}
-            onClick={ () => this.setState({ estop_mode: !estop_mode }) }
-          >
-            { estop_mode ? "EXIT" : "" } TEAM EMERGENCY STOP
-          </Button>
-        </Col>
-      </Row> : <React.Fragment />
-      }
-      
     </Col>
   }
 }

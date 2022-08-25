@@ -8,7 +8,7 @@ pub struct AwardRecipient {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Award {
-  pub id: Option<usize>,
+  pub id: Option<u64>,
   pub name: String,
   pub recipients: Vec<AwardRecipient>,
 }
@@ -21,7 +21,8 @@ impl db::TableType for Award {
     self.id.map(|id| id.into())
   }
 
-  fn set_id(&mut self, id: Self::Id) {
-    self.id = Some(id.into())
+  fn generate_id(&mut self, store: &db::Store) -> db::Result<()> {
+    self.id = Some(store.generate_id()?);
+    Ok(())
   }
 }

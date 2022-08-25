@@ -1,12 +1,14 @@
 import Audience from 'audience/Audience';
 import AudienceDisplayControl from 'audience/AudienceDisplayControl';
 import BottomNavbar from 'BottomNavbar';
+import CSAIndex, { CSARouter } from 'csa/CSAIndex';
 import Debug from 'Debug';
 import Home from 'Home';
 import update from 'immutability-helper';
 import MatchControl from 'match_control/MatchControl';
 import FieldMonitor from 'monitor/FieldMonitor';
-import { AUDIENCE, AUDIENCE_CONTROL, DEBUG, ESTOPS, EVENT_WIZARD, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
+import MatchLogs from 'monitor/MatchLogs';
+import { AUDIENCE, AUDIENCE_CONTROL, CSA, DEBUG, ESTOPS, EVENT_WIZARD, LOGS, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
 import Rankings from 'rankings/Rankings';
 import React from 'react';
 import { Alert, Col, Navbar, Row } from 'react-bootstrap';
@@ -19,7 +21,7 @@ import { TeamEstops } from 'TeamEstop';
 import Timer from 'Timer';
 import TopNavbar from 'TopNavbar';
 import EventWizard from 'wizard/EventWizard';
-import { Panel } from 'ws-schema';
+import { TaggedResource } from 'ws-schema';
 
 type AppState = {
   errors: String[],
@@ -28,9 +30,11 @@ type AppState = {
 
 export default class App extends WebsocketComponent<{}, AppState> {
   readonly state: AppState = { errors: [], fta: false };
+  private topnavRef = React.createRef<HTMLDivElement>();
+  private bottomnavRef = React.createRef<HTMLDivElement>();
 
   componentDidMount = () => this.handles = [
-    this.listenFn("Panel/Current", (pan: Panel) => this.setState({ fta: pan.fta })),
+    this.listenFn("Resource/Current", (r: TaggedResource) => this.setState({ fta: r.fta || false })),
     this.listenFn("Error", (err: string) => this.setState(s => update(s, { errors: { $push: [err] } })))
   ];
 
@@ -43,9 +47,9 @@ export default class App extends WebsocketComponent<{}, AppState> {
 
     return <div className="wrapper">
       {
-        nonav ? this.renderNoNavbar() : <Row className="navbar-padding-top">
+        nonav ? this.renderNoNavbar() : <Row className="navbar-padding-top" style={ { "--nav-height": `${this.topnavRef.current?.clientHeight}px` } as React.CSSProperties }>
           <Col>
-            <TopNavbar />
+            <TopNavbar innerRef={this.topnavRef} />
           </Col>
         </Row>
       }
@@ -62,9 +66,9 @@ export default class App extends WebsocketComponent<{}, AppState> {
         {/* </Col> */}
       </Row>
       {
-        nonav ? <React.Fragment /> : <Row className="navbar-padding-bottom">
+        nonav ? <React.Fragment /> : <Row className="navbar-padding-bottom" style={ { "--nav-height": `${this.bottomnavRef.current?.clientHeight}px` } as React.CSSProperties }>
           <Col>
-            <BottomNavbar />
+            <BottomNavbar innerRef={this.bottomnavRef} />
           </Col>
         </Row>
       }
@@ -75,8 +79,8 @@ export default class App extends WebsocketComponent<{}, AppState> {
     const fta = this.state.fta;
     return <Routes>
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
-      <Route path={MATCH_CONTROL} element={ withRole("Scorekeeper", this.wrapView(<MatchControl />)) } />
-      <Route path={MONITOR} element={ withRole("Monitor", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
+      <Route path={MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl fta={fta} />)) } />
+      <Route path={MONITOR} element={ withRole("MonitorPanel", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
       <Route path={AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />
       <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
       <Route path={`${SCORING}/*`} element={ this.wrapView(<ScoringRouter />) } />
@@ -86,7 +90,9 @@ export default class App extends WebsocketComponent<{}, AppState> {
       <Route path={`${ESTOPS}/*`} element={ this.wrapView(<TeamEstops />, { fullscreen: true, nonav: true }) } />
       <Route path={DEBUG} element={ this.wrapView(<Debug fta={fta} />) } />
       <Route path={REPORTS} element={ this.wrapView(<Reports fta={fta} />) } />
-      <Route path={TIMER} element={ withRole("Timer", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
+      <Route path={`${CSA}/*`} element={ this.wrapView(<CSARouter fta={fta} />) } />
+      <Route path={LOGS} element={ this.wrapView(<MatchLogs />) } />
+      <Route path={TIMER} element={ withRole("TimerPanel", this.wrapView(<Timer />, { nonav: true, fullscreen: true, nopad: true })) } />
       <Route path="/" element={ this.wrapView(<Home fta={fta} />) } />
     </Routes>
   }

@@ -1,13 +1,14 @@
 import React, { useContext } from "react";
 import { useLocation } from "react-router-dom";
-import { PanelRole, WebsocketMessage2JMS } from "ws-schema";
-import JmsWebsocket, { CallbackFn } from "./ws";
+import { ResourceRole, WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
+import JmsWebsocket, { CallbackFn, TransactPromise } from "./ws";
 
 export type WebsocketContextT = {
   send: (msg: WebsocketMessage2JMS) => void,
+  transact: <T>(msg: WebsocketMessage2JMS, path?: string[]|string) => TransactPromise<T>,
   listen: <T>(path: string|string[], callback: CallbackFn<T>) => string,
   unlisten: (paths: string[]) => void,
-  setRole: (role: PanelRole, location: string) => void,
+  setRole: (role: ResourceRole, location: string) => void,
   connected: boolean
 };
 
@@ -16,7 +17,7 @@ export const WebsocketContext = React.createContext<WebsocketContextT>(
   null
 );
 
-export function RoleUpdater(props: { role: PanelRole, children: React.ReactElement }) {
+export function RoleUpdater(props: { role: ResourceRole, children: React.ReactElement }) {
   let location = useLocation();
   let wsContext = useContext(WebsocketContext);
 
@@ -27,7 +28,7 @@ export function RoleUpdater(props: { role: PanelRole, children: React.ReactEleme
   return props.children;
 }
 
-export function withRole(role: PanelRole, children: React.ReactElement) {
+export function withRole(role: ResourceRole, children: React.ReactElement) {
   return <RoleUpdater role={role}>
     { children }
   </RoleUpdater>
@@ -39,6 +40,7 @@ export class WebsocketManagerComponent extends React.Component<{ children: React
 
   readonly state: WebsocketContextT = {
     send: this.socket.send,
+    transact: this.socket.transact,
     listen: this.socket.onMessage,
     unlisten: this.socket.removeHandles,
     setRole: this.socket.updateRole,
@@ -83,6 +85,7 @@ export abstract class WebsocketComponent<P={},S={}> extends React.Component<P,S>
   }
 
   send = (msg: WebsocketMessage2JMS) => this.context.send(msg);
+  transact = <T,>(msg: WebsocketMessage2JMS, path?: string[]|string): TransactPromise<T> => this.context.transact<T>(msg, path)
 
   isConnected = () => this.context.connected;
 

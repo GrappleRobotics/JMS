@@ -89,6 +89,10 @@ $alliances: ( "red", "blue" );
 
 a {
   text-decoration: none;
+
+  &:hover {
+    cursor: pointer;
+  }
 }
 
 .nav-link.disabled {
@@ -103,6 +107,13 @@ a {
 html, body, #root {
   height: 100%;
   touch-action: manipulation;
+  overflow: hidden;   // Needed to stop the scroll bar showing up whilst hovering on popover
+}
+
+#root {
+  @media screen and (max-width: 1080px) {
+    font-size: 0.8rem;
+  }
 }
 
 .wrapper {
@@ -142,18 +153,24 @@ html, body, #root {
 }
 
 .navbar {
+  @media screen and (max-width: 1080px) {
+    padding: 0.5rem 1rem;
+  }
   padding: 1rem;
+  background-color: theme-color("dark");
 }
 
 .navbar-padding-top {
-  padding-top: 75px;
+  // padding-top: calc(1rem + 1rem + 2*0.375rem);
+  // padding-top: calc(2rem + 20px);
+  padding-top: var(--nav-height, calc(2rem + 20px));
   > .col {
     height: 0;
   }
 }
 
 .navbar-padding-bottom {
-  padding-top: 30px + 16px*2;
+  padding-top: var(--nav-height, calc(1rem + 20px));
   > .col {
     height: 0;
   }
@@ -167,7 +184,15 @@ html, body, #root {
     &[data-arena-state=Prestart] {
       background-color: theme-color("warning");
       &[data-arena-ready=true] {
-        background-color: theme-color("good");
+        background-color: theme-color("dark");
+      }
+      &[data-ready=true] {
+        background-color: theme-color("green");
+      }
+      &[data-ready=false] {
+        &[data-ready-required=true] {
+          background-color: theme-color("bad");
+        }
       }
     }
     &[data-arena-state=MatchArmed] {
@@ -211,11 +236,15 @@ html, body, #root {
   @include hazard-btn(theme-color("hazard-yellow"));
 }
 
+.modal-xl {
+  max-width: 80vw !important;
+}
+
 .estop-big {
   display: block;
   width: 100%;
   padding: 5rem;
-  font-size: 4rem;
+  font-size: 6vw;
   font-weight: bold;
   margin-bottom: 1rem;
 }
@@ -228,6 +257,22 @@ html, body, #root {
 .estop-cancel {
   display: block;
   width: 100%;
+}
+
+.ready-big {
+  display: block;
+  width: 100%;
+  padding: 5rem;
+  font-size: 5vw;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.ready-later {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  font-size: 2vw;
 }
 
 // .bg-hazard-dark {
@@ -303,10 +348,10 @@ html, body, #root {
 .home-tile {
   * { color: white; }
   margin: 10px;
-  min-width: 250px;
-  min-height: 200px;
-  max-width: 250px;
-  max-height: 200px;
+  min-width: 200px;
+  min-height: 150px;
+  max-width: 200px;
+  max-height: 150px;
   padding: 0;
 
   .card {
@@ -324,11 +369,11 @@ html, body, #root {
       border-color: theme-color("gold");
 
       .home-tile-bg-img {
-        opacity: 35%;
+        opacity: 0.35;
       }
 
       .card-subtitle {
-        opacity: 85%;
+        opacity: 0.85;
       }
 
       .card-img-overlay {
@@ -340,6 +385,7 @@ html, body, #root {
   .home-tile-bg-img {
     transition: opacity 0.2s ease;
 
+    opacity: 0.2;
     border-radius: 20px;
     object-fit: cover;
     width: 100%;
@@ -349,19 +395,19 @@ html, body, #root {
 
   .card-title {
     text-align: center;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 5px;
+    margin-bottom: 2px;
   }
 
   .card-subtitle {
     transition: opacity 0.2s ease;
 
-    padding: 10px;
-    font-size: 18px;
+    padding: 10px 0;
+    font-size: 16px;
     font-style: italic;
-    opacity: 50%;
+    opacity: 0.5;
     text-align: center;
   }
 
@@ -383,7 +429,7 @@ input[type=number] {
 }
 
 .vr-right {
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 1px solid rgba(white, 0.1);
 }
 
 [data-buffer-diff=true] {
@@ -442,6 +488,13 @@ tr.match {
   &[data-next] {
     background-color: rgb(122, 84, 0) !important;
     font-weight: bold;
+  }
+
+  &[data-ready=false] {
+    * {
+      color: $gray-600;
+      font-style: italic;
+    }
   }
 
   &.active {
@@ -608,14 +661,26 @@ th {
   .estop-auto {
     display: block;
     width: 100%;
-    height: 30vh;
+    height: 25vh;
     font-weight: bold;
-    font-size: 4em;
+    font-size: 3.5em;
   }
 
   .subtext {
     font-size: 0.8em;
     opacity: 0.8;
+  }
+
+  .team-estop-indicators {
+    @extend .text-muted;
+    font-size: 1.5em;
+    
+    .col {
+      &[data-ok=false], &[data-estop=true] {
+        color: theme-color("bad");
+        font-weight: bold;
+      }
+    }
   }
 }
 
@@ -625,3 +690,4 @@ th {
 @import "wizard/EventWizard.scss";
 @import "scoring/Scoring.scss";
 @import "monitor/FieldMonitor.scss";
+@import "csa/CSA.scss";
