@@ -12,6 +12,7 @@ volatile uint8_t pos;
 volatile bool process_it;
 
 void ScoringTableSlave::init() {
+  Serial.begin(115200);
   pinMode(MISO, OUTPUT);
   SPCR |= _BV(SPE);
   SPCR |= _BV(SPIE);
@@ -19,7 +20,7 @@ void ScoringTableSlave::init() {
   pos = 0;
   process_it = false;
 
-  _strip.create<WS2812<2, GRB>>(120); // 120 led strip x 3
+  _strip.create<WS2812<2, GRB>>(120); // 120 led strip
 }
 
 ISR(SPI_STC_vect) {
@@ -32,6 +33,12 @@ ISR(SPI_STC_vect) {
       process_it = true;
     }
   }
+
+  Serial.println(slaveData[0]);
+  Serial.println(slaveData[1]);
+  Serial.println(slaveData[2]);
+  Serial.println(slaveData[3]);
+  Serial.println(slaveData[4]);
 }
 
 void ScoringTableSlave::updateLights() {

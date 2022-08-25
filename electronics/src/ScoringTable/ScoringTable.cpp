@@ -60,7 +60,7 @@ void ScoringTable::pollLights() {
   auto msgFromJMS = serialComms.poll();
 
   // Checkers for jms serial
-  if (!msgFromJMS.has_value()) return;
+  // if (!msgFromJMS.has_value()) return;
   // if (msgFromJMS.get().role != Role::JMS) return;
 
   LightMode lights = msgFromJMS.get().msg.get<LightMode>();
@@ -97,11 +97,27 @@ void ScoringTable::pollLights() {
   digitalWrite(SS, LOW);
   SPI.transfer(slaveData, 5);
   digitalWrite(SS, HIGH);
+
+  // Test
+  slaveData[0] = 1;
+  slaveData[1] = 255;
+
+  digitalWrite(SS, LOW);
+  SPI.transfer(slaveData, 5);
+  digitalWrite(SS, HIGH);
+  delay(1000);
+
+  digitalWrite(SS, LOW);
+  SPI.transfer(slaveData, 5);
+  digitalWrite(SS, HIGH);
+  delay(1000);
+
+  slaveData[0] = 4;
 }
 
 void ScoringTable::onUpdate() {
   pollButtons();
   pollLights();
-  delay(100);
+  delay(1000);
 }
 #endif
