@@ -455,6 +455,11 @@
       font-size: 2em;
     }
 
+    &.sound-btn {
+      font-size: 2em;
+      width: 12em;
+    }
+
     &[data-scene="custom"] { @extend .btn-orange; }
 
     &[data-scene="match_preview"] { @extend .btn-blue; }
@@ -462,6 +467,12 @@
     &[data-scene="match_results"] { @extend .btn-red; }
 
     &[data-scene="alliance_selection"] { @extend .btn-purple; }
+
+    &[data-sound="auto"] { @extend .btn-purple; }
+    &[data-sound="teleop"] { @extend .btn-orange; }
+    &[data-sound="endgame"] { @extend .btn-warning; }
+    &[data-sound="match_stop"] { @extend .btn-secondary; }
+    &[data-sound="estop"] { @extend .btn-estop; }
   }
 }
 

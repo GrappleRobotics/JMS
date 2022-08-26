@@ -39,7 +39,8 @@ define_websocket_msg!($ArenaMessage {
       PlayoffBracket,
       Award(usize),
       CustomMessage(String)
-    }
+    },
+    PlaySound(String)
   },
   $Access {
     send Current(ArenaAccessRestriction),
@@ -128,6 +129,9 @@ impl WebsocketHandler for WSArenaHandler {
               ArenaMessageAudienceDisplaySet2JMS::Award(award_id) => AudienceDisplay::Award(models::Award::get_or_err(award_id, &db::database())?),
               ArenaMessageAudienceDisplaySet2JMS::CustomMessage(custom_msg) => AudienceDisplay::CustomMessage(custom_msg),
             }
+          },
+          ArenaMessageAudienceDisplay2JMS::PlaySound(sound) => {
+            ws.context.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::PlaySound(sound).into());
           }
         },
         ArenaMessage2JMS::Access(msg) => match msg {

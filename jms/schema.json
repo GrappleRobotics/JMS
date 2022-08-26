@@ -362,6 +362,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "PlaySound"
+          ],
+          "properties": {
+            "PlaySound": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -375,6 +387,18 @@
           "properties": {
             "Current": {
               "$ref": "#/definitions/AudienceDisplay"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "PlaySound"
+          ],
+          "properties": {
+            "PlaySound": {
+              "type": "string"
             }
           },
           "additionalProperties": false

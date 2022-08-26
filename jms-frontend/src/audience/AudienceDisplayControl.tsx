@@ -103,6 +103,14 @@ export default class AudienceDisplayControl extends WebsocketComponent<{}, Audie
       }
     ];
 
+    const sounds: { id: string, name: string }[] = [
+      { id: "auto",       name: "Match Start" },
+      { id: "teleop",     name: "Teleop Start" },
+      { id: "endgame",    name: "Endgame Start" },
+      { id: "match_stop", name: "Match End" },
+      { id: "estop",      name: "E-Stop" },
+    ];
+
     return <Container className="audience-control">
       <h2> Audience Display Control </h2>
       <p> If displays are not yet ready to display data (e.g. match is not loaded), displays will default to a blank 
@@ -143,6 +151,28 @@ export default class AudienceDisplayControl extends WebsocketComponent<{}, Audie
                   disabled={award.recipients.length === 0}
                 >
                   { award.name }
+                </Button>
+              </React.Fragment>)
+            }
+          </div>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col>
+          <h3> Sound Check </h3>
+          <div className="ml-4">
+            {
+              sounds.map(sound => <React.Fragment>
+                <Button
+                  key={sound.id}
+                  className="m-1 px-5 sound-btn"
+                  data-sound={sound.id}
+                  onClick={() => this.send({
+                    Arena: { AudienceDisplay: { PlaySound: sound.id } }
+                  })}
+                >
+                  { sound.name }
                 </Button>
               </React.Fragment>)
             }

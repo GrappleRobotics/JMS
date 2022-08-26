@@ -133,9 +133,13 @@ export type EndgamePointType = "None" | "Low" | "Mid" | "High" | "Traversal";
 export type MatchSubtype = "Quarterfinal" | "Semifinal" | "Final";
 export type MatchType = "Test" | "Qualification" | "Playoff";
 export type MatchPlayState = "Waiting" | "Warmup" | "Auto" | "Pause" | "Teleop" | "Cooldown" | "Complete" | "Fault";
-export type ArenaMessageAudienceDisplay2UI = {
-  Current: AudienceDisplay;
-};
+export type ArenaMessageAudienceDisplay2UI =
+  | {
+      Current: AudienceDisplay;
+    }
+  | {
+      PlaySound: string;
+    };
 export type AudienceDisplay =
   | {
       scene: "Field";
@@ -441,9 +445,13 @@ export type ScoreUpdate =
         tech_fouls?: number;
       };
     };
-export type ArenaMessageAudienceDisplay2JMS = {
-  Set: ArenaMessageAudienceDisplaySet2JMS;
-};
+export type ArenaMessageAudienceDisplay2JMS =
+  | {
+      Set: ArenaMessageAudienceDisplaySet2JMS;
+    }
+  | {
+      PlaySound: string;
+    };
 export type ArenaMessageAudienceDisplaySet2JMS =
   | ("Field" | "MatchPreview" | "MatchPlay" | "AllianceSelection" | "PlayoffBracket")
   | {

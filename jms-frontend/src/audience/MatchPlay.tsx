@@ -120,7 +120,8 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
   componentDidMount = () => this.handles = [
     this.listen("Arena/Alliance/CurrentStations", "stations"),
     this.listen("Arena/Match/Current", "match"),
-    this.listen("Arena/State/Current", "arenaState")
+    this.listen("Arena/State/Current", "arenaState"),
+    this.listenFn<string>("Arena/AudienceDisplay/PlaySound", (sound) => this.playSound(sound))
   ];
 
   playSound = async (sound: string) => {
