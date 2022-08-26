@@ -15,14 +15,14 @@ class ScoringTable : public NodeBase {
   void pollButtons();
 
  private:
-  InterruptButton *e_r1;
-  InterruptButton *e_r2;
-  InterruptButton *e_r3;
+  // InterruptButton *e_r1;
+  // InterruptButton *e_r2;
+  // InterruptButton *e_r3;
 
-  InterruptButton *e_b1;
-  InterruptButton *e_b2;
-  InterruptButton *e_b3;
+  // InterruptButton *e_b1;
+  // InterruptButton *e_b2;
+  // InterruptButton *e_b3;
 
-  InterruptButton *e_mst;
+  // InterruptButton *e_mst;
 };
 // #endif

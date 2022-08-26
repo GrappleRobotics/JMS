@@ -16,35 +16,33 @@ void ScoringTable::init() {
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV8);
 
-  e_mst = new InterruptButton(A2, []{}, true);
-
-  e_r1 = new InterruptButton(4, []{}, true);
-  e_r2 = new InterruptButton(5, []{}, true);
-  e_r3 = new InterruptButton(6, []{}, true);
-
-  e_b1 = new InterruptButton(7, []{}, true);
-  e_b2 = new InterruptButton(8, []{}, true);
-  e_b3 = new InterruptButton(9, []{}, true);
+  pinMode(A2, INPUT_PULLUP);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(5, INPUT_PULLUP);
+  pinMode(6, INPUT_PULLUP);
+  pinMode(7, INPUT_PULLUP);
+  pinMode(8, INPUT_PULLUP);
+  pinMode(9, INPUT_PULLUP);
 }
 
 void ScoringTable::pollButtons() {
   const MessageEstops estop_message {
     EstopStates {
       // Field Estop
-      e_mst->isTriggered(), 
+      !digitalRead(A2), 
       
       // Red Estops
       {
-        e_r1->isTriggered(),
-        e_r2->isTriggered(),
-        e_r3->isTriggered()
+        !digitalRead(4),
+        !digitalRead(5),
+        !digitalRead(6)
       },
 
       // Blue Estops
       {
-        e_b1->isTriggered(),
-        e_b2->isTriggered(),
-        e_b3->isTriggered()
+        !digitalRead(7),
+        !digitalRead(8),
+        !digitalRead(9)
       }
     }
   };
