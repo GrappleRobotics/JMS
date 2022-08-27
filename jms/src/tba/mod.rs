@@ -74,6 +74,11 @@ impl TBAWorker {
     let mut match_records = models::MatchGenerationRecord::table(db)?.watch_all();
     // Awards aren't included - TBA can't handle non-standard award names
 
+    // Dump all the matches when we start, just in case they hadn't been published yet
+    for m in models::Match::all(&db::database())? {
+      self.publish_match(&m).await?;
+    }
+
     loop {
       tokio::select! {
         event = details.get() => {
@@ -98,20 +103,7 @@ impl TBAWorker {
         },
         event = matches.get() => {
           match event? {
-            db::WatchEvent::Insert(m) => {
-              let mut tba_match = matches::TBAMatch::try_from(m.data.clone())?;
-              match tba_match.issue(&self.client).await {
-                Ok(_) => (),
-                Err(_) => {
-                  // Try again without the score breakdown
-                  info!("Trying match upload again without score breakdown...");
-                  tba_match.score_breakdown = None;
-                  if let Err(e) = tba_match.issue(&self.client).await {
-                    error!("TBA Match Error: {}", e);
-                  }
-                },
-              }
-            },
+            db::WatchEvent::Insert(m) => self.publish_match(&m.data).await?,
             db::WatchEvent::Remove(key) => matches::TBAMatch::delete(key, &self.client).await?,
           }
         },
@@ -131,6 +123,23 @@ impl TBAWorker {
         }
       }
     }
+  }
+
+  async fn publish_match(&self, m: &models::Match) -> anyhow::Result<()> {
+    let mut tba_match = matches::TBAMatch::try_from(m.clone())?;
+    match tba_match.issue(&self.client).await {
+      Ok(_) => (),
+      Err(_) => {
+        // Try again without the score breakdown
+        info!("Trying match upload again without score breakdown...");
+        tba_match.score_breakdown = None;
+        if let Err(e) = tba_match.issue(&self.client).await {
+          error!("TBA Match Error: {}", e);
+        }
+      },
+    };
+
+    Ok(())
   }
 }
 

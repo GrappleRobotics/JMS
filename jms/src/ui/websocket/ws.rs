@@ -81,7 +81,7 @@ impl WebsocketContext {
         let bcast = self.bcast.lock().await;
         for (k, v) in bcast.iter() {
           let sub = k.1.iter().map(|x| x as &str).collect::<Vec<&str>>();
-          if msg.path[0] == "Ping" || (sub.len() <= msg.path.len() && sub == msg.path[0..sub.len()]) {
+          if sub.len() <= msg.path.len() && sub == msg.path[0..sub.len()] {
             match v.send(msg.clone()).await {
               Ok(_) => (),
               Err(err) => error!("Could not broadcast: {}", err)

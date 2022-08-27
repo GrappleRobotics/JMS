@@ -78,7 +78,7 @@ impl Websockets {
     // Build intervals for each handler
     let mut handler_ints: Vec<Interval> = self.context.handlers.lock().await.iter().map(|x| interval(x.loop_time)).collect();
 
-    let mut ping_int = interval(Duration::from_millis(250));
+    let mut ping_int = interval(Duration::from_millis(1000));
 
     loop {
       // Build handler futures to yield the handler index when it's ready for an update
@@ -108,7 +108,7 @@ impl Websockets {
             tokio::spawn(async move {
               let mut ws = Websocket::new(context.clone());
 
-              if let Err(e) = ws.run(stream, Duration::from_millis(1500)).await {
+              if let Err(e) = ws.run(stream, Duration::from_millis(5000)).await {
                 match e.downcast_ref::<tungstenite::Error>() {
                   Some(tungstenite::Error::ConnectionClosed | tungstenite::Error::Protocol(_) | tungstenite::Error::Utf8) => (),
                   _ => error!("Websocket Error: {}", e),

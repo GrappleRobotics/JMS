@@ -250,7 +250,8 @@ impl Annealer {
       let next = generator(&current);
 
       if let Some(score) = evaluator(&next) {
-        let prob = f64::exp(-(score - current_score) / temperature);
+        // let prob = f64::exp(-(score - current_score) / temperature);
+        let prob: f64 = 0.0;
         let roll: f64 = rng.gen();
         if score < current_score || roll <= prob {
           current = next;

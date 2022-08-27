@@ -90,6 +90,7 @@ export default class JmsWebsocket {
         setTimeout(() => {
           this.connectCallbacks.forEach(cb => cb(true));
           this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
+          this.send({ Subscribe: ["Ping"] });
           this.sendQueue.forEach(sq => this.sendNow(sq));
           this.sendQueue = [];
           this.send({ Resource: { SetRole: this.role[0] } });
@@ -112,29 +113,28 @@ export default class JmsWebsocket {
     };
 
     ws.onmessage = msg => {
-      if (msg.data !== "ping") {
-        let meta = JSON.parse(msg.data) as SendMeta;
-        let message = meta.msg;
+      let meta = JSON.parse(msg.data) as SendMeta;
+      let message = meta.msg;
 
-        if (meta.reply != null) {
-          // Reconcile Reply
-          const waiting = this.reply_waiting.get(meta.reply);
-          if (waiting != null) {
-            if (!walkCallback(message, waiting)) {
-              waiting.reject(`Reply callback not assignable to promise - is the path correct?`);
-            }
-            this.reply_waiting.delete(meta.reply);
-          } else {
-            console.warn(`Got a reply for SID ${meta.reply} but there are no waiting promises!`);
+      if (meta.reply != null) {
+        // Reconcile Reply
+        const waiting = this.reply_waiting.get(meta.reply);
+        if (waiting != null) {
+          if (!walkCallback(message, waiting)) {
+            waiting.reject(`Reply callback not assignable to promise - is the path correct?`);
           }
-        } else if (message === "Ping") {
-          this.send("Pong");
+          this.reply_waiting.delete(meta.reply);
         } else {
-          // Trigger all callbacks whom apply
-          this.callbacks.forEach(cb => {
-            walkCallback(message, cb);
-          });
+          console.warn(`Got a reply for SID ${meta.reply} but there are no waiting promises!`);
         }
+      } else if (message === "Ping") {
+        console.log(message);
+        this.send("Pong");
+      } else {
+        // Trigger all callbacks whom apply
+        this.callbacks.forEach(cb => {
+          walkCallback(message, cb);
+        });
       }
     };
   }

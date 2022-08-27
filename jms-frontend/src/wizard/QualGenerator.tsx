@@ -7,7 +7,7 @@ import moment from "moment";
 import { Accordion, Button, Col, Form, Row, Table } from "react-bootstrap";
 import { ALLIANCES } from "support/ws-additional";
 import { WebsocketComponent } from "support/ws-component";
-import { MatchGenerationRecordData, ScheduleBlock, SerialisedMatchGeneration, Team } from "ws-schema";
+import { MatchGenerationRecordData, ScheduleBlock, SerialisedMatchGeneration, SerializedMatch, Team } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 import update from "immutability-helper";
 import { capitalise } from "support/strings";
@@ -18,6 +18,8 @@ type QualGeneratorState = {
   station_anneal_steps: number,
   teams: Team[],
   schedule: ScheduleBlock[],
+  swap?: SerializedMatch,
+  colours: boolean
 };
 
 type QualGenRecord = Extract<MatchGenerationRecordData, { Qualification: any }>;
@@ -28,7 +30,8 @@ export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, 
     team_anneal_steps: 100_000,
     station_anneal_steps: 50_000,
     teams: [],
-    schedule: []
+    schedule: [],
+    colours: false
   };
 
   componentDidMount = () => this.handles = [
@@ -46,6 +49,21 @@ export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, 
 
     if (result)
       this.send({ Match: { Quals: "Clear" } });
+  }
+
+  onSwap = (match: SerializedMatch) => {
+    if (this.state.swap == null) {
+      this.setState({ swap: match });
+    } else {
+      const other = this.state.swap;
+      this.send({
+        Match: { Update: update(match, { red_teams: { $set: other.red_teams }, blue_teams: { $set: other.blue_teams } }) }
+      });
+      this.send({
+        Match: { Update: update(other, { red_teams: { $set: match.red_teams }, blue_teams: { $set: match.blue_teams } }) }
+      });
+      this.setState({ swap: undefined });
+    }
   }
 
   renderStatsForNerds = (record: QualGenRecord["Qualification"]) => {
@@ -94,7 +112,7 @@ export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, 
   }
 
   renderSchedule = () => {
-    const { gen, teams } = this.state;
+    const { gen, teams, colours } = this.state;
     const { fta } = this.props;
     const matches = gen?.matches || [];
     const record = (gen?.record?.data! as QualGenRecord)["Qualification"];
@@ -104,6 +122,13 @@ export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, 
       const diff = _.zip(matchIdxs.slice(1), matchIdxs.slice(0, matchIdxs.length - 1)).map(v => (v!)[0]! - (v!)[1]!);
       return diff;
     }));
+
+    // const team_colours = [...Array(teams.length).keys()].map(x => Math.floor(x / teams.length * 360)).map(hue => `hsl(${hue}deg, 40%, 60%)`);
+    let team_colours: { [team: string]: string } = {};
+    
+    for (let i = 0; i < teams.length; i++) {
+      team_colours[teams[i].id] = `hsl(${i / teams.length * 360}deg, 60%, 30%)`;
+    }
 
     let alliances = [ ...ALLIANCES ];
     alliances.reverse();
@@ -115,6 +140,13 @@ export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, 
         disabled={matches.find(x => x.played) != null}
       >
         Clear Qualification Schedule
+      </Button>
+      &nbsp;
+      <Button
+        variant={ colours ? "warning" : "success" }
+        onClick={ () => this.setState({ colours: !colours }) }
+      >
+        Colours { colours ? "Disable" : "Enable" }
       </Button>
 
       <br /> <br />
@@ -166,7 +198,7 @@ export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, 
               <td> &nbsp; { match.start_time ? moment.unix(match.start_time).format("ddd HH:mm:ss") : "Unknown" } </td>
               <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
               {
-                alliances.flatMap(alliance => match[`${alliance}_teams`].map((team, i) => <td className="schedule-row" data-alliance={alliance}>
+                alliances.flatMap(alliance => match[`${alliance}_teams`].map((team, i) => <td className="schedule-row" data-alliance={alliance} style={ colours ? { backgroundColor: team_colours[team!] } : {} }>
                   {
                     fta && !match.played ? <EditableFormControl
                       autofocus
@@ -184,7 +216,16 @@ export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, 
               {/* { match.blue_teams.map(t => <td className="schedule-row" data-alliance="blue"> { t } </td>) }
               { match.red_teams.map(t =>  <td className="schedule-row" data-alliance="red"> { t } </td>) } */}
               {
-                fta && <td>
+                fta && !match.played && <td>
+                  <Button
+                    variant="primary"
+                    onClick={() => this.onSwap(match)}
+                    disabled={ this.state.swap?.id === match.id }
+                    size="sm"
+                  >
+                    Swap Teams
+                  </Button>
+                  &nbsp;
                   <Button
                     variant="danger"
                     onClick={() => withConfirm(() => this.send({ Match: { Delete: match.id || "--" } }), `Are you sure you want to DELETE MATCH ${match.id}`)}

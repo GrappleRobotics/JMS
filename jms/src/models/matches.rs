@@ -95,6 +95,10 @@ impl Match {
     }
   }
 
+  pub fn has_team(&self, team: usize) -> bool {
+    self.red_teams.iter().chain(self.blue_teams.iter()).find(|&ot| (*ot) == Some(team)).is_some()
+  }
+
   pub fn by_type(mtype: MatchType, store: &db::Store) -> db::Result<Vec<Match>> {
     let mut v = Self::table(store)?.iter_values().filter(|a| {
       a.as_ref().map(|sb| sb.match_type == mtype ).unwrap_or(false)
