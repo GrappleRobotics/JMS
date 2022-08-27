@@ -1,24 +1,28 @@
 import { faCheck, faCircleNotch, faCog, faExclamationTriangle, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import confirmBool from "components/elements/Confirm";
+import confirmBool, { withConfirm } from "components/elements/Confirm";
+import EditableFormControl from "components/elements/EditableFormControl";
 import _ from "lodash";
 import moment from "moment";
 import { Accordion, Button, Col, Form, Row, Table } from "react-bootstrap";
+import { ALLIANCES } from "support/ws-additional";
 import { WebsocketComponent } from "support/ws-component";
 import { MatchGenerationRecordData, ScheduleBlock, SerialisedMatchGeneration, Team } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
+import update from "immutability-helper";
+import { capitalise } from "support/strings";
 
 type QualGeneratorState = {
   gen?: SerialisedMatchGeneration,
   team_anneal_steps: number,
   station_anneal_steps: number,
   teams: Team[],
-  schedule: ScheduleBlock[]
+  schedule: ScheduleBlock[],
 };
 
 type QualGenRecord = Extract<MatchGenerationRecordData, { Qualification: any }>;
 
-export default class QualGenerator extends WebsocketComponent<{}, QualGeneratorState> {
+export default class QualGenerator extends WebsocketComponent<{ fta: boolean }, QualGeneratorState> {
   
   readonly state: QualGeneratorState = {
     team_anneal_steps: 100_000,
@@ -91,6 +95,7 @@ export default class QualGenerator extends WebsocketComponent<{}, QualGeneratorS
 
   renderSchedule = () => {
     const { gen, teams } = this.state;
+    const { fta } = this.props;
     const matches = gen?.matches || [];
     const record = (gen?.record?.data! as QualGenRecord)["Qualification"];
 
@@ -99,6 +104,9 @@ export default class QualGenerator extends WebsocketComponent<{}, QualGeneratorS
       const diff = _.zip(matchIdxs.slice(1), matchIdxs.slice(0, matchIdxs.length - 1)).map(v => (v!)[0]! - (v!)[1]!);
       return diff;
     }));
+
+    let alliances = [ ...ALLIANCES ];
+    alliances.reverse();
 
     return <div>
       <Button
@@ -144,8 +152,12 @@ export default class QualGenerator extends WebsocketComponent<{}, QualGeneratorS
           <tr>
             <th> Time </th>
             <th> Match </th>
-            { [1,2,3].map(t => <th className="schedule-row" data-alliance="blue"> Blue {t} </th>) }
-            { [1,2,3].map(t => <th className="schedule-row" data-alliance="red"> Red {t} </th>) }
+            {
+              alliances.flatMap(alliance => [1,2,3].map(t => <th className="schedule-row" data-alliance={alliance}> { capitalise(alliance) } {t} </th>))
+            }
+            {
+              fta && <th> Action </th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -153,8 +165,35 @@ export default class QualGenerator extends WebsocketComponent<{}, QualGeneratorS
             matches.map(match => <tr>
               <td> &nbsp; { match.start_time ? moment.unix(match.start_time).format("ddd HH:mm:ss") : "Unknown" } </td>
               <td> &nbsp; { match.played ? <FontAwesomeIcon icon={faCheck} size="sm" className="text-success" /> : "" } &nbsp; { match.name } </td>
-              { match.blue_teams.map(t => <td className="schedule-row" data-alliance="blue"> { t } </td>) }
-              { match.red_teams.map(t =>  <td className="schedule-row" data-alliance="red"> { t } </td>) }
+              {
+                alliances.flatMap(alliance => match[`${alliance}_teams`].map((team, i) => <td className="schedule-row" data-alliance={alliance}>
+                  {
+                    fta && !match.played ? <EditableFormControl
+                      autofocus
+                      type="number"
+                      value={ team || "" }
+                      onUpdate={ v => {
+                        let updated = update(match, { [`${alliance}_teams`]: { [i]: { $set: (v as number) } } });
+
+                        this.send({ Match: { Update: updated }})
+                      }}
+                    /> : team
+                  }
+                </td>))
+              }
+              {/* { match.blue_teams.map(t => <td className="schedule-row" data-alliance="blue"> { t } </td>) }
+              { match.red_teams.map(t =>  <td className="schedule-row" data-alliance="red"> { t } </td>) } */}
+              {
+                fta && <td>
+                  <Button
+                    variant="danger"
+                    onClick={() => withConfirm(() => this.send({ Match: { Delete: match.id || "--" } }), `Are you sure you want to DELETE MATCH ${match.id}`)}
+                    size="sm"
+                  >
+                    Delete
+                  </Button>
+                </td>
+              }
             </tr>)
           }
         </tbody>

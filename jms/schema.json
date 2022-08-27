@@ -1675,6 +1675,121 @@
         }
       }
     },
+    "Match": {
+      "type": "object",
+      "required": [
+        "blue_teams",
+        "match_number",
+        "match_type",
+        "played",
+        "ready",
+        "red_teams",
+        "set_number"
+      ],
+      "properties": {
+        "blue_alliance": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "blue_teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        },
+        "match_number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "match_subtype": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchSubtype"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "match_type": {
+          "$ref": "#/definitions/MatchType"
+        },
+        "played": {
+          "type": "boolean"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "red_alliance": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "red_teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        },
+        "score": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchScore"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "score_time": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "set_number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "start_time": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        },
+        "winner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Alliance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "MatchConfig": {
       "type": "object",
       "required": [
@@ -1836,6 +1951,30 @@
           "properties": {
             "Reset": {
               "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Delete"
+          ],
+          "properties": {
+            "Delete": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Update"
+          ],
+          "properties": {
+            "Update": {
+              "$ref": "#/definitions/Match"
             }
           },
           "additionalProperties": false
@@ -2348,12 +2487,6 @@
     "ResourceMessage2UI": {
       "oneOf": [
         {
-          "type": "string",
-          "enum": [
-            "SetIDACK"
-          ]
-        },
-        {
           "type": "object",
           "required": [
             "All"
@@ -2376,6 +2509,18 @@
           "properties": {
             "Current": {
               "$ref": "#/definitions/TaggedResource"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetIDACK"
+          ],
+          "properties": {
+            "SetIDACK": {
+              "type": "string"
             }
           },
           "additionalProperties": false

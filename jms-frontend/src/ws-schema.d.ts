@@ -211,12 +211,14 @@ export type MatchMessagePlayoffs2UI = {
   Generation: SerialisedMatchGeneration;
 };
 export type ResourceMessage2UI =
-  | "SetIDACK"
   | {
       All: TaggedResource[];
     }
   | {
       Current: TaggedResource;
+    }
+  | {
+      SetIDACK: string;
     }
   | {
       Requirements: ResourceMessageRequirements2UI;
@@ -476,6 +478,12 @@ export type MatchMessage2JMS =
     }
   | {
       Reset: string;
+    }
+  | {
+      Delete: string;
+    }
+  | {
+      Update: Match;
     };
 export type MatchMessageQuals2JMS =
   | "Clear"
@@ -790,6 +798,22 @@ export interface ScoreUpdateData {
 export interface QualsMatchGeneratorParams {
   station_anneal_steps: number;
   team_anneal_steps: number;
+}
+export interface Match {
+  blue_alliance?: number | null;
+  blue_teams: (number | null)[];
+  match_number: number;
+  match_subtype?: MatchSubtype | null;
+  match_type: MatchType;
+  played: boolean;
+  ready: boolean;
+  red_alliance?: number | null;
+  red_teams: (number | null)[];
+  score?: MatchScore | null;
+  score_time?: number | null;
+  set_number: number;
+  start_time?: number | null;
+  winner?: Alliance | null;
 }
 export interface SendMeta {
   bcast: boolean;

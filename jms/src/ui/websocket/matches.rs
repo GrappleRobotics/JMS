@@ -2,11 +2,11 @@ use anyhow::bail;
 use jms_macros::define_websocket_msg;
 
 use crate::{
-  db::{self, TableType}, models,
+  db::{self, TableType}, models::{self, Match},
   schedule::{playoffs::PlayoffMatchGenerator, quals::QualsMatchGenerator, worker::{SerialisedMatchGeneration, MatchGenerator, SharedMatchGenerators}},
 };
 
-use super::{ws::{WebsocketHandler, Websocket, WebsocketContext}, WebsocketMessage2JMS};
+use super::{ws::{WebsocketHandler, Websocket, WebsocketContext}, WebsocketMessage2JMS, WebsocketMessage2UI};
 
 define_websocket_msg!($MatchMessage {
   $Quals {
@@ -20,6 +20,8 @@ define_websocket_msg!($MatchMessage {
     recv Generate(<PlayoffMatchGenerator as MatchGenerator>::ParamType)
   },
   recv Reset(String),
+  recv Delete(String),
+  recv Update(Match),
   send All(Vec<models::SerializedMatch>),
   send Next(Option<models::SerializedMatch>),
   send Last(Option<models::SerializedMatch>)
@@ -57,6 +59,17 @@ impl WebsocketHandler for WSMatchHandler {
           MatchMessagePlayoffs2JMS::Clear if !gen.playoffs.has_played() => gen.playoffs.delete(),
           MatchMessagePlayoffs2JMS::Clear => bail!("Cannot clear match generator after matches have started!"),
           MatchMessagePlayoffs2JMS::Generate(p) => gen.playoffs.generate(p).await,
+        },
+        MatchMessage2JMS::Update(mut m) => {
+          ws.require_fta().await?;
+          m.insert(&db::database())?;
+        }
+        MatchMessage2JMS::Delete(id) => {
+          ws.require_fta().await?;
+          match models::Match::remove_by(id, &db::database())? {
+            Some(_) => (),
+            None => { ws.reply(WebsocketMessage2UI::Error("No match with given ID".to_owned())).await; }
+          }
         },
         MatchMessage2JMS::Reset(id) => {
           ws.require_fta().await?;

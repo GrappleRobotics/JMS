@@ -146,7 +146,7 @@ async fn main() -> anyhow::Result<()> {
 
     if !matches.is_present("no-backup") {
       info!("Backups Enabled");
-      let backups = DBBackup::new(settings.backup);
+      let backups = DBBackup::new(arena.clone(), settings.backup);
       futs.push(backups.run().boxed());
     }
 

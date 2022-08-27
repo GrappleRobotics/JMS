@@ -89,7 +89,7 @@ type EventWizardState = {
   metas: EventWizardMetaState
 }
 
-export default class EventWizard extends React.Component<{}, EventWizardState> {
+export default class EventWizard extends React.Component<{ fta: boolean }, EventWizardState> {
   readonly state: EventWizardState = {
     active: "welcome",
     metas: {}
@@ -150,7 +150,7 @@ export default class EventWizard extends React.Component<{}, EventWizardState> {
               { this.paneFor("configTeams", <ConfigureTeams />) }
               { this.paneFor("configSchedule", <ConfigureSchedule />) }
               { this.paneFor("resources", <ConfigureResources />) }
-              { this.paneFor("qualGen", <QualGenerator />) }
+              { this.paneFor("qualGen", <QualGenerator fta={this.props.fta} />) }
               { this.paneFor("allianceSel", <AllianceSelection />) }
               { this.paneFor("playoffGen", <PlayoffGenerator />) }
               { this.paneFor("awards", <ConfigureAwards />) }

@@ -78,7 +78,7 @@ export default class App extends WebsocketComponent<{}, AppState> {
   render() {
     const fta = this.state.fta;
     return <Routes>
-      <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard />) } />
+      <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard fta={fta} />) } />
       <Route path={MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl fta={fta} />)) } />
       <Route path={MONITOR} element={ withRole("MonitorPanel", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
       <Route path={AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />

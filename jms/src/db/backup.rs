@@ -6,26 +6,56 @@ use tokio::time::interval;
 use walkdir::WalkDir;
 use zip::write::FileOptions;
 
-use crate::config::Interactive;
+use crate::{config::Interactive, models, arena::SharedArena};
+
+use super::TableType;
 
 pub struct DBBackup {
+  pub arena: SharedArena,
   pub settings: DBBackupSettings
 }
 
 impl DBBackup {
-  pub fn new(settings: DBBackupSettings) -> Self {
-    Self { settings }
+  pub fn new(arena: SharedArena, settings: DBBackupSettings) -> Self {
+    Self { arena, settings }
   }
 
   pub async fn run(self) -> anyhow::Result<()> {
     let mut interval = interval(self.settings.frequency);
 
+    let db = super::database();
+    let mut watch_matches = models::Match::table(db)?.watch_all();
+
     loop {
-      interval.tick().await;
-      info!("Taking a backup...");
-      match self.zip() {
-        Ok(()) => info!("Backup complete!"),
-        Err(e) => error!("Backup error - {}", e)
+      let mut update = false;
+
+      tokio::select! {
+        m = watch_matches.get() => {
+          match m? {
+            // Only backup when a match is finished
+            super::WatchEvent::Insert(v) if v.data.played  => {
+              update = true;
+            },
+            super::WatchEvent::Remove(_) => {
+              update = true;
+            },
+            _ => ()
+          };
+        },
+        _ = interval.tick() => {
+          let arena = self.arena.lock().await;
+          if arena.can_backup() {
+            update = true;
+          }
+        }
+      }
+
+      if update {
+        info!("Taking a backup...");
+        match self.zip() {
+          Ok(()) => info!("Backup complete!"),
+          Err(e) => error!("Backup error - {}", e)
+        }
       }
     }
   }

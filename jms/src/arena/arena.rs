@@ -142,6 +142,14 @@ impl Arena {
     a
   }
 
+  pub fn can_backup(&self) -> bool {
+    match self.state.state {
+      ArenaState::MatchArmed | ArenaState::MatchPlay => false,
+      ArenaState::MatchComplete { ready: _ } | ArenaState::MatchCommit => false,
+      _ => true,
+    }
+  }
+
   pub fn unload_match(&mut self) -> Result<()> {
     match self.state.state {
       ArenaState::Idle { ready: true } => {
