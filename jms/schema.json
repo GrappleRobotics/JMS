@@ -559,7 +559,8 @@
             "EstopReset",
             "Prestart",
             "MatchPlay",
-            "MatchCommit"
+            "MatchCommit",
+            "Idle"
           ]
         },
         {

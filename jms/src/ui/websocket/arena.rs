@@ -68,7 +68,12 @@ impl WebsocketHandler for WSArenaHandler {
 
       match msg.clone() {
         ArenaMessage2JMS::State(msg) => match msg {
-          ArenaMessageState2JMS::Signal(signal) => arena.signal(signal).await,
+          ArenaMessageState2JMS::Signal(signal) => {
+            if signal == ArenaSignal::Estop {
+              error!("Estop Trig'd by Resource: {:?} ({:?})", ws.resource_id, ws.resource().await);
+            }
+            arena.signal(signal).await;
+          },
         },
         ArenaMessage2JMS::Alliance(msg) => match msg {
           ArenaMessageAlliance2JMS::UpdateAlliance { station, bypass, team, estop, astop } => {

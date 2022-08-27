@@ -30,15 +30,15 @@ export class PosSelector extends React.Component<PosSelectorProps, PosSelectorSt
   readonly state: PosSelectorState = {
     top: 0,
     left: 0,
-    width: 0,
-    height: 0,
+    width: 500,
+    height: 200,
     fontSize: "1rem",
   };
 
   componentDidMount = () => {
     this.colRef.current!.addEventListener("resize", () => this.recalcSize());
     window.addEventListener("resize", () => this.recalcSize());
-    setTimeout(() => this.recalcSize(), 100);
+    setTimeout(() => this.recalcSize(), 1000);
   }
 
   recalcSize = () => {

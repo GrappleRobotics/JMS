@@ -97,7 +97,7 @@ pub struct Websocket {
 
 impl Websocket {
   pub fn new(context: WebsocketContext) -> Self {
-    let (send_tx, send_rx) = mpsc::channel(100);
+    let (send_tx, send_rx) = mpsc::channel(512);
 
     Self {
       resource_id: None,

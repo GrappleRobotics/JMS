@@ -71,6 +71,7 @@ pub enum ArenaSignal {
   MatchArm(bool),   // bool: force?
   MatchPlay,
   MatchCommit,
+  Idle
 }
 
 #[derive(Clone, Debug, Serialize, JsonSchema)]
@@ -360,6 +361,8 @@ impl Arena {
           }
         } else if let Some(ArenaSignal::Prestart) = signal {
           self.prepare_state_change(ArenaState::Prestart { ready: false })?;
+        } else if let Some(ArenaSignal::Idle) = signal {
+          self.prepare_state_change(ArenaState::Idle { ready: false })?;
         }
       }
       (ArenaState::MatchArmed, _) => {
@@ -564,6 +567,7 @@ impl Arena {
           Ok(())
         }
       }
+      (ArenaState::Prestart { ready: true }, ArenaState::Idle { ready: false }, _) => Ok(()),
       (ArenaState::Prestart { ready: false }, ArenaState::Prestart { ready: true }, _) => Ok(()),
       (ArenaState::Prestart { ready: true }, ArenaState::Prestart { ready: false }, _) => Ok(()),
       (ArenaState::Prestart { ready: true }, ArenaState::MatchArmed, _) => {

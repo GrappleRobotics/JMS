@@ -104,6 +104,21 @@ export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
           </Col>
         </Row>
         <br />
+        {
+          this.props.state?.state === "Prestart" && this.props.state?.ready ?
+            <Row>
+              <Col>
+                <MatchFlowButton
+                  arenaState={state}
+                  targetState="Idle"
+                  onClick={() => this.props.onSignal("Idle")}
+                  variant="secondary"
+                >
+                  REVERT PRESTART
+                </MatchFlowButton>
+              </Col>
+            </Row> : <React.Fragment />
+        }
         <Row>
           <Col>
             {

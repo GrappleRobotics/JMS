@@ -390,7 +390,7 @@ export type ArenaMessageState2JMS = {
   Signal: ArenaSignal;
 };
 export type ArenaSignal =
-  | ("Estop" | "EstopReset" | "Prestart" | "MatchPlay" | "MatchCommit")
+  | ("Estop" | "EstopReset" | "Prestart" | "MatchPlay" | "MatchCommit" | "Idle")
   | {
       MatchArm: boolean;
     };

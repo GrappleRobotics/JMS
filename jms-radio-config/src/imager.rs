@@ -31,7 +31,7 @@ pub async fn image(iface: LinkMetadata, props: ImagingProps) -> anyhow::Result<(
 
 async fn write_img(props: ImagingProps) -> anyhow::Result<()> {
   let mode = if props.home { "AP24" } else { "B5" };
-  let msg = format!("{},{},{},{},N,Y,Y,0,0,,\n\n", mode, props.team, props.ssid, props.key);
+  let msg = format!("{},{},{},{},N,N,Y,0,0,,\n\n", mode, props.team, props.ssid, props.key);
 
   let mut stream = TcpStream::connect((ROUTER_IP, 8888)).await?;
   stream.write_all(msg.as_bytes()).await?;
