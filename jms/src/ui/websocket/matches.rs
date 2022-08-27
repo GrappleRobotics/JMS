@@ -32,14 +32,14 @@ impl WebsocketHandler for WSMatchHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
     {
       let gen = self.0.lock().await;
-      ctx.broadcast(MatchMessage2UI::from( MatchMessageQuals2UI::Generation((&gen.quals).into()) ));
-      ctx.broadcast(MatchMessage2UI::from( MatchMessagePlayoffs2UI::Generation((&gen.playoffs).into()) ));
+      ctx.broadcast(MatchMessage2UI::from( MatchMessageQuals2UI::Generation((&gen.quals).into()) )).await;
+      ctx.broadcast(MatchMessage2UI::from( MatchMessagePlayoffs2UI::Generation((&gen.playoffs).into()) )).await;
     }
     {
       let sorted = models::Match::sorted(&db::database())?;
-      ctx.broadcast(MatchMessage2UI::All(sorted.iter().map(|m| m.clone().into()).collect()));
-      ctx.broadcast(MatchMessage2UI::Next(sorted.iter().find(|&m| !m.played).map(|m| m.clone().into())));
-      ctx.broadcast(MatchMessage2UI::Last(sorted.iter().rev().find(|&m| m.played).map(|m| m.clone().into())));
+      ctx.broadcast(MatchMessage2UI::All(sorted.iter().map(|m| m.clone().into()).collect())).await;
+      ctx.broadcast(MatchMessage2UI::Next(sorted.iter().find(|&m| !m.played).map(|m| m.clone().into()))).await;
+      ctx.broadcast(MatchMessage2UI::Last(sorted.iter().rev().find(|&m| m.played).map(|m| m.clone().into()))).await;
     }
     Ok(())
   }

@@ -123,15 +123,18 @@ impl Decoder for DSTCPCodec {
       let tag: Option<Ds2FmsTCPTags> = match id {
         0x00 => {
           // WPILib Version
-          Some(Ds2FmsTCPTags::WPILibVersion(utf8_str_with_len(&mut buf, size)?))
+          // Some(Ds2FmsTCPTags::WPILibVersion(utf8_str_with_len(&mut buf, size)?))
+          None
         }
         0x01 => {
           // RIO Version
-          Some(Ds2FmsTCPTags::RIOVersion(utf8_str_with_len(&mut buf, size)?))
+          // Some(Ds2FmsTCPTags::RIOVersion(utf8_str_with_len(&mut buf, size)?))
+          None
         }
         0x02 => {
           // DS Version
-          Some(Ds2FmsTCPTags::DSVersion(utf8_str_with_len(&mut buf, size)?))
+          // Some(Ds2FmsTCPTags::DSVersion(utf8_str_with_len(&mut buf, size)?))
+          None
         }
         0x16 => {
           // Log Data

@@ -45,12 +45,12 @@ pub struct WSEventHandler;
 #[async_trait::async_trait]
 impl WebsocketHandler for WSEventHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
-    ctx.broadcast::<EventMessage2UI>(EventMessageDetails2UI::Current( models::EventDetails::get(&db::database())? ).into());
-    ctx.broadcast::<EventMessage2UI>(EventMessageTeam2UI::CurrentAll( models::Team::all(&db::database())? ).into());
-    ctx.broadcast::<EventMessage2UI>(EventMessageSchedule2UI::CurrentBlocks( models::ScheduleBlock::sorted(&db::database())? ).into());
-    ctx.broadcast::<EventMessage2UI>(EventMessageAlliance2UI::CurrentAll( models::PlayoffAlliance::all(&db::database())? ).into());
-    ctx.broadcast::<EventMessage2UI>(EventMessageRanking2UI::CurrentAll( models::TeamRanking::sorted(&db::database())? ).into());
-    ctx.broadcast::<EventMessage2UI>(EventMessageAward2UI::CurrentAll( models::Award::all(&db::database())? ).into());
+    ctx.broadcast::<EventMessage2UI>(EventMessageDetails2UI::Current( models::EventDetails::get(&db::database())? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageTeam2UI::CurrentAll( models::Team::all(&db::database())? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageSchedule2UI::CurrentBlocks( models::ScheduleBlock::sorted(&db::database())? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageAlliance2UI::CurrentAll( models::PlayoffAlliance::all(&db::database())? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageRanking2UI::CurrentAll( models::TeamRanking::sorted(&db::database())? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageAward2UI::CurrentAll( models::Award::all(&db::database())? ).into()).await;
     Ok(())
   }
 

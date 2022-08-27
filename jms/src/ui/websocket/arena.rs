@@ -54,11 +54,11 @@ pub struct WSArenaHandler(pub SharedArena);
 impl WebsocketHandler for WSArenaHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
     let arena = self.0.lock().await;
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(arena.current_match.clone()).into());
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(arena.state.state.clone()).into());
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(arena.stations.iter().map(|x| x.clone().into()).collect()).into());
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::Current(arena.audience_display.clone()).into());
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAccess2UI::Current(arena.access.clone()).into());
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(arena.current_match.clone()).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(arena.state.state.clone()).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(arena.stations.iter().map(|x| x.clone().into()).collect()).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::Current(arena.audience_display.clone()).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAccess2UI::Current(arena.access.clone()).into()).await;
     Ok(())
   }
 
@@ -136,7 +136,7 @@ impl WebsocketHandler for WSArenaHandler {
             }
           },
           ArenaMessageAudienceDisplay2JMS::PlaySound(sound) => {
-            ws.context.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::PlaySound(sound).into());
+            ws.context.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::PlaySound(sound).into()).await;
           }
         },
         ArenaMessage2JMS::Access(msg) => match msg {
@@ -146,7 +146,7 @@ impl WebsocketHandler for WSArenaHandler {
 
       // Broadcast when there's any changes
       drop(arena);
-      self.broadcast(&ws.context).await?;
+      // self.broadcast(&ws.context).await?;
     }
 
     Ok(())

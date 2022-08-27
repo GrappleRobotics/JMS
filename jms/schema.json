@@ -2348,6 +2348,12 @@
     "ResourceMessage2UI": {
       "oneOf": [
         {
+          "type": "string",
+          "enum": [
+            "SetIDACK"
+          ]
+        },
+        {
           "type": "object",
           "required": [
             "All"

@@ -12,16 +12,16 @@ use anyhow::Result;
 
 use futures::{StreamExt, stream::FuturesUnordered};
 use log::{error, info};
-use std::{time::Duration, sync::Arc};
+use std::{time::Duration, sync::Arc, collections::HashMap};
 use tokio::{
   net::TcpListener,
-  sync::{broadcast, Mutex}, time::{interval, Interval},
+  sync::{broadcast::{self, Sender}, Mutex, mpsc}, time::{interval, Interval},
 };
 use tokio_tungstenite::tungstenite;
 
 use crate::{arena::resource::SharedResources, ui::websocket::ws::Websocket};
 
-use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext}, tickets::{TicketMessage2JMS, TicketMessage2UI}};
+use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext, SerialisedMessage}, tickets::{TicketMessage2JMS, TicketMessage2UI}};
 
 define_websocket_msg!($WebsocketMessage {
   Ping, Pong,
@@ -37,17 +37,27 @@ define_websocket_msg!($WebsocketMessage {
   ext Ticket(TicketMessage),
 });
 
+// (Resource ID - Topic) - Broadcast
+pub type Broadcasts = HashMap<(String, Vec<String>), mpsc::Sender<SerialisedMessage>>;
+pub type SharedBroadcasts = Arc<Mutex<Broadcasts>>;
+
+// pub struct Subscription {
+
+// };
+// pub type Subscribers = Vec<>;
+
 pub struct Websockets {
   context: WebsocketContext,
 }
 
 impl Websockets {
   pub async fn new(resources: SharedResources) -> Self {
-    let (tx, _) = broadcast::channel(512);
+    // let (tx, _) = broadcast::channel(512);
+    let bcast = Arc::new(Mutex::new(HashMap::new()));
 
     Websockets {
       context: WebsocketContext {
-        bcast_tx: tx,
+        bcast,
         handlers: Arc::new(Mutex::new(Vec::new())),
         resources: resources.clone()
       },
@@ -81,7 +91,7 @@ impl Websockets {
       }
 
       tokio::select! {
-        _ = ping_int.tick() => self.context.broadcast(WebsocketMessage2UI::Ping),
+        _ = ping_int.tick() => self.context.broadcast(WebsocketMessage2UI::Ping).await,
         handler_idx = handler_futs.next() => match handler_idx {
           // One of the handlers has a broadcast update
           Some(idx) => {
@@ -108,6 +118,11 @@ impl Websockets {
               // Remove the resource when it disconnects, whether gracefully or not
               if let Some(id) = ws.resource_id {
                 context.resources.lock().await.remove(&id);
+                let mut bcasts = context.bcast.lock().await;
+                let keys = bcasts.keys().filter(|k| k.0 == id).cloned().collect::<Vec<(String, Vec<String>)>>();
+                for k in keys {
+                  bcasts.remove(&k);
+                }
               }
             });
           },

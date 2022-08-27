@@ -77,12 +77,23 @@ export default class JmsWebsocket {
     ws.onopen = () => {
       console.log("WS Connected");
       setTimeout(() => {
-        this.send({ Resource: { SetID: resource_id() } })
-        this.connectCallbacks.forEach(cb => cb(true));
-        this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
-        this.sendQueue.forEach(sq => this.sendNow(sq));
-        this.sendQueue = [];
-        this.send({ Resource: { SetRole: this.role[0] } });
+        this.send({ Resource: { SetID: resource_id() } });
+        // this.transact<any>({ Resource: { SetID: resource_id() } }, [])
+        //   .then(() => {
+        //     console.log("WS Ack'd ID");
+        //     this.connectCallbacks.forEach(cb => cb(true));
+        //     this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
+        //     this.sendQueue.forEach(sq => this.sendNow(sq));
+        //     this.sendQueue = [];
+        //     this.send({ Resource: { SetRole: this.role[0] } });
+        //   });
+        setTimeout(() => {
+          this.connectCallbacks.forEach(cb => cb(true));
+          this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
+          this.sendQueue.forEach(sq => this.sendNow(sq));
+          this.sendQueue = [];
+          this.send({ Resource: { SetRole: this.role[0] } });
+        }, 500);
       }, 100);
       that.ws = ws;
       clearTimeout(timer);

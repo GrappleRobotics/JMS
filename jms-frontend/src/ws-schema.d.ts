@@ -211,6 +211,7 @@ export type MatchMessagePlayoffs2UI = {
   Generation: SerialisedMatchGeneration;
 };
 export type ResourceMessage2UI =
+  | "SetIDACK"
   | {
       All: TaggedResource[];
     }

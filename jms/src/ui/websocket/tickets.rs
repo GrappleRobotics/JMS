@@ -21,7 +21,7 @@ pub struct WSTicketHandler;
 #[async_trait::async_trait]
 impl WebsocketHandler for WSTicketHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
-    ctx.broadcast::<TicketMessage2UI>(TicketMessage2UI::All( models::SupportTicket::all(&db::database())? ).into());
+    ctx.broadcast::<TicketMessage2UI>(TicketMessage2UI::All( models::SupportTicket::all(&db::database())? ).into()).await;
     Ok(())
   }
 

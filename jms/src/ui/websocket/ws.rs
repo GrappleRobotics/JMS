@@ -7,7 +7,7 @@ use tokio_tungstenite::{accept_async, tungstenite};
 
 use crate::arena::resource::{SharedResources, TaggedResource, Resources};
 
-use super::{WebsocketMessage2UI, WebsocketMessage2JMS};
+use super::{WebsocketMessage2UI, WebsocketMessage2JMS, SharedBroadcasts};
 
 #[async_trait::async_trait]
 pub trait WebsocketHandler : Send + Sync {
@@ -63,21 +63,38 @@ pub struct RecvMeta {
 
 #[derive(Clone)]
 pub struct WebsocketContext {
-  pub bcast_tx: broadcast::Sender<SerialisedMessage>,
+  // pub bcast_tx: broadcast::Sender<SerialisedMessage>,
+  pub bcast: SharedBroadcasts,
   pub handlers: SharedHandlers,
   pub resources: SharedResources
 }
 
 impl WebsocketContext {
-  pub fn broadcast<T: Into<WebsocketMessage2UI>>(&self, msg: T) {
+  pub async fn broadcast<T: Into<WebsocketMessage2UI>>(&self, msg: T) {
     match SerialisedMessage::try_from(&msg.into()) {
       Ok(msg) => {
-        if self.bcast_tx.receiver_count() > 0 {
-          match self.bcast_tx.send(msg) {
-            Ok(_) => (),
-            Err(err) => error!("Could not broadcast: {}", err)
+        // self.subscriptions.iter().any(|sub| {
+        //   let subscription_str: Vec<&str> = sub.iter().map(|s| s as &str).collect();
+        //   sub.len() <= msg.path.len() && subscription_str == msg.path[0..sub.len()]
+        // })
+
+        let bcast = self.bcast.lock().await;
+        for (k, v) in bcast.iter() {
+          let sub = k.1.iter().map(|x| x as &str).collect::<Vec<&str>>();
+          if msg.path[0] == "Ping" || (sub.len() <= msg.path.len() && sub == msg.path[0..sub.len()]) {
+            match v.send(msg.clone()).await {
+              Ok(_) => (),
+              Err(err) => error!("Could not broadcast: {}", err)
+            }
           }
         }
+
+        // if self.bcast_tx.receiver_count() > 0 {
+        //   match self.bcast_tx.send(msg) {
+        //     Ok(_) => (),
+        //     Err(err) => error!("Could not broadcast: {}", err)
+        //   }
+        // }
       },
       Err(err) => error!("Could not serialise: {}", err),
       
@@ -88,7 +105,7 @@ impl WebsocketContext {
 pub struct Websocket {
   pub resource_id: Option<String>,
   pub context: WebsocketContext,
-  subscriptions: HashSet<Vec<String>>,
+  // subscriptions: HashSet<Vec<String>>,
   send_tx: mpsc::Sender<SendMeta>,
   send_rx: mpsc::Receiver<SendMeta>,
   seq_num: atomic_counter::ConsistentCounter,
@@ -97,12 +114,12 @@ pub struct Websocket {
 
 impl Websocket {
   pub fn new(context: WebsocketContext) -> Self {
-    let (send_tx, send_rx) = mpsc::channel(512);
+    let (send_tx, send_rx) = mpsc::channel(128);
 
     Self {
       resource_id: None,
       context,
-      subscriptions: HashSet::new(),
+      // subscriptions: HashSet::new(),
       send_tx,
       send_rx,
       seq_num: atomic_counter::ConsistentCounter::new(0),
@@ -152,20 +169,21 @@ impl Websocket {
     }
   }
 
-  pub fn is_subscribed(&self, msg: &SerialisedMessage) -> bool {
-    if msg.path[0] == "Ping" {
-      return true;
-    }
+  // pub fn is_subscribed(&self, msg: &SerialisedMessage) -> bool {
+  //   if msg.path[0] == "Ping" {
+  //     return true;
+  //   }
     
-    self.subscriptions.iter().any(|sub| {
-      let subscription_str: Vec<&str> = sub.iter().map(|s| s as &str).collect();
-      sub.len() <= msg.path.len() && subscription_str == msg.path[0..sub.len()]
-    })
-  }
+  //   self.subscriptions.iter().any(|sub| {
+  //     let subscription_str: Vec<&str> = sub.iter().map(|s| s as &str).collect();
+  //     sub.len() <= msg.path.len() && subscription_str == msg.path[0..sub.len()]
+  //   })
+  // }
 
   pub async fn run(&mut self, stream: TcpStream, timeout: Duration) -> anyhow::Result<()> {
     let mut ws = accept_async(stream).await?;
-    let mut bcast_rx = self.context.bcast_tx.subscribe();
+    // let mut bcast_rx = self.context.bcast_tx.subscribe();
+    let (bcast_tx, mut bcast_rx) = mpsc::channel(128);
 
     let mut timeout_int = interval(timeout);
     timeout_int.reset();
@@ -200,17 +218,25 @@ impl Websocket {
         },
         recvd = bcast_rx.recv() => match recvd {
           // Broadcast Message
-          Ok(msg) => if self.is_subscribed(&msg) {
+          Some(msg) => {
             let full = serde_json::to_string(&SendMeta {
               msg, seq: self.seq_num.inc(), reply: None, bcast: true
             })?;
             ws.send(tungstenite::Message::Text(full)).await?;
           },
-          Err(e) => error!("WS Broadcast Recv Error: {}", e),
+          None => error!("Bcast Send Closed")
+          // Ok(msg) => if self.is_subscribed(&msg) {
+          //   let full = serde_json::to_string(&SendMeta {
+          //     msg, seq: self.seq_num.inc(), reply: None, bcast: true
+          //   })?;
+          //   ws.send(tungstenite::Message::Text(full)).await?;
+          // },
+          // Err(e) => error!("WS Broadcast Recv Error: {}", e),
         },
         recvd = self.send_rx.recv() => match recvd {
           // Unicast Message
-          Some(msg) => if msg.reply.is_some() || self.is_subscribed(&msg.msg) {
+          // Some(msg) => if msg.reply.is_some() || self.is_subscribed(&msg.msg) {
+          Some(msg) => {
             ws.send(tungstenite::Message::Text(serde_json::to_string(&msg)?)).await?;
           },
           None => error!("WS Send Closed"),
@@ -230,7 +256,18 @@ impl Websocket {
                 match m.msg {
                   WebsocketMessage2JMS::Ping => { self.send(WebsocketMessage2UI::Pong).await },
                   WebsocketMessage2JMS::Subscribe(topic) => {
-                    if !self.subscriptions.insert(topic) {
+                    let mut update = false;
+
+                    if let Some(resource_id) = self.resource_id.as_ref() {
+                      let mapkey = ( resource_id.clone(), topic );
+                      let mut bcasts = self.context.bcast.lock().await;
+                      if !bcasts.contains_key(&mapkey) {
+                        bcasts.insert(mapkey, bcast_tx.clone());
+                        update = true;
+                      }
+                    }
+
+                    if update {
                       // Subscriptions have updated - trigger a broadcast update for all handlers
                       for h in handlers.iter() {
                         if let Err(e) = h.handler.broadcast(&self.context).await {
@@ -238,6 +275,9 @@ impl Websocket {
                         }
                       }
                     }
+                    // if !bcasts.has_key()
+                    // if !self.subscriptions.insert(topic) {
+                    // }
                   },
                   _ => {
                     // Pass to handlers
