@@ -2,7 +2,7 @@ use anyhow::{anyhow, bail};
 
 use jms_macros::define_websocket_msg;
 
-use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, ArenaSignal, ArenaState, AudienceDisplay, SharedArena, ArenaAccessRestriction, station::SerialisedAllianceStation}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{matches::LoadedMatch, station::{AllianceStationId, SharedAllianceStations, station_mut}, ArenaSignal, ArenaState, AudienceDisplay, SharedArena, ArenaAccessRestriction, station::SerialisedAllianceStation}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
 
 use super::{WebsocketMessage2JMS, ws::{Websocket, WebsocketContext, WebsocketHandler}};
 
@@ -48,7 +48,7 @@ define_websocket_msg!($ArenaMessage {
   }
 });
 
-pub struct WSArenaHandler(pub SharedArena);
+pub struct WSArenaHandler(pub SharedArena, pub SharedAllianceStations);
 
 #[async_trait::async_trait]
 impl WebsocketHandler for WSArenaHandler {
@@ -56,7 +56,10 @@ impl WebsocketHandler for WSArenaHandler {
     let arena = self.0.lock().await;
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(arena.current_match.clone()).into()).await;
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(arena.state.state.clone()).into()).await;
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(arena.stations.iter().map(|x| x.clone().into()).collect()).into()).await;
+    {
+      let stns = self.1.lock().await;
+      ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(stns.iter().map(|x| x.clone().into()).collect()).into()).await;
+    }
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::Current(arena.audience_display.clone()).into()).await;
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAccess2UI::Current(arena.access.clone()).into()).await;
     Ok(())
@@ -81,7 +84,8 @@ impl WebsocketHandler for WSArenaHandler {
             let idle = matches!(current_state, ArenaState::Idle { .. });
             let prestart = matches!(current_state, ArenaState::Prestart { .. });
 
-            let stn = arena.station_mut(station).ok_or(anyhow!("No alliance station: {}", station))?;
+            let mut stns = self.1.lock().await;
+            let stn = station_mut(&mut stns, station).ok_or(anyhow!("No alliance station: {}", station))?;
             match bypass {
               Some(byp) if (idle || prestart) => stn.bypass = byp,
               Some(_) => bail!("Can't bypass unless in IDLE or PRESTART"),
@@ -100,9 +104,9 @@ impl WebsocketHandler for WSArenaHandler {
           },
         },
         ArenaMessage2JMS::Match(msg) => match msg {
-          ArenaMessageMatch2JMS::LoadTest => arena.load_match(LoadedMatch::new(models::Match::new_test()))?,
-          ArenaMessageMatch2JMS::Unload => arena.unload_match()?,
-          ArenaMessageMatch2JMS::Load(match_id) => arena.load_match(LoadedMatch::new(models::Match::get_or_err(match_id, &db::database())?))?,
+          ArenaMessageMatch2JMS::LoadTest => arena.load_match(LoadedMatch::new(models::Match::new_test())).await?,
+          ArenaMessageMatch2JMS::Unload => arena.unload_match().await?,
+          ArenaMessageMatch2JMS::Load(match_id) => arena.load_match(LoadedMatch::new(models::Match::get_or_err(match_id, &db::database())?)).await?,
           ArenaMessageMatch2JMS::ScoreUpdate(update) => {
             match arena.current_match.as_mut() {
               Some(m) => match update.alliance {

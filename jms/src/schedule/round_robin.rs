@@ -53,15 +53,17 @@ pub fn round_robin_update(alliances: &Vec<PlayoffAlliance>, existing_matches: &O
         } else {
           // Still in RR Semis
           let standings = standings(&matches);
-          if standings[0].1 == standings[1].1 {
-            // Need a tiebreaker
-            GenerationUpdate::MatchUpdates(vec![create_tiebreaker(
-              standings[0].0,
-              standings[1].0,
-              matches,
-              MatchSubtype::Semifinal,
-            )])
-          } else if standings[1].1 == standings[2].1 {
+          // TODO: Don't need a tiebreaker for 1st place - they'll both be in finals regardless
+          // if standings[0].1 == standings[1].1 {
+          //   // Need a tiebreaker
+          //   GenerationUpdate::MatchUpdates(vec![create_tiebreaker(
+          //     standings[0].0,
+          //     standings[1].0,
+          //     matches,
+          //     MatchSubtype::Semifinal,
+          //   )])
+          // } else if standings[1].1 == standings[2].1 {
+          if standings[1].1 == standings[2].1 {
             // Need a tiebreaker for 2nd
             GenerationUpdate::MatchUpdates(vec![create_tiebreaker(
               standings[1].0,

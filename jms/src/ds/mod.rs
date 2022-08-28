@@ -9,7 +9,7 @@ use crate::models;
 
 pub mod connector;
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq)]
 pub enum DSMode {
   Teleop = 0,
   Test = 1,

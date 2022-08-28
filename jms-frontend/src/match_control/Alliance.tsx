@@ -120,14 +120,14 @@ class AllianceStationComponent extends React.PureComponent<AllianceStationProps>
         <DSStatusIndicator eth={station.ds_eth} occupancy={station.occupancy} />
       </Col>
       <Col sm="2">
-        <SimpleTooltip id="robot-ping-tt" tip={report?.robot_ping ? "Robot Comms OK" : "No Robot Comms"}>
-          <Indicator className="ping" data-bool-value={ report?.robot_ping }>
+        <SimpleTooltip id="robot-ping-tt" tip={report?.rio_ping ? "Robot Comms OK" : "No Robot Comms"}>
+          <Indicator className="ping" data-bool-value={ report?.rio_ping }>
             <FontAwesomeIcon icon={faGear} size="xs" />
           </Indicator>
         </SimpleTooltip>
 
-        <SimpleTooltip id="rio-ping-tt" tip={report?.rio_ping ? "Code Running" : "Code Crashed / Not Running"}>
-          <Indicator className="ping" data-bool-value={ report?.rio_ping }>
+        <SimpleTooltip id="rio-ping-tt" tip={report?.robot_ping ? "Code Running" : "Code Crashed / Not Running"}>
+          <Indicator className="ping" data-bool-value={ report?.robot_ping }>
             <FontAwesomeIcon icon={faCode} size="xs" />
           </Indicator>
         </SimpleTooltip>

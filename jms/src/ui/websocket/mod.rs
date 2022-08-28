@@ -78,7 +78,7 @@ impl Websockets {
     // Build intervals for each handler
     let mut handler_ints: Vec<Interval> = self.context.handlers.lock().await.iter().map(|x| interval(x.loop_time)).collect();
 
-    let mut ping_int = interval(Duration::from_millis(1000));
+    let mut ping_int = interval(Duration::from_millis(250));
 
     loop {
       // Build handler futures to yield the handler index when it's ready for an update

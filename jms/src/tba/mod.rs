@@ -75,9 +75,9 @@ impl TBAWorker {
     // Awards aren't included - TBA can't handle non-standard award names
 
     // Dump all the matches when we start, just in case they hadn't been published yet
-    for m in models::Match::all(&db::database())? {
-      self.publish_match(&m).await?;
-    }
+    // for m in models::Match::all(&db::database())? {
+    //   self.publish_match(&m).await?;
+    // }
 
     loop {
       tokio::select! {

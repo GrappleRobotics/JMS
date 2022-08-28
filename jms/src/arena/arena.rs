@@ -14,9 +14,9 @@ use log::{error, info};
 use schemars::JsonSchema;
 use tokio::sync::Mutex;
 
-use super::{exceptions::ArenaIllegalStateChange, lighting::{ArenaLighting, LightMode}, matches::MatchPlayState, station::{AllianceStationId, AllianceStation}, resource::SharedResources};
+use super::{exceptions::ArenaIllegalStateChange, lighting::{ArenaLighting, LightMode}, matches::MatchPlayState, station::{AllianceStationId, AllianceStation, SharedAllianceStations, station_mut}, resource::SharedResources};
 
-use crate::{arena::{exceptions::CannotLoadMatchError, lighting::ArenaLightingSettings}, log_expect, models::{self, Alliance, MatchType, DBResourceRequirements, MatchStationStatusRecord, StationStatusRecord}, network::{NetworkProvider, NetworkResult}, db::{self, TableType, DBSingleton}};
+use crate::{arena::{exceptions::CannotLoadMatchError, lighting::ArenaLightingSettings}, log_expect, models::{self, Alliance, MatchType, DBResourceRequirements, MatchStationStatusRecord, StationStatusRecord}, network::{NetworkProvider, NetworkResult}, db::{self, TableType, DBSingleton}, ds};
 
 use serde::{Deserialize, Serialize};
 
@@ -100,7 +100,7 @@ pub struct Arena {
   pending_state_change: Option<ArenaState>,
   pending_signal: Arc<Mutex<Option<ArenaSignal>>>,
   pub current_match: Option<LoadedMatch>,
-  pub stations: Vec<AllianceStation>,
+  pub stations: SharedAllianceStations,
   pub station_records: Vec<StationStatusRecord>,
   pub access: ArenaAccessRestriction,
   pub lighting: ArenaLighting,
@@ -113,7 +113,7 @@ pub struct Arena {
 pub type SharedArena = Arc<Mutex<Arena>>;
 
 impl Arena {
-  pub fn new(num_stations_per_alliance: u32, network: Option<Box<dyn NetworkProvider + Send + Sync>>, resources: SharedResources) -> Arena {
+  pub async fn new(stations: SharedAllianceStations, network: Option<Box<dyn NetworkProvider + Send + Sync>>, resources: SharedResources) -> Arena {
     let mut a = Arena {
       network: network.map(|x| Arc::new(Mutex::new(x))),
       state: BoundState {
@@ -124,7 +124,7 @@ impl Arena {
       pending_state_change: None,
       pending_signal: Arc::new(Mutex::new(None)),
       current_match: None,
-      stations: vec![],
+      stations,
       station_records: vec![],
       access: ArenaAccessRestriction::NoRestriction,
       lighting: ArenaLighting::new(ArenaLightingSettings::default()),
@@ -132,12 +132,15 @@ impl Arena {
       resources
     };
 
+    let mut stns = a.stations.lock().await;
+
     for alliance in vec![Alliance::Blue, Alliance::Red] {
-      for i in 1..(num_stations_per_alliance + 1) {
-        a.stations
-          .push(AllianceStation::new(AllianceStationId { alliance, station: i }));
+      for i in 1..4 {
+        stns.push(AllianceStation::new(AllianceStationId { alliance, station: i }));
       }
     }
+
+    drop(stns);
 
     a
   }
@@ -150,11 +153,12 @@ impl Arena {
     }
   }
 
-  pub fn unload_match(&mut self) -> Result<()> {
+  pub async fn unload_match(&mut self) -> Result<()> {
     match self.state.state {
       ArenaState::Idle { ready: true } => {
         self.current_match = None;
-        for stn in self.stations.iter_mut() {
+        let mut stns = self.stations.lock().await;
+        for stn in stns.iter_mut() {
           stn.reset();
         }
         Ok(())
@@ -165,10 +169,10 @@ impl Arena {
     }
   }
 
-  pub fn load_match(&mut self, m: LoadedMatch) -> Result<()> {
+  pub async fn load_match(&mut self, m: LoadedMatch) -> Result<()> {
     match self.state.state {
       ArenaState::Idle { ready: true } => {
-        self.load_match_teams(m.metadata())?;
+        self.load_match_teams(m.metadata()).await?;
         self.current_match = Some(m);
         Ok(())
       }
@@ -176,8 +180,9 @@ impl Arena {
     }
   }
 
-  fn load_match_teams(&mut self, m: &models::Match) -> Result<()> {
-    for stn in self.stations.iter_mut() {
+  async fn load_match_teams(&mut self, m: &models::Match) -> Result<()> {
+    let mut stns = self.stations.lock().await;
+    for stn in stns.iter_mut() {
       let v = match stn.station.alliance {
         Alliance::Blue => &m.blue_teams,
         Alliance::Red => &m.red_teams,
@@ -203,30 +208,32 @@ impl Arena {
     Ok(())
   }
 
-  pub fn station_for_team(&self, team: Option<u16>) -> Option<AllianceStation> {
-    match team {
-      None => None,
-      Some(team) => {
-        self.stations.iter().find(|&&stn| stn.team == Some(team)).map(|&a| a) // Copy the AllianceStation to avoid reference lifetime issues
-      }
-    }
-  }
+  // pub async fn station_for_team(&self, team: Option<u16>) -> Option<AllianceStation> {
+  //   match team {
+  //     None => None,
+  //     Some(team) => {
+  //       let stns = self.stations.lock().await;
+  //       stns.iter().find(|&&stn| stn.team == Some(team)).map(|&a| a) // Copy the AllianceStation to avoid reference lifetime issues
+  //     }
+  //   }
+  // }
 
-  pub fn station_for_team_mut(&mut self, team: Option<u16>) -> Option<&mut AllianceStation> {
-    match team {
-      None => None,
-      Some(team) => self.stations.iter_mut().find(|stn| stn.team == Some(team)),
-    }
-  }
+  // pub async fn station_for_team_mut(&mut self, team: Option<u16>) -> Option<&mut AllianceStation> {
+  //   match team {
+  //     None => None,
+  //     Some(team) => self.stations.iter_mut().find(|stn| stn.team == Some(team)),
+  //   }
+  // }
 
-  pub fn station_mut(&mut self, station: AllianceStationId) -> Option<&mut AllianceStation> {
-    self.stations.iter_mut().find(|stn| stn.station == station)
-  }
+  // pub fn station_mut(&mut self, station: AllianceStationId) -> Option<&mut AllianceStation> {
+  //   self.stations.iter_mut().find(|stn| stn.station == station)
+  // }
 
-  pub fn estop_station(&mut self, station: AllianceStationId) {
+  pub async fn estop_station(&mut self, station: AllianceStationId) {
     let state = self.current_match.as_ref().map(|m| m.current_state());
     
-    if let Some(stn) = self.station_mut(station) {
+    let mut stns = self.stations.lock().await;
+    if let Some(stn) = station_mut(&mut stns, station) {
       match state {
         Some(MatchPlayState::Auto) => stn.astop = true,
         _ => stn.estop = true,
@@ -234,12 +241,13 @@ impl Arena {
     }
   }
 
-  fn update_match_teams(&mut self) -> Result<()> {
+  async fn update_match_teams(&mut self) -> Result<()> {
     if let Some(m) = self.current_match.as_mut() {
-      m.match_meta.blue_teams.resize(self.stations.len() / 2, None);
-      m.match_meta.red_teams.resize(self.stations.len() / 2, None);
+      m.match_meta.blue_teams.resize(3, None);
+      m.match_meta.red_teams.resize(3, None);
 
-      for s in &self.stations {
+      let stns = self.stations.lock().await;
+      for s in stns.iter() {
         match s.station.alliance {
           Alliance::Blue => {
             m.match_meta.blue_teams[(s.station.station - 1) as usize] = s.team.map(|x| x as usize);
@@ -256,7 +264,7 @@ impl Arena {
   async fn update_field_estop(&mut self) -> Result<()> {
     if self.state.state != ArenaState::Estop {
       if let Some(ArenaSignal::Estop) = self.current_signal().await {
-        self.prepare_state_change(ArenaState::Estop)?;
+        self.prepare_state_change(ArenaState::Estop).await?;
       }
     }
     Ok(())
@@ -277,15 +285,56 @@ impl Arena {
 
     // Need this as self is borrowed as mut below
     match self.state.state {
-      ArenaState::Idle { ready: true } if first => self.unload_match()?,
+      ArenaState::Idle { ready: true } if first => self.unload_match().await?,
       _ => (),
+    }
+
+    {
+      let mut stns = self.stations.lock().await;
+      for stn in stns.iter_mut() {
+        match self.state.state {
+          ArenaState::Estop => {
+            stn.command_enable = false;
+            stn.master_estop = true;
+          },
+          ArenaState::MatchPlay => {
+            let m = self.current_match.as_ref().unwrap();
+            stn.master_estop = false;
+            stn.remaining_time = m.remaining_time();
+
+            match m.current_state() {
+              MatchPlayState::Auto => {
+                stn.command_enable = true;
+                stn.command_mode = ds::DSMode::Auto;
+              },
+              MatchPlayState::Pause => {
+                stn.command_mode = ds::DSMode::Teleop;
+                stn.command_enable = false;
+                stn.astop = false;
+              }
+              MatchPlayState::Teleop => {
+                stn.astop = false;
+                stn.command_enable = true;
+                stn.command_mode = ds::DSMode::Teleop;
+              },
+              _ => {
+                stn.command_enable = false;
+              }
+            }
+          },
+          _ => {
+            stn.master_estop = false;
+            stn.command_enable = false;
+          }
+        }
+      }
     }
 
     match (self.state.state, &mut self.state.data) {
       (ArenaState::Init, _) => {
         if first {
           info!("Init...");
-          self.prepare_state_change(ArenaState::Idle { ready: false })?;
+          self.prepare_state_change(ArenaState::Idle { ready: false }).await?;
         }
       }
       (ArenaState::Idle { ready: false }, StateData::Idle(maybe_recv)) => {
@@ -301,7 +350,7 @@ impl Arena {
             Err(e) => panic!("Network runner fault: {}", e),
             Ok(result) => {
               result.map_err(|e| anyhow!(e))?;
-              self.prepare_state_change(ArenaState::Idle { ready: true })?;
+              self.prepare_state_change(ArenaState::Idle { ready: true }).await?;
             }
           };
         }
@@ -311,7 +360,7 @@ impl Arena {
           info!("Idle ready!");
           self.resources.lock().await.reset_all();
         } else if let Some(ArenaSignal::Prestart) = signal {
-          self.prepare_state_change(ArenaState::Prestart { ready: false })?;
+          self.prepare_state_change(ArenaState::Prestart { ready: false }).await?;
         }
       }
       (ArenaState::Estop, _) => {
@@ -322,19 +371,20 @@ impl Arena {
         }
 
         if let Some(ArenaSignal::EstopReset) = signal {
-          self.prepare_state_change(ArenaState::EstopReset)?;
+          self.prepare_state_change(ArenaState::EstopReset).await?;
         }
       }
       (ArenaState::EstopReset, _) => {
         // TODO:
         self.current_match = None;
-        self.prepare_state_change(ArenaState::Idle { ready: false })?;
+        self.prepare_state_change(ArenaState::Idle { ready: false }).await?;
       }
       (ArenaState::Prestart { ready: false }, StateData::Prestart(maybe_recv)) => {
         if first {
           info!("Prestart begin...");
           self.resources.lock().await.reset_all();
-          for stn in &mut self.stations {
+          let mut stns = self.stations.lock().await;
+          for stn in stns.iter_mut() {
             stn.astop = false;
             stn.estop = false;
           }
@@ -348,7 +398,7 @@ impl Arena {
             Err(e) => panic!("Network runner fault: {}", e),
             Ok(result) => {
               result.map_err(|e| anyhow!(e))?;
-              self.prepare_state_change(ArenaState::Prestart { ready: true })?;
+              self.prepare_state_change(ArenaState::Prestart { ready: true }).await?;
             }
           };
         }
@@ -363,14 +413,14 @@ impl Arena {
         }
         if let Some(ArenaSignal::MatchArm(force)) = signal {
           if force || resources_ok {
-            self.prepare_state_change(ArenaState::MatchArmed)?;
+            self.prepare_state_change(ArenaState::MatchArmed).await?;
           } else {
             bail!("Can't Arm Match unless all resources are ready");
           }
         } else if let Some(ArenaSignal::Prestart) = signal {
-          self.prepare_state_change(ArenaState::Prestart { ready: false })?;
+          self.prepare_state_change(ArenaState::Prestart { ready: false }).await?;
         } else if let Some(ArenaSignal::Idle) = signal {
-          self.prepare_state_change(ArenaState::Idle { ready: false })?;
+          self.prepare_state_change(ArenaState::Idle { ready: false }).await?;
         }
       }
       (ArenaState::MatchArmed, _) => {
@@ -380,7 +430,7 @@ impl Arena {
         }
 
         if let Some(ArenaSignal::MatchPlay) = signal {
-          self.prepare_state_change(ArenaState::MatchPlay)?;
+          self.prepare_state_change(ArenaState::MatchPlay).await?;
         }
       }
       (ArenaState::MatchPlay, _) => {
@@ -389,19 +439,20 @@ impl Arena {
           info!("Match play!");
           self.audience_display = AudienceDisplay::MatchPlay;
           // Create new records for this match
-          self.station_records = self.stations.iter().map(|_| vec![]).collect();
+          self.station_records = vec![vec![]; 6];
           m.start()?;
         }
 
-        for (i, stn) in self.stations.iter().enumerate() {
-          self.station_records[i].push( models::StampedAllianceStationStatus::stamp(stn.clone(), &m) )
+        // TODO: Update state
+        {
+          let mut stns = self.stations.lock().await;
+          for (i, stn) in stns.iter().enumerate() {
+            self.station_records[i].push( models::StampedAllianceStationStatus::stamp(stn.clone(), &m) )
+          }
         }
 
         match m.current_state() {
-          MatchPlayState::Pause | MatchPlayState::Teleop => for stn in self.stations.iter_mut() {
-            stn.astop = false;
-          },
-          MatchPlayState::Complete => self.prepare_state_change(ArenaState::MatchComplete { ready: false })?,
+          MatchPlayState::Complete => self.prepare_state_change(ArenaState::MatchComplete { ready: false }).await?,
           _ => ()
         }
       }
@@ -412,7 +463,8 @@ impl Arena {
           let m = self.current_match.as_ref().unwrap();
 
           let stn_records = std::mem::take(&mut self.station_records);
-          for (stn, record) in self.stations.iter().zip(stn_records.into_iter()) {
+          let stns = self.stations.lock().await;
+          for (stn, record) in stns.iter().zip(stn_records.into_iter()) {
             if let Some(team) = stn.team {
               if let Err(e) = MatchStationStatusRecord::new(team, record, m.match_meta.id().unwrap()).insert(&db::database()) {
                 error!("Could not save match station record: {}", e)
@@ -429,7 +481,7 @@ impl Arena {
             Err(e) => panic!("Network runner fault: {}", e),
             Ok(result) => {
               result.map_err(|e| anyhow!(e))?;
-              self.prepare_state_change(ArenaState::MatchComplete { ready: true })?;
+              self.prepare_state_change(ArenaState::MatchComplete { ready: true }).await?;
             }
           };
         }
@@ -439,7 +491,7 @@ impl Arena {
           info!("Match complete and ready!")
         }
         if let Some(ArenaSignal::MatchCommit) = signal {
-          self.prepare_state_change(ArenaState::MatchCommit)?;
+          self.prepare_state_change(ArenaState::MatchCommit).await?;
         }
       }
       // (ArenaState::MatchComplete { ready }, _) => {
@@ -452,9 +504,9 @@ impl Arena {
       // }
       (ArenaState::MatchCommit, _) => {
         if first {
-          self.update_match_teams()?;
+          self.update_match_teams().await?;
           let m = self.current_match.as_mut().unwrap().commit_score().await?;
-          self.prepare_state_change(ArenaState::Idle { ready: false })?;
+          self.prepare_state_change(ArenaState::Idle { ready: false }).await?;
 
           self.audience_display = AudienceDisplay::MatchResults(models::SerializedMatch::from(m));
         }
@@ -462,83 +514,83 @@ impl Arena {
       (state, _) => Err(anyhow!("Unimplemented state: {:?}", state))?,
     };
 
-    self.update_lighting().await;
+    // self.update_lighting().await;
 
     Ok(())
   }
 
-  pub async fn update_lighting(&mut self) {
-    match self.state.state {
-      ArenaState::Init => (),
-      ArenaState::Idle { ready: _ } | ArenaState::Prestart { ready: _ } | ArenaState::MatchComplete { ready: _ } | ArenaState::MatchCommit => {
-        match self.access {
-          ArenaAccessRestriction::NoRestriction => {
-            self.lighting.set_all(self.lighting.settings.idle)
-          },
-          ArenaAccessRestriction::ResetOnly => {
-            self.lighting.set_all(self.lighting.settings.field_reset)
-          },
-          ArenaAccessRestriction::Teams => {
-            self.lighting.set_all(self.lighting.settings.field_reset_teams)
-          },
-        }
-      },
-      ArenaState::Estop | ArenaState::EstopReset => {
-        self.lighting.set_all(self.lighting.settings.field_estop);
-      },
-      ArenaState::MatchArmed => {
-        self.lighting.set_alliance(Alliance::Blue, self.lighting.settings.match_armed_blue);
-        self.lighting.set_alliance(Alliance::Red, self.lighting.settings.match_armed_red);
-      },
-      ArenaState::MatchPlay => {
-        // Based on team connection status
-        let mut any_red = false;
-        let mut any_blue = false;
+  // pub async fn update_lighting(&mut self) {
+  //   match self.state.state {
+  //     ArenaState::Init => (),
+  //     ArenaState::Idle { ready: _ } | ArenaState::Prestart { ready: _ } | ArenaState::MatchComplete { ready: _ } | ArenaState::MatchCommit => {
+  //       match self.access {
+  //         ArenaAccessRestriction::NoRestriction => {
+  //           self.lighting.set_all(self.lighting.settings.idle)
+  //         },
+  //         ArenaAccessRestriction::ResetOnly => {
+  //           self.lighting.set_all(self.lighting.settings.field_reset)
+  //         },
+  //         ArenaAccessRestriction::Teams => {
+  //           self.lighting.set_all(self.lighting.settings.field_reset_teams)
+  //         },
+  //       }
+  //     },
+  //     ArenaState::Estop | ArenaState::EstopReset => {
+  //       self.lighting.set_all(self.lighting.settings.field_estop);
+  //     },
+  //     ArenaState::MatchArmed => {
+  //       self.lighting.set_alliance(Alliance::Blue, self.lighting.settings.match_armed_blue);
+  //       self.lighting.set_alliance(Alliance::Red, self.lighting.settings.match_armed_red);
+  //     },
+  //     ArenaState::MatchPlay => {
+  //       // Based on team connection status
+  //       let mut any_red = false;
+  //       let mut any_blue = false;
 
-        for stn in &self.stations {
-          let colour = match stn.station.alliance {
-            Alliance::Blue => self.lighting.settings.blue,
-            Alliance::Red => self.lighting.settings.red,
-          };
+  //       for stn in &self.stations {
+  //         let colour = match stn.station.alliance {
+  //           Alliance::Blue => self.lighting.settings.blue,
+  //           Alliance::Red => self.lighting.settings.red,
+  //         };
 
-          if stn.astop || stn.estop || stn.ds_report.map(|ref ds| ds.estop).unwrap_or(false) {
-            self.lighting.set_team(stn.station, self.lighting.settings.team_estop);
-          } else if stn.bypass {
-            self.lighting.set_team(stn.station, LightMode::Off);
-          } else if !stn.connection_ok() {
-            self.lighting.set_team(stn.station, LightMode::Pulse(
-              colour, Duration::seconds(1)
-            ));
+  //         if stn.astop || stn.estop || stn.ds_report.map(|ref ds| ds.estop).unwrap_or(false) {
+  //           self.lighting.set_team(stn.station, self.lighting.settings.team_estop);
+  //         } else if stn.bypass {
+  //           self.lighting.set_team(stn.station, LightMode::Off);
+  //         } else if !stn.connection_ok() {
+  //           self.lighting.set_team(stn.station, LightMode::Pulse(
+  //             colour, Duration::seconds(1)
+  //           ));
 
-            match stn.station.alliance {
-              Alliance::Blue => any_blue = true,
-              Alliance::Red => any_red = true,
-            }
-          } else {
-            self.lighting.set_team(stn.station, LightMode::Constant(colour));
-          }
-        }
+  //           match stn.station.alliance {
+  //             Alliance::Blue => any_blue = true,
+  //             Alliance::Red => any_red = true,
+  //           }
+  //         } else {
+  //           self.lighting.set_team(stn.station, LightMode::Constant(colour));
+  //         }
+  //       }
 
-        if any_red {
-          self.lighting.set_table(Alliance::Red, LightMode::Pulse(
-            self.lighting.settings.red, Duration::seconds(1)
-          ))
-        } else {
-          self.lighting.set_table(Alliance::Red, LightMode::Constant(self.lighting.settings.red))
-        }
+  //       if any_red {
+  //         self.lighting.set_table(Alliance::Red, LightMode::Pulse(
+  //           self.lighting.settings.red, Duration::seconds(1)
+  //         ))
+  //       } else {
+  //         self.lighting.set_table(Alliance::Red, LightMode::Constant(self.lighting.settings.red))
+  //       }
 
-        if any_blue {
-          self.lighting.set_table(Alliance::Blue, LightMode::Pulse(
-            self.lighting.settings.blue, Duration::seconds(1)
-          ))
-        } else {
-          self.lighting.set_table(Alliance::Blue, LightMode::Constant(self.lighting.settings.blue))
-        }
-      },
-    }
-  }
+  //       if any_blue {
+  //         self.lighting.set_table(Alliance::Blue, LightMode::Pulse(
+  //           self.lighting.settings.blue, Duration::seconds(1)
+  //         ))
+  //       } else {
+  //         self.lighting.set_table(Alliance::Blue, LightMode::Constant(self.lighting.settings.blue))
+  //       }
+  //     },
+  //   }
+  // }
 
-  pub fn can_change_state_to(&self, desired: ArenaState) -> Result<()> {
+  pub async fn can_change_state_to(&self, desired: ArenaState) -> Result<()> {
     let current = self.state.state;
     let illegal = move |why: &str| ArenaIllegalStateChange {
       from: current,
@@ -586,12 +638,15 @@ impl Arena {
           )),
         }
 
-        if self.stations.iter().all(|x| x.can_arm_match()) {
-          Ok(())
-        } else {
-          bail!(illegal(
-            "Cannot Arm Match: Not all teams are ready. Bypass any no-show teams.",
-          ))
+        {
+          let stns = self.stations.lock().await;
+          if stns.iter().all(|x| x.can_arm_match()) {
+            Ok(())
+          } else {
+            bail!(illegal(
+              "Cannot Arm Match: Not all teams are ready. Bypass any no-show teams.",
+            ))
+          }
         }
       }
       (ArenaState::MatchArmed, ArenaState::MatchPlay, _) => Ok(()),
@@ -611,8 +666,8 @@ impl Arena {
     }
   }
 
-  fn do_state_init(&mut self, state: ArenaState) -> Result<BoundState> {
-    self.can_change_state_to(state)?;
+  async fn do_state_init(&mut self, state: ArenaState) -> Result<BoundState> {
+    self.can_change_state_to(state).await?;
 
     let current = self.state.state;
 
@@ -628,13 +683,13 @@ impl Arena {
       (_, ArenaState::Init, _) => basic(StateData::Init),
       (_, ArenaState::Estop, _) => basic(StateData::Estop),
       (_, ArenaState::EstopReset, _) => basic(StateData::EstopReset),
-      (_, ArenaState::Idle { ready: false }, _) => self.state_init_idle(),
+      (_, ArenaState::Idle { ready: false }, _) => self.state_init_idle().await,
       (_, ArenaState::Idle { ready: true }, _) => basic(StateData::Idle(None)),
-      (_, ArenaState::Prestart { ready: false }, _) => self.state_init_prestart(),
+      (_, ArenaState::Prestart { ready: false }, _) => self.state_init_prestart().await,
       (_, ArenaState::Prestart { ready: true }, _) => basic(StateData::Prestart(None)),
       (_, ArenaState::MatchArmed, _) => basic(StateData::MatchArmed),
       (_, ArenaState::MatchPlay, _) => basic(StateData::MatchPlay),
-      (_, ArenaState::MatchComplete { ready: false }, _) => self.state_init_match_complete(),
+      (_, ArenaState::MatchComplete { ready: false }, _) => self.state_init_match_complete().await,
       (_, ArenaState::MatchComplete { ready: true }, _) => basic(StateData::MatchComplete(None)),
       (_, ArenaState::MatchCommit, _) => basic(StateData::MatchCommit),
     }
@@ -656,8 +711,11 @@ impl Arena {
     }))
   }
 
-  fn state_init_idle(&mut self) -> Result<BoundState> {
-    let the_rx = self.state_init_with_network(self.stations.clone())?;
+  async fn state_init_idle(&mut self) -> Result<BoundState> {
+    let stns = {
+      self.stations.lock().await.clone()
+    };
+    let the_rx = self.state_init_with_network(stns)?;
 
     Ok(BoundState {
       first: true,
@@ -668,8 +726,11 @@ impl Arena {
     })
   }
 
-  fn state_init_prestart(&mut self) -> Result<BoundState> {
-    let the_rx = self.state_init_with_network(self.stations.clone())?;
+  async fn state_init_prestart(&mut self) -> Result<BoundState> {
+    let stns = {
+      self.stations.lock().await.clone()
+    };
+    let the_rx = self.state_init_with_network(stns)?;
 
     Ok(BoundState {
       first: true,
@@ -680,15 +741,18 @@ impl Arena {
     })
   }
 
-  fn state_init_match_complete(&mut self) -> Result<BoundState> {
+  async fn state_init_match_complete(&mut self) -> Result<BoundState> {
     // Match complete should not have teams in the network config, but we don't want to edit the actual stations since they're
     // required by score commit.
     // let mut stations = self.stations.clone();
     let mut stations = vec![];
-    for stn in &self.stations {
-      let mut stn_copy = stn.clone();
-      stn_copy.team = None;
-      stations.push(stn_copy);
+    {
+      let stns = self.stations.lock().await;
+      for stn in stns.iter() {
+        let mut stn_copy = stn.clone();
+        stn_copy.team = None;
+        stations.push(stn_copy);
+      }
     }
     let the_rx = self.state_init_with_network(stations)?;
 
@@ -712,7 +776,7 @@ impl Arena {
     // If E-stop state change detected, do the state change ASAP
     if self.pending_state_change.is_some() {
       self.clear_signal().await;
-      match self.perform_state_change() {
+      match self.perform_state_change().await {
         Ok(()) => (),
         Err(ref e) => error!("Error during state change: {}", e),
       };
@@ -734,7 +798,7 @@ impl Arena {
 
     // Perform state update
     self.clear_signal().await;
-    match self.perform_state_change() {
+    match self.perform_state_change().await {
       Ok(()) => (),
       Err(ref e) => error!("Error during state change: {}", e),
     };
@@ -758,10 +822,10 @@ impl Arena {
     return self.state.state;
   }
 
-  fn prepare_state_change(&mut self, desired: ArenaState) -> Result<()> {
+  async fn prepare_state_change(&mut self, desired: ArenaState) -> Result<()> {
     info!("Queuing state transition: {:?} -> {:?}", self.state.state, desired);
 
-    match self.can_change_state_to(desired) {
+    match self.can_change_state_to(desired).await {
       Err(e) => {
         error!("Could not perform state transition: {}", e);
         Err(e)
@@ -773,12 +837,12 @@ impl Arena {
     }
   }
 
-  fn perform_state_change(&mut self) -> Result<()> {
+  async fn perform_state_change(&mut self) -> Result<()> {
     let pending = mem::replace(&mut self.pending_state_change, None);
     match pending {
       None => Ok(()),
       Some(pend) => {
-        self.state = self.do_state_init(pend)?;
+        self.state = self.do_state_init(pend).await?;
         info!("State transition performed!");
         Ok(())
       }

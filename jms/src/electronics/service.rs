@@ -103,10 +103,10 @@ impl FieldElectronicsService {
 
           for i in 0..3 {
             if estops.blue[i] { 
-              arena.estop_station(AllianceStationId { alliance: Alliance::Blue, station: (i + 1) as u32 }) 
+              arena.estop_station(AllianceStationId { alliance: Alliance::Blue, station: (i + 1) as u32 }).await 
             }
             if estops.red[i] {
-              arena.estop_station(AllianceStationId { alliance: Alliance::Red, station: (i + 1) as u32 }) 
+              arena.estop_station(AllianceStationId { alliance: Alliance::Red, station: (i + 1) as u32 }).await
             }
           }
         }
