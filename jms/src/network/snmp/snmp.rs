@@ -7,7 +7,7 @@ use tokio::net::UdpSocket;
 use tokio_stream::StreamExt;
 use tokio_util::{codec::{Decoder, Encoder}, udp::UdpFramed};
 
-use crate::{arena::{SharedArena, station::{AllianceStationId, station_mut, SharedAllianceStations}}, models::Alliance};
+use crate::{arena::{station::AllianceStationId, Arena}, models::Alliance};
 
 use super::snmp_packet::{SNMPPacket, GenericTrap};
 
@@ -148,13 +148,13 @@ impl Encoder<VlanRequest> for SNMPCodec {
 }
 
 pub struct SNMPService {
-  stations: SharedAllianceStations
+  arena: Arena
 }
 
 impl SNMPService {
-  pub fn new(stations: SharedAllianceStations) -> SNMPService {
+  pub fn new(arena: Arena) -> SNMPService {
     SNMPService {
-      stations
+      arena
     }
   }
 
@@ -190,9 +190,9 @@ impl SNMPService {
               // Let the arena know if they're connected or not
               if let Some(station_id) = station_id {
                 // let mut arena = self.arena.lock().await;
-                let mut stns = self.stations.lock().await;
-                if let Some(station) = station_mut(&mut stns, station_id) {
-                  station.ds_eth = vs.link.up;
+                // let mut stns = self.stations.lock().await;
+                if let Some(station) = self.arena.station_for_id(station_id).await {
+                  station.write().await.ds_eth = vs.link.up;
                 }
               }
             },

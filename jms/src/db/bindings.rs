@@ -131,6 +131,6 @@ impl<'de> serde::Deserialize<'de> for DBDuration {
 
 impl From<chrono::Duration> for DBDuration {
   fn from(chrono_dur: chrono::Duration) -> Self {
-    DBDuration(chrono_dur)
+    Self(chrono_dur)
   }
 }

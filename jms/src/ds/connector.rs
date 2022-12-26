@@ -10,11 +10,9 @@ use tokio_stream::StreamExt;
 use tokio_util::codec::Framed;
 use tokio_util::udp::UdpFramed;
 
-use crate::arena::matches::MatchPlayState;
-use crate::arena::station::{AllianceStationId, SharedAllianceStations, station_for_team_mut, station_for_team};
-use crate::arena::{station::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy}, ArenaState, SharedArena};
+use crate::arena::station::AllianceStationId;
+use crate::arena::{station::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy}, state::ArenaState, Arena};
 use crate::ds::{self, Fms2DsTCP, Fms2DsUDP};
-use crate::models;
 
 use super::{DSTCPCodec, DSUDPCodec, Ds2FmsTCPTags, Ds2FmsUDP, Fms2DsStationStatus, Fms2DsTCPTags};
 
@@ -38,19 +36,19 @@ pub enum DSConnectionState {
 pub struct DSConnection {
   pub team: Option<u16>,
   pub state: DSConnectionState,
+  arena: Arena,
   addr_tcp: SocketAddr,
   addr_udp: SocketAddr, // UDP Outgoing
   framed_tcp: Framed<TcpStream, DSTCPCodec>,
   framed_udp: UdpFramed<DSUDPCodec>, // UDP Outgoing
   udp_rx: broadcast::Receiver<Ds2FmsUDP>,
-  stations: SharedAllianceStations,
   last_packet_time: Instant,
   wrong_station_n: usize
 }
 
 impl DSConnection {
   pub async fn new(
-    stations: SharedAllianceStations,
+    arena: Arena,
     addr: SocketAddr,
     stream: TcpStream,
     udp_rx: broadcast::Receiver<Ds2FmsUDP>,
@@ -62,13 +60,13 @@ impl DSConnection {
 
     DSConnection {
       team: None,
+      arena,
       addr_tcp: addr,
       addr_udp,
       framed_tcp: Framed::new(stream, DSTCPCodec::new()),
       framed_udp: UdpFramed::new(udp_socket, DSUDPCodec::new()),
       udp_rx,
       state: DSConnectionState::Connected,
-      stations,
       last_packet_time: Instant::now(),
       wrong_station_n: 0
     }
@@ -130,28 +128,26 @@ impl DSConnection {
           // Update arena record of station status
           {
             // let mut arena = self.arena.lock().await;
-            let mut stations = self.stations.lock().await;
-
             match status {
               Fms2DsStationStatus::Good => {
-                if let Some(stn) = station_for_team_mut(&mut stations, self.team) {
-                  stn.occupancy = AllianceStationOccupancy::Occupied;
+                if let Some(stn) = self.arena.station_for_team(self.team).await {
+                  stn.write().await.occupancy = AllianceStationOccupancy::Occupied;
                   self.wrong_station_n = 0;
                 }
               },
               Fms2DsStationStatus::Bad => {
-                if let Some(stn) = station_for_team_mut(&mut stations, self.team_by_ip()) {
-                  stn.occupancy = AllianceStationOccupancy::WrongStation;
+                if let Some(stn) = self.arena.station_for_team(self.team_by_ip()).await {
+                  stn.write().await.occupancy = AllianceStationOccupancy::WrongStation;
                   self.wrong_station_n += 1;
-                } else if let Some(stn) = station_for_team_mut(&mut stations, self.team) {
+                } else if let Some(stn) = self.arena.station_for_team(self.team).await {
                   // Fallback to team (not actual occupied station) if not available
-                  stn.occupancy = AllianceStationOccupancy::WrongStation;
+                  stn.write().await.occupancy = AllianceStationOccupancy::WrongStation;
                   self.wrong_station_n += 1;
                 }
               },
               Fms2DsStationStatus::Waiting => {
-                if let Some(stn) = station_for_team_mut(&mut stations, self.team_by_ip()) {
-                  stn.occupancy = AllianceStationOccupancy::WrongMatch;
+                if let Some(stn) = self.arena.station_for_team(self.team_by_ip()).await {
+                  stn.write().await.occupancy = AllianceStationOccupancy::WrongMatch;
                   self.wrong_station_n += 1;
                 }
                 // No fallback - Waiting status means that the station for self.team is None
@@ -215,11 +211,12 @@ impl DSConnection {
     // Connection closed, notify Arena
     {
       // let mut arena = self.arena.lock().await;
-      let mut stns = self.stations.lock().await;
-      if let Some(stn) = station_for_team_mut(&mut stns, self.team_by_ip()) {
+      if let Some(stn) = self.arena.station_for_team(self.team_by_ip()).await {
+        let mut stn = stn.write().await;
         stn.ds_report = None;
         stn.occupancy = AllianceStationOccupancy::Vacant;
-      } else if let Some(stn) = station_for_team_mut(&mut stns, self.team) {
+      } else if let Some(stn) = self.arena.station_for_team(self.team).await {
+        let mut stn = stn.write().await;
         stn.ds_report = None;
         stn.occupancy = AllianceStationOccupancy::Vacant;
       }
@@ -228,21 +225,11 @@ impl DSConnection {
 
   async fn _encode_udp_update(&self, _team: u16) -> Option<Fms2DsUDP> {
     if let Some(station) = self._get_desired_alliance_station().await {
-      // let arena = self.arena.lock().await;
 
-      // let match_state = arena.current_match.as_ref().map(|m| m.current_state());
       let estop = station.estop || station.master_estop;
       let astop = station.astop && station.command_mode == ds::DSMode::Auto;
 
-      // let (mode, robots_enabled) = match match_state {
-      //   Some(MatchPlayState::Auto) => (ds::DSMode::Auto, true),
-      //   Some(MatchPlayState::Teleop) => (ds::DSMode::Teleop, true),
-      //   _ => (ds::DSMode::Auto, false),
-      // };
-
       let remaining_seconds = station.remaining_time.as_secs_f32();
-
-      // let match_meta = arena.current_match.as_ref().map(|x| x.metadata());
 
       let mut pkt = Fms2DsUDP {
         estop: estop,
@@ -280,12 +267,13 @@ impl DSConnection {
   async fn _decode_udp_update(&self, pkt: Ds2FmsUDP) {
     // let mut arena = self.arena.lock().await;
     // let station_mut = arena.station_for_team_mut(self.team);
-    let mut stns = self.stations.lock().await;
-    let station_mut = station_for_team_mut(&mut stns, self.team);
+    // let mut stns = self.stations.lock().await;
+    let stn_lock = self.arena.station_for_team(self.team).await;
 
-    match station_mut {
-      Some(station_mut) => {
-        let mut report = station_mut.ds_report.unwrap_or(AllianceStationDSReport::default());
+    match stn_lock {
+      Some(stn_lock) => {
+        let mut stn = stn_lock.write().await;
+        let mut report = stn.ds_report.unwrap_or(AllianceStationDSReport::default());
 
         report.robot_ping = pkt.robot;
         report.radio_ping = pkt.radio;
@@ -306,7 +294,7 @@ impl DSConnection {
           }
         }
 
-        station_mut.ds_report = Some(report);
+        stn.ds_report = Some(report);
       }
       None => (),
     }
@@ -373,39 +361,43 @@ impl DSConnection {
 
   async fn _get_alliance_station(&self, team: Option<u16>) -> Option<AllianceStation> {
     // self.arena.lock().await.station_for_team(team)
-    let stns = self.stations.lock().await;
-    station_for_team(&stns, team)
+    match self.arena.station_for_team(team).await {
+      Some(o) => {
+        Some(o.read().await.clone())
+      },
+      None => None
+    }
   }
 }
 
 // SERVICE //
 
 pub struct DSConnectionService {
-  stations: SharedAllianceStations,
+  arena: Arena,
   udp_tx: broadcast::Sender<Ds2FmsUDP>,
 }
 
 impl DSConnectionService {
-  pub async fn new(stations: SharedAllianceStations) -> DSConnectionService {
+  pub async fn new(arena: Arena) -> DSConnectionService {
     let (udp_tx, _rx) = broadcast::channel(16);
-    DSConnectionService { stations, udp_tx }
+    DSConnectionService { arena, udp_tx }
   }
 
   pub async fn run(self) -> anyhow::Result<()> {
-    let fut_tcp = Self::tcp(self.stations.clone(), &self.udp_tx);
+    let fut_tcp = Self::tcp(self.arena.clone(), &self.udp_tx);
     let fut_udp = Self::udp_recv(&self.udp_tx);
     try_join!(fut_tcp, fut_udp)?;
     Ok(())
   }
 
-  async fn tcp(stations: SharedAllianceStations, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> anyhow::Result<()> {
+  async fn tcp(arena: Arena, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> anyhow::Result<()> {
     let server = TcpListener::bind("0.0.0.0:1750").await?;
     loop {
       info!("Listening for connections...");
       let (stream, addr) = server.accept().await?;
       debug!("Connected: {}", addr);
 
-      let mut conn = DSConnection::new(stations.clone(), addr, stream, udp_tx.subscribe()).await;
+      let mut conn = DSConnection::new(arena.clone(), addr, stream, udp_tx.subscribe()).await;
       tokio::spawn(async move {
         conn.process().await;
         info!(

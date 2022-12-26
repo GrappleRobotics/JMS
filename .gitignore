@@ -6,6 +6,9 @@
 *.dylib
 *.kvdb
 
+# Event backups
+*.tar.gz
+
 jms-test/
 jms/JMS_BACKUP
 jms/JMS_BACKUPS

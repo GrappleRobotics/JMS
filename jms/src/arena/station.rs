@@ -108,24 +108,6 @@ pub struct AllianceStation {
   pub master_estop: bool
 }
 
-pub type SharedAllianceStations = Arc<Mutex<Vec<AllianceStation>>>;
-
-pub fn station_for_team(stns: &Vec<AllianceStation>, team: Option<u16>) -> Option<AllianceStation> {
-  team.and_then(|t| {
-    stns.iter().find(|&&stn| stn.team == Some(t)).map(|&a| a)
-  })
-}
-
-pub fn station_for_team_mut(stns: &mut Vec<AllianceStation>, team: Option<u16>) -> Option<&mut AllianceStation> {
-  team.and_then(|t| {
-    stns.iter_mut().find(|stn| stn.team == Some(t))
-  })
-}
-
-pub fn station_mut(stns: &mut Vec<AllianceStation>, id: AllianceStationId) -> Option<&mut AllianceStation> {
-  stns.iter_mut().find(|stn| stn.station == id)
-}
-
 #[derive(Debug, Clone, Copy, Serialize, JsonSchema)]
 pub struct SerialisedAllianceStation {
   #[serde(flatten)]

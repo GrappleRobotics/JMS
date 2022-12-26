@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::{TryFutureExt, future, FutureExt};
-use jms::{arena::{self, SharedArena, resource::{SharedResources, Resources}}, config::JMSSettings, db::{self, backup::DBBackup, DBSingleton}, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord};
+use jms::{arena::{self, resource::{SharedResources, Resources}, ArenaImpl, Arena}, config::JMSSettings, db::{self, backup::DBBackup, DBSingleton}, ds::connector::DSConnectionService, electronics::service::FieldElectronicsService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -84,29 +84,33 @@ async fn main() -> anyhow::Result<()> {
 
     let stations = Arc::new(Mutex::new(vec![]));
     let resources: SharedResources = Arc::new(Mutex::new(Resources::new()));
-    let arena: SharedArena = Arc::new(Mutex::new(arena::Arena::new(stations.clone(), network, resources.clone()).await));
+    // let arena = Arc::new(arena::ArenaImpl::new(stations.clone(), network, resources.clone()).await);
+    let arena = Arena::new(Arc::new(ArenaImpl::new()));
+    
     let match_workers: SharedMatchGenerators = Arc::new(Mutex::new(MatchGenerators { 
       quals: MatchGenerationWorker::new(QualsMatchGenerator::new()), 
       playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new()) 
     }));
 
-    let a2 = arena.clone();
-    let arena_fut = async move {
-      let mut interval = tokio::time::interval(Duration::from_millis(100));
-      loop {
-        interval.tick().await;
-        a2.lock().await.update().await;
-      }
-      #[allow(unreachable_code)]
-      Ok(())
-    };
+    // TODO: Run arena in its own thread
+    // let a2 = arena.clone();
+    // let arena_fut = async move {
+    //   let mut interval = tokio::time::interval(Duration::from_millis(100));
+    //   loop {
+    //     interval.tick().await;
+    //     // a2.lock().await.update().await;
+    //     a2.arena_impl().
+    //   }
+    //   #[allow(unreachable_code)]
+    //   Ok(())
+    // };
 
     let rankings_fut = TeamRanking::run();
 
-    let ds_service = DSConnectionService::new(stations.clone()).await;
+    let ds_service = DSConnectionService::new(arena.clone()).await;
     let ds_fut = ds_service.run();
 
-    let snmp_service = SNMPService::new(stations.clone());
+    let snmp_service = SNMPService::new(arena.clone());
     let snmp_fut = snmp_service.run();
 
     let electronics_service = FieldElectronicsService::new(arena.clone(), resources.clone(), settings.electronics).await;
@@ -116,7 +120,7 @@ async fn main() -> anyhow::Result<()> {
     {
       ws.register(Duration::from_millis(1000), WSResourceHandler(resources.clone())).await;
       ws.register(Duration::from_millis(1000), WSMatchHandler(match_workers.clone())).await;
-      ws.register(Duration::from_millis(300), WSArenaHandler(arena.clone(), stations.clone())).await;
+      ws.register(Duration::from_millis(300), WSArenaHandler(arena.clone())).await;
       ws.register(Duration::from_millis(1000), WSEventHandler {}).await;
       ws.register(Duration::from_millis(2000), WSDebugHandler {}).await;
       ws.register(Duration::from_millis(5000), WSTicketHandler {}).await;
@@ -152,7 +156,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let all_futs = future::try_join_all(futs);
-    try_join!(arena_fut, rankings_fut, ds_fut, snmp_fut, elec_fut, ws_fut, web_fut, imaging_fut, all_futs)?;
+    try_join!(rankings_fut, ds_fut, snmp_fut, elec_fut, ws_fut, web_fut, imaging_fut, all_futs)?;
   }
 
   Ok(())

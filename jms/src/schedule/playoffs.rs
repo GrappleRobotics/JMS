@@ -91,7 +91,8 @@ impl MatchGenerator for PlayoffMatchGenerator {
               score_time: None,
               winner: None,
               played: false,
-              ready: pending.blue.is_some() && pending.red.is_some()
+              ready: pending.blue.is_some() && pending.red.is_some(),
+              config: models::MatchConfig::default()
             };
             m.insert(&db::database())?;
           }

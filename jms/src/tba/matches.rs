@@ -251,7 +251,8 @@ mod tests {
         red_alliance: None,
         blue_alliance: None,
         score_time: None,
-        ready: true
+        ready: true,
+        config: models::MatchConfig::default()
       };
   
       let tba_match: TBAMatch = m.try_into()?;
