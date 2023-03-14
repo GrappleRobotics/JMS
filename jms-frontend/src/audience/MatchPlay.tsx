@@ -2,7 +2,7 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
-import { Alliance, SerialisedAllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore, MatchScore, MatchScoreSnapshot } from "ws-schema";
 import BaseAudienceScene from "./BaseAudienceScene";
 
 type MatchProgressBarProps = {
@@ -19,13 +19,13 @@ class MatchProgressBar extends React.PureComponent<MatchProgressBarProps> {
     let bars = [
       {
         name: "AUTONOMOUS",
-        max: config.auto_time.secs,
+        max: config.auto_time,
         state: "Auto",
         complete: ["Pause", "Teleop", "Cooldown", "Complete"]
       },
       {
         name: "TELEOP",
-        max: config.teleop_time.secs,
+        max: config.teleop_time,
         state: "Teleop",
         complete: ["Cooldown", "Complete"]
       }
@@ -110,6 +110,7 @@ class AllianceScore extends React.PureComponent<AllianceScoreProps> {
 type AudienceSceneMatchPlayState = {
   stations: SerialisedAllianceStation[],
   match?: LoadedMatch,
+  score?: MatchScoreSnapshot,
   arenaState?: ArenaState
 };
 
@@ -120,6 +121,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
   componentDidMount = () => this.handles = [
     this.listen("Arena/Alliance/CurrentStations", "stations"),
     this.listen("Arena/Match/Current", "match"),
+    this.listen("Arena/Match/Score", "score"),
     this.listen("Arena/State/Current", "arenaState"),
     this.listenFn<string>("Arena/AudienceDisplay/PlaySound", (sound) => this.playSound(sound))
   ];
@@ -167,9 +169,9 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
   show = () => {
     // const { arena, event } = this.props;
     // const { match } = arena;
-    const { match, stations } = this.state;
+    const { match, stations, score } = this.state;
 
-    if (match == null)
+    if (match == null || score == null)
       return <div className="audience-field" />
     else {
       const has_rp = match.match_meta.match_type === "Qualification";
@@ -178,7 +180,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
         <div className="score-block">
           <Row className="m-0 progress-row">
             <MatchProgressBar
-              config={match.config}
+              config={match.match_meta.config}
               remaining={match.remaining_time}
               state={match.state}
               endgame={match.endgame}
@@ -204,14 +206,14 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
             <AllianceScore
               alliance="red"
               img="game/game.png"
-              score={match.score.red}
+              score={score.red}
               stations={stations.filter(s => s.station.alliance === "red")}
               has_rp={has_rp}
             />
             <AllianceScore
               alliance="blue"
               img="tourney_logo_white.png"
-              score={match.score.blue}
+              score={score.blue}
               stations={stations.filter(s => s.station.alliance === "blue")}
               has_rp={has_rp}
               reverse

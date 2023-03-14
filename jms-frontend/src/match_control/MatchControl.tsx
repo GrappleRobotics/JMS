@@ -4,7 +4,7 @@ import React from 'react';
 import { Button, Col, Container, Row } from "react-bootstrap";
 import { withVal } from 'support/util';
 import { WebsocketComponent } from "support/ws-component";
-import { SerialisedAllianceStation, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedMatchGeneration, SerializedMatch } from "ws-schema";
+import { SerialisedAllianceStation, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedMatchGeneration, SerializedMatch, MatchScoreSnapshot } from "ws-schema";
 import AllianceDash from "./Alliance";
 import MatchFlow from "./MatchFlow";
 import MatchScheduleView from "./MatchScheduleView";
@@ -13,6 +13,7 @@ type FullArena = {
   state?: ArenaState,
   stations?: SerialisedAllianceStation[],
   match?: LoadedMatch,
+  score?: MatchScoreSnapshot
 };
 
 type FullMatches = {
@@ -41,6 +42,8 @@ export default class MatchControl extends WebsocketComponent<{ fta: boolean }, M
       // Current Match
       this.listenFn<LoadedMatch | null>("Arena/Match/Current", 
         msg => this.setState(state => update(state, { arena: { match: { $set: msg || undefined } } }))),
+      this.listenFn<MatchScoreSnapshot | null>("Arena/Match/Score", 
+        msg => this.setState(state => update(state, { arena: { score: { $set: msg || undefined } } }))),
       // Other Matches
       this.listenFn<SerialisedMatchGeneration>("Match/Quals/Generation", 
         msg => this.setState(state => update(state, { matches: { quals: { $set: msg.matches } } }))),
@@ -88,7 +91,7 @@ export default class MatchControl extends WebsocketComponent<{ fta: boolean }, M
                 colour="blue"
                 matchLoaded={ has_match }
                 arenaState={arena.state}
-                matchScore={arena.match?.score?.blue}
+                matchScore={arena.score?.blue}
                 stations={arena.stations?.filter(x => x.station.alliance === "blue") || []}
                 onStationUpdate={ update => this.send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
               />
@@ -98,7 +101,7 @@ export default class MatchControl extends WebsocketComponent<{ fta: boolean }, M
                 colour="red"
                 matchLoaded={ has_match }
                 arenaState={arena.state}
-                matchScore={arena.match?.score?.red}
+                matchScore={arena.score?.red}
                 stations={arena.stations?.filter(x => x.station.alliance === "red").reverse() || []}  // Red teams go 3-2-1 to order how they're seen from the scoring table
                 onStationUpdate={ update => this.send({ Arena: { Alliance: { UpdateAlliance: update } } }) }
               />

@@ -4,7 +4,7 @@ import { Button, Col, Row } from "react-bootstrap";
 import { Routes, Route, Link } from "react-router-dom";
 import { ALLIANCES } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { Alliance, GoalHeight, LoadedMatch, ScoreUpdateData, ScorerPair } from "ws-schema";
+import { Alliance, GoalHeight, LoadedMatch, ScoreUpdateData, ScorerPair, MatchScoreSnapshot } from "ws-schema";
 
 const SCORER_PAIRS: ScorerPair[] = ["AB", "CD"];
 
@@ -16,7 +16,8 @@ type ScorerPanelProps = {
 };
 
 type ScorerPanelState = {
-  match?: LoadedMatch
+  match?: LoadedMatch,
+  score?: MatchScoreSnapshot
 };
 
 const GOAL_IDX = {
@@ -28,7 +29,8 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
   readonly state: ScorerPanelState = {};
 
   componentDidMount = () => this.handles = [
-    this.listen("Arena/Match/Current", "match")
+    this.listen("Arena/Match/Current", "match"),
+    this.listen("Arena/Match/Score", "score"),
   ];
 
   buttonPair = (alliance: Alliance, enabled: boolean, currentVal: number, onChange: (v: number) => void) => {
@@ -52,13 +54,13 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
     ]
   }
 
-  scoreFlank = (goalIdx: number, match: LoadedMatch | undefined, update: (u: ScoreUpdateData) => void) => {
+  scoreFlank = (goalIdx: number, match: LoadedMatch | undefined, score: MatchScoreSnapshot | undefined, update: (u: ScoreUpdateData) => void) => {
     const arr = ALLIANCES.map(alliance => {
       const goal = this.props.height === "high" ? "upper" : "lower";
       const enabled = match != null && match.state !== "Waiting" && match.state !== "Fault";
       // 5 second auto cool-off to allow for balls in the air at the end of auto
-      const teleop = match ? ( match.state === "Teleop" && match.remaining_time.secs < (match.config.teleop_time.secs - 5) ) : false;
-      const current_score = match ? match.score[alliance].live.cargo[teleop ? "teleop" : "auto"][goal] : [0, 0, 0, 0];
+      const teleop = match ? ( match.state === "Teleop" && match.remaining_time.secs < (match.match_meta.config.teleop_time - 5) ) : false;
+      const current_score = score ? score[alliance].live.cargo[teleop ? "teleop" : "auto"][goal] : [0, 0, 0, 0];
 
       return this.buttonPair(alliance, enabled, current_score[goalIdx], n => {
         let score_change = [0, 0, 0, 0];
@@ -72,7 +74,7 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
 
   render() {
     const { pair, height } = this.props;
-    const { match } = this.state;
+    const { match, score } = this.state;
     
     const title = <React.Fragment>
       <h3 className="mb-0"> { match?.match_meta?.name || "Waiting for Scorekeeper..." } </h3>
@@ -89,8 +91,8 @@ export class ScorerPanel extends WebsocketComponent<ScorerPanelProps, ScorerPane
       data-pair={pair} 
       data-height={height} 
       img={"/img/game/hub_" + height.toLowerCase() + ".png"}
-      leftChildren={this.scoreFlank(GOAL_IDX[pair][0] - 1, match, update)}
-      rightChildren={this.scoreFlank(GOAL_IDX[pair][1] - 1, match, update)}
+      leftChildren={this.scoreFlank(GOAL_IDX[pair][0] - 1, match, score, update)}
+      rightChildren={this.scoreFlank(GOAL_IDX[pair][1] - 1, match, score, update)}
     >
       <div className="scorer-label" data-pos="left"> { pair[0] }{ height[0].toUpperCase() } </div>
       <div className="scorer-label" data-pos="right"> { pair[1] }{ height[0].toUpperCase() } </div>

@@ -6,7 +6,7 @@ use chrono::Duration;
 use log::{info, warn};
 use schemars::JsonSchema;
 
-use crate::{arena::exceptions::MatchWrongState, db, models, scoring::scores::{MatchScore, MatchScoreSnapshot}};
+use crate::models;
 
 use serde::{Serialize, Deserialize};
 
@@ -70,17 +70,6 @@ impl LoadedMatch {
       })
     }
   }
-
-  // pub async fn commit_score(&mut self) -> Result<models::Match> {
-  //   if self.state == MatchPlayState::Complete {
-  //     Ok(self.match_meta.commit(&self.score, &db::database()).await?.clone())
-  //   } else {
-  //     bail!(MatchWrongState {
-  //       state: self.state,
-  //       why: "Can't commit score before Match is complete!".to_owned()
-  //     })
-  //   }
-  // }
 
   pub fn fault(&mut self) {
     self.do_change_state(MatchPlayState::Fault);

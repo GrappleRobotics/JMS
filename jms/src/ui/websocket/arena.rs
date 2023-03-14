@@ -2,7 +2,7 @@ use anyhow::{anyhow, bail};
 
 use jms_macros::define_websocket_msg;
 
-use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, station::SerialisedAllianceStation, Arena, state::{ArenaState, ArenaSignal}, audience::AudienceDisplay}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, station::SerialisedAllianceStation, Arena, state::{ArenaState, ArenaSignal}, audience::AudienceDisplay}, db::{self, TableType}, models, scoring::scores::{ScoreUpdateData, MatchScoreSnapshot}};
 
 use super::{WebsocketMessage2JMS, ws::{Websocket, WebsocketContext, WebsocketHandler}};
 
@@ -23,6 +23,7 @@ define_websocket_msg!($ArenaMessage {
   },
   $Match {
     send Current(Option<LoadedMatch>),
+    send Score(MatchScoreSnapshot),
     recv LoadTest,
     recv Unload,
     recv Load(String),
@@ -51,6 +52,7 @@ impl WebsocketHandler for WSArenaHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
     let arena = &self.0;
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(arena.current_match().await).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Score(arena.score().await.into()).into()).await;
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(arena.state().await).into()).await;
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(arena.stations().await.iter().map(|&x| x.into()).collect()).into()).await;
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::Current(arena.audience().await).into()).await;

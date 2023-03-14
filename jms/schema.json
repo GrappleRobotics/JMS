@@ -112,14 +112,6 @@
         "WrongMatch"
       ]
     },
-    "ArenaAccessRestriction": {
-      "type": "string",
-      "enum": [
-        "NoRestriction",
-        "ResetOnly",
-        "Teams"
-      ]
-    },
     "ArenaMessage2JMS": {
       "oneOf": [
         {
@@ -166,18 +158,6 @@
           "properties": {
             "AudienceDisplay": {
               "$ref": "#/definitions/ArenaMessageAudienceDisplay2JMS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Access"
-          ],
-          "properties": {
-            "Access": {
-              "$ref": "#/definitions/ArenaMessageAccess2JMS"
             }
           },
           "additionalProperties": false
@@ -230,50 +210,6 @@
           "properties": {
             "AudienceDisplay": {
               "$ref": "#/definitions/ArenaMessageAudienceDisplay2UI"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Access"
-          ],
-          "properties": {
-            "Access": {
-              "$ref": "#/definitions/ArenaMessageAccess2UI"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageAccess2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Set"
-          ],
-          "properties": {
-            "Set": {
-              "$ref": "#/definitions/ArenaAccessRestriction"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageAccess2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Current"
-          ],
-          "properties": {
-            "Current": {
-              "$ref": "#/definitions/ArenaAccessRestriction"
             }
           },
           "additionalProperties": false
@@ -515,6 +451,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Score"
+          ],
+          "properties": {
+            "Score": {
+              "$ref": "#/definitions/MatchScoreSnapshot"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -558,9 +506,9 @@
             "Estop",
             "EstopReset",
             "Prestart",
+            "PrestartUndo",
             "MatchPlay",
-            "MatchCommit",
-            "Idle"
+            "MatchCommit"
           ]
         },
         {
@@ -570,7 +518,15 @@
           ],
           "properties": {
             "MatchArm": {
-              "type": "boolean"
+              "type": "object",
+              "required": [
+                "force"
+              ],
+              "properties": {
+                "force": {
+                  "type": "boolean"
+                }
+              }
             }
           },
           "additionalProperties": false
@@ -596,11 +552,11 @@
         {
           "type": "object",
           "required": [
-            "ready",
+            "net_ready",
             "state"
           ],
           "properties": {
-            "ready": {
+            "net_ready": {
               "type": "boolean"
             },
             "state": {
@@ -628,25 +584,11 @@
         {
           "type": "object",
           "required": [
+            "net_ready",
             "state"
           ],
           "properties": {
-            "state": {
-              "type": "string",
-              "enum": [
-                "EstopReset"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "ready",
-            "state"
-          ],
-          "properties": {
-            "ready": {
+            "net_ready": {
               "type": "boolean"
             },
             "state": {
@@ -688,31 +630,17 @@
         {
           "type": "object",
           "required": [
-            "ready",
+            "net_ready",
             "state"
           ],
           "properties": {
-            "ready": {
+            "net_ready": {
               "type": "boolean"
             },
             "state": {
               "type": "string",
               "enum": [
                 "MatchComplete"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "state"
-          ],
-          "properties": {
-            "state": {
-              "type": "string",
-              "enum": [
-                "MatchCommit"
               ]
             }
           }
@@ -1597,17 +1525,12 @@
     "LoadedMatch": {
       "type": "object",
       "required": [
-        "config",
         "endgame",
         "match_meta",
         "remaining_time",
-        "score",
         "state"
       ],
       "properties": {
-        "config": {
-          "$ref": "#/definitions/MatchConfig"
-        },
         "endgame": {
           "type": "boolean"
         },
@@ -1626,9 +1549,6 @@
         },
         "remaining_time": {
           "$ref": "#/definitions/Duration"
-        },
-        "score": {
-          "$ref": "#/definitions/MatchScoreSnapshot"
         },
         "state": {
           "$ref": "#/definitions/MatchPlayState"
@@ -1679,6 +1599,7 @@
       "type": "object",
       "required": [
         "blue_teams",
+        "config",
         "match_number",
         "match_type",
         "played",
@@ -1705,6 +1626,9 @@
             "format": "uint",
             "minimum": 0.0
           }
+        },
+        "config": {
+          "$ref": "#/definitions/MatchConfig"
         },
         "match_number": {
           "type": "integer",
@@ -1801,19 +1725,24 @@
       ],
       "properties": {
         "auto_time": {
-          "$ref": "#/definitions/Duration"
+          "type": "integer",
+          "format": "int64"
         },
         "endgame_time": {
-          "$ref": "#/definitions/Duration"
+          "type": "integer",
+          "format": "int64"
         },
         "pause_time": {
-          "$ref": "#/definitions/Duration"
+          "type": "integer",
+          "format": "int64"
         },
         "teleop_time": {
-          "$ref": "#/definitions/Duration"
+          "type": "integer",
+          "format": "int64"
         },
         "warmup_cooldown_time": {
-          "$ref": "#/definitions/Duration"
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -3025,9 +2954,13 @@
         "astop",
         "bypass",
         "can_arm",
+        "command_enable",
+        "command_mode",
         "ds_eth",
         "estop",
+        "master_estop",
         "occupancy",
+        "remaining_time",
         "station"
       ],
       "properties": {
@@ -3039,6 +2972,12 @@
         },
         "can_arm": {
           "type": "boolean"
+        },
+        "command_enable": {
+          "type": "boolean"
+        },
+        "command_mode": {
+          "$ref": "#/definitions/DSMode"
         },
         "ds_eth": {
           "type": "boolean"
@@ -3056,8 +2995,14 @@
         "estop": {
           "type": "boolean"
         },
+        "master_estop": {
+          "type": "boolean"
+        },
         "occupancy": {
           "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "remaining_time": {
+          "$ref": "#/definitions/Duration"
         },
         "station": {
           "$ref": "#/definitions/AllianceStationId"
@@ -3104,6 +3049,7 @@
       "type": "object",
       "required": [
         "blue_teams",
+        "config",
         "match_number",
         "match_type",
         "name",
@@ -3132,6 +3078,9 @@
             "format": "uint",
             "minimum": 0.0
           }
+        },
+        "config": {
+          "$ref": "#/definitions/MatchConfig"
         },
         "full_score": {
           "anyOf": [
@@ -3259,11 +3208,15 @@
       "required": [
         "astop",
         "bypass",
+        "command_enable",
+        "command_mode",
         "ds_eth",
         "estop",
+        "master_estop",
         "match_state",
         "match_time",
         "occupancy",
+        "remaining_time",
         "station",
         "time"
       ],
@@ -3273,6 +3226,12 @@
         },
         "bypass": {
           "type": "boolean"
+        },
+        "command_enable": {
+          "type": "boolean"
+        },
+        "command_mode": {
+          "$ref": "#/definitions/DSMode"
         },
         "ds_eth": {
           "type": "boolean"
@@ -3290,6 +3249,9 @@
         "estop": {
           "type": "boolean"
         },
+        "master_estop": {
+          "type": "boolean"
+        },
         "match_state": {
           "$ref": "#/definitions/MatchPlayState"
         },
@@ -3298,6 +3260,9 @@
         },
         "occupancy": {
           "$ref": "#/definitions/AllianceStationOccupancy"
+        },
+        "remaining_time": {
+          "$ref": "#/definitions/Duration"
         },
         "station": {
           "$ref": "#/definitions/AllianceStationId"

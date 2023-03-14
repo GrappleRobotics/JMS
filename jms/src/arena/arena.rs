@@ -32,6 +32,10 @@ impl Arena {
     self.a.current_match.read().await.clone()
   }
 
+  pub async fn score(&self) -> MatchScore {
+    self.a.score.read().await.clone()
+  }
+
   pub async fn stations(&self) -> Vec<AllianceStation> {
     let mut stns = vec![];
     for stn in &self.a.stations {
@@ -98,7 +102,7 @@ pub struct ArenaImpl {
 }
 
 impl ArenaImpl {
-  pub fn new() -> Self {
+  pub fn new(network: Option<Box<dyn NetworkProvider + Send + Sync>>) -> Self {
     let sigchan = mpsc::channel(32);
     Self {
       state: ArenaLock::new(ArenaState::Init),
@@ -106,7 +110,10 @@ impl ArenaImpl {
       audience: ArenaLock::new(AudienceDisplay::Field),
       signal_channel: (sigchan.0, ArenaLock::new(sigchan.1)),
       shutdown: AtomicBool::new(false),
-      network: ArenaLock::new(None),
+      network: ArenaLock::new(network.map(|n| ArenaNetwork {
+        provider: Arc::new(n),
+        handle: None
+      })),
       score: ArenaLock::new(MatchScore::new(3, 3)),
       current_match: ArenaLock::new(None),
       stations: [

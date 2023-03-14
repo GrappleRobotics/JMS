@@ -10,12 +10,12 @@ import { capitalise } from "support/strings";
 import { otherAlliance, withVal } from "support/util";
 import { ALLIANCES, NEAR_FAR } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { Alliance, SerialisedAllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar, MatchScoreSnapshot } from "ws-schema";
 
 type RefereePanelState = {
   match?: LoadedMatch,
   stations: SerialisedAllianceStation[],
-  access?: ArenaAccessRestriction,
+  score?: MatchScoreSnapshot,
   state?: ArenaState
 }
 
@@ -25,7 +25,7 @@ abstract class RefereePanelBase<P={}> extends WebsocketComponent<P, RefereePanel
   componentDidMount = () => this.handles = [
     this.listen("Arena/Alliance/CurrentStations", "stations"),
     this.listen("Arena/Match/Current", "match"),
-    this.listen("Arena/Access/Current", "access"),
+    this.listen("Arena/Match/Score", "score"),
     this.listen("Arena/State/Current", "state")
   ]
 
@@ -79,7 +79,7 @@ abstract class RefereePanelBase<P={}> extends WebsocketComponent<P, RefereePanel
   render() {
     return <Container fluid>
       {
-        (this.state.match?.score != null && this.state.stations.length > 0) ? this.renderIt() : this.renderWaiting()
+        (this.state.match != null && this.state.score != null && this.state.stations.length > 0) ? this.renderIt() : this.renderWaiting()
       }
     </Container>
   }
@@ -160,11 +160,12 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
 
   renderIt() {
     const match = this.state.match!;
+    const score_all = this.state.score!;
     const alliance = this.props.alliance;
     const other_alliance = otherAlliance(alliance);
     
-    const score = match.score[alliance];
-    const other_score = match.score[other_alliance];
+    const score = score_all[alliance];
+    const other_score = score_all[other_alliance];
 
     const flip = this.props.position === "far";
 
@@ -183,11 +184,11 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
       <Row>
         <this.FoulsComponent
           alliance={flip ? "red" : "blue"}
-          score={match.score[flip ? "red" : "blue"]}
+          score={score_all[flip ? "red" : "blue"]}
         />
         <this.FoulsComponent
           alliance={flip ? "blue" : "red"}
-          score={match.score[flip ? "blue" : "red"]}
+          score={score_all[flip ? "blue" : "red"]}
         />
       </Row>
       <Row>
@@ -207,9 +208,7 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
 
 export class HeadReferee extends RefereePanelBase {
   renderTopBar = () => {
-    const { match, state, access } = this.state;
-
-    const canChangeAccess = state != null && !(state.state === "MatchArmed" || state.state === "MatchPlay");
+    const { match, state } = this.state;
 
     return <React.Fragment>
       <Row className="mb-3">
@@ -217,7 +216,7 @@ export class HeadReferee extends RefereePanelBase {
           <h3 className="mb-0"> { match?.match_meta?.name || "Waiting for Scorekeeper..." } </h3>
           <h4 className="text-muted"> { match?.state || "--" } &nbsp; { match?.remaining_time?.secs }s </h4>
         </Col>
-        <Col md="auto" className="head-ref-field-ax">
+        {/* <Col md="auto" className="head-ref-field-ax">
           <Button
             variant="purple"
             size="lg"
@@ -244,7 +243,7 @@ export class HeadReferee extends RefereePanelBase {
           >
             NORMAL
           </Button>
-        </Col>
+        </Col> */}
       </Row>
     </React.Fragment>
   }
@@ -254,8 +253,7 @@ export class HeadReferee extends RefereePanelBase {
   }
 
   renderIt() {
-    let match = this.state.match!;
-    let { score } = match;
+    let score = this.state.score!;
 
     return <React.Fragment>
       { this.renderTopBar() }

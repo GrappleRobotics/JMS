@@ -66,9 +66,9 @@ export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref
     if (!connected) return "DISCONNECTED";
     switch (state?.state) {
       case "Idle":
-        return state.ready ? "Idle" : "Idle (working...)";
+        return state.net_ready ? "Idle" : "Idle (working...)";
       case "Prestart":
-        return state.ready ? "Prestart Ready" : "Prestarting...";
+        return state.net_ready ? "Prestart Ready" : "Prestarting...";
       case "MatchArmed":
         return "ARMED";
       case "MatchPlay":
@@ -81,9 +81,7 @@ export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref
             return match?.state;
         }
       case "MatchComplete":
-        return state.ready ? "Match Complete" : "Match Completed (score wait)";
-      case "MatchCommit":
-        return "Scores Committed";
+        return state.net_ready ? "Match Complete" : "Match Completed (working...)";
       case "Estop":
         return "// EMERGENCY STOP //";
       default:
