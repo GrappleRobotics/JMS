@@ -20,7 +20,7 @@ use stm32h7xx_hal::{ethernet, rcc::CoreClocks, stm32};
 fn systick_init(mut syst: stm32::SYST, clocks: CoreClocks) {
     let c_ck_mhz = clocks.c_ck().to_MHz();
 
-    let syst_calib = 0x3E8;
+    let syst_calib = 1000;
 
     syst.set_clock_source(cortex_m::peripheral::syst::SystClkSource::Core);
     syst.set_reload((syst_calib * c_ck_mhz) - 1);
@@ -30,9 +30,6 @@ fn systick_init(mut syst: stm32::SYST, clocks: CoreClocks) {
 
 /// TIME is an atomic u32 that counts milliseconds.
 static TIME: AtomicU32 = AtomicU32::new(0);
-
-/// Locally administered MAC address
-const MAC_ADDRESS: [u8; 6] = [0x02, 0x00, 0x11, 0x22, 0x33, 0x44];
 
 const TCP_BUF_SIZE: usize = 4096;
 const UDP_META_SIZE: usize = 24;
@@ -103,7 +100,7 @@ impl<'a> Net<'a> {
 
     /// Polls on the ethernet interface. You should refer to the smoltcp
     /// documentation for poll() to understand how to call poll efficiently
-    pub fn poll(&mut self, now: i64, led: &mut gpio::gpiob::PB0<gpio::Output<gpio::PushPull>>) {
+    pub fn poll(&mut self, now: i64) {
         let timestamp = Instant::from_millis(now);
 
         self.iface
@@ -130,7 +127,7 @@ impl<'a> Net<'a> {
               (len, (len, data))
             }).unwrap();
 
-            if modbus_socket.can_send() {
+            if modbus_socket.can_send() && data.0 > 0 {
               modbus_socket.send_slice(&data.1[0..data.0]).unwrap();
             }
           } else if modbus_socket.may_send() {
@@ -147,12 +144,7 @@ impl<'a> Net<'a> {
 
           if dmx_socket.can_recv() {
             let (data, _endpoint) = dmx_socket.recv().unwrap();
-
-            if data[0] > 0 {
-              led.set_high();
-            } else {
-              led.set_low();
-            }
+            
           }
         }
     }
@@ -160,7 +152,7 @@ impl<'a> Net<'a> {
 
 #[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true)]
 mod app {
-    use stm32h7xx_hal::{ethernet, ethernet::PHY, gpio, prelude::*};
+    use stm32h7xx_hal::{ethernet, ethernet::PHY, gpio, prelude::*, signature::Uid};
 
     use super::*;
     use core::sync::atomic::Ordering;
@@ -170,7 +162,7 @@ mod app {
     #[local]
     struct LocalResources {
         net: Net<'static>,
-        lan8742a: ethernet::phy::LAN8742A<ethernet::EthernetMAC>,
+        // lan8742a: ethernet::phy::LAN8742A<ethernet::EthernetMAC>,
         link_led: gpio::gpiob::PB0<gpio::Output<gpio::PushPull>>,
     }
 
@@ -188,8 +180,8 @@ mod app {
         // Initialise clocks...
         let rcc = ctx.device.RCC.constrain();
         let ccdr = rcc
-            .sys_ck(50.MHz())
-            .hclk(50.MHz())
+            .sys_ck(100.MHz())
+            .hclk(100.MHz())
             .freeze(pwrcfg, &ctx.device.SYSCFG);
 
         // Initialise system...
@@ -215,7 +207,16 @@ mod app {
         let rmii_txd0 = gpiog.pg13.into_alternate();
         let rmii_txd1 = gpiob.pb13.into_alternate();
 
-        let mac_addr = smoltcp::wire::EthernetAddress::from_bytes(&MAC_ADDRESS);
+        /* Generate MAC Address */
+        let uid = Uid::read();
+        let mut hash: u32 = 0;
+        for b in uid {
+          hash = (hash.wrapping_mul(31)) ^ (*b as u32);
+        }
+        let hash_bytes = hash.to_le_bytes();
+        let mac: [u8; 6] = [0x02, 0x00, hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3]];
+
+        let mac_addr = smoltcp::wire::EthernetAddress::from_bytes(&mac);
         let (eth_dma, eth_mac) = unsafe {
             ethernet::new(
                 ctx.device.ETHERNET_MAC,
@@ -240,9 +241,9 @@ mod app {
         };
 
         // Initialise ethernet PHY...
-        let mut lan8742a = ethernet::phy::LAN8742A::new(eth_mac);
-        lan8742a.phy_reset();
-        lan8742a.phy_init();
+        // let mut lan8742a = ethernet::phy::LAN8742A::new(eth_mac);
+        // lan8742a.phy_reset();
+        // lan8742a.phy_init();
         // The eth_dma should not be used until the PHY reports the link is up
 
         unsafe { ethernet::enable_interrupt() };
@@ -258,14 +259,14 @@ mod app {
             SharedResources {},
             LocalResources {
                 net,
-                lan8742a,
+                // lan8742a,
                 link_led,
             },
             init::Monotonics(),
         )
     }
 
-    #[idle(local = [lan8742a])]
+    #[idle(local = [])]
     fn idle(ctx: idle::Context) -> ! {
         loop {
             // Ethernet
@@ -280,8 +281,10 @@ mod app {
     fn ethernet_event(ctx: ethernet_event::Context) {
         unsafe { ethernet::interrupt_handler() }
 
+        ctx.local.link_led.set_low();
         let time = TIME.load(Ordering::Relaxed);
-        ctx.local.net.poll(time as i64, ctx.local.link_led);
+        ctx.local.net.poll(time as i64);
+        ctx.local.link_led.set_high();
     }
 
     #[task(binds = SysTick, priority=15)]
