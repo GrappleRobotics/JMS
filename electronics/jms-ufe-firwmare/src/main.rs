@@ -6,7 +6,8 @@
 use modbus::{ModbusTCPFrameRequest, Unpackable, ModbusTCPFrameResponse, Packable};
 use panic_semihosting as _;
 use stm32h7xx_hal::adc::{Adc, self};
-use stm32h7xx_hal::device::{ADC1, DAC};
+use stm32h7xx_hal::device::{ADC1, DAC, USART2};
+use stm32h7xx_hal::serial::Serial;
 use stm32h7xx_hal::{gpio, dac};
 
 use core::sync::atomic::AtomicU32;
@@ -44,13 +45,25 @@ const UDP_BUF_SIZE: usize = 4096;
 static mut DES_RING: ethernet::DesRing<4, 4> = ethernet::DesRing::new();
 
 // TODO: Add pull down / pull up state
-#[derive(Default)]
 pub struct IOStates {
   digital_out: [bool; 4],
   digital_in: [bool; 4],
   analog_in: [u16; 4],
   analog_out: [u16; 2],
   /* TODO: PWM */
+  dmx: [u8; 513]
+}
+
+impl Default for IOStates {
+  fn default() -> Self {
+    Self {
+      digital_out: Default::default(),
+      digital_in: Default::default(),
+      analog_in: Default::default(),
+      analog_out: Default::default(),
+      dmx: [0u8; 513]
+    }
+  }
 }
 
 /// Net storage with static initialisation - another global singleton
@@ -222,7 +235,8 @@ impl<'a> Net<'a> {
 
           if dmx_socket.can_recv() {
             let (data, _endpoint) = dmx_socket.recv().unwrap();
-            
+            let len = data.len().clamp(0, 512);
+            (&mut io.dmx[0..len]).clone_from_slice(&data[0..len]);
           }
         }
     }
@@ -233,11 +247,14 @@ pub struct IODevices {
   digital_out: [gpio::ErasedPin<gpio::Output<gpio::PushPull> >; 4],
   adc1: Adc<ADC1, adc::Enabled>,
   analog_in: (gpio::gpioa::PA3<gpio::Analog>, gpio::gpioc::PC0<gpio::Analog>, gpio::gpiob::PB1<gpio::Analog>, gpio::gpioa::PA6<gpio::Analog>),
-  analog_out: (dac::C1<DAC, dac::Enabled>, dac::C2<DAC, dac::Enabled>)
+  analog_out: (dac::C1<DAC, dac::Enabled>, dac::C2<DAC, dac::Enabled>),
 }
 
 #[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true)]
 mod app {
+    use stm32h7xx_hal::delay::DelayFromCountDownTimer;
+    use stm32h7xx_hal::serial;
+    use stm32h7xx_hal::timer::Event;
     use stm32h7xx_hal::{ethernet, ethernet::PHY, gpio, adc, prelude::*, signature::Uid, delay::Delay, rcc::rec::AdcClkSel};
     use stm32h7xx_hal::traits::DacOut;
 
@@ -252,8 +269,10 @@ mod app {
     #[local]
     struct LocalResources {
         net: Net<'static>,
-        devices: IODevices
-        // lan8742a: ethernet::phy::LAN8742A<ethernet::EthernetMAC>,
+        devices: IODevices,
+        dmx_timer: stm32h7xx_hal::timer::Timer<stm32::TIM2>,  // Option so we can .take()
+        dmx_delay: DelayFromCountDownTimer<stm32h7xx_hal::timer::Timer<stm32::TIM3>>,
+        dmx: (Serial<USART2>, gpio::ErasedPin<gpio::Output<gpio::PushPull>>)
     }
 
     #[init]
@@ -343,6 +362,7 @@ mod app {
 
         let mut delay = Delay::new(ctx.core.SYST, ccdr.clocks);
         
+        // Initialise ADC
         let mut adc1 = adc::Adc::adc1(
           ctx.device.ADC1,
           4.MHz(),
@@ -352,10 +372,43 @@ mod app {
         ).enable();
         adc1.set_resolution(adc::Resolution::SixteenBit);
         
+        // Initialise DAC
         let (dac1, dac2) = ctx.device.DAC.dac((gpioa.pa4, gpioa.pa5), ccdr.peripheral.DAC12);
         let dac1 = dac1.calibrate_buffer(&mut delay).enable();
         let dac2 = dac2.calibrate_buffer(&mut delay).enable();
         
+        // Initialise DMX512
+        // let mut dmx_tx_pin = gpiod.pd5.into_push_pull_output().speed(gpio::Speed::VeryHigh);
+        let dmx_tx_pin = gpiod.pd5.into_alternate();
+        let dmx_rx_pin = gpiod.pd6.into_alternate();
+        let mut dmx_rts_pin = gpiod.pd4.into_push_pull_output().speed(gpio::Speed::VeryHigh);
+
+        dmx_rts_pin.set_low();
+
+        let dmx_config = serial::config::Config::new(250000.bps())
+          .parity_none()
+          .stopbits(serial::config::StopBits::Stop2)
+          .bitorder(serial::config::BitOrder::LsbFirst);
+
+        let dmx_serial = ctx.device.USART2
+          .serial((dmx_tx_pin, dmx_rx_pin), dmx_config, ccdr.peripheral.USART2, &ccdr.clocks)
+          .unwrap();
+
+        // Setup DMX timer
+        let mut dmx_timer = ctx.device.TIM2.timer(
+          15.Hz(),
+          ccdr.peripheral.TIM2,
+          &ccdr.clocks
+        );
+        dmx_timer.listen(Event::TimeOut);
+
+        let dmx_delay_timer = ctx.device.TIM3.timer(
+          1.Hz(),
+          ccdr.peripheral.TIM3,
+          &ccdr.clocks
+        );
+        let dmx_delay = DelayFromCountDownTimer::new(dmx_delay_timer);
+
         led.set_high();
 
         // Delay to show LED status
@@ -392,8 +445,11 @@ mod app {
                   ),
                   analog_out: (
                     dac1, dac2
-                  )
-                }
+                  ),
+                },
+                dmx: (dmx_serial, dmx_rts_pin.erase()),
+                dmx_timer,
+                dmx_delay
             },
             init::Monotonics(),
         )
@@ -428,18 +484,51 @@ mod app {
 
     #[task(binds = ETH, shared = [io], local = [net])]
     fn ethernet_event(mut ctx: ethernet_event::Context) {
-        unsafe { ethernet::interrupt_handler() }
+      unsafe { ethernet::interrupt_handler() }
 
-        let time = TIME.load(Ordering::Relaxed);
-        // TODO: Only lock IO if there's a message on ethernet that requires it
-        let net = ctx.local.net;
-        ctx.shared.io.lock(|io| {
-          net.poll(time as i64, io);
-        });
+      let time = TIME.load(Ordering::Relaxed);
+      // TODO: Only lock IO if there's a message on ethernet that requires it
+      let net = ctx.local.net;
+      ctx.shared.io.lock(|io| {
+        net.poll(time as i64, io);
+      });
     }
 
     #[task(binds = SysTick, priority=15)]
     fn systick_tick(_: systick_tick::Context) {
-        TIME.fetch_add(1, Ordering::Relaxed);
+      TIME.fetch_add(1, Ordering::Relaxed);
+    }
+
+    #[task(binds = TIM2, shared = [io], local = [dmx_timer, dmx_delay, dmx])]
+    fn tim2_tick(mut ctx: tim2_tick::Context) {
+      let dmx_data = ctx.shared.io.lock(|io| {
+        io.dmx.clone()
+      });
+      
+      let (serial, de) = ctx.local.dmx;
+      de.set_high();
+      
+      let delay = ctx.local.dmx_delay;
+
+      let stolen = unsafe { stm32::Peripherals::steal().GPIOD };
+      stolen.moder.modify(|_, w| w.moder5().output());
+
+      // START (BREAK + MAB)
+      stolen.bsrr.write(|w| w.br5().set_bit());
+      delay.delay_us(100u16);
+      stolen.bsrr.write(|w| w.bs5().set_bit());
+      delay.delay_us(12u16);
+
+      // Send slot data
+      stolen.moder.modify(|_, w| w.moder5().alternate());
+      stolen.bsrr.write(|w| w.br5().set_bit());
+      serial.bwrite_all(&dmx_data[..]).unwrap();
+
+      // Restore
+      stolen.moder.modify(|_, w| w.moder5().output());
+      stolen.bsrr.write(|w| w.bs5().set_bit());
+      de.set_low();
+
+      ctx.local.dmx_timer.clear_irq();
     }
 }
