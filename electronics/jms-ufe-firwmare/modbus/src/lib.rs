@@ -29,11 +29,11 @@ pub trait Unpackable : Sized {
 
 #[derive(Debug)]
 #[allow(dead_code)]
-struct ModbusTCPFrameRequest {
-  transaction_id: u16,
-  protocol_id: u16,
-  unit_id: u8,
-  function: ModbusFunctionRequest
+pub struct ModbusTCPFrameRequest {
+  pub transaction_id: u16,
+  pub protocol_id: u16,
+  pub unit_id: u8,
+  pub function: ModbusFunctionRequest
 }
 
 impl Unpackable for ModbusTCPFrameRequest {
@@ -60,7 +60,7 @@ const WRITE_HOLDING_MAX: usize = 128;
 
 #[derive(Debug)]
 #[allow(dead_code)]
-enum ModbusFunctionRequest {
+pub enum ModbusFunctionRequest {
   ReadDiscreteInputs { first_address: u16, n: u16 },
   ReadCoils { first_address: u16, n: u16 },
   WriteCoil { address: u16, value: bool },
@@ -191,11 +191,11 @@ impl Unpackable for ModbusFunctionRequest {
 /* RESPONSE */
 #[derive(Debug)]
 #[allow(dead_code)]
-struct ModbusTCPFrameResponse<'a> {
-  transaction_id: u16,
-  protocol_id: u16,
-  unit_id: u8,
-  function: ModbusFunctionResponse<'a>
+pub struct ModbusTCPFrameResponse<'a> {
+  pub transaction_id: u16,
+  pub protocol_id: u16,
+  pub unit_id: u8,
+  pub function: ModbusFunctionResponse<'a>
 }
 
 impl<'a> Packable for ModbusTCPFrameResponse<'a> {
@@ -212,7 +212,7 @@ impl<'a> Packable for ModbusTCPFrameResponse<'a> {
 
 #[derive(Debug)]
 #[allow(dead_code)]
-enum ModbusFunctionResponse<'a> {
+pub enum ModbusFunctionResponse<'a> {
   ReadDiscreteInputs(ModbusResponse<&'a[bool]>),
   ReadCoils(ModbusResponse<&'a[bool]>),
 
@@ -226,12 +226,12 @@ enum ModbusFunctionResponse<'a> {
   WriteHoldingRegisters(ModbusResponse<(u16, u16)>),     // first_address, n
 }
 
-type ModbusResponse<T> = Result<T, ModbusExceptionCode>;
+pub type ModbusResponse<T> = Result<T, ModbusExceptionCode>;
 
 #[derive(Debug, Clone)]
 #[repr(u8)]
 #[allow(dead_code)]
-enum ModbusExceptionCode {
+pub enum ModbusExceptionCode {
   IllegalFunction = 0x01,
   IllegalDataAddress = 0x02,
   IllegalDataValue = 0x03,

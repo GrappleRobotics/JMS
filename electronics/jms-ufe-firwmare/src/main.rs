@@ -3,8 +3,11 @@
 // #![no_std]
 #![cfg_attr(not(test), no_std)]
 
-use panic_halt as _;
-use stm32h7xx_hal::gpio;
+use modbus::{ModbusTCPFrameRequest, Unpackable, ModbusTCPFrameResponse, Packable};
+use panic_semihosting as _;
+use stm32h7xx_hal::adc::{Adc, self};
+use stm32h7xx_hal::device::{ADC1, DAC};
+use stm32h7xx_hal::{gpio, dac};
 
 use core::sync::atomic::AtomicU32;
 
@@ -18,7 +21,7 @@ use smoltcp::socket::{TcpSocketBuffer, TcpSocket, UdpSocketBuffer, UdpPacketMeta
 
 use stm32h7xx_hal::{ethernet, rcc::CoreClocks, stm32};
 
-fn systick_init(mut syst: stm32::SYST, clocks: CoreClocks) {
+fn systick_init(syst: &mut stm32::SYST, clocks: CoreClocks) {
     let c_ck_mhz = clocks.c_ck().to_MHz();
 
     let syst_calib = 1000;
@@ -39,6 +42,16 @@ const UDP_BUF_SIZE: usize = 4096;
 /// Ethernet descriptor rings are a global singleton
 #[link_section = ".sram3.eth"]
 static mut DES_RING: ethernet::DesRing<4, 4> = ethernet::DesRing::new();
+
+// TODO: Add pull down / pull up state
+#[derive(Default)]
+pub struct IOStates {
+  digital_out: [bool; 4],
+  digital_in: [bool; 4],
+  analog_in: [u16; 4],
+  analog_out: [u16; 2],
+  /* TODO: PWM */
+}
 
 /// Net storage with static initialisation - another global singleton
 pub struct NetStorageStatic<'a> {
@@ -101,7 +114,7 @@ impl<'a> Net<'a> {
 
     /// Polls on the ethernet interface. You should refer to the smoltcp
     /// documentation for poll() to understand how to call poll efficiently
-    pub fn poll(&mut self, now: i64) {
+    pub fn poll(&mut self, now: i64, io: &mut IOStates) {
         let timestamp = Instant::from_millis(now);
 
         self.iface
@@ -119,17 +132,81 @@ impl<'a> Net<'a> {
           if modbus_socket.may_recv() {
             let data = modbus_socket.recv(|buffer| {
               let len = buffer.len();
-              
-              let mut data = [0; 2048];
-              for i in 0..len {
-                data[i] = buffer[i];
-              }
-
-              (len, (len, data))
+              (len, ModbusTCPFrameRequest::unpack(&buffer[..len]))
             }).unwrap();
 
-            if modbus_socket.can_send() && data.0 > 0 {
-              modbus_socket.send_slice(&data.1[0..data.0]).unwrap();
+            match data {
+              Ok(req) => {
+                let response = match req.function {
+                  modbus::ModbusFunctionRequest::ReadDiscreteInputs { first_address, n } => {
+                    modbus::ModbusFunctionResponse::ReadDiscreteInputs(
+                      io.digital_in.get(first_address as usize .. (first_address + n) as usize).ok_or(modbus::ModbusExceptionCode::IllegalDataAddress)
+                    )
+                  },
+                  modbus::ModbusFunctionRequest::ReadCoils { first_address, n } => {
+                    modbus::ModbusFunctionResponse::ReadCoils(
+                      io.digital_out.get(first_address as usize .. (first_address + n) as usize).ok_or(modbus::ModbusExceptionCode::IllegalDataAddress)
+                    )
+                  },
+                  modbus::ModbusFunctionRequest::WriteCoil { address, value } => {
+                    modbus::ModbusFunctionResponse::WriteCoil(
+                      match io.digital_out.get_mut(address as usize) {
+                        Some(v) => { *v = value; Ok((address, value)) },
+                        None => Err(modbus::ModbusExceptionCode::IllegalDataAddress)
+                      }
+                    )
+                  },
+                  modbus::ModbusFunctionRequest::WriteCoils { first_address, n, values } => {
+                    modbus::ModbusFunctionResponse::WriteCoils(
+                      match io.digital_out.get_mut(first_address as usize .. (first_address + n) as usize) {
+                        Some(v) => { v.clone_from_slice(&values[0..n as usize]); Ok((first_address, n)) },
+                        None => Err(modbus::ModbusExceptionCode::IllegalDataAddress)
+                      }
+                    )
+                  },
+                  modbus::ModbusFunctionRequest::ReadInputRegisters { first_address, n } => {
+                    modbus::ModbusFunctionResponse::ReadInputRegisters(
+                      io.analog_in.get(first_address as usize .. (first_address + n) as usize).ok_or(modbus::ModbusExceptionCode::IllegalDataAddress)
+                    )
+                  },
+                  modbus::ModbusFunctionRequest::ReadHoldingRegisters { first_address, n } => {
+                    modbus::ModbusFunctionResponse::ReadHoldingRegisters(
+                      io.analog_out.get(first_address as usize .. (first_address + n) as usize).ok_or(modbus::ModbusExceptionCode::IllegalDataAddress)
+                    )
+                  },
+                  modbus::ModbusFunctionRequest::WriteHoldingRegister { address, value } => {
+                    modbus::ModbusFunctionResponse::WriteHoldingRegister(
+                      match io.analog_out.get_mut(address as usize) {
+                        Some(v) => { *v = value; Ok((address, value)) },
+                        None => Err(modbus::ModbusExceptionCode::IllegalDataAddress)
+                      }
+                    )
+                  },
+                  modbus::ModbusFunctionRequest::WriteHoldingRegisters { first_address, n, values } => {
+                    modbus::ModbusFunctionResponse::WriteHoldingRegisters(
+                      match io.analog_out.get_mut(first_address as usize .. (first_address + n) as usize) {
+                        Some(v) => { v.clone_from_slice(&values[0..n as usize]); Ok((first_address, n)) },
+                        None => Err(modbus::ModbusExceptionCode::IllegalDataAddress)
+                      }
+                    )
+                  },
+                };
+
+                if modbus_socket.can_send() {
+                  let full_packet = ModbusTCPFrameResponse {
+                    transaction_id: req.transaction_id,
+                    protocol_id: req.protocol_id,
+                    unit_id: req.unit_id,
+                    function: response,
+                  };
+
+                  let mut buf = [0u8; 256];
+                  if let Ok(n) = full_packet.pack(&mut buf) {
+                    modbus_socket.send_slice(&buf[0..n]).unwrap();
+                  }
+                }
+              },
+              Err(_) => ()  /* TODO */
             }
           } else if modbus_socket.may_send() {
             modbus_socket.close();
@@ -151,20 +228,32 @@ impl<'a> Net<'a> {
     }
 }
 
+pub struct IODevices {
+  digital_in: [gpio::ErasedPin<gpio::Input>; 4],
+  digital_out: [gpio::ErasedPin<gpio::Output<gpio::PushPull> >; 4],
+  adc1: Adc<ADC1, adc::Enabled>,
+  analog_in: (gpio::gpioa::PA3<gpio::Analog>, gpio::gpioc::PC0<gpio::Analog>, gpio::gpiob::PB1<gpio::Analog>, gpio::gpioa::PA6<gpio::Analog>),
+  analog_out: (dac::C1<DAC, dac::Enabled>, dac::C2<DAC, dac::Enabled>)
+}
+
 #[rtic::app(device = stm32h7xx_hal::stm32, peripherals = true)]
 mod app {
-    use stm32h7xx_hal::{ethernet, ethernet::PHY, gpio, prelude::*, signature::Uid};
+    use stm32h7xx_hal::{ethernet, ethernet::PHY, gpio, adc, prelude::*, signature::Uid, delay::Delay, rcc::rec::AdcClkSel};
+    use stm32h7xx_hal::traits::DacOut;
 
     use super::*;
     use core::sync::atomic::Ordering;
 
     #[shared]
-    struct SharedResources {}
+    struct SharedResources {
+      io: IOStates
+    }
+
     #[local]
     struct LocalResources {
         net: Net<'static>,
+        devices: IODevices
         // lan8742a: ethernet::phy::LAN8742A<ethernet::EthernetMAC>,
-        link_led: gpio::gpiob::PB0<gpio::Output<gpio::PushPull>>,
     }
 
     #[init]
@@ -183,6 +272,7 @@ mod app {
         let ccdr = rcc
             .sys_ck(100.MHz())
             .hclk(100.MHz())
+            .pll2_p_ck(50.MHz())
             .freeze(pwrcfg, &ctx.device.SYSCFG);
 
         // Initialise system...
@@ -193,10 +283,13 @@ mod app {
         let gpioa = ctx.device.GPIOA.split(ccdr.peripheral.GPIOA);
         let gpiob = ctx.device.GPIOB.split(ccdr.peripheral.GPIOB);
         let gpioc = ctx.device.GPIOC.split(ccdr.peripheral.GPIOC);
+        let gpiod = ctx.device.GPIOD.split(ccdr.peripheral.GPIOD);
+        let gpioe = ctx.device.GPIOE.split(ccdr.peripheral.GPIOE);
+        let gpiof = ctx.device.GPIOF.split(ccdr.peripheral.GPIOF);
         let gpiog = ctx.device.GPIOG.split(ccdr.peripheral.GPIOG);
-        // let gpioi = ctx.device.GPIOI.split(ccdr.peripheral.GPIOI);
-        let mut link_led = gpiob.pb0.into_push_pull_output(); // LED3
-        link_led.set_low();
+
+        let mut led = gpiob.pb0.into_push_pull_output();
+        led.set_low();
 
         let rmii_ref_clk = gpioa.pa1.into_alternate();
         let rmii_mdio = gpioa.pa2.into_alternate();
@@ -217,8 +310,9 @@ mod app {
         let hash_bytes = hash.to_le_bytes();
         let mac: [u8; 6] = [0x02, 0x00, hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3]];
 
+        // Init Ethernet
         let mac_addr = smoltcp::wire::EthernetAddress::from_bytes(&mac);
-        let (eth_dma, eth_mac) = unsafe {
+        let (eth_dma, _eth_mac) = unsafe {
             ethernet::new(
                 ctx.device.ETHERNET_MAC,
                 ctx.device.ETHERNET_MTL,
@@ -241,51 +335,107 @@ mod app {
             )
         };
 
-        // Initialise ethernet PHY...
-        // let mut lan8742a = ethernet::phy::LAN8742A::new(eth_mac);
-        // lan8742a.phy_reset();
-        // lan8742a.phy_init();
-        // The eth_dma should not be used until the PHY reports the link is up
-
         unsafe { ethernet::enable_interrupt() };
 
         // unsafe: mutable reference to static storage, we only do this once
         let store = unsafe { &mut STORE };
         let net = Net::new(store, eth_dma, mac_addr.into(), TIME.load(Ordering::Relaxed) as i64);
 
+        let mut delay = Delay::new(ctx.core.SYST, ccdr.clocks);
+        
+        let mut adc1 = adc::Adc::adc1(
+          ctx.device.ADC1,
+          4.MHz(),
+          &mut delay,
+          ccdr.peripheral.ADC12,
+          &ccdr.clocks
+        ).enable();
+        adc1.set_resolution(adc::Resolution::SixteenBit);
+        
+        let (dac1, dac2) = ctx.device.DAC.dac((gpioa.pa4, gpioa.pa5), ccdr.peripheral.DAC12);
+        let dac1 = dac1.calibrate_buffer(&mut delay).enable();
+        let dac2 = dac2.calibrate_buffer(&mut delay).enable();
+        
+        led.set_high();
+
+        // Delay to show LED status
+        delay.delay_ms(1000u16);
+
         // 1ms tick
-        systick_init(ctx.core.SYST, ccdr.clocks);
+        systick_init(&mut delay.free(), ccdr.clocks);
 
         (
-            SharedResources {},
+            SharedResources {
+              io: IOStates::default()
+            },
             LocalResources {
                 net,
-                // lan8742a,
-                link_led,
+                devices: IODevices {
+                  digital_in: [
+                    gpiof.pf3.into_pull_up_input().erase(),
+                    gpiod.pd15.into_pull_up_input().erase(),
+                    gpiod.pd14.into_pull_up_input().erase(),
+                    gpiob.pb5.into_pull_up_input().erase()
+                  ],
+                  digital_out: [
+                    led.erase(),
+                    gpiob.pb14.into_push_pull_output().erase(),
+                    gpioe.pe1.into_push_pull_output().erase(),
+                    gpioe.pe0.into_push_pull_output().erase()
+                  ],
+                  adc1,
+                  analog_in: (
+                    gpioa.pa3.into_analog(),
+                    gpioc.pc0.into_analog(),
+                    gpiob.pb1.into_analog(),
+                    gpioa.pa6.into_analog()
+                  ),
+                  analog_out: (
+                    dac1, dac2
+                  )
+                }
             },
             init::Monotonics(),
         )
     }
 
-    #[idle(local = [])]
-    fn idle(ctx: idle::Context) -> ! {
+    #[idle(shared = [io], local = [devices])]
+    fn idle(mut ctx: idle::Context) -> ! {
         loop {
-            // Ethernet
-            // match ctx.local.lan8742a.poll_link() {
-            //     true => ctx.local.link_led.set_high(),
-            //     _ => ctx.local.link_led.set_low(),
-            // }
+          let devices = &mut ctx.local.devices;
+          ctx.shared.io.lock(|io| {
+            for i in 0..devices.digital_in.len() {
+              io.digital_in[i] = devices.digital_in[i].is_high();
+            }
+            for i in 0..devices.digital_out.len() {
+              devices.digital_out[i].set_state(io.digital_out[i].into());
+            }
+
+            let mut val: u32 = devices.adc1.read(&mut devices.analog_in.0).unwrap_or(0);
+            io.analog_in[0] = val as u16;
+            val = devices.adc1.read(&mut devices.analog_in.1).unwrap_or(0);
+            io.analog_in[1] = val as u16;
+            val = devices.adc1.read(&mut devices.analog_in.2).unwrap_or(0);
+            io.analog_in[2] = val as u16;
+            val = devices.adc1.read(&mut devices.analog_in.3).unwrap_or(0);
+            io.analog_in[3] = val as u16;
+
+            devices.analog_out.0.set_value(io.analog_out[0].clamp(0, 4095));
+            devices.analog_out.1.set_value(io.analog_out[1].clamp(0, 4095));
+          });
         }
     }
 
-    #[task(binds = ETH, local = [net, link_led])]
-    fn ethernet_event(ctx: ethernet_event::Context) {
+    #[task(binds = ETH, shared = [io], local = [net])]
+    fn ethernet_event(mut ctx: ethernet_event::Context) {
         unsafe { ethernet::interrupt_handler() }
 
-        ctx.local.link_led.set_low();
         let time = TIME.load(Ordering::Relaxed);
-        ctx.local.net.poll(time as i64);
-        ctx.local.link_led.set_high();
+        // TODO: Only lock IO if there's a message on ethernet that requires it
+        let net = ctx.local.net;
+        ctx.shared.io.lock(|io| {
+          net.poll(time as i64, io);
+        });
     }
 
     #[task(binds = SysTick, priority=15)]
