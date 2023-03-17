@@ -14,6 +14,7 @@ panic-halt = "0.2.0"
 embedded-hal = "0.2.7"
 stm32h7xx-hal = { version = "0.13.1", features = ["stm32h743v", "rt", "ethernet"]}
 smoltcp = { version = "0.8.0", default-features = false, features = ["medium-ethernet", "proto-ipv4", "proto-ipv6", "socket-raw", "socket-tcp", "socket-udp"] }
+modbus = { path = "modbus" }
 
 # Uncomment for the panic example.
 # panic-itm = "0.4.1"

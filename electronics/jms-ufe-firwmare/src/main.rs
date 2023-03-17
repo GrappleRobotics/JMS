@@ -1,6 +1,7 @@
 // #![deny(warnings)]
 #![no_main]
-#![no_std]
+// #![no_std]
+#![cfg_attr(not(test), no_std)]
 
 use panic_halt as _;
 use stm32h7xx_hal::gpio;
