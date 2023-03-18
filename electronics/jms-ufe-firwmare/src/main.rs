@@ -6,24 +6,24 @@
 mod net;
 
 use panic_semihosting as _;
-use stm32h7xx_hal::adc::{Adc, self};
+use stm32h7xx_hal::adc::{self, Adc};
 use stm32h7xx_hal::device::{ADC1, DAC, USART2};
 use stm32h7xx_hal::serial::Serial;
-use stm32h7xx_hal::{gpio, dac};
+use stm32h7xx_hal::{dac, gpio};
 
 use core::sync::atomic::AtomicU32;
 
 use stm32h7xx_hal::{ethernet, rcc::CoreClocks, stm32};
 
 fn systick_init(syst: &mut stm32::SYST, clocks: CoreClocks) {
-    let c_ck_mhz = clocks.c_ck().to_MHz();
+  let c_ck_mhz = clocks.c_ck().to_MHz();
 
-    let syst_calib = 1000;
+  let syst_calib = 1000;
 
-    syst.set_clock_source(cortex_m::peripheral::syst::SystClkSource::Core);
-    syst.set_reload((syst_calib * c_ck_mhz) - 1);
-    syst.enable_interrupt();
-    syst.enable_counter();
+  syst.set_clock_source(cortex_m::peripheral::syst::SystClkSource::Core);
+  syst.set_reload((syst_calib * c_ck_mhz) - 1);
+  syst.enable_interrupt();
+  syst.enable_counter();
 }
 
 /// TIME is an atomic u32 that counts milliseconds.
@@ -40,7 +40,7 @@ pub struct IOStates {
   analog_in: [u16; 4],
   analog_out: [u16; 2],
   /* TODO: PWM */
-  dmx: [u8; 513]
+  dmx: [u8; 513],
 }
 
 impl Default for IOStates {
@@ -50,7 +50,7 @@ impl Default for IOStates {
       digital_in: Default::default(),
       analog_in: Default::default(),
       analog_out: Default::default(),
-      dmx: [0u8; 513]
+      dmx: [0u8; 513],
     }
   }
 }
@@ -58,9 +58,14 @@ impl Default for IOStates {
 /// Net storage with static initialisation - another global singleton
 pub struct IODevices {
   digital_in: [gpio::ErasedPin<gpio::Input>; 4],
-  digital_out: [gpio::ErasedPin<gpio::Output<gpio::PushPull> >; 4],
+  digital_out: [gpio::ErasedPin<gpio::Output<gpio::PushPull>>; 4],
   adc1: Adc<ADC1, adc::Enabled>,
-  analog_in: (gpio::gpioa::PA3<gpio::Analog>, gpio::gpioc::PC0<gpio::Analog>, gpio::gpiob::PB1<gpio::Analog>, gpio::gpioa::PA6<gpio::Analog>),
+  analog_in: (
+    gpio::gpioa::PA3<gpio::Analog>,
+    gpio::gpioc::PC0<gpio::Analog>,
+    gpio::gpiob::PB1<gpio::Analog>,
+    gpio::gpioa::PA6<gpio::Analog>,
+  ),
   analog_out: (dac::C1<DAC, dac::Enabled>, dac::C2<DAC, dac::Enabled>),
 }
 
@@ -69,8 +74,8 @@ mod app {
   use stm32h7xx_hal::delay::DelayFromCountDownTimer;
   use stm32h7xx_hal::serial;
   use stm32h7xx_hal::timer::Event;
-  use stm32h7xx_hal::{ethernet, gpio, adc, prelude::*, signature::Uid, delay::Delay};
   use stm32h7xx_hal::traits::DacOut;
+  use stm32h7xx_hal::{adc, delay::Delay, ethernet, gpio, prelude::*, signature::Uid};
 
   use crate::net::STORE;
 
@@ -79,22 +84,23 @@ mod app {
 
   #[shared]
   struct SharedResources {
-    io: IOStates
+    io: IOStates,
   }
 
   #[local]
   struct LocalResources {
-      net: net::Net<'static>,
-      devices: IODevices,
-      dmx_timer: stm32h7xx_hal::timer::Timer<stm32::TIM2>,  // Option so we can .take()
-      dmx_delay: DelayFromCountDownTimer<stm32h7xx_hal::timer::Timer<stm32::TIM3>>,
-      dmx: (Serial<USART2>, gpio::ErasedPin<gpio::Output<gpio::PushPull>>)
+    net: net::Net<'static>,
+    devices: IODevices,
+    dmx_timer: stm32h7xx_hal::timer::Timer<stm32::TIM2>, // Option so we can .take()
+    dmx_delay: DelayFromCountDownTimer<stm32h7xx_hal::timer::Timer<stm32::TIM3>>,
+    dmx: (
+      Serial<USART2>,
+      gpio::ErasedPin<gpio::Output<gpio::PushPull>>,
+    ),
   }
 
   #[init]
-  fn init(
-      mut ctx: init::Context,
-  ) -> (SharedResources, LocalResources, init::Monotonics) {
+  fn init(mut ctx: init::Context) -> (SharedResources, LocalResources, init::Monotonics) {
     // Initialise power...
     let pwr = ctx.device.PWR.constrain();
     let pwrcfg = pwr.freeze();
@@ -143,7 +149,14 @@ mod app {
       hash = (hash.wrapping_mul(31)) ^ (*b as u32);
     }
     let hash_bytes = hash.to_le_bytes();
-    let mac: [u8; 6] = [0x02, 0x00, hash_bytes[0], hash_bytes[1], hash_bytes[2], hash_bytes[3]];
+    let mac: [u8; 6] = [
+      0x02,
+      0x00,
+      hash_bytes[0],
+      hash_bytes[1],
+      hash_bytes[2],
+      hash_bytes[3],
+    ];
 
     // Init Ethernet
     let mac_addr = smoltcp::wire::EthernetAddress::from_bytes(&mac);
@@ -153,15 +166,15 @@ mod app {
         ctx.device.ETHERNET_MTL,
         ctx.device.ETHERNET_DMA,
         (
-            rmii_ref_clk,
-            rmii_mdio,
-            rmii_mdc,
-            rmii_crs_dv,
-            rmii_rxd0,
-            rmii_rxd1,
-            rmii_tx_en,
-            rmii_txd0,
-            rmii_txd1,
+          rmii_ref_clk,
+          rmii_mdio,
+          rmii_mdc,
+          rmii_crs_dv,
+          rmii_rxd0,
+          rmii_rxd1,
+          rmii_tx_en,
+          rmii_txd0,
+          rmii_txd1,
         ),
         &mut DES_RING,
         mac_addr,
@@ -173,30 +186,42 @@ mod app {
     unsafe { ethernet::enable_interrupt() };
 
     let store = unsafe { &mut STORE };
-    let net = net::Net::new(store, eth_dma, mac_addr.into(), TIME.load(Ordering::Relaxed) as i64);
+    let net = net::Net::new(
+      store,
+      eth_dma,
+      mac_addr.into(),
+      TIME.load(Ordering::Relaxed) as i64,
+    );
 
     let mut delay = Delay::new(ctx.core.SYST, ccdr.clocks);
-    
+
     // Initialise ADC
     let mut adc1 = adc::Adc::adc1(
       ctx.device.ADC1,
       4.MHz(),
       &mut delay,
       ccdr.peripheral.ADC12,
-      &ccdr.clocks
-    ).enable();
+      &ccdr.clocks,
+    )
+    .enable();
     adc1.set_resolution(adc::Resolution::SixteenBit);
-    
+
     // Initialise DAC
-    let (dac1, dac2) = ctx.device.DAC.dac((gpioa.pa4, gpioa.pa5), ccdr.peripheral.DAC12);
+    let (dac1, dac2) = ctx
+      .device
+      .DAC
+      .dac((gpioa.pa4, gpioa.pa5), ccdr.peripheral.DAC12);
     let dac1 = dac1.calibrate_buffer(&mut delay).enable();
     let dac2 = dac2.calibrate_buffer(&mut delay).enable();
-    
+
     // Initialise DMX512
     // let mut dmx_tx_pin = gpiod.pd5.into_push_pull_output().speed(gpio::Speed::VeryHigh);
     let dmx_tx_pin = gpiod.pd5.into_alternate();
     let dmx_rx_pin = gpiod.pd6.into_alternate();
-    let mut dmx_rts_pin = gpiod.pd4.into_push_pull_output().speed(gpio::Speed::VeryHigh);
+    let mut dmx_rts_pin = gpiod
+      .pd4
+      .into_push_pull_output()
+      .speed(gpio::Speed::VeryHigh);
 
     dmx_rts_pin.set_low();
 
@@ -205,23 +230,28 @@ mod app {
       .stopbits(serial::config::StopBits::Stop2)
       .bitorder(serial::config::BitOrder::LsbFirst);
 
-    let dmx_serial = ctx.device.USART2
-      .serial((dmx_tx_pin, dmx_rx_pin), dmx_config, ccdr.peripheral.USART2, &ccdr.clocks)
+    let dmx_serial = ctx
+      .device
+      .USART2
+      .serial(
+        (dmx_tx_pin, dmx_rx_pin),
+        dmx_config,
+        ccdr.peripheral.USART2,
+        &ccdr.clocks,
+      )
       .unwrap();
 
     // Setup DMX timer
-    let mut dmx_timer = ctx.device.TIM2.timer(
-      15.Hz(),
-      ccdr.peripheral.TIM2,
-      &ccdr.clocks
-    );
+    let mut dmx_timer = ctx
+      .device
+      .TIM2
+      .timer(15.Hz(), ccdr.peripheral.TIM2, &ccdr.clocks);
     dmx_timer.listen(Event::TimeOut);
 
-    let dmx_delay_timer = ctx.device.TIM3.timer(
-      1.Hz(),
-      ccdr.peripheral.TIM3,
-      &ccdr.clocks
-    );
+    let dmx_delay_timer = ctx
+      .device
+      .TIM3
+      .timer(1.Hz(), ccdr.peripheral.TIM3, &ccdr.clocks);
     let dmx_delay = DelayFromCountDownTimer::new(dmx_delay_timer);
 
     led.set_high();
@@ -234,7 +264,7 @@ mod app {
 
     (
       SharedResources {
-        io: IOStates::default()
+        io: IOStates::default(),
       },
       LocalResources {
         net,
@@ -243,28 +273,26 @@ mod app {
             gpiof.pf3.into_pull_up_input().erase(),
             gpiod.pd15.into_pull_up_input().erase(),
             gpiod.pd14.into_pull_up_input().erase(),
-            gpiob.pb5.into_pull_up_input().erase()
+            gpiob.pb5.into_pull_up_input().erase(),
           ],
           digital_out: [
             led.erase(),
             gpiob.pb14.into_push_pull_output().erase(),
             gpioe.pe1.into_push_pull_output().erase(),
-            gpioe.pe0.into_push_pull_output().erase()
+            gpioe.pe0.into_push_pull_output().erase(),
           ],
           adc1,
           analog_in: (
             gpioa.pa3.into_analog(),
             gpioc.pc0.into_analog(),
             gpiob.pb1.into_analog(),
-            gpioa.pa6.into_analog()
+            gpioa.pa6.into_analog(),
           ),
-          analog_out: (
-            dac1, dac2
-          ),
+          analog_out: (dac1, dac2),
         },
         dmx: (dmx_serial, dmx_rts_pin.erase()),
         dmx_timer,
-        dmx_delay
+        dmx_delay,
       },
       init::Monotonics(),
     )
@@ -291,8 +319,14 @@ mod app {
         val = devices.adc1.read(&mut devices.analog_in.3).unwrap_or(0);
         io.analog_in[3] = val as u16;
 
-        devices.analog_out.0.set_value(io.analog_out[0].clamp(0, 4095));
-        devices.analog_out.1.set_value(io.analog_out[1].clamp(0, 4095));
+        devices
+          .analog_out
+          .0
+          .set_value(io.analog_out[0].clamp(0, 4095));
+        devices
+          .analog_out
+          .1
+          .set_value(io.analog_out[1].clamp(0, 4095));
       });
     }
   }
@@ -316,13 +350,11 @@ mod app {
 
   #[task(binds = TIM2, shared = [io], local = [dmx_timer, dmx_delay, dmx])]
   fn tim2_tick(mut ctx: tim2_tick::Context) {
-    let dmx_data = ctx.shared.io.lock(|io| {
-      io.dmx.clone()
-    });
-    
+    let dmx_data = ctx.shared.io.lock(|io| io.dmx.clone());
+
     let (serial, de) = ctx.local.dmx;
     de.set_high();
-    
+
     let delay = ctx.local.dmx_delay;
 
     let stolen = unsafe { stm32::Peripherals::steal().GPIOD };
