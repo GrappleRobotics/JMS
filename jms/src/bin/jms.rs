@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::{TryFutureExt, future, FutureExt};
-use jms::{arena::{resource::{SharedResources, Resources}, ArenaImpl, Arena}, config::JMSSettings, db::{self, backup::DBBackup, DBSingleton}, ds::connector::DSConnectionService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord};
+use jms::{arena::{resource::{SharedResources, Resources}, ArenaImpl, Arena}, config::JMSSettings, db::{self, backup::DBBackup, DBSingleton}, ds::connector::DSConnectionService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord, electronics::service::FieldElectronics};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -82,6 +82,8 @@ async fn main() -> anyhow::Result<()> {
       true => None
     };
 
+    let has_network = network.is_some();
+
     let resources: SharedResources = Arc::new(Mutex::new(Resources::new()));
     let arena = Arena::new(Arc::new(ArenaImpl::new(network)));
     
@@ -101,11 +103,8 @@ async fn main() -> anyhow::Result<()> {
     let ds_service = DSConnectionService::new(arena.clone()).await;
     let ds_fut = ds_service.run();
 
-    let snmp_service = SNMPService::new(arena.clone());
-    let snmp_fut = snmp_service.run();
-
-    // let electronics_service = FieldElectronicsService::new(arena.clone(), resources.clone(), settings.electronics).await;
-    // let elec_fut = electronics_service.begin();
+    let electronics_service = FieldElectronics::new(arena.clone(), settings.electronics);
+    let elec_fut = electronics_service.run();
 
     let ws = Websockets::new(resources.clone()).await;
     {
@@ -140,6 +139,11 @@ async fn main() -> anyhow::Result<()> {
       futs.push(discord_bot.run().boxed());
     }
 
+    if has_network {
+      let snmp_service = SNMPService::new(arena.clone());
+      futs.push(snmp_service.run().boxed());
+    }
+
     if !matches.is_present("no-backup") {
       info!("Backups Enabled");
       let backups = DBBackup::new(arena.clone(), settings.backup);
@@ -147,7 +151,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let all_futs = future::try_join_all(futs);
-    try_join!(arena_fut, rankings_fut, ds_fut, snmp_fut, ws_fut, web_fut, imaging_fut, all_futs)?;
+    try_join!(arena_fut, rankings_fut, ds_fut, elec_fut, ws_fut, web_fut, imaging_fut, all_futs)?;
 
     // arena_fut.join();
   }

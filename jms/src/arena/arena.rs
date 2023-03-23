@@ -190,6 +190,7 @@ impl ArenaImpl {
 
     let state = self.state.read().await.clone();
     let first = self.state_is_new();
+    self.state_has_changed.store(false, Ordering::SeqCst);
 
     let mut current_match = self.current_match.write().await;
 
@@ -211,7 +212,12 @@ impl ArenaImpl {
         // Idle Not Ready
         if first {
           self.start_network_config().await;
+
+          // Need to drop the current match since unload_match() takes the lock
+          // It's messy, but it's the tradeoff we have for having the match in an RwLock
+          drop(current_match);
           self.unload_match().await?;
+          current_match = self.current_match.write().await;
         }
 
         if let Some(result) = self.poll_network().await {
@@ -286,6 +292,8 @@ impl ArenaImpl {
           current_match.start()?;
         }
 
+        current_match.update();
+
         match current_match.state {
           MatchPlayState::Complete => self.set_state(ArenaState::MatchComplete { net_ready: false }).await,
           _ => ()
@@ -321,9 +329,6 @@ impl ArenaImpl {
     }
 
     // TODO: Update station commands / states
-    
-    // Perform state transition
-    self.state_has_changed.store(false, Ordering::SeqCst);
 
     Ok(())
   }

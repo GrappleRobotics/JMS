@@ -8,9 +8,9 @@
       "type": "lldb",
       "request": "launch",
       "name": "Debug",
-      "program": "${workspaceFolder}/jms/target/debug/jms",
+      "program": "${workspaceFolder}/target/debug/jms",
       "args": ["--port", "9999", "-d", "--no-network"],
-      "cwd": "${workspaceFolder}/jms"
+      "cwd": "${workspaceFolder}/jms",
     },
     {
       "type": "lldb",
