@@ -127,7 +127,7 @@ impl FieldLights {
         if !net_ready {
           // Set scoring table lights to orange
           for el in self.scoring_table.as_mut() {
-            el.iter_mut().for_each(|v| *v = ModuleLightingMode::Solid(Colour::new(252, 90, 3)))
+            el.iter_mut().for_each(|v| *v = ModuleLightingMode::Solid(Colour::new(252, 64, 3)))
           }
         }
       },
@@ -182,13 +182,21 @@ impl FieldLights {
             // Pick a mode based on the state of the station
             let mode = {
               let state = stn.read().await;
-              if state.bypass {
+              if state.estop || state.astop {
+                // Estop - solid orange
+                Some((
+                  ModuleLightingMode::Solid(Colour::new(255, 64, 0)),
+                  ModuleLightingMode::Solid(Colour::new(255, 64, 0)),
+                ))
+              } else if state.bypass {
                 None
-              } else if state.estop {
-                Some(ModuleLightingMode::Flash { colour: Colour::new(255, 0, 0), period: Duration::seconds(1), offset: 0.0, duty: 0.5 })
               } else if !state.connection_ok() {
+                // Flash orange
                 ok = false;
-                Some(ModuleLightingMode::Flash { colour, period: Duration::seconds(2), offset: 0.0, duty: 0.5 })
+                Some((
+                  ModuleLightingMode::Flash { colour: Colour::new(255, 64, 0), period: Duration::seconds(2), offset: 0.5, duty: 0.5 },
+                  ModuleLightingMode::Flash { colour: Colour::new(255, 64, 0), period: Duration::seconds(2), offset: 0.0, duty: 0.5 },
+                ))
               } else {
                 None
               }
@@ -198,20 +206,19 @@ impl FieldLights {
             if let Some(mode) = mode {
               let n = (els.len() as f64 / 3.0).ceil() as usize;
               for j in 0..els.len() {
-                if j < n || (els.len() - n) < j {
-                  els[j] = mode.clone();
-                }
+                if j < n { els[j] = mode.0.clone() }
+                if (els.len() - n) < j { els[j] = mode.1.clone() }
               }
             }
           }
         
-          // Flash the last element of the scoring table if a team is not ok
+          // Flash the last element of the scoring table orange if there's a team in trouble
           if !ok {
             if alliance == Alliance::Blue {
-              self.scoring_table[0][0] = ModuleLightingMode::Breathe { colour, period: Duration::seconds(3), offset: 0.0 }
+              self.scoring_table[0][0] = ModuleLightingMode::Flash { colour: Colour::new(255, 64, 0), period: Duration::seconds(2), offset: 0.0, duty: 0.5 }
             } else {
               let len = els.len();
-              self.scoring_table[1][len- 1] = ModuleLightingMode::Breathe { colour, period: Duration::seconds(3), offset: 0.0 }
+              self.scoring_table[1][len- 1] = ModuleLightingMode::Flash { colour: Colour::new(255, 64, 0), period: Duration::seconds(2), offset: 0.0, duty: 0.5 }
             }
           }
         }

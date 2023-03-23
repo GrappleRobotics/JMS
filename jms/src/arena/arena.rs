@@ -349,6 +349,11 @@ impl ArenaImpl {
 
   // TODO: Store network config futures in a vec, pop it once it's complete
   async fn start_network_config(&self) {
+    let mut stations = vec![];
+    for stn in &self.stations {
+      stations.push(stn.read().await.clone());
+    }
+
     let mut nw = self.network.write().await;
     match &mut *nw {
       Some(nw) => {
@@ -356,7 +361,8 @@ impl ArenaImpl {
         nw.handle = Some(tokio::task::spawn(async move {
           info!("Configuring Network....");
           // TODO: Fill stations
-          provider.configure(&[]).await
+          
+          provider.configure(&stations[..]).await
         }));
       },
       None => (),

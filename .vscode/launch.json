@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "Debug",
       "program": "${workspaceFolder}/target/debug/jms",
-      "args": ["--port", "9999", "-d", "--no-network"],
+      "args": ["--port", "9999", "-d"],
       "cwd": "${workspaceFolder}/jms",
     },
     {
