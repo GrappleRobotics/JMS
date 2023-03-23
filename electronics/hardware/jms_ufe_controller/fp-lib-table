@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name "Project")(type "KiCad")(uri "${KIPRJMOD}/libs")(options "")(descr ""))
+  (lib (name "Button Switch")(type "KiCad")(uri "${KIPRJMOD}/libs/Button_Switch_SMD.pretty")(options "")(descr ""))
+  (lib (name "XLR")(type "KiCad")(uri "${KIPRJMOD}/libs/XLR.pretty")(options "")(descr ""))
+)
