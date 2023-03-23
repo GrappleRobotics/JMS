@@ -20,6 +20,7 @@ pub struct NetStorageStatic<'a> {
   socket_storage: [SocketStorage<'a>; 8],
   neighbor_cache_storage: [Option<(IpAddress, Neighbor)>; 8],
   routes_storage: [Option<(IpCidr, Route)>; 1],
+  multicast_storage: [Option<(smoltcp::wire::Ipv4Address, ())>; 1],
 
   modbus_buf: ([u8; TCP_BUF_SIZE], [u8; TCP_BUF_SIZE]),
   dmx_udp_buf: (
@@ -35,6 +36,7 @@ pub static mut STORE: NetStorageStatic = NetStorageStatic {
   socket_storage: [SocketStorage::EMPTY; 8],
   neighbor_cache_storage: [None; 8],
   routes_storage: [None; 1],
+  multicast_storage: [None; 1],
 
   modbus_buf: ([0; TCP_BUF_SIZE], [0; TCP_BUF_SIZE]),
   dmx_udp_buf: (
@@ -55,7 +57,7 @@ impl<'a> Net<'a> {
     store: &'static mut NetStorageStatic<'a>,
     ethdev: ethernet::EthernetDMA<'a, 4, 4>,
     ethernet_addr: HardwareAddress,
-    _now: i64,
+    now: i64,
   ) -> Self {
     // Set IP address
     store.ip_addrs = [IpCidr::new(IpAddress::v4(10, 1, 10, 155), 24)];
@@ -68,16 +70,20 @@ impl<'a> Net<'a> {
       .neighbor_cache(neighbor_cache)
       .ip_addrs(&mut store.ip_addrs[..])
       .routes(routes)
+      .ipv4_multicast_groups(&mut store.multicast_storage[..])
       .finalize();
-
+    
+    // For some reason, multicast doesn't appear to be working
+    iface.join_multicast_group(IpAddress::v4(224, 0, 1, 74), Instant::from_millis(now)).unwrap();
+    
     let modbus_rx_buffer = TcpSocketBuffer::new(&mut store.modbus_buf.0[..]);
     let modbus_tx_buffer = TcpSocketBuffer::new(&mut store.modbus_buf.1[..]);
     let modbus_socket = TcpSocket::new(modbus_rx_buffer, modbus_tx_buffer);
-
+    
     let dmx_udp_rx_buffer =
-      UdpSocketBuffer::new(&mut store.dmx_udp_buf.0[..], &mut store.dmx_udp_buf.1[..]);
+    UdpSocketBuffer::new(&mut store.dmx_udp_buf.0[..], &mut store.dmx_udp_buf.1[..]);
     let dmx_udp_tx_buffer =
-      UdpSocketBuffer::new(&mut store.dmx_udp_buf.2[..], &mut store.dmx_udp_buf.3[..]);
+    UdpSocketBuffer::new(&mut store.dmx_udp_buf.2[..], &mut store.dmx_udp_buf.3[..]);
     let dmx_socket = UdpSocket::new(dmx_udp_rx_buffer, dmx_udp_tx_buffer);
 
     Net {
@@ -227,7 +233,7 @@ impl<'a> Net<'a> {
       if dmx_socket.can_recv() {
         let (data, _endpoint) = dmx_socket.recv().unwrap();
         let len = data.len().clamp(0, 512);
-        (&mut io.dmx[0..len]).clone_from_slice(&data[0..len]);
+        (&mut io.dmx[1..=len]).clone_from_slice(&data[0..len]);
       }
     }
   }
