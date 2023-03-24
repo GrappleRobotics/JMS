@@ -31,16 +31,14 @@
   }
 }
 
-$b-near: calc(50% - 35% - 1.5em);
-$b-far: calc(50% + 35% + 1.5em);
+$b-near: calc(60% - 30% - 1.5em);
+$b-far: calc(60% + 30% + 1.5em);
 $l-red: 90%;
 $l-blue: 10%;
 
 $year-role-locations: (
-  "scorer-ABh": (calc(50% - 3% - 1.2rem), 50% - 15%),
-  "scorer-ABl": (calc(50% - 3% + 1.2rem), 50% - 23%),
-  "scorer-CDh": (calc(50% + 3% - 1.2rem), 50% + 23%),
-  "scorer-CDl": (calc(50% + 3% + 1.2rem), 50% + 15%)
+  "scorer-red": (50% + 30%, $b-near),
+  "scorer-blue": (50% - 30%, $b-near),
 );
 
 $role-locations: map-merge((
@@ -81,10 +79,10 @@ $role-locations: map-merge((
     bottom: $b-near;
   }
 
-  &[data-role*="-red-"] {
+  &[data-role*="-red"] {
     .btn { @extend .btn-red; }
   }
-  &[data-role*="-blue-"] {
+  &[data-role*="-blue"] {
     .btn { @extend .btn-blue; }
   }
   &[data-role="ref-head"] {

@@ -74,7 +74,7 @@ export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugSta
             </Col>
             <Col md="auto" className="mx-3">
               <h4> Matches </h4>
-              <Button
+              {/* <Button
                 onClick={() => withConfirm(() => this.send({ Debug: { Match: { FillRandomScores: null } } }))}
                 variant="danger"
               >
@@ -87,7 +87,7 @@ export default class Debug extends WebsocketComponent<{ fta: boolean }, DebugSta
                 variant="danger"
               >
                 Random Fill (select)
-              </Button>
+              </Button> */}
               <br />
               <br />
               <Button

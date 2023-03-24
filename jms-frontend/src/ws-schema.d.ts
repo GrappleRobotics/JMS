@@ -124,7 +124,8 @@ export type ArenaMessageMatch2UI =
       Score: MatchScoreSnapshot;
     };
 export type WinStatus = "WIN" | "LOSS" | "TIE";
-export type EndgamePointType = "None" | "Low" | "Mid" | "High" | "Traversal";
+export type GamepieceType = "None" | "Cone" | "Cube";
+export type EndgameType = "None" | "Parked" | "Docked";
 export type MatchSubtype = "Quarterfinal" | "Semifinal" | "Final";
 export type MatchType = "Test" | "Qualification" | "Playoff";
 export type MatchPlayState = "Waiting" | "Warmup" | "Auto" | "Pause" | "Teleop" | "Cooldown" | "Complete" | "Fault";
@@ -235,8 +236,6 @@ export type RefereeID =
       Alliance: [Alliance, NearFar];
     };
 export type NearFar = "near" | "far";
-export type ScorerPair = "AB" | "CD";
-export type GoalHeight = "low" | "high";
 export type ResourceMessageRequirements2UI = {
   Current: ResourceRequirementStatus | null;
 };
@@ -304,11 +303,7 @@ export type DebugMessage2JMS =
   | {
       ReplyTest: string;
     };
-export type DebugMessageMatch2JMS =
-  | "DeleteAll"
-  | {
-      FillRandomScores: string | null;
-    };
+export type DebugMessageMatch2JMS = "DeleteAll";
 export type EventMessage2JMS =
   | {
       Details: EventMessageDetails2JMS;
@@ -406,29 +401,33 @@ export type ArenaMessageMatch2JMS =
     };
 export type ScoreUpdate =
   | {
-      Taxi: {
+      Mobility: {
         crossed: boolean;
         station: number;
       };
     }
   | {
-      Cargo: {
+      Community: {
         auto: boolean;
-        /**
-         * @minItems 4
-         * @maxItems 4
-         */
-        lower?: [number, number, number, number];
-        /**
-         * @minItems 4
-         * @maxItems 4
-         */
-        upper?: [number, number, number, number];
+        col: number;
+        gamepiece: GamepieceType;
+        row: number;
+      };
+    }
+  | {
+      AutoDocked: {
+        docked: boolean;
+      };
+    }
+  | {
+      ChargeStationLevel: {
+        auto: boolean;
+        level: boolean;
       };
     }
   | {
       Endgame: {
-        endgame: EndgamePointType;
+        endgame: EndgameType;
         station: number;
       };
     }
@@ -648,14 +647,17 @@ export interface SnapshotScore {
   live: LiveScore;
 }
 export interface DerivedScore {
-  cargo_points: ModeScoreForInt;
-  cargo_rp: boolean;
+  activation_rp: boolean;
+  auto_docked_points: number;
+  community_points: ModeScoreForInt;
   endgame_points: number;
-  hangar_rp: boolean;
+  link_points: number;
+  meets_coopertition: boolean;
+  mobility_points: number;
   mode_score: ModeScoreForInt;
   penalty_score: number;
-  quintet: boolean;
-  taxi_points: number;
+  sustainability_rp: boolean;
+  sustainability_threshold: number;
   total_bonus_rp: number;
   total_rp: number;
   total_score: number;
@@ -667,26 +669,20 @@ export interface ModeScoreForInt {
   teleop: number;
 }
 export interface LiveScore {
-  cargo: ModeScoreFor_CargoCounts;
-  endgame: EndgamePointType[];
+  auto_docked: boolean;
+  charge_station_level: ModeScoreFor_Boolean;
+  community: ModeScoreFor_ArrayOf_ArrayOf_GamepieceType;
+  endgame: EndgameType[];
+  mobility: boolean[];
   penalties: Penalties;
-  taxi: boolean[];
 }
-export interface ModeScoreFor_CargoCounts {
-  auto: CargoCounts;
-  teleop: CargoCounts;
+export interface ModeScoreFor_Boolean {
+  auto: boolean;
+  teleop: boolean;
 }
-export interface CargoCounts {
-  /**
-   * @minItems 4
-   * @maxItems 4
-   */
-  lower: [number, number, number, number];
-  /**
-   * @minItems 4
-   * @maxItems 4
-   */
-  upper: [number, number, number, number];
+export interface ModeScoreFor_ArrayOf_ArrayOf_GamepieceType {
+  auto: GamepieceType[][];
+  teleop: GamepieceType[][];
 }
 export interface Penalties {
   fouls: number;
@@ -713,8 +709,7 @@ export interface TaggedResource {
   role: ResourceRole;
 }
 export interface ScorerID {
-  goals: ScorerPair;
-  height: GoalHeight;
+  alliance: Alliance;
 }
 export interface ResourceRequirementStatus {
   element: ResourceRequirementStatusElement;

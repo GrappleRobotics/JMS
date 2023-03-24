@@ -63,6 +63,13 @@ async fn main() -> anyhow::Result<()> {
     .get_matches();
 
   logging::configure(matches.is_present("debug"));
+
+  #[cfg(tokio_unstable)]
+  if matches.is_present("debug") {
+    // For tokio-console
+    info!("Starting console subscriber for tokio-console...");
+    console_subscriber::init();
+  }
   
   if let Some(v) = matches.value_of("gen-schema") {
     let file = Path::new(v);

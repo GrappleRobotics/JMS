@@ -57,10 +57,8 @@ const ALL_REFS: ResourceRequirements[] = [
 ];
 
 const ALL_SCORERS: ResourceRequirements[] = [
-  scorer_quota({ goals: "AB", height: "high" }),
-  scorer_quota({ goals: "AB", height: "low" }),
-  scorer_quota({ goals: "CD", height: "high" }),
-  scorer_quota({ goals: "CD", height: "low" }),
+  scorer_quota({ alliance: "blue" }),
+  scorer_quota({ alliance: "red" }),
 ];
 
 const ALL_ESTOPS: ResourceRequirements[] = ALLIANCES.flatMap(alliance => ALLIANCE_STATIONS.map(stn => (

@@ -1,7 +1,5 @@
 use std::ops::Add;
 
-use rand::{Rng, prelude::ThreadRng};
-
 use crate::{models::Alliance, utils::saturating_offset};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -19,41 +17,18 @@ where
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq, Eq)]
-pub enum EndgamePointType {
+#[derive(Debug, Copy, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub enum GamepieceType {
   None,
-  Low,
-  Mid,
-  High,
-  Traversal
+  Cone,
+  Cube
 }
 
 #[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct CargoCounts {
-  pub upper: [usize; 4],
-  pub lower: [usize; 4],
-}
-
-impl CargoCounts {
-  pub fn total_cargo(&self) -> usize {
-    return self.upper.iter().sum::<usize>() + self.lower.iter().sum::<usize>();
-  }
-}
-
-impl Add for CargoCounts {
-  type Output = CargoCounts;
-
-  fn add(self, rhs: Self) -> Self::Output {
-    let mut upper = self.upper.clone();
-    let mut lower = self.lower.clone();
-
-    for idx in 0..4 {
-      upper[idx] += rhs.upper[idx];
-      lower[idx] += rhs.lower[idx];
-    }
-
-    return CargoCounts { upper, lower };
-  }
+pub enum EndgameType {
+  None,
+  Parked,
+  Docked
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -71,20 +46,26 @@ pub enum WinStatus {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LiveScore {
-  pub taxi: Vec<bool>,
-  pub cargo: ModeScore<CargoCounts>,
-  pub endgame: Vec<EndgamePointType>,
+  pub mobility: Vec<bool>,
+  pub community: ModeScore<Vec<Vec<GamepieceType>>>,
+  pub auto_docked: bool,
+  pub charge_station_level: ModeScore<bool>,
+  pub endgame: Vec<EndgameType>,
   pub penalties: Penalties,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DerivedScore {
-  pub taxi_points: isize,
-  pub cargo_points: ModeScore<isize>,
+  pub mobility_points: isize,
+  pub link_points: isize,
+  pub community_points: ModeScore<isize>,
+  pub auto_docked_points: isize,
   pub endgame_points: isize,
-  pub cargo_rp: bool,
-  pub hangar_rp: bool,
-  pub quintet: bool,
+  pub meets_coopertition: bool,
+  pub sustainability_threshold: usize,
+  pub sustainability_rp: bool,
+  pub activation_rp: bool,
+
   pub mode_score: ModeScore<isize>,
   pub penalty_score: usize,
   pub total_score: usize,
@@ -152,20 +133,26 @@ impl From<MatchScoreSnapshot> for MatchScore {
 // For updating from the frontend.
 #[derive(Debug, Clone, serde::Deserialize, schemars::JsonSchema)]
 pub enum ScoreUpdate {
-  Taxi {
+  Mobility {
     station: usize,
     crossed: bool,
   },
-  Cargo {
+  Community {
     auto: bool,
-    #[serde(default)]
-    upper: [isize; 4],
-    #[serde(default)]
-    lower: [isize; 4],
+    row: usize,
+    col: usize,
+    gamepiece: GamepieceType
+  },
+  AutoDocked {
+    docked: bool
+  },
+  ChargeStationLevel {
+    auto: bool,
+    level: bool
   },
   Endgame {
     station: usize,
-    endgame: EndgamePointType,
+    endgame: EndgameType,
   },
   Penalty {
     #[serde(default)]
@@ -185,18 +172,16 @@ pub struct ScoreUpdateData {
 impl LiveScore {
   pub fn new(num_teams: usize) -> Self {
     Self {
-      taxi: vec![false; num_teams],
-      cargo: ModeScore {
-        auto: CargoCounts {
-          upper: [0; 4],
-          lower: [0; 4],
-        },
-        teleop: CargoCounts {
-          upper: [0; 4],
-          lower: [0; 4],
-        },
+      mobility: vec![false; num_teams],
+      community: ModeScore {
+        auto: vec![vec![GamepieceType::None; 9]; 3],
+        teleop: vec![vec![GamepieceType::None; 9]; 3]
       },
-      endgame: vec![EndgamePointType::None; num_teams],
+      auto_docked: false,
+      charge_station_level: ModeScore {
+        auto: true, teleop: true
+      },
+      endgame: vec![EndgameType::None; num_teams],
       penalties: Penalties {
         fouls: 0,
         tech_fouls: 0,
@@ -218,18 +203,22 @@ impl LiveScore {
     };
 
     DerivedScore {
-      taxi_points: self.taxi_points(),
-      cargo_points: self.cargo_points(),
-      endgame_points: self.endgame_points(),
-      cargo_rp: self.cargo_rp(),
-      hangar_rp: self.hangar_rp(),
-      penalty_score: penalty_points,
-      quintet: self.quintet(),
-      total_score,
+      mobility_points: self.mobility_points(),
+      link_points: self.link_points(),
+      community_points: self.community_points(),
+      auto_docked_points: self.auto_docked_points(),
+      endgame_points: self.endgame_points(true),
+      meets_coopertition: self.meets_coopertition(),
+      sustainability_threshold: self.sustainability_threshold(other_alliance),
+      sustainability_rp: self.sustainability_rp(other_alliance),
+      activation_rp: self.activation_rp(),
+      
       mode_score,
-      total_bonus_rp: self.total_bonus_rp(),
+      penalty_score: penalty_points,
+      total_score,
+      total_bonus_rp: self.total_bonus_rp(other_alliance),
       win_rp,
-      total_rp: self.total_bonus_rp() + win_rp,
+      total_rp: self.total_bonus_rp(other_alliance) + win_rp,
       win_status,
     }
   }
@@ -237,125 +226,164 @@ impl LiveScore {
   // TODO: This needs better error handling - currently all inputs are assumed to be correct
   pub fn update(&mut self, score_update: ScoreUpdate) {
     match score_update {
-      ScoreUpdate::Taxi { station, crossed } => {
-        self.taxi[station] = crossed;
-      }
-      ScoreUpdate::Cargo {
-        auto,
-        upper,
-        lower
-      } => {
-        let pc = if auto {
-          &mut self.cargo.auto
+      ScoreUpdate::Mobility { station, crossed } => {
+        self.mobility[station] = crossed;
+      },
+      ScoreUpdate::Community { auto, row, col, gamepiece } => {
+        if auto {
+          self.community.auto[row][col] = gamepiece;
         } else {
-          &mut self.cargo.teleop
-        };
-
-        for idx in 0..4 {
-          pc.lower[idx] = saturating_offset(pc.lower[idx], lower[idx]);
-          pc.upper[idx] = saturating_offset(pc.upper[idx], upper[idx]);
+          self.community.teleop[row][col] = gamepiece;
         }
-      }
+      },
+      ScoreUpdate::AutoDocked { docked } => {
+        self.auto_docked = docked;
+      },
+      ScoreUpdate::ChargeStationLevel { auto, level } => {
+        if auto {
+          self.charge_station_level.auto = level;
+        } else {
+          self.charge_station_level.teleop = level;
+        }
+      },
       ScoreUpdate::Endgame { station, endgame } => {
         self.endgame[station] = endgame;
-      }
+      },
       ScoreUpdate::Penalty { fouls, tech_fouls } => {
         self.penalties.fouls = saturating_offset(self.penalties.fouls, fouls);
         self.penalties.tech_fouls = saturating_offset(self.penalties.tech_fouls, tech_fouls);
+      },
+    }
+  }
+
+  fn mobility_points(&self) -> isize {
+    self.mobility.iter().map(|&x| (x as isize) * 3).sum()
+  }
+
+  fn auto_docked_points(&self) -> isize {
+    if self.charge_station_level.auto {
+      self.auto_docked as isize * 12
+    } else {
+      self.auto_docked as isize * 8
+    }
+  }
+
+  fn community_points(&self) -> ModeScore<isize> {
+    let mut ms = ModeScore { auto: 0, teleop: 0 };
+
+    for (row, cols) in self.community.auto.iter().enumerate() {
+      let point_base = match row {
+        0 => 3,
+        1 => 4,
+        2 => 6,
+        _ => panic!("Unknown community row")
+      };
+
+      ms.auto = point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
+    }
+
+    for (row, cols) in self.community.teleop.iter().enumerate() {
+      let point_base = match row {
+        0 => 2,
+        1 => 3,
+        2 => 5,
+        _ => panic!("Unknown community row")
+      };
+
+      ms.teleop = point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
+    }
+
+    ms
+  }
+
+  fn link_count(&self) -> isize {
+    let mut occupancy_grid = vec![vec![false; 9]; 3];
+    for (row, cols) in self.community.auto.iter().enumerate() {
+      for (col, gptype) in cols.iter().enumerate() {
+        if *gptype != GamepieceType::None {
+          occupancy_grid[row][col] = true;
+        }
       }
     }
+
+    let mut n_links = 0;
+
+    // Scan each row left to right
+    for row in 0..occupancy_grid.len() {
+      let mut col = 0;
+      let mut count = 0;
+      while col < occupancy_grid[row].len() {
+        if occupancy_grid[row][col] {
+          count += 1;
+        }
+        if count == 3 {
+          count = 0;
+          n_links += 1;
+        }
+        col += 1;
+      }
+    }
+
+    n_links
   }
 
-  fn taxi_points(&self) -> isize {
-    self.taxi.iter().map(|&x| (x as isize) * 2).sum()
+  fn link_points(&self) -> isize {
+    self.link_count() * 5
   }
 
-  fn cargo_points(&self) -> ModeScore<isize> {
-    let auto = &self.cargo.auto;
-    let teleop = &self.cargo.teleop;
-    ModeScore {
-      auto: (auto.lower.iter().sum::<usize>() * 2 + auto.upper.iter().sum::<usize>() * 4) as isize,
-      teleop: (teleop.lower.iter().sum::<usize>() * 1 + teleop.upper.iter().sum::<usize>() * 2) as isize,
+  fn meets_coopertition(&self) -> bool {
+    let mut total = 0;
+    for els in self.community.auto.iter().chain(self.community.teleop.iter()) {
+      // At least three in the center grid
+      for col in 3..=5 {
+        if els[col] != GamepieceType::None {
+          total += 1;
+        }
+      }
+    }
+    total >= 3
+  }
+
+  fn sustainability_threshold(&self, other_alliance: &Self) -> usize {
+    if self.meets_coopertition() && other_alliance.meets_coopertition() {
+      4
+    } else {
+      5
     }
   }
 
-  // fn total_cells(&self) -> usize {
-  //   let auto = &self.power_cells.auto;
-  //   let teleop = &self.power_cells.teleop;
-  //   auto.inner + auto.outer + auto.bottom + teleop.inner + teleop.outer + teleop.bottom
-  // }
+  fn sustainability_rp(&self, other_alliance: &Self) -> bool {
+    self.link_count() >= self.sustainability_threshold(other_alliance) as isize
+  }
+  
+  fn activation_rp(&self) -> bool {
+    (self.auto_docked_points() + self.endgame_points(false)) >= 26
+  }
 
-  fn endgame_points(&self) -> isize {
+  fn endgame_points(&self, allow_parked: bool) -> isize {
+    let level = self.charge_station_level.teleop;
+
     self.endgame.iter().map(|x| match x {
-      EndgamePointType::None => 0,
-      EndgamePointType::Low => 4,
-      EndgamePointType::Mid => 6,
-      EndgamePointType::High => 10,
-      EndgamePointType::Traversal => 15,
+      EndgameType::None => 0,
+      EndgameType::Parked if !allow_parked => 0,
+      EndgameType::Parked => 2,
+      EndgameType::Docked if level => 10,
+      EndgameType::Docked => 6,
     }).sum()
   }
 
-  fn cargo_rp(&self) -> bool {
-    self.cargo.total().total_cargo() > match self.quintet() {
-      true => 18,
-      false => 20
-    }
-  }
-
-  fn quintet(&self) -> bool {
-    self.cargo.auto.total_cargo() >= 5
-  }
-
-  fn hangar_rp(&self) -> bool {
-    self.endgame_points() >= 16
-  }
-
   fn penalty_points_other_alliance(&self) -> usize {
-    self.penalties.fouls * 4 + self.penalties.tech_fouls * 8
+    self.penalties.fouls * 5 + self.penalties.tech_fouls * 12
   }
 
   fn mode_score(&self) -> ModeScore<isize> {
-    let cargo_points = self.cargo_points();
     ModeScore {
-      auto: self.taxi_points() + cargo_points.auto,
-      teleop: cargo_points.teleop + self.endgame_points(),
+      auto: self.mobility_points() + self.community_points().auto + self.auto_docked_points(),
+      teleop: self.community_points().teleop + self.link_points() + self.endgame_points(true),
     }
   }
 
-  fn total_bonus_rp(&self) -> usize {
-    self.cargo_rp() as usize + self.hangar_rp() as usize
-  }
-
-  pub fn randomise() -> Self {
-    let mut rng = rand::thread_rng();
-
-    let rand_endgame = |rng: &mut ThreadRng| {
-      match rng.gen_range(0..=4) {
-        0 => EndgamePointType::None,
-        1 => EndgamePointType::Low,
-        2 => EndgamePointType::Mid,
-        3 => EndgamePointType::High,
-        _ => EndgamePointType::Traversal
-      }
-    };
-
-    Self {
-      taxi: vec![ rng.gen(), rng.gen(), rng.gen() ],
-      cargo: ModeScore {
-        auto: CargoCounts {
-          lower: [rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1)],
-          upper: [rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1), rng.gen_range(0..=1)],
-        },
-        teleop: CargoCounts {
-          lower: [rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5)],
-          upper: [rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5), rng.gen_range(0..=5)],
-        }
-      },
-      endgame: vec![ rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng) ],
-      penalties: Penalties {
-        fouls: rng.gen_range(0..=4),
-        tech_fouls: rng.gen_range(0..=2)
-      }
-    }
+  fn total_bonus_rp(&self, other_alliance: &Self) -> usize {
+    self.sustainability_rp(other_alliance) as usize + self.activation_rp() as usize
   }
 }
