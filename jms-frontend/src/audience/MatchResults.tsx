@@ -24,7 +24,7 @@ const DERIVED_RENDER: SomeDerivedRenderer[] = [
   }),
   derivedRenderer({
     key: "community_points",
-    name: "MOBILITY POINTS",
+    name: "COMMUNITY POINTS",
     render: v => (v.auto + v.teleop)
   }),
   derivedRenderer({

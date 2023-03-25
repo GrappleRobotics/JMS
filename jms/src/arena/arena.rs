@@ -312,8 +312,10 @@ impl ArenaImpl {
       ArenaState::MatchComplete { net_ready: true }  => {
         if let Some(ArenaSignal::MatchCommit) = signal {
           let current_match = current_match.as_mut().unwrap();
-          let score = self.score.read().await;
-          let m = current_match.match_meta.commit(&score, db::database()).await?;
+          let m = {
+            let score = self.score.read().await;
+            current_match.match_meta.commit(&score, db::database()).await?
+          };
           
           *self.audience.write().await = AudienceDisplay::MatchResults(models::SerializedMatch::from(m.clone()));
           // Reset scores

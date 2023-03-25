@@ -279,7 +279,7 @@ impl LiveScore {
         _ => panic!("Unknown community row")
       };
 
-      ms.auto = point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
+      ms.auto += point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
     }
 
     for (row, cols) in self.community.teleop.iter().enumerate() {
@@ -290,7 +290,7 @@ impl LiveScore {
         _ => panic!("Unknown community row")
       };
 
-      ms.teleop = point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
+      ms.teleop += point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
     }
 
     ms
@@ -299,6 +299,14 @@ impl LiveScore {
   fn link_count(&self) -> isize {
     let mut occupancy_grid = vec![vec![false; 9]; 3];
     for (row, cols) in self.community.auto.iter().enumerate() {
+      for (col, gptype) in cols.iter().enumerate() {
+        if *gptype != GamepieceType::None {
+          occupancy_grid[row][col] = true;
+        }
+      }
+    }
+
+    for (row, cols) in self.community.teleop.iter().enumerate() {
       for (col, gptype) in cols.iter().enumerate() {
         if *gptype != GamepieceType::None {
           occupancy_grid[row][col] = true;
