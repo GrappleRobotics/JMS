@@ -119,7 +119,7 @@ impl Decoder for DSTCPCodec {
       let id = buf.get_u8();
       let mut pkt = Ds2FmsTCP { tags: vec![] };
 
-      let size = buf.remaining(); // Full size of current tag class (including all tags)
+      let _size = buf.remaining(); // Full size of current tag class (including all tags)
       let tag: Option<Ds2FmsTCPTags> = match id {
         0x00 => {
           // WPILib Version

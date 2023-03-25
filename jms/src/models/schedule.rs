@@ -73,7 +73,7 @@ impl ScheduleBlock {
       let new_start = end + Duration::hours(1);
       let new_end = new_start + Duration::hours(3);
 
-      if new_end.time() >= NaiveTime::from_hms(17, 00, 00) {
+      if new_end.time() >= NaiveTime::from_hms_opt(17, 00, 00).unwrap() {
         // Automatically move to tomorrow
         start = (end + Duration::days(1)).date().and_hms(9, 00, 00);
       } else {
@@ -110,29 +110,29 @@ impl ScheduleBlock {
     ScheduleBlock {
       id: None, name: "Opening Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
-      start_time: day1.and_hms(08, 30, 00).into(),
-      end_time: day1.and_hms(09, 00, 00).into(),
+      start_time: day1.and_hms_opt(08, 30, 00).unwrap().into(),
+      end_time: day1.and_hms_opt(09, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
     ScheduleBlock {
       id: None, name: "Field Tests & Practice".to_owned(),
       block_type: ScheduleBlockType::General,
-      start_time: day1.and_hms(09, 00, 00).into(),
-      end_time: day1.and_hms(12, 00, 00).into(),
+      start_time: day1.and_hms_opt(09, 00, 00).unwrap().into(),
+      end_time: day1.and_hms_opt(12, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
     ScheduleBlock {
       id: None, name: "Qualifications".to_owned(),
       block_type: ScheduleBlockType::Qualification,
-      start_time: day1.and_hms(13, 00, 00).into(),
-      end_time: day1.and_hms(17, 00, 00).into(),
+      start_time: day1.and_hms_opt(13, 00, 00).unwrap().into(),
+      end_time: day1.and_hms_opt(17, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
     ScheduleBlock {
       id: None, name: "Awards & Closing Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
-      start_time: day1.and_hms(17, 30, 00).into(),
-      end_time: day1.and_hms(18, 00, 00).into(),
+      start_time: day1.and_hms_opt(17, 30, 00).unwrap().into(),
+      end_time: day1.and_hms_opt(18, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
 
@@ -140,36 +140,36 @@ impl ScheduleBlock {
     ScheduleBlock {
       id: None, name: "Opening Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
-      start_time: day2.and_hms(08, 30, 00).into(),
-      end_time: day2.and_hms(09, 00, 00).into(),
+      start_time: day2.and_hms_opt(08, 30, 00).unwrap().into(),
+      end_time: day2.and_hms_opt(09, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
     ScheduleBlock {
       id: None, name: "Qualifications (cont'd)".to_owned(),
       block_type: ScheduleBlockType::Qualification,
-      start_time: day2.and_hms(09, 00, 00).into(),
-      end_time: day2.and_hms(12, 00, 00).into(),
+      start_time: day2.and_hms_opt(09, 00, 00).unwrap().into(),
+      end_time: day2.and_hms_opt(12, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
     ScheduleBlock {
       id: None, name: "Alliance Selections".to_owned(),
       block_type: ScheduleBlockType::General,
-      start_time: day2.and_hms(12, 00, 00).into(),
-      end_time: day2.and_hms(12, 30, 00).into(),
+      start_time: day2.and_hms_opt(12, 00, 00).unwrap().into(),
+      end_time: day2.and_hms_opt(12, 30, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
     ScheduleBlock {
       id: None, name: "Playoffs".to_owned(),
       block_type: ScheduleBlockType::Playoff,
-      start_time: day2.and_hms(13, 30, 00).into(),
-      end_time: day2.and_hms(17, 00, 00).into(),
+      start_time: day2.and_hms_opt(13, 30, 00).unwrap().into(),
+      end_time: day2.and_hms_opt(17, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
     ScheduleBlock {
       id: None, name: "Awards & Closing Ceremony".to_owned(),
       block_type: ScheduleBlockType::General,
-      start_time: day2.and_hms(17, 30, 00).into(),
-      end_time: day2.and_hms(18, 00, 00).into(),
+      start_time: day2.and_hms_opt(17, 30, 00).unwrap().into(),
+      end_time: day2.and_hms_opt(18, 00, 00).unwrap().into(),
       cycle_time: cycle_time.clone()
     }.insert(store)?;
 
