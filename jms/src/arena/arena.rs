@@ -3,7 +3,7 @@ use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, time::Duration};
 use anyhow::bail;
 use tokio::{sync::{mpsc, RwLock}, task::JoinHandle};
 
-use crate::{network::{NetworkResult, NetworkProvider}, scoring::scores::MatchScore, db::{self, DBSingleton}, models::{self, Alliance, StationStatusRecord, DBResourceRequirements}, ds::DSMode};
+use crate::{network::{NetworkResult, NetworkProvider}, scoring::scores::MatchScore, db::{self, DBSingleton, TableType}, models::{self, Alliance, StationStatusRecord, DBResourceRequirements, MatchStationStatusRecord}, ds::DSMode};
 
 use super::{state::{ArenaState, ArenaSignal}, matches::{LoadedMatch, MatchPlayState}, audience::AudienceDisplay, station::{AllianceStation, AllianceStationId}, resource::Resources};
 
@@ -404,6 +404,54 @@ impl ArenaImpl {
           }
         }
       }
+    }
+
+    Ok(())
+  }
+
+  // We run this in a separate async task so we can run it at a lower rate.
+  pub async fn run_logs(&self) -> anyhow::Result<()> {
+    let mut last_state = ArenaState::Init;
+
+    loop {
+      let state = self.state.read().await.clone();
+      match (state, last_state) {
+        (ArenaState::MatchPlay, last) if last != ArenaState::MatchPlay => {
+          // Clear the station records
+          for stn_rec in self.station_records.iter() {
+            *stn_rec.write().await = vec![];
+          }
+        },
+        (ArenaState::MatchPlay, _) => {
+          // Record the record for each station
+          if let Some(m) = &*self.current_match.read().await {
+            for (stn, stn_rec) in self.stations.iter().zip(self.station_records.iter()) {
+              stn_rec.write().await.push(models::StampedAllianceStationStatus::stamp(stn.read().await.clone(), m));
+            }
+          }
+        },
+        (_, ArenaState::MatchPlay) => {
+          // Commit our station records
+          if let Some(match_id) = self.current_match.read().await.as_ref().and_then(|m| m.match_meta.id().clone()) {
+            for (stn, stn_rec) in self.stations.iter().zip(self.station_records.iter()) {
+              let stn = stn.read().await;
+              let mut stn_rec = stn_rec.write().await;
+
+              if let Some(team) = stn.team {
+                match MatchStationStatusRecord::new(team, stn_rec.clone(), match_id.clone()).insert(&db::database()) {
+                  Ok(_) => (),
+                  Err(e) => error!("Could not save match station record: {}", e)
+                }
+              }
+
+              stn_rec.clear();
+            }
+          }
+        },
+        _ => ()
+      }
+      last_state = state;
+      tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
     }
 
     Ok(())

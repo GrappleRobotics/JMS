@@ -98,11 +98,13 @@ async fn main() -> anyhow::Result<()> {
       playoffs: MatchGenerationWorker::new(PlayoffMatchGenerator::new()) 
     }));
 
-    // TODO: Run arena in its own thread
+    // Arena gets its own thread
     let a2 = arena.clone();
     let arena_fut = async_thread::spawn(move || {
       a2.arena_impl().run()
     }).join().map_err(|_| anyhow::anyhow!("Thread Error")).and_then(|ok| async { ok });
+    let arena_impl = arena.arena_impl();
+    let arena_log_fut = arena_impl.run_logs();
 
     let rankings_fut = TeamRanking::run();
 
@@ -157,7 +159,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let all_futs = future::try_join_all(futs);
-    try_join!(arena_fut, rankings_fut, ds_fut, elec_fut, ws_fut, web_fut, imaging_fut, all_futs)?;
+    try_join!(arena_fut, arena_log_fut, rankings_fut, ds_fut, elec_fut, ws_fut, web_fut, imaging_fut, all_futs)?;
 
     // arena_fut.join();
   }
