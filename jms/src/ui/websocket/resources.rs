@@ -11,6 +11,7 @@ define_websocket_msg!($ResourceMessage {
   send SetIDACK(String),
   recv SetRole(ResourceRole),
   recv SetFTA(Option<String>),
+  send SetFTAAck(bool),
   recv SetReady(bool),
 
   $Requirements {
@@ -63,9 +64,10 @@ impl WebsocketHandler for WSResourceHandler {
               Some(key) => {
                 if FTAKey::get(&db::database())?.validate(&key) {
                   resource.r.fta = true;
+                  ws.reply(ResourceMessage2UI::SetFTAAck(true)).await;
                 } else {
                   resource.r.fta = false;
-                  anyhow::bail!("Incorrect FTA Key!")
+                  ws.reply(ResourceMessage2UI::SetFTAAck(false)).await;
                 }
               },
               _ => resource.r.fta = false

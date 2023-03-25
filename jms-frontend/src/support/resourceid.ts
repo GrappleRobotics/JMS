@@ -19,3 +19,15 @@ export function resource_id_lock() {
   }
   sessionStorage.setItem('__lock', 'true');
 }
+
+export function get_fta_key() {
+  return localStorage.getItem("fta_key")
+}
+
+export function set_fta_key(key: string) {
+  localStorage.setItem("fta_key", key);
+}
+
+export function clear_fta_key() {
+  localStorage.removeItem("fta_key");
+}
