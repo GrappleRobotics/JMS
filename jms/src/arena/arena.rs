@@ -2,7 +2,7 @@ use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, time::Duration};
 
 use tokio::{sync::{mpsc, RwLock}, task::JoinHandle};
 
-use crate::{network::{NetworkResult, NetworkProvider}, scoring::scores::MatchScore, db, models::{self, Alliance, StationStatusRecord}};
+use crate::{network::{NetworkResult, NetworkProvider}, scoring::scores::MatchScore, db, models::{self, Alliance, StationStatusRecord}, ds::DSMode};
 
 use super::{state::{ArenaState, ArenaSignal}, matches::{LoadedMatch, MatchPlayState}, audience::AudienceDisplay, station::{AllianceStation, AllianceStationId}};
 
@@ -330,7 +330,49 @@ impl ArenaImpl {
       m.update();
     }
 
-    // TODO: Update station commands / states
+    // Update Driver Station Commands
+    {
+      for stn in &self.stations {
+        let mut stn = stn.write().await;
+        match state {
+          ArenaState::Estop => {
+            stn.command_enable = false;
+            stn.master_estop = true;
+          },
+          ArenaState::MatchPlay => {
+            stn.master_estop = false;
+            if let Some(m) = &mut *current_match {
+              stn.remaining_time = m.remaining_time;
+              match m.state {
+                MatchPlayState::Auto => {
+                  stn.command_enable = true;
+                  stn.command_mode = DSMode::Auto
+                },
+                MatchPlayState::Pause => {
+                  stn.command_enable = false;
+                  stn.command_mode = DSMode::Teleop;
+                  stn.astop = false;
+                },
+                MatchPlayState::Teleop => {
+                  stn.astop = false;
+                  stn.command_enable = true;
+                  stn.command_mode = DSMode::Teleop;
+                },
+                _ => {
+                  stn.command_enable = false;
+                }
+              }
+            } else {
+              stn.command_enable = false;
+            }
+          },
+          _ => {
+            stn.command_enable = false;
+            stn.master_estop = false;
+          }
+        }
+      }
+    }
 
     Ok(())
   }
@@ -362,8 +404,6 @@ impl ArenaImpl {
         let provider = nw.provider.clone();
         nw.handle = Some(tokio::task::spawn(async move {
           info!("Configuring Network....");
-          // TODO: Fill stations
-          
           provider.configure(&stations[..]).await
         }));
       },
