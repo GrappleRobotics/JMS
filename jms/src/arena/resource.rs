@@ -122,8 +122,6 @@ impl Resources {
   }
 }
 
-pub type SharedResources = std::sync::Arc<tokio::sync::Mutex<Resources>>;
-
 // Resource Requirements
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

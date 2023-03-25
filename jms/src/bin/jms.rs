@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration, path::Path, fs};
 use clap::{App, Arg};
 use dotenv::dotenv;
 use futures::{TryFutureExt, future, FutureExt};
-use jms::{arena::{resource::{SharedResources, Resources}, ArenaImpl, Arena}, config::JMSSettings, db::{self, backup::DBBackup, DBSingleton}, ds::connector::DSConnectionService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord, electronics::service::FieldElectronics};
+use jms::{arena::{ArenaImpl, Arena}, config::JMSSettings, db::{self, backup::DBBackup, DBSingleton}, ds::connector::DSConnectionService, logging, tba, ui::{self, websocket::{Websockets, WebsocketMessage2UI, WebsocketMessage2JMS, resources::WSResourceHandler, matches::WSMatchHandler, event::WSEventHandler, debug::WSDebugHandler, arena::WSArenaHandler, ws::{SendMeta, RecvMeta}, tickets::WSTicketHandler}}, schedule::{worker::{MatchGenerators, MatchGenerationWorker, SharedMatchGenerators}, quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator}, models::{FTAKey, TeamRanking}, network::snmp::snmp::SNMPService, imaging::ImagingKeyService, discord, electronics::service::FieldElectronics};
 use log::info;
 use tokio::{sync::Mutex, try_join};
 
@@ -91,7 +91,6 @@ async fn main() -> anyhow::Result<()> {
 
     let has_network = network.is_some();
 
-    let resources: SharedResources = Arc::new(Mutex::new(Resources::new()));
     let arena = Arena::new(Arc::new(ArenaImpl::new(network)));
     
     let match_workers: SharedMatchGenerators = Arc::new(Mutex::new(MatchGenerators { 
@@ -113,9 +112,9 @@ async fn main() -> anyhow::Result<()> {
     let electronics_service = FieldElectronics::new(arena.clone(), settings.electronics);
     let elec_fut = electronics_service.run();
 
-    let ws = Websockets::new(resources.clone()).await;
+    let ws = Websockets::new(arena.clone()).await;
     {
-      ws.register(Duration::from_millis(1000), WSResourceHandler(resources.clone())).await;
+      ws.register(Duration::from_millis(1000), WSResourceHandler()).await;
       ws.register(Duration::from_millis(1000), WSMatchHandler(match_workers.clone())).await;
       ws.register(Duration::from_millis(300), WSArenaHandler(arena.clone())).await;
       ws.register(Duration::from_millis(1000), WSEventHandler {}).await;

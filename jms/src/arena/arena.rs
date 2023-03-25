@@ -1,10 +1,11 @@
 use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, time::Duration};
 
+use anyhow::bail;
 use tokio::{sync::{mpsc, RwLock}, task::JoinHandle};
 
-use crate::{network::{NetworkResult, NetworkProvider}, scoring::scores::MatchScore, db, models::{self, Alliance, StationStatusRecord}, ds::DSMode};
+use crate::{network::{NetworkResult, NetworkProvider}, scoring::scores::MatchScore, db::{self, DBSingleton}, models::{self, Alliance, StationStatusRecord, DBResourceRequirements}, ds::DSMode};
 
-use super::{state::{ArenaState, ArenaSignal}, matches::{LoadedMatch, MatchPlayState}, audience::AudienceDisplay, station::{AllianceStation, AllianceStationId}};
+use super::{state::{ArenaState, ArenaSignal}, matches::{LoadedMatch, MatchPlayState}, audience::AudienceDisplay, station::{AllianceStation, AllianceStationId}, resource::Resources};
 
 #[derive(Clone)]
 pub struct Arena
@@ -42,6 +43,10 @@ impl Arena {
       stns.push(stn.read().await.clone())
     }
     stns
+  }
+
+  pub fn resources(&self) -> &ArenaLock<Resources> {
+    &self.a.resources
   }
 
   pub async fn station_for_id(&self, id: AllianceStationId) -> Option<&ArenaLock<AllianceStation>> {
@@ -98,7 +103,9 @@ pub struct ArenaImpl {
   pub current_match: ArenaLock<Option<LoadedMatch>>,
 
   pub stations: [ ArenaLock<AllianceStation>; 6 ],
-  pub station_records: [ ArenaLock<StationStatusRecord>; 6 ]
+  pub station_records: [ ArenaLock<StationStatusRecord>; 6 ],
+
+  pub resources: ArenaLock<Resources>
 }
 
 impl ArenaImpl {
@@ -131,7 +138,8 @@ impl ArenaImpl {
         ArenaLock::new(vec![]),
         ArenaLock::new(vec![]),
         ArenaLock::new(vec![]),
-      ]
+      ],
+      resources: ArenaLock::new(Resources::new())
     }
   }
 
@@ -194,6 +202,15 @@ impl ArenaImpl {
 
     let mut current_match = self.current_match.write().await;
 
+    let resource_requirements = DBResourceRequirements::get(&db::database())?.0;
+    let resources_ok = match &resource_requirements {
+      None => true,
+      Some(req) => {
+        let res = self.resources.read().await;
+        req.clone().status(&res).ready
+      }
+    };
+
     match state {
       ArenaState::Init => {
         self.set_state(ArenaState::Idle { net_ready: false } ).await
@@ -243,6 +260,9 @@ impl ArenaImpl {
       ArenaState::Prestart { net_ready: false } => {
         // Prestart Not Ready
         if first {
+          // Reset resources
+          self.resources.write().await.reset_all();
+
           // Reset estops
           for stn in &self.stations {
             let mut stn = stn.write().await;
@@ -262,12 +282,21 @@ impl ArenaImpl {
         }
       },
       ArenaState::Prestart { net_ready: true } => {
-        // TODO: Resources
+        // Request ready from resources
+        if first {
+          if let Some(req) = &resource_requirements {
+            let mut resources = self.resources.write().await;
+            req.request_ready(&mut resources);
+          }
+        }
 
         match signal {
           Some(ArenaSignal::MatchArm { force }) => {
-            // TODO: If resources_ok, else error
-            self.set_state(ArenaState::MatchArmed).await
+            if force || resources_ok {
+              self.set_state(ArenaState::MatchArmed).await
+            } else {
+              bail!("Can't Arm Match unless all resources are ready")
+            }
           },
           Some(ArenaSignal::Prestart)     => self.set_state(ArenaState::Prestart { net_ready: false }).await,
           Some(ArenaSignal::PrestartUndo) => self.set_state(ArenaState::Idle { net_ready: false }).await,
@@ -276,7 +305,10 @@ impl ArenaImpl {
       },
 
       ArenaState::MatchArmed => {
-        // TODO: Resources
+        if first {
+          self.resources.write().await.reset_all();
+        }
+
         match signal {
           Some(ArenaSignal::MatchPlay) => {
             self.set_state(ArenaState::MatchPlay).await;
@@ -285,7 +317,7 @@ impl ArenaImpl {
         }
       },
       ArenaState::MatchPlay => {
-        // TODO: Station resources
+        // TODO: Station records
         let current_match = current_match.as_mut().unwrap();
         if first {
           *self.audience.write().await = AudienceDisplay::MatchPlay;
