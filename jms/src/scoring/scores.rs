@@ -1,5 +1,7 @@
 use std::ops::Add;
 
+use rand::{rngs::ThreadRng, Rng};
+
 use crate::{models::Alliance, utils::saturating_offset};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -393,5 +395,58 @@ impl LiveScore {
 
   fn total_bonus_rp(&self, other_alliance: &Self) -> usize {
     self.sustainability_rp(other_alliance) as usize + self.activation_rp() as usize
+  }
+
+  pub fn randomise() -> Self {
+    let mut rng = rand::thread_rng();
+
+    let rand_endgame = |rng: &mut ThreadRng| {
+      match rng.gen_range(0..=2) {
+        0 => EndgameType::None,
+        1 => EndgameType::Parked,
+        _ => EndgameType::Docked
+      }
+    };
+
+    let mut community = ModeScore {
+      auto: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
+      teleop: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
+    };
+
+    let auto_pieces = rng.gen_range(0..=2);
+    let teleop_pieces = rng.gen_range(0..=10);
+
+    for i in 0..(auto_pieces + teleop_pieces) {
+      let row = rng.gen_range(0..3);
+      let col = rng.gen_range(0..9);
+
+      let allowed = match row {
+        0 => vec![GamepieceType::Cube, GamepieceType::Cone],
+        _ => match col {
+          x if x % 3 == 1 => vec![GamepieceType::Cube],
+          _ => vec![GamepieceType::Cone]
+        }
+      };
+
+      let selected = allowed[rng.gen_range(0..allowed.len())];
+
+      if i < auto_pieces {
+        community.auto[row][col] = selected;
+      } else {
+        community.teleop[row][col] = selected;
+      }
+    }
+
+    Self {
+      mobility: vec![rng.gen(), rng.gen(), rng.gen()],
+      community,
+      auto_docked: rng.gen(),
+      charge_station_level: ModeScore { auto: rng.gen(), teleop: rng.gen() },
+      endgame: vec![rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng)],
+      penalties: Penalties {
+        fouls: rng.gen_range(0..=4),
+        tech_fouls: rng.gen_range(0..=2)
+      },
+    }
   }
 }

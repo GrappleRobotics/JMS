@@ -213,6 +213,9 @@ export type ResourceMessage2UI =
       SetIDACK: string;
     }
   | {
+      SetFTAAck: boolean;
+    }
+  | {
       Requirements: ResourceMessageRequirements2UI;
     };
 export type ResourceRole =
@@ -303,7 +306,11 @@ export type DebugMessage2JMS =
   | {
       ReplyTest: string;
     };
-export type DebugMessageMatch2JMS = "DeleteAll";
+export type DebugMessageMatch2JMS =
+  | "DeleteAll"
+  | {
+      FillRandomScores: string | null;
+    };
 export type EventMessage2JMS =
   | {
       Details: EventMessageDetails2JMS;

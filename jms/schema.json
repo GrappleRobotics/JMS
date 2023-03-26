@@ -873,9 +873,28 @@
       ]
     },
     "DebugMessageMatch2JMS": {
-      "type": "string",
-      "enum": [
-        "DeleteAll"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "DeleteAll"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "FillRandomScores"
+          ],
+          "properties": {
+            "FillRandomScores": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "DerivedScore": {
@@ -2452,6 +2471,18 @@
           "properties": {
             "SetIDACK": {
               "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetFTAAck"
+          ],
+          "properties": {
+            "SetFTAAck": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false
