@@ -13,10 +13,18 @@ pub enum GenerationUpdate {
   TournamentWon(PlayoffAlliance, PlayoffAlliance),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PlayoffAllianceDescriptor {
+  Alliance(usize),
+  WinnerOf(MatchSubtype, usize),    /* Set Number */
+  LoserOf(MatchSubtype, usize),     /* Set Number */
+  Bye
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct IncompleteMatch {
-  red: Option<usize>,
-  blue: Option<usize>,
+  red: PlayoffAllianceDescriptor,
+  blue: PlayoffAllianceDescriptor,
   playoff_type: MatchSubtype,
   set: usize,
   match_num: usize,
@@ -38,8 +46,8 @@ fn create_tiebreaker(red: usize, blue: usize, matches: &Vec<Match>, playoff_type
   let highest_match_num = matches.iter().filter(|&m| m.match_subtype == Some(playoff_type) && m.set_number == set).map(|m| m.match_number).max();
 
   IncompleteMatch {
-    red: Some(red),
-    blue: Some(blue),
+    red: PlayoffAllianceDescriptor::Alliance(red),
+    blue: PlayoffAllianceDescriptor::Alliance(blue),
     playoff_type,
     set,
     // match_num: last_match_in_set.match_number + 1,

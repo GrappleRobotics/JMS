@@ -198,7 +198,7 @@ export type MatchGenerationRecordData =
         mode: PlayoffMode;
       };
     };
-export type PlayoffMode = "Bracket" | "RoundRobin";
+export type PlayoffMode = "Bracket" | "DoubleBracket" | "RoundRobin";
 export type MatchMessagePlayoffs2UI = {
   Generation: SerialisedMatchGeneration;
 };

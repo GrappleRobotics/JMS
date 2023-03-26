@@ -75,15 +75,15 @@ pub fn round_robin_update(alliances: &Vec<PlayoffAlliance>, existing_matches: &O
             // Generate finals, nice and easy
             GenerationUpdate::MatchUpdates(vec![
               IncompleteMatch {
-                red: Some(standings[0].0),
-                blue: Some(standings[1].0),
+                red: super::PlayoffAllianceDescriptor::Alliance(standings[0].0),
+                blue: super::PlayoffAllianceDescriptor::Alliance(standings[1].0),
                 playoff_type: MatchSubtype::Final,
                 set: 1,
                 match_num: 1,
               },
               IncompleteMatch {
-                red: Some(standings[0].0),
-                blue: Some(standings[1].0),
+                red: super::PlayoffAllianceDescriptor::Alliance(standings[0].0),
+                blue: super::PlayoffAllianceDescriptor::Alliance(standings[1].0),
                 playoff_type: MatchSubtype::Final,
                 set: 1,
                 match_num: 2,
@@ -129,8 +129,8 @@ fn generate_initial(alliances: &Vec<PlayoffAlliance>) -> Vec<IncompleteMatch> {
       match (a, b) {
         (Some(a), Some(b)) => {
           match_pairings.push(IncompleteMatch {
-            red: Some(a.id),
-            blue: Some(b.id),
+            red: super::PlayoffAllianceDescriptor::Alliance(a.id),
+            blue: super::PlayoffAllianceDescriptor::Alliance(b.id),
             playoff_type: MatchSubtype::Semifinal,
             set: i + 1,
             match_num: round + 1,

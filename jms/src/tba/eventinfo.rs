@@ -56,7 +56,8 @@ impl TBAEventInfoUpdate {
           (models::PlayoffMode::Bracket, 3..=4) => TBAPlayoffType::Bracket4,
           (models::PlayoffMode::Bracket, 5..=8) => TBAPlayoffType::Bracket8,
           (models::PlayoffMode::Bracket, 9..=16) => TBAPlayoffType::Bracket16,
-          (models::PlayoffMode::RoundRobin, 6) => TBAPlayoffType::RoundRobin6,
+          // (models::PlayoffMode::RoundRobin, 6) => TBAPlayoffType::RoundRobin6,
+          (models::PlayoffMode::DoubleBracket, _) => TBAPlayoffType::DoubleElim8,
           _ => TBAPlayoffType::Custom
         })
       },

@@ -1,610 +1,186 @@
-use crate::{
-  models::{n_sets, Alliance, Match, MatchSubtype, PlayoffAlliance},
-  schedule::IncompleteMatch,
-};
+use std::collections::{HashMap, HashSet};
 
-use super::{create_tiebreaker, GenerationUpdate};
+use crate::{schedule::PlayoffAllianceDescriptor, models::{MatchSubtype, PlayoffAlliance, Match, Alliance}};
 
-fn pairings(level: MatchSubtype) -> &'static [usize] {
-  match level {
-    MatchSubtype::Quarterfinal => &[1, 8, 4, 5, 2, 7, 3, 6],
-    MatchSubtype::Semifinal => &[1, 4, 2, 3],
-    MatchSubtype::Final => &[1, 2],
+use super::{IncompleteMatch, GenerationUpdate, create_tiebreaker, playoffs::PlayoffMatchGenerator};
+
+// Note: this must be in order
+fn bracket_template(double_elim: bool) -> Vec<IncompleteMatch> {
+  if double_elim {
+    vec![
+      // Round 1
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(1), blue: PlayoffAllianceDescriptor::Alliance(8), playoff_type: MatchSubtype::Semifinal, set: 1, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(4), blue: PlayoffAllianceDescriptor::Alliance(5), playoff_type: MatchSubtype::Semifinal, set: 2, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(2), blue: PlayoffAllianceDescriptor::Alliance(7), playoff_type: MatchSubtype::Semifinal, set: 3, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(3), blue: PlayoffAllianceDescriptor::Alliance(6), playoff_type: MatchSubtype::Semifinal, set: 4, match_num: 1 },
+      // Round 2
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 2), playoff_type: MatchSubtype::Semifinal, set: 7, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 3), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 4), playoff_type: MatchSubtype::Semifinal, set: 8, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::LoserOf(MatchSubtype::Semifinal, 1), blue: PlayoffAllianceDescriptor::LoserOf(MatchSubtype::Semifinal, 2), playoff_type: MatchSubtype::Semifinal, set: 5, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::LoserOf(MatchSubtype::Semifinal, 3), blue: PlayoffAllianceDescriptor::LoserOf(MatchSubtype::Semifinal, 4), playoff_type: MatchSubtype::Semifinal, set: 6, match_num: 1 },
+      // Round 3
+      IncompleteMatch { red: PlayoffAllianceDescriptor::LoserOf(MatchSubtype::Semifinal, 8), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 5), playoff_type: MatchSubtype::Semifinal, set: 10, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::LoserOf(MatchSubtype::Semifinal, 7), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 6), playoff_type: MatchSubtype::Semifinal, set: 9, match_num: 1 },
+      // Round 4
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 7), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 8), playoff_type: MatchSubtype::Semifinal, set: 11, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 10), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 9), playoff_type: MatchSubtype::Semifinal, set: 12, match_num: 1 },
+      // Round 5
+      IncompleteMatch { red: PlayoffAllianceDescriptor::LoserOf(MatchSubtype::Semifinal, 11), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 12), playoff_type: MatchSubtype::Semifinal, set: 13, match_num: 1 },
+      
+      // Finals
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 11), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 13), playoff_type: MatchSubtype::Final, set: 1, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 11), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 13), playoff_type: MatchSubtype::Final, set: 1, match_num: 2 },
+    ]
+  } else {
+    vec![
+      // Round 1 - Quarters
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(1), blue: PlayoffAllianceDescriptor::Alliance(8), playoff_type: MatchSubtype::Quarterfinal, set: 1, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(1), blue: PlayoffAllianceDescriptor::Alliance(8), playoff_type: MatchSubtype::Quarterfinal, set: 1, match_num: 2 },
+
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(4), blue: PlayoffAllianceDescriptor::Alliance(5), playoff_type: MatchSubtype::Quarterfinal, set: 2, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(4), blue: PlayoffAllianceDescriptor::Alliance(5), playoff_type: MatchSubtype::Quarterfinal, set: 2, match_num: 2 },
+
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(2), blue: PlayoffAllianceDescriptor::Alliance(7), playoff_type: MatchSubtype::Quarterfinal, set: 3, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(2), blue: PlayoffAllianceDescriptor::Alliance(7), playoff_type: MatchSubtype::Quarterfinal, set: 3, match_num: 2 },
+
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(3), blue: PlayoffAllianceDescriptor::Alliance(6), playoff_type: MatchSubtype::Quarterfinal, set: 4, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::Alliance(3), blue: PlayoffAllianceDescriptor::Alliance(6), playoff_type: MatchSubtype::Quarterfinal, set: 4, match_num: 2 },
+
+      // Round 2 - Semis
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 2), playoff_type: MatchSubtype::Semifinal, set: 1, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 2), playoff_type: MatchSubtype::Semifinal, set: 1, match_num: 2 },
+
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 3), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 4), playoff_type: MatchSubtype::Semifinal, set: 2, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 3), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Quarterfinal, 4), playoff_type: MatchSubtype::Semifinal, set: 2, match_num: 2 },
+
+      // Round 3 - Finals
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 2), playoff_type: MatchSubtype::Final, set: 1, match_num: 1 },
+      IncompleteMatch { red: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchSubtype::Semifinal, 2), playoff_type: MatchSubtype::Final, set: 1, match_num: 2 },
+    ]
   }
 }
 
-fn fed_by(level: MatchSubtype) -> Option<MatchSubtype> {
-  match level {
-    MatchSubtype::Quarterfinal => None,
-    MatchSubtype::Semifinal => Some(MatchSubtype::Quarterfinal),
-    MatchSubtype::Final => Some(MatchSubtype::Semifinal),
-  }
-}
-
-pub fn bracket_update(alliances: &Vec<PlayoffAlliance>, existing_matches: &Option<Vec<Match>>) -> GenerationUpdate {
+pub fn bracket_update(double_elim: bool, alliances: &Vec<PlayoffAlliance>, existing_matches: &Option<Vec<Match>>) -> GenerationUpdate {
   if alliances.len() > 8 {
-    panic!("Can't support >8 alliances in brackets!");
+    panic!("Can't support >8 alliances in brackets!")
   }
+
   let matches = existing_matches.as_ref().unwrap_or(&vec![]).clone();
-  update_bracket_recursive(MatchSubtype::Final, 1, alliances, &matches)
-}
 
-// Some facets borrowed from Cheesy-Arena
-fn update_bracket_recursive(
-  bracket: MatchSubtype,
-  set: usize,
-  alliances: &Vec<PlayoffAlliance>,
-  existing: &Vec<Match>,
-) -> GenerationUpdate {
-  let sets = n_sets(bracket);
-
-  let mut new_matches = vec![];
-
-  let mut red = None;
-  let mut blue = None;
-
-  // Fill the bottom brackets
-  if alliances.len() < 4 * sets {
-    let pairs = pairings(bracket);
-    // We're either at the bottom, or this round has alliances competing in it for the first time
-    // Higher-seeded alliances get promoted first
-    let num_direct = 4 * sets - alliances.len();
-
-    let red_alliance = pairs[(set - 1) * 2];
-    let blue_alliance = pairs[(set - 1) * 2 + 1];
-
-    if red_alliance <= num_direct {
-      red = alliances.iter().find(|&a| a.id == red_alliance).cloned();
+  let mut bracket = bracket_template(double_elim);
+  
+  let mut winners: HashMap<(MatchSubtype, usize), PlayoffAllianceDescriptor> = HashMap::new();
+  let mut losers: HashMap<(MatchSubtype, usize), PlayoffAllianceDescriptor> = HashMap::new();
+  let mut pending = vec![];
+  
+  // TODO: Generate Byes
+  
+  // for bm in bracket.iter_mut() {
+    
+    // }
+    
+    // // Remove bye matches
+    
+  let mut bye_matches = HashSet::new();
+  // Generate tiebreakers, assign winners and losers
+  for bm in bracket.iter_mut() {
+    // Assign byes if appropriate
+    if let PlayoffAllianceDescriptor::Alliance(alliance) = bm.blue {
+      if alliances.iter().find(|a| a.id == alliance).is_none() {
+        bm.blue = PlayoffAllianceDescriptor::Bye;
+      }
     }
 
-    if blue_alliance <= num_direct {
-      blue = alliances.iter().find(|&a| a.id == blue_alliance).cloned();
-    }
-  }
-
-  // Recurse down a bracket to build the schedule
-  if let Some(next_level) = fed_by(bracket) {
-    if red.is_none() {
-      match update_bracket_recursive(next_level, set * 2 - 1, alliances, existing) {
-        GenerationUpdate::MatchUpdates(mut nm) => new_matches.append(&mut nm), // Matches are still being generated
-        GenerationUpdate::TournamentWon(winner, _) => red = Some(winner), // Last bracket was won - insert into this bracket
-      };
+    if let PlayoffAllianceDescriptor::Alliance(alliance) = bm.red {
+      if alliances.iter().find(|a| a.id == alliance).is_none() {
+        bm.red = PlayoffAllianceDescriptor::Bye;
+      }
     }
 
-    if blue.is_none() {
-      match update_bracket_recursive(next_level, set * 2, alliances, existing) {
-        GenerationUpdate::MatchUpdates(mut nm) => new_matches.append(&mut nm), // Matches are still being generated
-        GenerationUpdate::TournamentWon(winner, _) => blue = Some(winner), // Last bracket was won - insert into this bracket
-      };
+    // Assign winners and losers if incomplete (also propagates byes)
+    match bm.red {
+      PlayoffAllianceDescriptor::WinnerOf(t, s) => {
+        if let Some(winner) = winners.get(&(t, s)) {
+          bm.red = winner.clone();
+        }
+      },
+      PlayoffAllianceDescriptor::LoserOf(t, s) => {
+        if let Some(loser) = losers.get(&(t, s)) {
+          bm.red = loser.clone();
+        }
+      },
+      _ => ()
     }
-  }
 
-  // Stagger the matches to make sure back-to-back matches don't happen below the finals level
-  new_matches.sort_by(|a, b| {
-    n_sets(b.playoff_type)
-      .cmp(&n_sets(a.playoff_type))
-      .then(a.match_num.cmp(&b.match_num))
-      .then(a.set.cmp(&b.set))
-  });
+    match bm.blue {
+      PlayoffAllianceDescriptor::WinnerOf(t, s) => {
+        if let Some(winner) = winners.get(&(t, s)) {
+          bm.blue = winner.clone();
+        }
+      },
+      PlayoffAllianceDescriptor::LoserOf(t, s) => {
+        if let Some(loser) = losers.get(&(t, s)) {
+          bm.blue = loser.clone();
+        }
+      },
+      _ => ()
+    }
 
-  process_queued_match(bracket, set, red, blue, new_matches, existing)
+    // Check for byes - if there's a bye, assign the winner and loser and remove this match
+    match (&bm.red, &bm.blue) {
+      (PlayoffAllianceDescriptor::Bye, winner) | (winner, PlayoffAllianceDescriptor::Bye) => {
+        winners.insert((bm.playoff_type, bm.set), winner.clone());
+        losers.insert((bm.playoff_type, bm.set), PlayoffAllianceDescriptor::Bye);
+        bye_matches.insert((bm.playoff_type, bm.set));
+      },
+      _ => ()
+    }
 
-  // match (red, blue) {
-  //   // Match is ready to be generated and/or update
-  //   (Some(red), Some(blue)) => process_queued_match(bracket, set, red, blue, alliances, existing),
-  //   // This match isn't ready yet
-  //   _ => {
-  //     if new_matches.len() == 0 {
-  //       GenerationUpdate::NoUpdate
-  //     } else {
-  //       GenerationUpdate::NewMatches(new_matches)
-  //     }
-  //   }
-  // }
-}
 
-fn process_queued_match(
-  bracket: MatchSubtype,
-  set: usize,
-  red: Option<PlayoffAlliance>,
-  blue: Option<PlayoffAlliance>,
-  mut new_matches: Vec<IncompleteMatch>,
-  existing: &Vec<Match>,
-) -> GenerationUpdate {
-  let existing_matches = existing
-    .iter()
-    .filter(|&m| m.match_subtype == Some(bracket) && m.set_number == set);
+    // Calculate tiebreakers, win conditions
+    let set_matches = matches.iter().filter(|m| m.match_subtype == Some(bm.playoff_type) && m.set_number == bm.set);
+    let played = set_matches.clone().filter(|m| m.played);
 
-  let red_wins = existing_matches
-    .clone()
-    .filter(|m| m.winner == Some(Alliance::Red))
-    .count();
-  let blue_wins = existing_matches
-    .clone()
-    .filter(|m| m.winner == Some(Alliance::Blue))
-    .count();
+    let red_wins = played.clone().filter(|x| x.winner == Some(Alliance::Red)).count();
+    let blue_wins = played.clone().filter(|x| x.winner == Some(Alliance::Blue)).count();
 
-  let has_matches = existing_matches.clone().count() > 0;
-  let matches_finished = has_matches && existing_matches.clone().all(|m| m.played);
+    let n_wins_required = match bm.playoff_type {
+      MatchSubtype::Final => 2,
+      _ if !double_elim => 2,
+      _ => 1
+    };
 
-  // Generate the set matches - need to do every time as alliance info may change
-  for i in 1..=2 {
-    new_matches.push(IncompleteMatch { 
-      red: red.as_ref().map(|a| a.id),
-      blue: blue.as_ref().map(|a| a.id),
-      playoff_type: bracket,
-      set,
-      match_num: i
+    let first_match_in_set = set_matches.clone().next();
+    let winner_loser = first_match_in_set.and_then(|m| if red_wins >= n_wins_required {
+      Some((m.red_alliance.unwrap(), m.blue_alliance.unwrap()))
+    } else if blue_wins >= n_wins_required {
+      Some((m.blue_alliance.unwrap(), m.red_alliance.unwrap()))
+    } else {
+      None
     });
+
+    if played.clone().count() > 0 && winner_loser.is_none() && set_matches.count() - played.clone().count() == 0 {
+      // We don't have a winner yet, and there are no outstanding matches
+      pending.push(create_tiebreaker(first_match_in_set.unwrap().red_alliance.unwrap(), first_match_in_set.unwrap().blue_alliance.unwrap(), &matches, bm.playoff_type));
+    } else if let Some((winner, loser)) = winner_loser {
+      if bm.playoff_type == MatchSubtype::Final {
+        // The tournament has been won
+        return GenerationUpdate::TournamentWon(alliances.iter().find(|&a| a.id == winner).unwrap().clone(), alliances.iter().find(|&a| a.id == loser).unwrap().clone())
+      }
+      // Store winner and loser of the set
+      winners.insert((bm.playoff_type, bm.set), PlayoffAllianceDescriptor::Alliance(winner));
+      losers.insert((bm.playoff_type, bm.set), PlayoffAllianceDescriptor::Alliance(loser));
+    }
   }
 
-  match (red, blue) {
-    (Some(red), Some(blue)) if red_wins >= 2 => {
-      return GenerationUpdate::TournamentWon(red, blue);
-    },
-    (Some(red), Some(blue)) if blue_wins >= 2 => {
-      return GenerationUpdate::TournamentWon(blue, red);
-    },
-    (Some(red), Some(blue)) if matches_finished => {
-      // All matches in this set have been played, generate a tiebreaker
-      new_matches.push(create_tiebreaker(red.id, blue.id, existing, bracket));
-    },
-    _ => ()
-  };
+  // Get rid of the bye matches
+  bracket.retain(|m| !bye_matches.contains(&(m.playoff_type, m.set)));
 
-  GenerationUpdate::MatchUpdates(new_matches)
+  // Add pending tiebreakers
+  for m in pending {
+    bracket.push(m);
+  }
 
-  // if existing_matches.clone().count() == 0 {
-  //   // There are no matches yet - generate the initial set
-  //   GenerationUpdate::NewMatches(vec![
-  //     IncompleteMatch {
-  //       red: red.id,
-  //       blue: blue.id,
-  //       playoff_type: bracket,
-  //       set: set,
-  //       match_num: 1,
-  //     },
-  //     IncompleteMatch {
-  //       red: red.id,
-  //       blue: blue.id,
-  //       playoff_type: bracket,
-  //       set: set,
-  //       match_num: 2,
-  //     },
-  //   ])
-  // } else if existing_matches.clone().all(|m| m.played) {
-  //   // All have been played, add a tiebreaker to this set
-  //   GenerationUpdate::NewMatches(vec![create_tiebreaker(red.id, blue.id, existing, bracket)])
-  // } else {
-  //   // Matches are still being played, do nothing
-  //   GenerationUpdate::NoUpdate
-  // }
+  GenerationUpdate::MatchUpdates(bracket)
 }
 
-// #[cfg(test)]
-// mod tests {
-//   use super::*;
-//   use crate::models::MatchType;
-
-//   #[test]
-//   #[should_panic]
-//   fn test_bracket_9() {
-//     let alliances: Vec<PlayoffAlliance> = (1..=9)
-//       .map(|i| PlayoffAlliance {
-//         id: i,
-//         teams: vec![],
-//         ready: true,
-//       })
-//       .collect();
-//     bracket_update(&alliances, &None);
-//   }
-
-//   #[test]
-//   fn test_bracket_8() {
-//     let playoff_type = MatchSubtype::Quarterfinal;
-//     let alliances: Vec<PlayoffAlliance> = (1..=8)
-//       .map(|i| PlayoffAlliance {
-//         id: i,
-//         teams: vec![],
-//         ready: true,
-//       })
-//       .collect();
-//     let results = bracket_update(&alliances, &None);
-
-//     println!("{:?}", results);
-//     if let GenerationUpdate::NewMatches(matches) = results {
-//       assert_eq!(matches.len(), 2 * n_sets(playoff_type));
-//       assert_eq!(
-//         matches[0],
-//         IncompleteMatch {
-//           red: 1,
-//           blue: 8,
-//           playoff_type,
-//           set: 1,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[1],
-//         IncompleteMatch {
-//           red: 4,
-//           blue: 5,
-//           playoff_type,
-//           set: 2,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[2],
-//         IncompleteMatch {
-//           red: 2,
-//           blue: 7,
-//           playoff_type,
-//           set: 3,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[3],
-//         IncompleteMatch {
-//           red: 3,
-//           blue: 6,
-//           playoff_type,
-//           set: 4,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[4],
-//         IncompleteMatch {
-//           red: 1,
-//           blue: 8,
-//           playoff_type,
-//           set: 1,
-//           match_num: 2
-//         }
-//       );
-//       assert_eq!(
-//         matches[5],
-//         IncompleteMatch {
-//           red: 4,
-//           blue: 5,
-//           playoff_type,
-//           set: 2,
-//           match_num: 2
-//         }
-//       );
-//       assert_eq!(
-//         matches[6],
-//         IncompleteMatch {
-//           red: 2,
-//           blue: 7,
-//           playoff_type,
-//           set: 3,
-//           match_num: 2
-//         }
-//       );
-//       assert_eq!(
-//         matches[7],
-//         IncompleteMatch {
-//           red: 3,
-//           blue: 6,
-//           playoff_type,
-//           set: 4,
-//           match_num: 2
-//         }
-//       );
-//     } else {
-//       assert!(false);
-//     }
-//   }
-
-//   #[test]
-//   fn test_bracket_5() {
-//     let playoff_type = MatchSubtype::Semifinal;
-//     let alliances: Vec<PlayoffAlliance> = (1..=5)
-//       .map(|i| PlayoffAlliance {
-//         id: i,
-//         teams: vec![],
-//         ready: true,
-//       })
-//       .collect();
-//     let results = bracket_update(&alliances, &None);
-
-//     println!("{:?}", results);
-//     if let GenerationUpdate::NewMatches(matches) = results {
-//       assert_eq!(matches.len(), 4);
-//       assert_eq!(
-//         matches[0],
-//         IncompleteMatch {
-//           red: 4,
-//           blue: 5,
-//           playoff_type: MatchSubtype::Quarterfinal,
-//           set: 2,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[1],
-//         IncompleteMatch {
-//           red: 4,
-//           blue: 5,
-//           playoff_type: MatchSubtype::Quarterfinal,
-//           set: 2,
-//           match_num: 2
-//         }
-//       );
-//       assert_eq!(
-//         matches[2],
-//         IncompleteMatch {
-//           red: 2,
-//           blue: 3,
-//           playoff_type,
-//           set: 2,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[3],
-//         IncompleteMatch {
-//           red: 2,
-//           blue: 3,
-//           playoff_type,
-//           set: 2,
-//           match_num: 2
-//         }
-//       );
-//     } else {
-//       assert!(false);
-//     }
-//   }
-
-//   #[test]
-//   fn test_bracket_4() {
-//     let playoff_type = MatchSubtype::Semifinal;
-//     let alliances: Vec<PlayoffAlliance> = (1..=4)
-//       .map(|i| PlayoffAlliance {
-//         id: i,
-//         teams: vec![],
-//         ready: true,
-//       })
-//       .collect();
-//     let results = bracket_update(&alliances, &None);
-
-//     println!("{:?}", results);
-//     if let GenerationUpdate::NewMatches(matches) = results {
-//       assert_eq!(matches.len(), 2 * n_sets(playoff_type));
-//       assert_eq!(
-//         matches[0],
-//         IncompleteMatch {
-//           red: 1,
-//           blue: 4,
-//           playoff_type,
-//           set: 1,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[1],
-//         IncompleteMatch {
-//           red: 2,
-//           blue: 3,
-//           playoff_type,
-//           set: 2,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[2],
-//         IncompleteMatch {
-//           red: 1,
-//           blue: 4,
-//           playoff_type,
-//           set: 1,
-//           match_num: 2
-//         }
-//       );
-//       assert_eq!(
-//         matches[3],
-//         IncompleteMatch {
-//           red: 2,
-//           blue: 3,
-//           playoff_type,
-//           set: 2,
-//           match_num: 2
-//         }
-//       );
-
-//       // Tie 1v4
-//       // 2v3 not ready yet
-//       let mut existing = vec![
-//         make_match(&matches[0], true, None),
-//         make_match(&matches[1], false, None),
-//         make_match(&matches[2], true, Some(Alliance::Red)),
-//         make_match(&matches[3], false, None),
-//       ];
-
-//       let results = bracket_update(&alliances, &Some(existing.clone()));
-
-//       println!("{:?}", results);
-//       if let GenerationUpdate::NewMatches(matches) = results {
-//         assert_eq!(matches.len(), 1);
-//         assert_eq!(
-//           matches[0],
-//           IncompleteMatch {
-//             red: 1,
-//             blue: 4,
-//             playoff_type,
-//             set: 1,
-//             match_num: 3
-//           }
-//         );
-
-//         // 2v3 - 3 Wins
-//         existing.push(make_match(&matches[0], false, None));
-
-//         existing[1].played = true;
-//         existing[1].winner = Some(Alliance::Blue);
-//         existing[3].played = true;
-//         existing[3].winner = Some(Alliance::Blue);
-
-//         // No update - still waiting for the 1v4 tiebreaker
-//         let results = bracket_update(&alliances, &Some(existing.clone()));
-//         println!("{:?}", results);
-//         match results {
-//           GenerationUpdate::NoUpdate => assert!(true),
-//           _ => assert!(false),
-//         }
-
-//         // 1v4 - 1 wins
-//         existing[4].played = true;
-//         existing[4].winner = Some(Alliance::Red);
-
-//         let results = bracket_update(&alliances, &Some(existing.clone()));
-//         println!("{:?}", results);
-//         if let GenerationUpdate::NewMatches(matches) = results {
-//           // Finals time
-//           assert_eq!(matches.len(), 2);
-//           assert_eq!(
-//             matches[0],
-//             IncompleteMatch {
-//               red: 1,
-//               blue: 3,
-//               playoff_type: MatchSubtype::Final,
-//               set: 1,
-//               match_num: 1
-//             }
-//           );
-//           assert_eq!(
-//             matches[1],
-//             IncompleteMatch {
-//               red: 1,
-//               blue: 3,
-//               playoff_type: MatchSubtype::Final,
-//               set: 1,
-//               match_num: 2
-//             }
-//           );
-//         } else {
-//           assert!(false);
-//         }
-//       } else {
-//         assert!(false);
-//       }
-//     } else {
-//       assert!(false);
-//     }
-//   }
-
-//   #[test]
-//   fn test_bracket_2() {
-//     let playoff_type = MatchSubtype::Final;
-//     let alliances: Vec<PlayoffAlliance> = (1..=2)
-//       .map(|i| PlayoffAlliance {
-//         id: i,
-//         teams: vec![],
-//         ready: true,
-//       })
-//       .collect();
-//     let results = bracket_update(&alliances, &None);
-
-//     println!("{:?}", results);
-//     if let GenerationUpdate::NewMatches(matches) = results {
-//       assert_eq!(matches.len(), 2 * n_sets(playoff_type));
-//       assert_eq!(
-//         matches[0],
-//         IncompleteMatch {
-//           red: 1,
-//           blue: 2,
-//           playoff_type,
-//           set: 1,
-//           match_num: 1
-//         }
-//       );
-//       assert_eq!(
-//         matches[1],
-//         IncompleteMatch {
-//           red: 1,
-//           blue: 2,
-//           playoff_type,
-//           set: 1,
-//           match_num: 2
-//         }
-//       );
-
-//       // Tie match
-//       let mut existing = vec![
-//         make_match(&matches[0], true, None),
-//         make_match(&matches[1], true, Some(Alliance::Red)),
-//       ];
-
-//       let results = bracket_update(&alliances, &Some(existing.clone()));
-
-//       println!("{:?}", results);
-//       if let GenerationUpdate::NewMatches(matches) = results {
-//         assert_eq!(matches.len(), 1);
-//         assert_eq!(
-//           matches[0],
-//           IncompleteMatch {
-//             red: 1,
-//             blue: 2,
-//             playoff_type,
-//             set: 1,
-//             match_num: 3
-//           }
-//         );
-
-//         // Need another tiebreaker
-//         existing.push(make_match(&matches[0], true, Some(Alliance::Blue)));
-//         let results = bracket_update(&alliances, &Some(existing.clone()));
-
-//         println!("{:?}", results);
-//         if let GenerationUpdate::NewMatches(matches) = results {
-
-//           assert_eq!(matches.len(), 1);
-//           assert_eq!(
-//             matches[0],
-//             IncompleteMatch {
-//               red: 1, 
-//               blue: 2,
-//               playoff_type,
-//               set: 1,
-//               match_num: 4
-//             }
-//           );
-
-//           // Win match
-//           existing.push(make_match(&matches[0], true, Some(Alliance::Red)));
-//           let results = bracket_update(&alliances, &Some(existing.clone()));
-
-//           println!("{:?}", results);
-//           if let GenerationUpdate::TournamentWon(winner, finalist) = results {
-//             assert_eq!(winner.id, 1);
-//             assert_eq!(finalist.id, 2);
-//           } else {
-//             assert!(false);
-//           }
-//         } else {
-//           assert!(false);
-//         }
-//       } else {
-//         assert!(false);
-//       }
-//     } else {
-//       assert!(false);
-//     }
-//   }
-
-//   fn make_match(im: &IncompleteMatch, played: bool, winner: Option<Alliance>) -> Match {
-//     let mut m = Match::new_test();
-//     m.match_type = MatchType::Playoff;
-//     m.match_subtype = Some(im.playoff_type);
-//     m.set_number = im.set;
-//     m.match_number = im.match_num;
-//     m.played = played;
-//     m.red_alliance = im.red;
-//     m.blue_alliance = im.blue;
-//     m.winner = winner;
-//     m
-//   }
-// }
