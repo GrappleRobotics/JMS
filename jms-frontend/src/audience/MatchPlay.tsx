@@ -4,6 +4,8 @@ import { Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
 import { Alliance, SerialisedAllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore, MatchScore, MatchScoreSnapshot } from "ws-schema";
 import BaseAudienceScene from "./BaseAudienceScene";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faLink } from "@fortawesome/free-solid-svg-icons";
 
 type MatchProgressBarProps = {
   config: MatchConfig,
@@ -19,13 +21,13 @@ class MatchProgressBar extends React.PureComponent<MatchProgressBarProps> {
     let bars = [
       {
         name: "AUTONOMOUS",
-        max: config.auto_time,
+        max: config.auto_time / 1000,
         state: "Auto",
         complete: ["Pause", "Teleop", "Cooldown", "Complete"]
       },
       {
         name: "TELEOP",
-        max: config.teleop_time,
+        max: config.teleop_time / 1000,
         state: "Teleop",
         complete: ["Cooldown", "Complete"]
       }
@@ -65,19 +67,28 @@ type AllianceScoreProps = {
   has_rp: boolean,
   alliance: Alliance,
   score: SnapshotScore,
+  other_score: SnapshotScore,
   stations: SerialisedAllianceStation[],
   img?: string
 }
 
 class AllianceScore extends React.PureComponent<AllianceScoreProps> {
   render() {
-    const { reverse, alliance, score, stations, img, has_rp } = this.props;
+    const { reverse, alliance, score, other_score, stations, img, has_rp } = this.props;
 
     const els = [
-      <Col className="score-image">
+      <Col className="score-image" md="auto">
         {
           withVal(img, () => <img src={`/img/${img}`} />)
         }
+      </Col>,
+      <Col className="score-node" data-alliance={alliance}>
+        <Row>
+          <Col className="score-node-image"> <FontAwesomeIcon icon={faLink} /> </Col>
+        </Row>
+        <Row>
+          <Col className="score-node-count"> { score.derived.link_count } / { score.derived.meets_coopertition && other_score.derived.meets_coopertition ?  4 : 5 } </Col>
+        </Row>
       </Col>,
       <Col className="alliance-teams" data-alliance={alliance}>
         {
@@ -207,6 +218,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
               alliance="red"
               img="game/game.png"
               score={score.red}
+              other_score={score.blue}
               stations={stations.filter(s => s.station.alliance === "red")}
               has_rp={has_rp}
             />
@@ -214,6 +226,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
               alliance="blue"
               img="tourney_logo_white.png"
               score={score.blue}
+              other_score={score.red}
               stations={stations.filter(s => s.station.alliance === "blue")}
               has_rp={has_rp}
               reverse
