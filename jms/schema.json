@@ -820,35 +820,6 @@
         }
       }
     },
-    "CargoCounts": {
-      "type": "object",
-      "required": [
-        "lower",
-        "upper"
-      ],
-      "properties": {
-        "lower": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
-          },
-          "maxItems": 4,
-          "minItems": 4
-        },
-        "upper": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "uint",
-            "minimum": 0.0
-          },
-          "maxItems": 4,
-          "minItems": 4
-        }
-      }
-    },
     "DSMode": {
       "type": "string",
       "enum": [
@@ -929,14 +900,17 @@
     "DerivedScore": {
       "type": "object",
       "required": [
-        "cargo_points",
-        "cargo_rp",
+        "activation_rp",
+        "auto_docked_points",
+        "community_points",
         "endgame_points",
-        "hangar_rp",
+        "link_points",
+        "meets_coopertition",
+        "mobility_points",
         "mode_score",
         "penalty_score",
-        "quintet",
-        "taxi_points",
+        "sustainability_rp",
+        "sustainability_threshold",
         "total_bonus_rp",
         "total_rp",
         "total_score",
@@ -944,18 +918,30 @@
         "win_status"
       ],
       "properties": {
-        "cargo_points": {
-          "$ref": "#/definitions/ModeScore_for_int"
-        },
-        "cargo_rp": {
+        "activation_rp": {
           "type": "boolean"
+        },
+        "auto_docked_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "community_points": {
+          "$ref": "#/definitions/ModeScore_for_int"
         },
         "endgame_points": {
           "type": "integer",
           "format": "int"
         },
-        "hangar_rp": {
+        "link_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "meets_coopertition": {
           "type": "boolean"
+        },
+        "mobility_points": {
+          "type": "integer",
+          "format": "int"
         },
         "mode_score": {
           "$ref": "#/definitions/ModeScore_for_int"
@@ -965,12 +951,13 @@
           "format": "uint",
           "minimum": 0.0
         },
-        "quintet": {
+        "sustainability_rp": {
           "type": "boolean"
         },
-        "taxi_points": {
+        "sustainability_threshold": {
           "type": "integer",
-          "format": "int"
+          "format": "uint",
+          "minimum": 0.0
         },
         "total_bonus_rp": {
           "type": "integer",
@@ -1016,14 +1003,12 @@
         }
       }
     },
-    "EndgamePointType": {
+    "EndgameType": {
       "type": "string",
       "enum": [
         "None",
-        "Low",
-        "Mid",
-        "High",
-        "Traversal"
+        "Parked",
+        "Docked"
       ]
     },
     "EventDetails": {
@@ -1486,39 +1471,48 @@
         }
       ]
     },
-    "GoalHeight": {
+    "GamepieceType": {
       "type": "string",
       "enum": [
-        "low",
-        "high"
+        "None",
+        "Cone",
+        "Cube"
       ]
     },
     "LiveScore": {
       "type": "object",
       "required": [
-        "cargo",
+        "auto_docked",
+        "charge_station_level",
+        "community",
         "endgame",
-        "penalties",
-        "taxi"
+        "mobility",
+        "penalties"
       ],
       "properties": {
-        "cargo": {
-          "$ref": "#/definitions/ModeScore_for_CargoCounts"
+        "auto_docked": {
+          "type": "boolean"
+        },
+        "charge_station_level": {
+          "$ref": "#/definitions/ModeScore_for_Boolean"
+        },
+        "community": {
+          "$ref": "#/definitions/ModeScore_for_Array_of_Array_of_GamepieceType"
         },
         "endgame": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/EndgamePointType"
+            "$ref": "#/definitions/EndgameType"
           }
         },
-        "penalties": {
-          "$ref": "#/definitions/Penalties"
-        },
-        "taxi": {
+        "mobility": {
           "type": "array",
           "items": {
             "type": "boolean"
           }
+        },
+        "penalties": {
+          "$ref": "#/definitions/Penalties"
         }
       }
     },
@@ -2161,7 +2155,7 @@
         "Playoff"
       ]
     },
-    "ModeScore_for_CargoCounts": {
+    "ModeScore_for_Array_of_Array_of_GamepieceType": {
       "type": "object",
       "required": [
         "auto",
@@ -2169,10 +2163,37 @@
       ],
       "properties": {
         "auto": {
-          "$ref": "#/definitions/CargoCounts"
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/GamepieceType"
+            }
+          }
         },
         "teleop": {
-          "$ref": "#/definitions/CargoCounts"
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/GamepieceType"
+            }
+          }
+        }
+      }
+    },
+    "ModeScore_for_Boolean": {
+      "type": "object",
+      "required": [
+        "auto",
+        "teleop"
+      ],
+      "properties": {
+        "auto": {
+          "type": "boolean"
+        },
+        "teleop": {
+          "type": "boolean"
         }
       }
     },
@@ -2252,6 +2273,7 @@
       "type": "string",
       "enum": [
         "Bracket",
+        "DoubleBracket",
         "RoundRobin"
       ]
     },
@@ -2450,6 +2472,18 @@
           "properties": {
             "SetIDACK": {
               "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SetFTAAck"
+          ],
+          "properties": {
+            "SetFTAAck": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false
@@ -2757,10 +2791,10 @@
         {
           "type": "object",
           "required": [
-            "Taxi"
+            "Mobility"
           ],
           "properties": {
-            "Taxi": {
+            "Mobility": {
               "type": "object",
               "required": [
                 "crossed",
@@ -2783,47 +2817,77 @@
         {
           "type": "object",
           "required": [
-            "Cargo"
+            "Community"
           ],
           "properties": {
-            "Cargo": {
+            "Community": {
               "type": "object",
               "required": [
-                "auto"
+                "auto",
+                "col",
+                "gamepiece",
+                "row"
               ],
               "properties": {
                 "auto": {
                   "type": "boolean"
                 },
-                "lower": {
-                  "default": [
-                    0,
-                    0,
-                    0,
-                    0
-                  ],
-                  "type": "array",
-                  "items": {
-                    "type": "integer",
-                    "format": "int"
-                  },
-                  "maxItems": 4,
-                  "minItems": 4
+                "col": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
                 },
-                "upper": {
-                  "default": [
-                    0,
-                    0,
-                    0,
-                    0
-                  ],
-                  "type": "array",
-                  "items": {
-                    "type": "integer",
-                    "format": "int"
-                  },
-                  "maxItems": 4,
-                  "minItems": 4
+                "gamepiece": {
+                  "$ref": "#/definitions/GamepieceType"
+                },
+                "row": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "AutoDocked"
+          ],
+          "properties": {
+            "AutoDocked": {
+              "type": "object",
+              "required": [
+                "docked"
+              ],
+              "properties": {
+                "docked": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ChargeStationLevel"
+          ],
+          "properties": {
+            "ChargeStationLevel": {
+              "type": "object",
+              "required": [
+                "auto",
+                "level"
+              ],
+              "properties": {
+                "auto": {
+                  "type": "boolean"
+                },
+                "level": {
+                  "type": "boolean"
                 }
               }
             }
@@ -2844,7 +2908,7 @@
               ],
               "properties": {
                 "endgame": {
-                  "$ref": "#/definitions/EndgamePointType"
+                  "$ref": "#/definitions/EndgameType"
                 },
                 "station": {
                   "type": "integer",
@@ -2900,24 +2964,13 @@
     "ScorerID": {
       "type": "object",
       "required": [
-        "goals",
-        "height"
+        "alliance"
       ],
       "properties": {
-        "goals": {
-          "$ref": "#/definitions/ScorerPair"
-        },
-        "height": {
-          "$ref": "#/definitions/GoalHeight"
+        "alliance": {
+          "$ref": "#/definitions/Alliance"
         }
       }
-    },
-    "ScorerPair": {
-      "type": "string",
-      "enum": [
-        "AB",
-        "CD"
-      ]
     },
     "SendMeta": {
       "type": "object",

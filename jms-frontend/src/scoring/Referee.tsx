@@ -10,7 +10,7 @@ import { capitalise } from "support/strings";
 import { otherAlliance, withVal } from "support/util";
 import { ALLIANCES, NEAR_FAR } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { Alliance, SerialisedAllianceStation, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar, MatchScoreSnapshot } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, ArenaState, NearFar, MatchScoreSnapshot, EndgameType } from "ws-schema";
 
 type RefereePanelState = {
   match?: LoadedMatch,
@@ -93,12 +93,10 @@ type RefereeTeamCardProps = {
   endgame: boolean
 };
 
-const ENDGAME_MAP: { [K in EndgamePointType]: string } = {
+const ENDGAME_MAP: { [K in EndgameType]: string } = {
   None: "None",
-  Low: "Low",
-  Mid: "Mid",
-  High: "High",
-  Traversal: "Trav."
+  Parked: "ENDGAME Park",
+  Docked: "ENDGAME Docked"
 };
 
 export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
@@ -106,7 +104,7 @@ export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
     const { idx, station, score, update, endgame } = this.props;
     const alliance = station.station.alliance;
 
-    const has_taxi = score.live.taxi[idx];
+    const has_mobility = score.live.mobility[idx];
 
     return withVal(station.team, team => <Col className="referee-station" data-alliance={alliance}>
       <Row>
@@ -114,13 +112,13 @@ export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
         <Col>
           <Button
             className="btn-block referee-station-score"
-            data-score-type="taxi"
-            data-score-value={has_taxi}
-            onClick={() => update( { Taxi: { station: idx, crossed: !has_taxi } } )}
+            data-score-type="mobility"
+            data-score-value={has_mobility}
+            onClick={() => update( { Mobility: { station: idx, crossed: !has_mobility } } )}
           >
             {
-              has_taxi ? <React.Fragment> AUTO TAXI OK &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
-                : <React.Fragment> NO AUTO TAXI &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
+              has_mobility ? <React.Fragment> AUTO MOBILITY OK &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
+                : <React.Fragment> NO AUTO MOBILITY &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
             }
           </Button>
         </Col>
@@ -133,7 +131,7 @@ export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
               data-score-type="endgame"
               data-score-value={score.live.endgame[idx]}
               value={score.live.endgame[idx]}
-              values={_.keys(ENDGAME_MAP) as EndgamePointType[]}
+              values={_.keys(ENDGAME_MAP) as EndgameType[]}
               names={_.values(ENDGAME_MAP)}
               onChange={v => update({ Endgame: { station: idx, endgame: v } })}
               // disabled={!endgame}
@@ -201,6 +199,19 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
             endgame={match?.endgame || false}
           />)
         }
+      </Row>
+      <Row>
+        <Button
+          className="btn-block referee-station-score"
+          data-score-type="auto_docked"
+          data-score-value={score.live.auto_docked}
+          onClick={() => this.updateScore(alliance,  { AutoDocked: { docked: !score.live.auto_docked } } )}
+        >
+          {
+            score.live.auto_docked ? <React.Fragment> AUTO DOCKED &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
+              : <React.Fragment> NO AUTO DOCKED &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
+          }
+        </Button>
       </Row>
     </React.Fragment>
   }

@@ -1,6 +1,6 @@
 use jms_macros::define_websocket_msg;
 
-use crate::{arena::resource::{TaggedResource, ResourceRole, ResourceRequirementStatus, SharedResources, ResourceRequirements}, models::{FTAKey, DBResourceRequirements}, db::{self, DBSingleton}};
+use crate::{arena::resource::{TaggedResource, ResourceRole, ResourceRequirementStatus, ResourceRequirements}, models::{FTAKey, DBResourceRequirements}, db::{self, DBSingleton}};
 
 use super::{ws::{WebsocketHandler, WebsocketContext, Websocket}, WebsocketMessage2JMS};
 
@@ -11,6 +11,7 @@ define_websocket_msg!($ResourceMessage {
   send SetIDACK(String),
   recv SetRole(ResourceRole),
   recv SetFTA(Option<String>),
+  send SetFTAAck(bool),
   recv SetReady(bool),
 
   $Requirements {
@@ -19,13 +20,12 @@ define_websocket_msg!($ResourceMessage {
   }
 });
 
-pub struct WSResourceHandler(pub SharedResources);
+pub struct WSResourceHandler();
 
 #[async_trait::async_trait]
 impl WebsocketHandler for WSResourceHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
-    let resources = self.0.lock().await;
-
+    let resources = ctx.arena.resources().read().await;
     ctx.broadcast(ResourceMessage2UI::All(resources.all().into_iter().cloned().collect())).await;
     {
       let rr = DBResourceRequirements::get(&db::database())?.0;
@@ -44,7 +44,7 @@ impl WebsocketHandler for WSResourceHandler {
 
   async fn handle(&self, msg: &WebsocketMessage2JMS, ws: &mut Websocket) -> anyhow::Result<()> {
     if let WebsocketMessage2JMS::Resource(msg) = msg {
-      let mut resources = self.0.lock().await;
+      let mut resources = ws.context.arena.resources().write().await;
 
       match msg.clone() {
         ResourceMessage2JMS::SetID(id) => {
@@ -64,9 +64,10 @@ impl WebsocketHandler for WSResourceHandler {
               Some(key) => {
                 if FTAKey::get(&db::database())?.validate(&key) {
                   resource.r.fta = true;
+                  ws.reply(ResourceMessage2UI::SetFTAAck(true)).await;
                 } else {
                   resource.r.fta = false;
-                  anyhow::bail!("Incorrect FTA Key!")
+                  ws.reply(ResourceMessage2UI::SetFTAAck(false)).await;
                 }
               },
               _ => resource.r.fta = false

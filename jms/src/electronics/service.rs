@@ -1,13 +1,51 @@
-// use std::time::Duration;
+use futures::try_join;
+use tokio::net::UdpSocket;
 
-// use tokio::{io::{AsyncReadExt, AsyncWriteExt}, time};
-// use tokio_serial::SerialPortBuilderExt;
+use crate::arena::Arena;
 
-// use crate::{arena::{lighting::ArenaLighting, station::AllianceStationId, resource::{SharedResources, ResourceRole}, Arena, state::ArenaSignal}, models::{self, Alliance}, electronics::comms::{Packable, Unpackable}};
+use super::{settings::{ElectronicsSettings, LightingConfig}, lights::FieldLights};
 
-// use super::{ElectronicsMessageIn, ElectronicsMessageOut, AddressedElectronicsMessageOut, ElectronicsRole, AddressedElectronicsMessageIn, settings::{ElectronicsSettings, InnerElectronicsSettings}};
+const CLIENT_ADDRESSES: [&'static str; 1] = [
+  "10.1.10.155:8283"
+];
 
-// const ELECTRONICS_RESOURCE_ID: &str = "__electronics__";
+pub struct FieldElectronics {
+  arena: Arena,
+  settings: ElectronicsSettings
+}
+
+impl FieldElectronics {
+  pub fn new(arena: Arena, settings: ElectronicsSettings) -> Self {
+    FieldElectronics { arena, settings }
+  }
+
+  pub async fn run(self) -> anyhow::Result<()> {
+    match self.settings.0 {
+      Some(settings) => {
+        info!("Starting Field Electronics Server");
+        let lights_fut = Self::run_lights(self.arena.clone(), settings.lighting);
+
+        try_join!(lights_fut)?;
+        Ok(())
+      },
+      None => Ok(())
+    }
+  }
+
+  pub async fn run_lights(arena: Arena, config: LightingConfig) -> anyhow::Result<()> {
+    let mut lights = FieldLights::new(config);
+    let socket = UdpSocket::bind("0.0.0.0:0").await?;
+    loop {
+      let dmx_msg = lights.update(arena.clone()).await?;
+      
+      for &addr in CLIENT_ADDRESSES.iter() {
+        socket.send_to(&dmx_msg[..], addr).await?;
+      }
+
+      tokio::time::sleep(tokio::time::Duration::from_millis(30)).await;
+    }
+  }
+}
 
 // pub struct FieldElectronicsService {
 //   arena: Arena,

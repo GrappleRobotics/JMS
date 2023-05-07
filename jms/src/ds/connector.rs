@@ -11,7 +11,7 @@ use tokio_util::codec::Framed;
 use tokio_util::udp::UdpFramed;
 
 use crate::arena::station::AllianceStationId;
-use crate::arena::{station::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy}, state::ArenaState, Arena};
+use crate::arena::{station::{AllianceStation, AllianceStationDSReport, AllianceStationOccupancy}, Arena};
 use crate::ds::{self, Fms2DsTCP, Fms2DsUDP};
 
 use super::{DSTCPCodec, DSUDPCodec, Ds2FmsTCPTags, Ds2FmsUDP, Fms2DsStationStatus, Fms2DsTCPTags};
@@ -231,7 +231,7 @@ impl DSConnection {
 
       let remaining_seconds = station.remaining_time.as_secs_f32();
 
-      let mut pkt = Fms2DsUDP {
+      let pkt = Fms2DsUDP {
         estop: estop,
         enabled: (!station.bypass) && !(estop || astop) && station.command_enable,
         mode: station.command_mode,

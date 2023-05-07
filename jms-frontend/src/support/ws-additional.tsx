@@ -16,10 +16,8 @@ export const ROLES: ResourceRole[] = [
   { RefereePanel: "HeadReferee" },
   ...(ALLIANCES.flatMap(a => NEAR_FAR.map(nf => ({ RefereePanel: { Alliance: [a, nf] as [Alliance, NearFar] } })))),
   ...(ALLIANCES.flatMap(a => ALLIANCE_STATIONS.map(stn => ({ TeamEStop: { alliance: a, station: stn } })))),
-  { ScorerPanel: { goals: "AB", height: "low" } },
-  { ScorerPanel: { goals: "AB", height: "high" } },
-  { ScorerPanel: { goals: "CD", height: "low" } },
-  { ScorerPanel: { goals: "CD", height: "high" } },
+  { ScorerPanel: { alliance: "red" } },
+  { ScorerPanel: { alliance: "blue" } },
 ];
 
 export function role2string(role: ResourceRole) {
@@ -30,7 +28,7 @@ export function role2string(role: ResourceRole) {
       else 
         return `${capitalise(role.RefereePanel.Alliance[0])} ${capitalise(role.RefereePanel.Alliance[1])} Referee`;
     } else if ("ScorerPanel" in role) {
-      return `Scorer: ${role.ScorerPanel.goals}${role.ScorerPanel.height[0].toUpperCase()}`
+      return `Scorer: ${role.ScorerPanel.alliance}`
     } else if ("TeamEStop" in role) {
       return `EStop: ${capitalise(role.TeamEStop.alliance)} ${role.TeamEStop.station}`
     }
@@ -58,7 +56,7 @@ export function role2id(role: ResourceRole): string {
       else 
         return `ref-${role.RefereePanel.Alliance[0]}-${role.RefereePanel.Alliance[1]}`;
     } else if ("ScorerPanel" in role) {
-      return `scorer-${role.ScorerPanel.goals}${role.ScorerPanel.height[0]}`
+      return `scorer-${role.ScorerPanel.alliance}`
     } else if ("TeamEStop" in role) {
       return `estop-${role.TeamEStop.alliance}-${role.TeamEStop.station}`
     }

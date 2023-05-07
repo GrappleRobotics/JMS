@@ -7,8 +7,6 @@ pub mod exceptions;
 
 pub mod station;
 
-pub mod lighting;
-
 pub mod resource;
 
 pub mod state;

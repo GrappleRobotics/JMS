@@ -74,6 +74,7 @@ humantime = "2.1.0"
 walkdir = "2.3.2"
 zip = "0.6.2"
 async-thread = "0.1.2"
+console-subscriber = "0.1.8"
 
 [build-dependencies]
 anyhow = "1.0.42"

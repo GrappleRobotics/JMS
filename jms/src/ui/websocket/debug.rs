@@ -1,6 +1,6 @@
 use jms_macros::define_websocket_msg;
 
-use crate::{db::{self, TableType}, models, scoring::scores::{LiveScore, MatchScore}};
+use crate::{db::{self, TableType}, models, scoring::scores::{MatchScore, LiveScore}};
 
 use super::{ws::{WebsocketHandler, Websocket}, WebsocketMessage2JMS};
 

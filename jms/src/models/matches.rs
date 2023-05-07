@@ -245,6 +245,7 @@ where
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum PlayoffMode {
   Bracket,
+  DoubleBracket,
   RoundRobin,
 }
 
