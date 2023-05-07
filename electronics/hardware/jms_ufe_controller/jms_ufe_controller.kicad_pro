@@ -412,7 +412,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "jms_ufe_controller.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
@@ -467,6 +467,10 @@
     [
       "436df4a8-d309-493d-aa1c-c19458ad10d3",
       "DMX"
+    ],
+    [
+      "c93c057b-028e-417f-813e-3ea04c239623",
+      "Digital IO"
     ]
   ],
   "text_variables": {}

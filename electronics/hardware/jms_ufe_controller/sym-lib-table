@@ -1,3 +1,4 @@
 (sym_lib_table
   (lib (name "TI_ETH")(type "Legacy")(uri "${KIPRJMOD}/libs/eec.lib")(options "")(descr ""))
+  (lib (name "LMUN2233")(type "KiCad")(uri "${KIPRJMOD}/libs/LMUN2233LT1G.kicad_sym")(options "")(descr ""))
 )

@@ -1,0 +1,20 @@
+G04 #@! TF.GenerationSoftware,KiCad,Pcbnew,(6.0.10)*
+G04 #@! TF.CreationDate,2023-05-06T14:56:34+10:00*
+G04 #@! TF.ProjectId,jms_ufe_controller,6a6d735f-7566-4655-9f63-6f6e74726f6c,rev?*
+G04 #@! TF.SameCoordinates,Original*
+G04 #@! TF.FileFunction,Paste,Bot*
+G04 #@! TF.FilePolarity,Positive*
+%FSLAX46Y46*%
+G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+G04 Created by KiCad (PCBNEW (6.0.10)) date 2023-05-06 14:56:34*
+%MOMM*%
+%LPD*%
+G01*
+G04 APERTURE LIST*
+%ADD10C,2.200000*%
+G04 APERTURE END LIST*
+D10*
+X114337925Y-79520900D03*
+X122437925Y-79520900D03*
+X118387925Y-74020900D03*
+M02*

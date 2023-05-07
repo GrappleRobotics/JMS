@@ -245,7 +245,7 @@ mod app {
     let mut dmx_timer = ctx
       .device
       .TIM2
-      .timer(15.Hz(), ccdr.peripheral.TIM2, &ccdr.clocks);
+      .timer(30.Hz(), ccdr.peripheral.TIM2, &ccdr.clocks);
     dmx_timer.listen(Event::TimeOut);
 
     let dmx_delay_timer = ctx
