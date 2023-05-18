@@ -389,10 +389,7 @@
         "microvia_diameter": 0.3,
         "microvia_drill": 0.1,
         "name": "Power_In",
-        "nets": [
-          "+12V",
-          "/12V_D"
-        ],
+        "nets": [],
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 0.25,
@@ -465,12 +462,12 @@
       "ethernet"
     ],
     [
-      "436df4a8-d309-493d-aa1c-c19458ad10d3",
-      "DMX"
+      "396f2a9b-6c09-4565-9632-c5de72d70fce",
+      "Power Management"
     ],
     [
-      "c93c057b-028e-417f-813e-3ea04c239623",
-      "Digital IO"
+      "8dc8d0a8-3b6d-4976-8c4e-43fef00232ce",
+      "Ethernet Ports & Magnetics"
     ]
   ],
   "text_variables": {}

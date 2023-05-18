@@ -1,0 +1,311 @@
+(kicad_symbol_lib
+  (version 20211014)
+  (generator https://github.com/uPesy/easyeda2kicad.py)
+  (symbol "R-RJ45R08P-2006"
+    (in_bom yes)
+    (on_board yes)
+    (property
+      "Reference"
+      "RJ"
+      (id 0)
+      (at 0 20.32 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Value"
+      "R-RJ45R08P-2006"
+      (id 1)
+      (at 0 -17.78 0)
+      (effects (font (size 1.27 1.27) ) )
+    )
+    (property
+      "Footprint"
+      "R-RJ45R08P-2006:RJ45-TH_R-RJ45R08P-2006"
+      (id 2)
+      (at 0 -20.32 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Datasheet"
+      "https://lcsc.com/product-detail/Ethernet-Connectors-Modular-Connectors-RJ45-RJ11_Shenzhen-Cankemeng-R-RJ45R08P-2006_C386761.html"
+      (id 3)
+      (at 0 -22.86 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "Manufacturer"
+      "Ckmtw(灿科盟)"
+      (id 4)
+      (at 0 -25.40 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "LCSC Part"
+      "C386761"
+      (id 5)
+      (at 0 -27.94 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (property
+      "JLC Part"
+      "Extended Part"
+      (id 6)
+      (at 0 -30.48 0)
+      (effects (font (size 1.27 1.27) ) hide)
+    )
+    (symbol "R-RJ45R08P-2006_0_1"
+      (rectangle
+        (start -1.27 10.16)
+        (end 19.05 -8.89)
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type background))
+      )
+      (rectangle
+        (start -21.59 10.16)
+        (end -1.27 -8.89)
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type background))
+      )
+      (polyline
+        (pts
+          (xy 4.57 3.81) (xy 4.57 5.08) (xy 4.57 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 5.84 5.08) (xy 5.84 3.81) (xy 5.84 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 7.11 5.08) (xy 7.11 3.81) (xy 7.11 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 8.38 5.08) (xy 8.38 3.81) (xy 8.38 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 9.65 5.08) (xy 9.65 3.81) (xy 9.65 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 10.92 5.08) (xy 10.92 3.81) (xy 10.92 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 12.19 3.81) (xy 12.19 5.08) (xy 12.19 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 13.46 3.81) (xy 13.46 5.08) (xy 13.46 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy 3.30 5.08) (xy 14.73 5.08) (xy 14.73 -5.08) (xy 12.19 -5.08) (xy 12.19 -6.35) (xy 10.92 -6.35) (xy 10.92 -7.62) (xy 7.11 -7.62) (xy 7.11 -6.35) (xy 5.84 -6.35) (xy 5.84 -5.08) (xy 3.30 -5.08) (xy 3.30 5.08) (xy 3.30 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type background))
+      )
+      (polyline
+        (pts
+          (xy -15.75 3.81) (xy -15.75 5.08) (xy -15.75 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -14.48 5.08) (xy -14.48 3.81) (xy -14.48 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -13.21 5.08) (xy -13.21 3.81) (xy -13.21 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -11.94 5.08) (xy -11.94 3.81) (xy -11.94 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -10.67 5.08) (xy -10.67 3.81) (xy -10.67 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -9.40 5.08) (xy -9.40 3.81) (xy -9.40 3.81)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -8.13 3.81) (xy -8.13 5.08) (xy -8.13 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -6.86 3.81) (xy -6.86 5.08) (xy -6.86 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type none))
+      )
+      (polyline
+        (pts
+          (xy -17.02 5.08) (xy -5.59 5.08) (xy -5.59 -5.08) (xy -8.13 -5.08) (xy -8.13 -6.35) (xy -9.40 -6.35) (xy -9.40 -7.62) (xy -13.21 -7.62) (xy -13.21 -6.35) (xy -14.48 -6.35) (xy -14.48 -5.08) (xy -17.02 -5.08) (xy -17.02 5.08) (xy -17.02 5.08)
+        )
+        (stroke (width 0) (type default) (color 0 0 0 0))
+        (fill (type background))
+      )
+      (pin unspecified line
+        (at 0.00 -12.70 90)
+        (length 3.81)
+        (name "R1" (effects (font (size 1.27 1.27))))
+        (number "R1" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 2.54 -12.70 90)
+        (length 3.81)
+        (name "R2" (effects (font (size 1.27 1.27))))
+        (number "R2" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 5.08 -12.70 90)
+        (length 3.81)
+        (name "R3" (effects (font (size 1.27 1.27))))
+        (number "R3" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 7.62 -12.70 90)
+        (length 3.81)
+        (name "R4" (effects (font (size 1.27 1.27))))
+        (number "R4" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 10.16 -12.70 90)
+        (length 3.81)
+        (name "R5" (effects (font (size 1.27 1.27))))
+        (number "R5" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 12.70 -12.70 90)
+        (length 3.81)
+        (name "R6" (effects (font (size 1.27 1.27))))
+        (number "R6" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 15.24 -12.70 90)
+        (length 3.81)
+        (name "R7" (effects (font (size 1.27 1.27))))
+        (number "R7" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 17.78 -12.70 90)
+        (length 3.81)
+        (name "R8" (effects (font (size 1.27 1.27))))
+        (number "R8" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -25.40 -0.00 0)
+        (length 3.81)
+        (name "S2" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 22.86 -0.00 180)
+        (length 3.81)
+        (name "S3" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -20.32 -12.70 90)
+        (length 3.81)
+        (name "L1" (effects (font (size 1.27 1.27))))
+        (number "L1" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -17.78 -12.70 90)
+        (length 3.81)
+        (name "L2" (effects (font (size 1.27 1.27))))
+        (number "L2" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -15.24 -12.70 90)
+        (length 3.81)
+        (name "L3" (effects (font (size 1.27 1.27))))
+        (number "L3" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -12.70 -12.70 90)
+        (length 3.81)
+        (name "L4" (effects (font (size 1.27 1.27))))
+        (number "L4" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -10.16 -12.70 90)
+        (length 3.81)
+        (name "L5" (effects (font (size 1.27 1.27))))
+        (number "L5" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -7.62 -12.70 90)
+        (length 3.81)
+        (name "L6" (effects (font (size 1.27 1.27))))
+        (number "L6" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -5.08 -12.70 90)
+        (length 3.81)
+        (name "L7" (effects (font (size 1.27 1.27))))
+        (number "L7" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at -2.54 -12.70 90)
+        (length 3.81)
+        (name "L8" (effects (font (size 1.27 1.27))))
+        (number "L8" (effects (font (size 1.27 1.27))))
+      )
+      (pin unspecified line
+        (at 0.00 15.24 270)
+        (length 5.08)
+        (name "S1" (effects (font (size 1.27 1.27))))
+        (number "S1" (effects (font (size 1.27 1.27))))
+      )
+    )
+  )
+)
