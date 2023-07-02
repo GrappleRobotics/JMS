@@ -9,6 +9,8 @@
 # Event backups
 *.tar.gz
 
+!network/*
+
 jms-test/
 JMS_BACKUP
 JMS_BACKUPS
