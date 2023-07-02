@@ -232,7 +232,7 @@
     height: 18vh;
 
     .score-image {
-      width: 25vw;
+      width: 18vh;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -241,6 +241,38 @@
 
       img {
         height: 15vh;
+      }
+      margin-left: 2vw;
+      margin-right: 2vw;
+    }
+
+    .score-node {
+      font-size: 1.5em;
+      margin: auto;
+      width: 5vw;
+      text-align: center;
+      border-radius: 1em;
+
+      margin-left: 5vw;
+      margin-right: 5vw;
+
+      .score-node-image {
+        font-size: 2.5em;
+      }
+
+      .score-node-count {
+        margin-top: 0.25em;
+        font-size: 1.75em;
+        background-color: $gray-100;
+        border-radius: 1em;
+        color: black;
+      }
+
+      @each $alliance in $alliances {
+        $tc: theme-color($alliance);
+        &[data-alliance=#{$alliance}] {
+          background-color: desaturate(darken($tc, 25%), 40%);
+        }
       }
     }
 

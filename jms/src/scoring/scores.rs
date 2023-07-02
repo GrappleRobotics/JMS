@@ -59,6 +59,7 @@ pub struct LiveScore {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DerivedScore {
   pub mobility_points: isize,
+  pub link_count: isize,
   pub link_points: isize,
   pub community_points: ModeScore<isize>,
   pub auto_docked_points: isize,
@@ -206,6 +207,7 @@ impl LiveScore {
 
     DerivedScore {
       mobility_points: self.mobility_points(),
+      link_count: self.link_count(),
       link_points: self.link_points(),
       community_points: self.community_points(),
       auto_docked_points: self.auto_docked_points(),

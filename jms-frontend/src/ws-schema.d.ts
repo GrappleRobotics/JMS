@@ -658,6 +658,7 @@ export interface DerivedScore {
   auto_docked_points: number;
   community_points: ModeScoreForInt;
   endgame_points: number;
+  link_count: number;
   link_points: number;
   meets_coopertition: boolean;
   mobility_points: number;

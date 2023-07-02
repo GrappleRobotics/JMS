@@ -904,6 +904,7 @@
         "auto_docked_points",
         "community_points",
         "endgame_points",
+        "link_count",
         "link_points",
         "meets_coopertition",
         "mobility_points",
@@ -929,6 +930,10 @@
           "$ref": "#/definitions/ModeScore_for_int"
         },
         "endgame_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "link_count": {
           "type": "integer",
           "format": "int"
         },
