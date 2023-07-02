@@ -18,7 +18,7 @@ pub type NetworkResult<T> = anyhow::Result<T>;
 
 #[async_trait]
 pub trait NetworkProvider {
-  async fn configure(&self, stations: &[AllianceStation]) -> NetworkResult<()>;
+  async fn configure(&self, stations: &[AllianceStation], configure_admin: bool) -> NetworkResult<()>;
 }
 
 #[derive(serde::Serialize, serde::Deserialize, EnumDiscriminants, Clone, Debug)]

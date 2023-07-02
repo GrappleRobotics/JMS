@@ -158,7 +158,7 @@ impl OnboardNetwork {
 
 #[async_trait::async_trait]
 impl NetworkProvider for OnboardNetwork {
-  async fn configure(&self, stations: &[AllianceStation]) -> super::NetworkResult<()> {
+  async fn configure(&self, stations: &[AllianceStation], configure_admin: bool) -> super::NetworkResult<()> {
     info!("Onboard Network Config Begin...");
     self.configure_ip_addrs(stations).await?;
     let fut_dhcp = self.configure_dhcp(stations);
@@ -178,7 +178,7 @@ impl NetworkProvider for OnboardNetwork {
       .collect();
 
     if let Some(ref radio) = self.radio {
-      radio.configure(&team_radios[..]).await?;
+      radio.configure(&team_radios[..], configure_admin).await?;
     }
 
     try_join!(fut_dhcp, fut_firewall)?;

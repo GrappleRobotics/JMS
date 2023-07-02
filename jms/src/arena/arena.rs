@@ -113,7 +113,7 @@ impl ArenaImpl {
     let sigchan = mpsc::channel(32);
     Self {
       state: ArenaLock::new(ArenaState::Init),
-      state_has_changed: AtomicBool::new(false),
+      state_has_changed: AtomicBool::new(true),
       audience: ArenaLock::new(AudienceDisplay::Field),
       signal_channel: (sigchan.0, ArenaLock::new(sigchan.1)),
       shutdown: AtomicBool::new(false),
@@ -213,7 +213,17 @@ impl ArenaImpl {
 
     match state {
       ArenaState::Init => {
-        self.set_state(ArenaState::Idle { net_ready: false } ).await
+        if first {
+          // Only configure the admin network the first time around
+          self.start_network_config(true).await;
+        }
+
+        if let Some(result) = self.poll_network().await {
+          match result {
+            Err(e) => anyhow::bail!("Network Configuration Error: {:?}", e),
+            Ok(_) => { self.set_state(ArenaState::Idle { net_ready: false } ).await }
+          }
+        }
       },
       ArenaState::Estop => {
         if let Some(m) = &mut *current_match {
@@ -228,7 +238,7 @@ impl ArenaImpl {
       ArenaState::Idle { net_ready: false } => {
         // Idle Not Ready
         if first {
-          self.start_network_config().await;
+          self.start_network_config(false).await;
 
           // Need to drop the current match since unload_match() takes the lock
           // It's messy, but it's the tradeoff we have for having the match in an RwLock
@@ -271,7 +281,7 @@ impl ArenaImpl {
           }
           // Reset scores
           *self.score.write().await = MatchScore::new(3, 3);
-          self.start_network_config().await;
+          self.start_network_config(false).await;
         }
 
         if let Some(result) = self.poll_network().await {
@@ -472,7 +482,7 @@ impl ArenaImpl {
   }
 
   // TODO: Store network config futures in a vec, pop it once it's complete
-  async fn start_network_config(&self) {
+  async fn start_network_config(&self, configure_admin: bool) {
     let mut stations = vec![];
     for stn in &self.stations {
       stations.push(stn.read().await.clone());
@@ -484,7 +494,7 @@ impl ArenaImpl {
         let provider = nw.provider.clone();
         nw.handle = Some(tokio::task::spawn(async move {
           info!("Configuring Network....");
-          provider.configure(&stations[..]).await
+          provider.configure(&stations[..], configure_admin).await
         }));
       },
       None => (),
