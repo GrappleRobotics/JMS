@@ -43,11 +43,10 @@ impl DBBackup {
           };
         },
         _ = interval.tick() => {
-          // TODO: Arena Backup
-          // let arena = self.arena.lock().await;
-          // if arena.can_backup() {
-          //   update = true;
-          // }
+          info!("Backup Tick");
+          if self.arena.can_backup().await {
+            update = true;
+          }
         }
       }
 

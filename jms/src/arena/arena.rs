@@ -37,6 +37,10 @@ impl Arena {
     self.a.score.read().await.clone()
   }
 
+  pub async fn can_backup(&self) -> bool {
+    self.a.can_backup().await
+  }
+
   pub async fn stations(&self) -> Vec<AllianceStation> {
     let mut stns = vec![];
     for stn in &self.a.stations {
@@ -140,6 +144,14 @@ impl ArenaImpl {
         ArenaLock::new(vec![]),
       ],
       resources: ArenaLock::new(Resources::new())
+    }
+  }
+
+  pub async fn can_backup(&self) -> bool {
+    match *self.state.read().await {
+      ArenaState::MatchArmed | ArenaState::MatchPlay => false,
+      ArenaState::MatchComplete { net_ready: _ } => false,
+      _ => true,
     }
   }
 
