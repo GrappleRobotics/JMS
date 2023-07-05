@@ -118,17 +118,21 @@
       padding: 0;
 
       .scorer-gamepiece {
-        width: 6vw;
-        height: 6vw;
         margin: 2vw;
         &[data-gamepiece="None"] {
           visibility: hidden;
         }
         &[data-gamepiece="Cube"] {
+          width: 6vw;
+          height: 6vw;
           background-color: theme-color("purple");
         }
         &[data-gamepiece="Cone"] {
-          background-color: theme-color("yellow");
+          margin-top: -1vw;
+          height: 0;
+          width: 0;
+          border: 3vw solid transparent;
+          border-bottom: 6vw solid theme-color("yellow");
         }
       }
     }
