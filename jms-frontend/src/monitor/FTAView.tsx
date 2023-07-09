@@ -1,5 +1,6 @@
 import { IconDefinition, faCode, faNetworkWired, faRobot, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { ResourceRequirementMinimap } from "components/ResourceComponents";
 import { confirmModal } from "components/elements/Confirm";
 import MatchFlow from "match_control/MatchFlow";
 import { CSA } from "paths";
@@ -7,16 +8,19 @@ import React from "react";
 import { Button, Col, Modal, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { capitalise } from "support/strings";
+import { withVal } from "support/util";
 import { ALLIANCES, ALLIANCE_STATIONS } from "support/ws-additional";
 import { WebsocketComponent } from "support/ws-component";
-import { Alliance, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedAllianceStation, SupportTicket } from "ws-schema";
+import { Alliance, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedAllianceStation, SerialisedMatchGeneration, SerializedMatch, SupportTicket } from "ws-schema";
 
 type FTAViewState = {
   stations: SerialisedAllianceStation[],
   state?: ArenaState,
   match?: LoadedMatch,
   resource_status?: ResourceRequirementStatus,
-  tickets?: SupportTicket[]
+  tickets?: SupportTicket[],
+  quals?: SerialisedMatchGeneration,
+  playoffs?: SerialisedMatchGeneration
 }
 
 export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAViewState> {
@@ -27,7 +31,9 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
     this.listen("Arena/Match/Current", "match"),
     this.listen("Arena/Alliance/CurrentStations", "stations"),
     this.listen("Resource/Requirements/Current", "resource_status"),
-    this.listen("Ticket/All", "tickets")
+    this.listen("Ticket/All", "tickets"),
+    this.listen("Match/Quals/Generation", "quals"),
+    this.listen("Match/Playoffs/Generation", "playoffs"),
   ];
 
   render() {
@@ -54,11 +60,35 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
       </Row>
       <Row className="fta-view-full">
         <Col className="fta-view-col fta-view-col-left">
-        
+          <h6> Matches </h6>
+          {
+            this.state.match ?
+              <Button size="sm" className="btn-block" variant="danger" disabled={this.state.state?.state !== "Idle"} onClick={() => this.send({ Arena: { Match: "Unload" } })}>UNLOAD MATCH</Button> :
+              <Button size="sm" className="btn-block" variant="warning" disabled={this.state.state?.state !== "Idle"} onClick={() => this.send({ Arena: { Match: "LoadTest" } })}>TEST MATCH</Button>
+          }
+          {
+            [ ...(this.state.quals?.matches || []), ...(this.state.playoffs?.matches || []) ].filter(m => !m.played).map(match => <React.Fragment>
+              <Button
+                size="sm"
+                className="btn-block my-2"
+                variant="secondary"
+                disabled={this.state.match != undefined}
+                onClick={() => this.send({ Arena: { Match: { Load: match.id! } } })}
+              >
+                Load { match.name }
+              </Button>
+            </React.Fragment>)
+          }
         </Col>
-        <Col className="fta-view-col fta-view-col-middle">
+        {
+          withVal(this.state.resource_status, status => <Col className="fta-view-col fta-view-col-middle">
+            <h6> Resource Status  </h6>
+            <Row>
+              <ResourceRequirementMinimap status={status} />
+            </Row>
+          </Col>)
+        }
         
-        </Col>
         <Col className="fta-view-col fta-view-col-right">
           <h6> Support Tickets </h6>
           { this.state.tickets && this.state.stations && <FTATicketView tickets={this.state.tickets} stations={this.state.stations} /> }

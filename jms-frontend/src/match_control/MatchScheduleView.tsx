@@ -29,18 +29,6 @@ export default class MatchScheduleView extends React.Component<MatchScheduleProp
 
   isLoaded = (match: SerializedMatch) => match.id !== undefined && this.props.currentMatch?.match_meta?.id === match.id;
 
-  // rowClass = (match) => {
-  //   if (this.isLoaded(match)) {
-  //     return "loaded-match";
-  //   } else if (match.played) {
-  //     return "played";
-  //   } else if (this.isNextMatch(match)) {
-  //     return "next-match";
-  //   } else {
-  //     return "";
-  //   }
-  // }
-
   howLongUntil = (match: SerializedMatch) => {
     // @ts-ignore
     let format = (d: moment.Duration) => d.format("d[d] h[h] m[m]", {trim: "both"});

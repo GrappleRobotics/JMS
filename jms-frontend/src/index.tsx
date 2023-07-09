@@ -7,9 +7,11 @@ import { WebsocketManagerComponent } from 'support/ws-component';
 import './App.scss';
 
 // Ensure only the current loaded page has a resource id attached - duplicates should be cleared
+console.log("PreID")
 resource_id_lock();
 
 // Small address bar on iOS 
+console.log("Preload")
 window.addEventListener("load",function() {
     setTimeout(function(){
         window.scrollTo(0, 1);
@@ -18,6 +20,7 @@ window.addEventListener("load",function() {
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
+console.log("Prerender")
 root.render(
   <BrowserRouter>
     <WebsocketManagerComponent>
@@ -25,3 +28,4 @@ root.render(
     </WebsocketManagerComponent>
   </BrowserRouter>
 );
+console.log("Postrender")
