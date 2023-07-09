@@ -2,6 +2,7 @@ import { IconDefinition, faCode, faNetworkWired, faRobot, faWifi } from "@fortaw
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ResourceRequirementMinimap } from "components/ResourceComponents";
 import { confirmModal } from "components/elements/Confirm";
+import newTicket from "csa/NewTicket";
 import MatchFlow from "match_control/MatchFlow";
 import { CSA } from "paths";
 import React from "react";
@@ -11,7 +12,7 @@ import { capitalise } from "support/strings";
 import { withVal } from "support/util";
 import { ALLIANCES, ALLIANCE_STATIONS } from "support/ws-additional";
 import { WebsocketComponent } from "support/ws-component";
-import { Alliance, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedAllianceStation, SerialisedMatchGeneration, SerializedMatch, SupportTicket } from "ws-schema";
+import { Alliance, ArenaMessageAlliance2JMS, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedAllianceStation, SerialisedMatchGeneration, SerializedMatch, SupportTicket } from "ws-schema";
 
 type FTAViewState = {
   stations: SerialisedAllianceStation[],
@@ -42,7 +43,13 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
       <Row>
         {
           this.state.stations.map(station => <Col className="fta-alliance-station-col">
-            <FTAAllianceStation station={station} state={this.state.state} match={this.state.match} />
+            <FTAAllianceStation
+              station={station}
+              state={this.state.state}
+              match={this.state.match}
+              onUpdate={update => this.send({ Arena: { Alliance: { UpdateAlliance: update } } })}
+              newTicket={ticket => this.send({ Ticket: { Insert: ticket } })}
+            />
           </Col>)
         }
       </Row>
@@ -101,7 +108,9 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
 type FTAAllianceStationProps = {
   station: SerialisedAllianceStation,
   state?: ArenaState,
-  match?: LoadedMatch
+  match?: LoadedMatch,
+  onUpdate: (update: ArenaMessageAlliance2JMS["UpdateAlliance"]) => void,
+  newTicket: (ticket: SupportTicket) => void
 }
 
 class FTAAllianceStation extends React.PureComponent<FTAAllianceStationProps> {
@@ -113,7 +122,20 @@ class FTAAllianceStation extends React.PureComponent<FTAAllianceStationProps> {
       title: `${capitalise(station.station.alliance)} ${station.station.station} - ${station.team || "Unoccupied"}`,
       render: (ok: (data?: any) => void, cancel: () => void) => <React.Fragment>
         <Modal.Body className="fta-team-modal">
-          Hello!
+          <hr />
+          <Button
+            size="lg"
+            className="btn-block my-2"
+            variant="orange"
+            onClick={() => { newTicket("FTA", this.props.station.team!, this.props.match!.match_meta, this.props.newTicket); cancel() }}
+          >Flag Issue for CSA</Button>
+          <hr />
+          <Button
+            size="lg"
+            className="btn-block my-2"
+            variant="estop"
+            onClick={() => { this.props.onUpdate({ station: this.props.station.station, estop: true }); cancel() }}
+          >EMERGENCY STOP {station.team}</Button>
         </Modal.Body>
         <Modal.Footer>
           <Button size="lg" className="btn-block" variant="secondary" onClick={cancel}>Cancel</Button>
