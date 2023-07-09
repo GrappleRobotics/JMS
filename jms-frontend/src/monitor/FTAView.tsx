@@ -255,10 +255,10 @@ class FTATicketView extends React.PureComponent<FTATicketViewProps> {
       {
         filtered_tickets.map(ticket => <Link to={CSA + "/" + ticket.id!}>
           <Row className="fta-ticket" data-resolved={ticket.resolved}>
-            <Col md={2}> { ticket.team } </Col>
+            <Col md={3}> Team { ticket.team } </Col>
             <Col md={2}> { ticket.match_id } </Col>
             <Col md={4}> { ticket.issue_type } </Col>
-            <Col md={4} className="text-muted"> { ticket.assigned_to || "Unassigned" } </Col>
+            <Col md={3} className="text-muted"> { ticket.assigned_to || "Unassigned" } </Col>
           </Row>
         </Link>)
       }
