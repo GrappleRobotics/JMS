@@ -1,6 +1,16 @@
 .fta-view {
+  position: absolute;
+  height: 100%;
+  overflow: hidden;
+
   > .row {
     padding: 0;
+    flex-grow: 0;
+  }
+
+  .fta-view-full {
+    flex-grow: 1;
+    overflow: hidden;
   }
 }
 
@@ -69,5 +79,34 @@
   margin-top: 1vh;
   .match-flow-btn {
     font-size: 1.2vw !important;
+  }
+}
+
+.fta-view-col {
+  margin: 0.5em 0.25em;
+  padding: 0.4em;
+  font-size: 1vw;
+  text-align: center;
+  background-color: $gray-800;
+  border-radius: 1em;
+  overflow: scroll;
+  max-height: 100%;
+
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.fta-ticket {
+  color: white;
+  background-color: $gray-900;
+  margin: 0.5em 0.25em;
+  padding: 0.5em 0.25em;
+  border-radius: 1em;
+
+  &[data-resolved=true] {
+    background-color: darken(theme-color("success"), 25%);
   }
 }

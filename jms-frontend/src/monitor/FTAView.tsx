@@ -2,18 +2,21 @@ import { IconDefinition, faCode, faNetworkWired, faRobot, faWifi } from "@fortaw
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { confirmModal } from "components/elements/Confirm";
 import MatchFlow from "match_control/MatchFlow";
+import { CSA } from "paths";
 import React from "react";
 import { Button, Col, Modal, Row } from "react-bootstrap";
+import { Link } from "react-router-dom";
 import { capitalise } from "support/strings";
 import { ALLIANCES, ALLIANCE_STATIONS } from "support/ws-additional";
 import { WebsocketComponent } from "support/ws-component";
-import { Alliance, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedAllianceStation } from "ws-schema";
+import { Alliance, ArenaState, LoadedMatch, ResourceRequirementStatus, SerialisedAllianceStation, SupportTicket } from "ws-schema";
 
 type FTAViewState = {
   stations: SerialisedAllianceStation[],
   state?: ArenaState,
   match?: LoadedMatch,
   resource_status?: ResourceRequirementStatus,
+  tickets?: SupportTicket[]
 }
 
 export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAViewState> {
@@ -23,12 +26,13 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
     this.listen("Arena/State/Current", "state"),
     this.listen("Arena/Match/Current", "match"),
     this.listen("Arena/Alliance/CurrentStations", "stations"),
-    this.listen("Resource/Requirements/Current", "resource_status")
+    this.listen("Resource/Requirements/Current", "resource_status"),
+    this.listen("Ticket/All", "tickets")
   ];
 
   render() {
     const hasMatch = !!this.state.match;
-    return <div className="fta-view">
+    return <Col className="fta-view col-full">
       <Row>
         {
           this.state.stations.map(station => <Col className="fta-alliance-station-col">
@@ -48,7 +52,19 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
           />
         </Col>
       </Row>
-    </div>
+      <Row className="fta-view-full">
+        <Col className="fta-view-col fta-view-col-left">
+        
+        </Col>
+        <Col className="fta-view-col fta-view-col-middle">
+        
+        </Col>
+        <Col className="fta-view-col fta-view-col-right">
+          <h6> Support Tickets </h6>
+          { this.state.tickets && this.state.stations && <FTATicketView tickets={this.state.tickets} stations={this.state.stations} /> }
+        </Col>
+      </Row>
+    </Col>
   }
 }
 
@@ -189,5 +205,33 @@ class FTATeamIndicator extends React.PureComponent<FTATeamIndicatorProps> {
         &nbsp; { this.props.text }
       </React.Fragment> }
     </div>
+  }
+}
+
+type FTATicketViewProps = {
+  tickets: SupportTicket[],
+  stations: SerialisedAllianceStation[]
+}
+
+class FTATicketView extends React.PureComponent<FTATicketViewProps> {
+  render() {
+    const { tickets, stations } = this.props;
+
+    const filtered_tickets = tickets.filter(t => stations.filter(s => s.team === t.team).length > 0);
+
+    if (filtered_tickets.length == 0)
+      return <span className="text-muted"> There are no tickets to display </span>
+    return <React.Fragment>
+      {
+        filtered_tickets.map(ticket => <Link to={CSA + "/" + ticket.id!}>
+          <Row className="fta-ticket" data-resolved={ticket.resolved}>
+            <Col md={2}> { ticket.team } </Col>
+            <Col md={2}> { ticket.match_id } </Col>
+            <Col md={4}> { ticket.issue_type } </Col>
+            <Col md={4} className="text-muted"> { ticket.assigned_to || "Unassigned" } </Col>
+          </Row>
+        </Link>)
+      }
+    </React.Fragment>
   }
 }
