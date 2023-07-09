@@ -7,8 +7,9 @@ import Home from 'Home';
 import update from 'immutability-helper';
 import MatchControl from 'match_control/MatchControl';
 import FieldMonitor from 'monitor/FieldMonitor';
+import FTAView from 'monitor/FTAView';
 import MatchLogs from 'monitor/MatchLogs';
-import { AUDIENCE, AUDIENCE_CONTROL, CSA, DEBUG, ESTOPS, EVENT_WIZARD, LOGS, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
+import { AUDIENCE, AUDIENCE_CONTROL, CSA, DEBUG, ESTOPS, EVENT_WIZARD, FTA, LOGS, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from 'paths';
 import Rankings from 'rankings/Rankings';
 import React from 'react';
 import { Alert, Col, Navbar, Row } from 'react-bootstrap';
@@ -81,6 +82,7 @@ export default class App extends WebsocketComponent<{}, AppState> {
       <Route path={EVENT_WIZARD} element={ this.wrapView(<EventWizard fta={fta} />) } />
       <Route path={MATCH_CONTROL} element={ withRole("ScorekeeperPanel", this.wrapView(<MatchControl fta={fta} />)) } />
       <Route path={MONITOR} element={ withRole("MonitorPanel", this.wrapView(<FieldMonitor fta={fta} />, { fullscreen: true, nopad: true })) } />
+      <Route path={FTA} element={ this.wrapView(<FTAView fta={fta} />, { fullscreen: true, nopad: true }) } />
       <Route path={AUDIENCE_CONTROL} element={ this.wrapView(<AudienceDisplayControl />) } />
       <Route path={`${REFEREE}/*`} element={ this.wrapView(<RefereeRouter />) } />
       <Route path={`${SCORING}/*`} element={ this.wrapView(<ScoringRouter />) } />

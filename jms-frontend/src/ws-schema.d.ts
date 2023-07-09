@@ -90,6 +90,9 @@ export type ArenaState =
       state: "Init";
     }
   | {
+      state: "Reset";
+    }
+  | {
       net_ready: boolean;
       state: "Idle";
     }

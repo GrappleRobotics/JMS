@@ -552,6 +552,20 @@
         {
           "type": "object",
           "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "Reset"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
             "net_ready",
             "state"
           ],
