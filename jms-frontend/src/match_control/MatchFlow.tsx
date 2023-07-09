@@ -22,8 +22,9 @@ type MatchFlowProps = {
   onAudienceDisplay: (display: ArenaMessageAudienceDisplaySet2JMS) => void,
   state?: ArenaState,
   matchLoaded: boolean,
+  bigEstop?: boolean,
   resources?: ResourceRequirementStatus,
-  stations: SerialisedAllianceStation[]
+  stations: SerialisedAllianceStation[],
 };
 
 export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
@@ -40,9 +41,21 @@ export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
   }
 
   render() {
-    let { state, onSignal, matchLoaded, resources, stations } = this.props;
+    let { state, onSignal, matchLoaded, resources, stations, bigEstop } = this.props;
     const teamsOk = stations.every(s => s.can_arm);
     const resourceOk = resources ? resources.ready : true;
+
+    if (state?.state === "Estop") {
+      return <Row>
+        <Col>
+          <MatchFlowButton
+            arenaState={state}
+            variant="estop-reset"
+            onClick={() => this.props.onSignal("EstopReset")}
+          > Reset Emergency Stop </MatchFlowButton>
+        </Col>
+      </Row>
+    }
 
     return <Row>
       <Col>
@@ -51,10 +64,10 @@ export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
             <MatchFlowButton
               arenaState={state}
               targetState="Prestart"
-              onClick={() => onSignal("Prestart")}
+              onClick={() => onSignal(state?.state == "Prestart" ? "PrestartUndo" : "Prestart")}
               disabled={!(matchLoaded && ((state?.state === "Idle" && state.net_ready) || (state?.state === "Prestart" && state.net_ready)))}
             >
-              Prestart
+              { state?.state == "Prestart" ? "Revert Prestart" : "Prestart" }
             </MatchFlowButton>
           </Col>
           <Col>
@@ -102,39 +115,20 @@ export default class MatchFlow extends React.PureComponent<MatchFlowProps> {
             </MatchFlowButton>
           </Col>
         </Row>
-        <br />
         {
-          this.props.state?.state === "Prestart" && this.props.state?.net_ready ?
+          bigEstop && <React.Fragment>
+            <br />
             <Row>
               <Col>
-                <MatchFlowButton
-                  arenaState={state}
-                  targetState="Idle"
-                  onClick={() => this.props.onSignal("PrestartUndo")}
-                  variant="secondary"
-                >
-                  REVERT PRESTART
-                </MatchFlowButton>
-              </Col>
-            </Row> : <React.Fragment />
-        }
-        <Row>
-          <Col>
-            {
-              this.props.state?.state === "Estop" ? 
-                <MatchFlowButton
-                  arenaState={state}
-                  variant="estop-reset"
-                  onClick={() => this.props.onSignal("EstopReset")}
-                > Reset Emergency Stop </MatchFlowButton> :
                 <MatchFlowButton
                   arenaState={state}
                   variant="estop"
                   onClick={() => this.props.onSignal("Estop")}
                 > EMERGENCY STOP </MatchFlowButton>
-            }
-          </Col>
-        </Row>
+              </Col>
+            </Row>
+          </React.Fragment>
+        }
       </Col>
     </Row>
   }

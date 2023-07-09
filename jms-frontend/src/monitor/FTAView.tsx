@@ -1,6 +1,7 @@
 import { IconDefinition, faCode, faNetworkWired, faRobot, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { confirmModal } from "components/elements/Confirm";
+import MatchFlow from "match_control/MatchFlow";
 import React from "react";
 import { Button, Col, Modal, Row } from "react-bootstrap";
 import { capitalise } from "support/strings";
@@ -26,6 +27,7 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
   ];
 
   render() {
+    const hasMatch = !!this.state.match;
     return <div className="fta-view">
       <Row>
         {
@@ -33,6 +35,18 @@ export default class FTAView extends WebsocketComponent<{ fta: boolean }, FTAVie
             <FTAAllianceStation station={station} state={this.state.state} match={this.state.match} />
           </Col>)
         }
+      </Row>
+      <Row>
+        <Col className="fta-match-flow">
+          <MatchFlow
+            state={this.state.state}
+            matchLoaded={hasMatch}
+            onSignal={sig => this.send({ Arena: { State: { Signal: sig } } })}
+            onAudienceDisplay={scene => this.send({ Arena: { AudienceDisplay: { Set: scene } } })}
+            resources={this.state.resource_status}
+            stations={this.state.stations}
+          />
+        </Col>
       </Row>
     </div>
   }
