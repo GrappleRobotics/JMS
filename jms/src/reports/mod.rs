@@ -1,8 +1,11 @@
+use std::io::Write;
+
 use chrono::Local;
 use genpdf::{
   elements::{self, Paragraph, TableLayout},
   fonts, style, Alignment, Document, Element,
 };
+use rust_embed::RustEmbed;
 
 pub mod award_report;
 pub mod match_report;
@@ -10,9 +13,25 @@ pub mod rankings_report;
 pub mod team_report;
 pub mod wpa_report;
 
+#[derive(RustEmbed)]
+#[folder = "fonts"]
+struct Fonts;
+
 // TODO: Embed into binary
 pub fn pdf_font() -> fonts::FontFamily<fonts::FontData> {
-  fonts::from_files("./fonts", "Helvetica", None).unwrap()
+  let font_path = std::path::Path::new("/tmp/jms/fonts");
+  if !font_path.exists() {
+    info!("Extracting Fonts.");
+    std::fs::create_dir_all(font_path).unwrap();
+    for filename in Fonts::iter() {
+      let content = Fonts::get(&filename).unwrap();
+      let fpath = font_path.join(&*filename);
+      std::fs::File::create(fpath).unwrap().write_all(&content).unwrap();
+    }
+    info!("Fonts Extracted.");
+  }
+
+  fonts::from_files(font_path.to_str().unwrap(), "Helvetica", None).unwrap()
 }
 
 pub fn render_header(doc: &mut Document, title: &str, subtitle: &str) {
