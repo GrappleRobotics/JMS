@@ -63,7 +63,7 @@ export default class Home extends React.PureComponent<{ fta: boolean }> {
         <HomeTile name="Referee Panels" href={REFEREE} img="referee.jpg"> Referee matches, control the field, and score robot endgames. </HomeTile>
         <HomeTile name="Scorer Panels" href={SCORING} img="scorers.jpg"> Score matches manually when automated scoring is not available. </HomeTile>
         <HomeTile name="Field Timer" href={TIMER} img="timer.png"> Field timer display for teams on the field. </HomeTile>
-        <HomeTile name="Emergency Stops" href={ESTOPS} img="estop.png"> Tablet-based emergency stops when physical emergency stop buttons are not available. </HomeTile>
+        <HomeTile name="Emergency Stops" href={ESTOPS} img="estop.png"> Tablet-based emergency stops. </HomeTile>
       </HomeTileRow>
 
       <HomeTileSep> In the Stands </HomeTileSep>
