@@ -13,3 +13,4 @@ export const ESTOPS = "/estops";
 export const DEBUG = "/debug";
 export const CSA = "/csa";
 export const LOGS = "/logs";
+export const FTA = "/fta";

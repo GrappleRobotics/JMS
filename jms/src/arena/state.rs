@@ -5,6 +5,7 @@ use serde::{Serialize, Deserialize};
 #[serde(tag = "state")]
 pub enum ArenaState {
   Init,
+  Reset,
   Idle { net_ready: bool },
   Estop,
   Prestart { net_ready: bool },

@@ -113,7 +113,7 @@ impl FieldLights {
     let mut let_state_based = false;
 
     match arena.state().await {
-      ArenaState::Init => { },
+      ArenaState::Init | ArenaState::Reset => { },
       ArenaState::Idle { .. } => { },
       ArenaState::Estop => {
         // Set lights to alternate red  / black

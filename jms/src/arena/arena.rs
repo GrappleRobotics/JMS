@@ -184,7 +184,7 @@ impl ArenaImpl {
   pub async fn unload_match(&self) -> anyhow::Result<()> {
     let state = self.state.read().await;
     match &*state {
-      ArenaState::Idle { .. } => {
+      ArenaState::Idle { .. } | ArenaState::Reset => {
         *self.current_match.write().await = None;
         self.reset_stations().await;
         Ok(())
@@ -227,13 +227,13 @@ impl ArenaImpl {
       ArenaState::Init => {
         if first {
           // Only configure the admin network the first time around
-          self.start_network_config(true).await;
+          self.start_network_config(false, true).await;
         }
 
         if let Some(result) = self.poll_network().await {
           match result {
             Err(e) => anyhow::bail!("Network Configuration Error: {:?}", e),
-            Ok(_) => { self.set_state(ArenaState::Idle { net_ready: false } ).await }
+            Ok(_) => { self.set_state(ArenaState::Reset).await }
           }
         }
       },
@@ -243,20 +243,23 @@ impl ArenaImpl {
         }
 
         if signal == Some(ArenaSignal::EstopReset) {
-          self.set_state(ArenaState::Idle { net_ready: false }).await
+          self.set_state(ArenaState::Reset).await
         }
       },
+      ArenaState::Reset  => {
+        // Need to drop the current match since unload_match() takes the lock
+        // It's messy, but it's the tradeoff we have for having the match in an RwLock
+        drop(current_match);
+        self.unload_match().await?;
+        current_match = self.current_match.write().await;
 
+        self.set_state(ArenaState::Idle { net_ready: false }).await
+      }
       ArenaState::Idle { net_ready: false } => {
         // Idle Not Ready
         if first {
-          self.start_network_config(false).await;
-
-          // Need to drop the current match since unload_match() takes the lock
-          // It's messy, but it's the tradeoff we have for having the match in an RwLock
-          drop(current_match);
-          self.unload_match().await?;
-          current_match = self.current_match.write().await;
+          self.resources.write().await.reset_all();
+          self.start_network_config(true, false).await;
         }
 
         if let Some(result) = self.poll_network().await {
@@ -293,7 +296,7 @@ impl ArenaImpl {
           }
           // Reset scores
           *self.score.write().await = MatchScore::new(3, 3);
-          self.start_network_config(false).await;
+          self.start_network_config(true, false).await;
         }
 
         if let Some(result) = self.poll_network().await {
@@ -339,7 +342,6 @@ impl ArenaImpl {
         }
       },
       ArenaState::MatchPlay => {
-        // TODO: Station records
         let current_match = current_match.as_mut().unwrap();
         if first {
           *self.audience.write().await = AudienceDisplay::MatchPlay;
@@ -354,7 +356,9 @@ impl ArenaImpl {
         }
       },
       ArenaState::MatchComplete { net_ready: false }  => {
-        // TODO: Commit station records
+        if first {
+          self.start_network_config(false, false).await;
+        }
 
         if let Some(result) = self.poll_network().await {
           match result {
@@ -374,7 +378,7 @@ impl ArenaImpl {
           *self.audience.write().await = AudienceDisplay::MatchResults(models::SerializedMatch::from(m.clone()));
           // Reset scores
           *self.score.write().await = MatchScore::new(3, 3);
-          self.set_state(ArenaState::Idle { net_ready: false }).await;
+          self.set_state(ArenaState::Reset).await;
         }
       }
     }
@@ -494,10 +498,12 @@ impl ArenaImpl {
   }
 
   // TODO: Store network config futures in a vec, pop it once it's complete
-  async fn start_network_config(&self, configure_admin: bool) {
+  async fn start_network_config(&self, has_teams: bool, configure_admin: bool) {
     let mut stations = vec![];
-    for stn in &self.stations {
-      stations.push(stn.read().await.clone());
+    if has_teams {
+      for stn in &self.stations {
+          stations.push(stn.read().await.clone());
+      } 
     }
 
     let mut nw = self.network.write().await;

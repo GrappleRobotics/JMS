@@ -114,6 +114,7 @@ export default class MatchControl extends WebsocketComponent<{ fta: boolean }, M
             onSignal={sig => this.send({ Arena: { State: { Signal: sig } } })}
             onAudienceDisplay={scene => this.send({ Arena: { AudienceDisplay: { Set: scene } } })}
             resources={ resource_status }
+            bigEstop
             stations={arena.stations || []}
           />
         </Col>

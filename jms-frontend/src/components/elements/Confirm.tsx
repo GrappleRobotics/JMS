@@ -19,6 +19,8 @@ type ConfirmModalOptions<T> = {
   okVariant?: string,
   cancelVariant?: string,
 
+  cancelIfBackdrop?: boolean,
+
   renderInner?: (data: T, onUpdate: (data: T) => void, ok: () => void, cancel: () => void) => React.ReactNode,
   data?: T
 } & Omit<React.ComponentProps<typeof Modal>, "show" | "onHide">;
@@ -35,7 +37,7 @@ export class ConfirmModal extends React.Component<ConfirmModalProps<any>, { data
   }
 
   render() {
-    const { className, title, confirmation, show, proceed, cancel, dismiss, render, renderInner, okBtn, cancelBtn, okText, cancelText, okVariant, cancelVariant, ...props } = this.props;
+    const { className, title, confirmation, show, proceed, cancel, dismiss, render, renderInner, okBtn, cancelBtn, okText, cancelText, cancelIfBackdrop, okVariant, cancelVariant, ...props } = this.props;
 
     // @ts-ignore
     const okFn = (data?: any) => proceed(data);
@@ -44,7 +46,7 @@ export class ConfirmModal extends React.Component<ConfirmModalProps<any>, { data
     return <Modal
       show={show}
       onHide={cancelFn}
-      backdrop="static"
+      backdrop={cancelIfBackdrop ? undefined : "static"}
       centered
       { ...props }
     >

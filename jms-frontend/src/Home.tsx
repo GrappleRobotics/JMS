@@ -1,4 +1,4 @@
-import { AUDIENCE, AUDIENCE_CONTROL, CSA, DEBUG, ESTOPS, EVENT_WIZARD, LOGS, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
+import { AUDIENCE, AUDIENCE_CONTROL, CSA, DEBUG, ESTOPS, EVENT_WIZARD, FTA, LOGS, MATCH_CONTROL, MONITOR, RANKINGS, RANKINGS_NO_SCROLL, REFEREE, REPORTS, SCORING, TIMER } from "paths";
 import React from "react";
 import { Card, Col, Container, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
@@ -45,6 +45,9 @@ export default class Home extends React.PureComponent<{ fta: boolean }> {
       <HomeTileRow>
         <HomeTile name="Event Wizard" href={EVENT_WIZARD} img="wizard.jpg"> Configure your event, generate schedules, and give out awards. </HomeTile>
         <HomeTile name="Match Control" href={MATCH_CONTROL} img="matchcontrol.jpg"> Scorekeeper controls for match flow. </HomeTile>
+        {
+          fta && <HomeTile name="FTA" href={FTA}> FTA Controls </HomeTile>
+        }
         <HomeTile name="Field Monitor" href={MONITOR} img="fieldmon.png"> Monitor the status of robots on the field. </HomeTile>
         <HomeTile name="Reports" href={REPORTS} img="reports.jpg"> Generate schedule, team, and advancement reports. </HomeTile>
         <HomeTile name="A/V Controls" href={AUDIENCE_CONTROL} img="audiencecontrol.jpg"> Control the Audience Display from the AV Desk. </HomeTile>
@@ -60,7 +63,7 @@ export default class Home extends React.PureComponent<{ fta: boolean }> {
         <HomeTile name="Referee Panels" href={REFEREE} img="referee.jpg"> Referee matches, control the field, and score robot endgames. </HomeTile>
         <HomeTile name="Scorer Panels" href={SCORING} img="scorers.jpg"> Score matches manually when automated scoring is not available. </HomeTile>
         <HomeTile name="Field Timer" href={TIMER} img="timer.png"> Field timer display for teams on the field. </HomeTile>
-        <HomeTile name="Emergency Stops" href={ESTOPS} img="estop.png"> Tablet-based emergency stops when physical emergency stop buttons are not available. </HomeTile>
+        <HomeTile name="Emergency Stops" href={ESTOPS} img="estop.png"> Tablet-based emergency stops. </HomeTile>
       </HomeTileRow>
 
       <HomeTileSep> In the Stands </HomeTileSep>

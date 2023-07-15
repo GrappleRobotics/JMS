@@ -37,6 +37,9 @@ $accordion-button-active-color: white;
 
 $alliances: ( "red", "blue" );
 
+$web-font-path: "";     // Darkly tries to load a webfont, which will block execution on some devices if we're operating without
+                        // an internet connection. This will prevent that loading.
+
 @import "~bootstrap/scss/bootstrap";
 @import "~react-datetime/css/react-datetime.css";
 @import "~react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css";
@@ -134,6 +137,7 @@ html, body, #root {
   flex-grow: 1;
   padding: 20px;
   overflow-y: scroll;
+  position: relative;
 
   &.fullscreen {
     overflow: hidden;
@@ -691,4 +695,5 @@ th {
 @import "wizard/EventWizard.scss";
 @import "scoring/Scoring.scss";
 @import "monitor/FieldMonitor.scss";
+@import "monitor/FTAView.scss";
 @import "csa/CSA.scss";
