@@ -1,6 +1,6 @@
 import { RecvMeta, ResourceRole, SendMeta, WebsocketMessage2JMS, WebsocketMessage2UI } from "ws-schema";
 import { v4 as uuid } from 'uuid';
-import resource_id from "./resourceid";
+import resource_id, { clear_fta_key, get_fta_key } from "./resourceid";
 
 export type CallbackFn<T> = (msg: T, fullMessage: WebsocketMessage2UI) => void;
 export type ConnectCallback = (isOpen: boolean) => void;
@@ -78,6 +78,13 @@ export default class JmsWebsocket {
       console.log("WS Connected");
       setTimeout(() => {
         this.send({ Resource: { SetID: resource_id() } });
+        if (get_fta_key() != null) {
+          this.transact({ Resource: { SetFTA: get_fta_key() } }, "Resource/SetFTAAck")
+            .then(b => {
+              if (!b.msg)
+                clear_fta_key();
+            })
+        }
         // this.transact<any>({ Resource: { SetID: resource_id() } }, [])
         //   .then(() => {
         //     console.log("WS Ack'd ID");
@@ -128,7 +135,6 @@ export default class JmsWebsocket {
           console.warn(`Got a reply for SID ${meta.reply} but there are no waiting promises!`);
         }
       } else if (message === "Ping") {
-        console.log(message);
         this.send("Pong");
       } else {
         // Trigger all callbacks whom apply

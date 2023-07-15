@@ -81,9 +81,6 @@ export type ArenaMessage2UI =
     }
   | {
       AudienceDisplay: ArenaMessageAudienceDisplay2UI;
-    }
-  | {
-      Access: ArenaMessageAccess2UI;
     };
 export type ArenaMessageState2UI = {
   Current: ArenaState;
@@ -93,17 +90,17 @@ export type ArenaState =
       state: "Init";
     }
   | {
-      ready: boolean;
+      state: "Reset";
+    }
+  | {
+      net_ready: boolean;
       state: "Idle";
     }
   | {
       state: "Estop";
     }
   | {
-      state: "EstopReset";
-    }
-  | {
-      ready: boolean;
+      net_ready: boolean;
       state: "Prestart";
     }
   | {
@@ -113,11 +110,8 @@ export type ArenaState =
       state: "MatchPlay";
     }
   | {
-      ready: boolean;
+      net_ready: boolean;
       state: "MatchComplete";
-    }
-  | {
-      state: "MatchCommit";
     };
 export type ArenaMessageAlliance2UI = {
   CurrentStations: SerialisedAllianceStation[];
@@ -125,11 +119,16 @@ export type ArenaMessageAlliance2UI = {
 export type DSMode = "Teleop" | "Test" | "Auto";
 export type AllianceStationOccupancy = "Vacant" | "Occupied" | "WrongStation" | "WrongMatch";
 export type Alliance = "blue" | "red";
-export type ArenaMessageMatch2UI = {
-  Current: LoadedMatch | null;
-};
+export type ArenaMessageMatch2UI =
+  | {
+      Current: LoadedMatch | null;
+    }
+  | {
+      Score: MatchScoreSnapshot;
+    };
 export type WinStatus = "WIN" | "LOSS" | "TIE";
-export type EndgamePointType = "None" | "Low" | "Mid" | "High" | "Traversal";
+export type GamepieceType = "None" | "Cone" | "Cube";
+export type EndgameType = "None" | "Parked" | "Docked";
 export type MatchSubtype = "Quarterfinal" | "Semifinal" | "Final";
 export type MatchType = "Test" | "Qualification" | "Playoff";
 export type MatchPlayState = "Waiting" | "Warmup" | "Auto" | "Pause" | "Teleop" | "Cooldown" | "Complete" | "Fault";
@@ -168,10 +167,6 @@ export type AudienceDisplay =
       params: string;
       scene: "CustomMessage";
     };
-export type ArenaMessageAccess2UI = {
-  Current: ArenaAccessRestriction;
-};
-export type ArenaAccessRestriction = "NoRestriction" | "ResetOnly" | "Teams";
 export type MatchMessage2UI =
   | {
       Quals: MatchMessageQuals2UI;
@@ -206,7 +201,7 @@ export type MatchGenerationRecordData =
         mode: PlayoffMode;
       };
     };
-export type PlayoffMode = "Bracket" | "RoundRobin";
+export type PlayoffMode = "Bracket" | "DoubleBracket" | "RoundRobin";
 export type MatchMessagePlayoffs2UI = {
   Generation: SerialisedMatchGeneration;
 };
@@ -219,6 +214,9 @@ export type ResourceMessage2UI =
     }
   | {
       SetIDACK: string;
+    }
+  | {
+      SetFTAAck: boolean;
     }
   | {
       Requirements: ResourceMessageRequirements2UI;
@@ -244,8 +242,6 @@ export type RefereeID =
       Alliance: [Alliance, NearFar];
     };
 export type NearFar = "near" | "far";
-export type ScorerPair = "AB" | "CD";
-export type GoalHeight = "low" | "high";
 export type ResourceMessageRequirements2UI = {
   Current: ResourceRequirementStatus | null;
 };
@@ -385,17 +381,16 @@ export type ArenaMessage2JMS =
     }
   | {
       AudienceDisplay: ArenaMessageAudienceDisplay2JMS;
-    }
-  | {
-      Access: ArenaMessageAccess2JMS;
     };
 export type ArenaMessageState2JMS = {
   Signal: ArenaSignal;
 };
 export type ArenaSignal =
-  | ("Estop" | "EstopReset" | "Prestart" | "MatchPlay" | "MatchCommit" | "Idle")
+  | ("Estop" | "EstopReset" | "Prestart" | "PrestartUndo" | "MatchPlay" | "MatchCommit")
   | {
-      MatchArm: boolean;
+      MatchArm: {
+        force: boolean;
+      };
     };
 export type ArenaMessageAlliance2JMS = {
   UpdateAlliance: {
@@ -416,29 +411,33 @@ export type ArenaMessageMatch2JMS =
     };
 export type ScoreUpdate =
   | {
-      Taxi: {
+      Mobility: {
         crossed: boolean;
         station: number;
       };
     }
   | {
-      Cargo: {
+      Community: {
         auto: boolean;
-        /**
-         * @minItems 4
-         * @maxItems 4
-         */
-        lower?: [number, number, number, number];
-        /**
-         * @minItems 4
-         * @maxItems 4
-         */
-        upper?: [number, number, number, number];
+        col: number;
+        gamepiece: GamepieceType;
+        row: number;
+      };
+    }
+  | {
+      AutoDocked: {
+        docked: boolean;
+      };
+    }
+  | {
+      ChargeStationLevel: {
+        auto: boolean;
+        level: boolean;
       };
     }
   | {
       Endgame: {
-        endgame: EndgamePointType;
+        endgame: EndgameType;
         station: number;
       };
     }
@@ -466,9 +465,6 @@ export type ArenaMessageAudienceDisplaySet2JMS =
   | {
       CustomMessage: string;
     };
-export type ArenaMessageAccess2JMS = {
-  Set: ArenaAccessRestriction;
-};
 export type MatchMessage2JMS =
   | {
       Quals: MatchMessageQuals2JMS;
@@ -587,10 +583,14 @@ export interface SerialisedAllianceStation {
   astop: boolean;
   bypass: boolean;
   can_arm: boolean;
+  command_enable: boolean;
+  command_mode: DSMode;
   ds_eth: boolean;
   ds_report?: AllianceStationDSReport | null;
   estop: boolean;
+  master_estop: boolean;
   occupancy: AllianceStationOccupancy;
+  remaining_time: Duration;
   station: AllianceStationId;
   team?: number | null;
 }
@@ -605,33 +605,25 @@ export interface AllianceStationDSReport {
   robot_ping: boolean;
   rtt: number;
 }
+export interface Duration {
+  nanos: number;
+  secs: number;
+}
 export interface AllianceStationId {
   alliance: Alliance;
   station: number;
 }
 export interface LoadedMatch {
-  config: MatchConfig;
   endgame: boolean;
   match_meta: SerializedMatch;
   match_time?: Duration | null;
   remaining_time: Duration;
-  score: MatchScoreSnapshot;
   state: MatchPlayState;
-}
-export interface MatchConfig {
-  auto_time: Duration;
-  endgame_time: Duration;
-  pause_time: Duration;
-  teleop_time: Duration;
-  warmup_cooldown_time: Duration;
-}
-export interface Duration {
-  nanos: number;
-  secs: number;
 }
 export interface SerializedMatch {
   blue_alliance?: number | null;
   blue_teams: (number | null)[];
+  config: MatchConfig;
   full_score?: MatchScoreSnapshot | null;
   id?: string | null;
   match_number: number;
@@ -649,6 +641,13 @@ export interface SerializedMatch {
   start_time?: number | null;
   winner?: Alliance | null;
 }
+export interface MatchConfig {
+  auto_time: number;
+  endgame_time: number;
+  pause_time: number;
+  teleop_time: number;
+  warmup_cooldown_time: number;
+}
 export interface MatchScoreSnapshot {
   blue: SnapshotScore;
   red: SnapshotScore;
@@ -658,14 +657,18 @@ export interface SnapshotScore {
   live: LiveScore;
 }
 export interface DerivedScore {
-  cargo_points: ModeScoreForInt;
-  cargo_rp: boolean;
+  activation_rp: boolean;
+  auto_docked_points: number;
+  community_points: ModeScoreForInt;
   endgame_points: number;
-  hangar_rp: boolean;
+  link_count: number;
+  link_points: number;
+  meets_coopertition: boolean;
+  mobility_points: number;
   mode_score: ModeScoreForInt;
   penalty_score: number;
-  quintet: boolean;
-  taxi_points: number;
+  sustainability_rp: boolean;
+  sustainability_threshold: number;
   total_bonus_rp: number;
   total_rp: number;
   total_score: number;
@@ -677,26 +680,20 @@ export interface ModeScoreForInt {
   teleop: number;
 }
 export interface LiveScore {
-  cargo: ModeScoreFor_CargoCounts;
-  endgame: EndgamePointType[];
+  auto_docked: boolean;
+  charge_station_level: ModeScoreFor_Boolean;
+  community: ModeScoreFor_ArrayOf_ArrayOf_GamepieceType;
+  endgame: EndgameType[];
+  mobility: boolean[];
   penalties: Penalties;
-  taxi: boolean[];
 }
-export interface ModeScoreFor_CargoCounts {
-  auto: CargoCounts;
-  teleop: CargoCounts;
+export interface ModeScoreFor_Boolean {
+  auto: boolean;
+  teleop: boolean;
 }
-export interface CargoCounts {
-  /**
-   * @minItems 4
-   * @maxItems 4
-   */
-  lower: [number, number, number, number];
-  /**
-   * @minItems 4
-   * @maxItems 4
-   */
-  upper: [number, number, number, number];
+export interface ModeScoreFor_ArrayOf_ArrayOf_GamepieceType {
+  auto: GamepieceType[][];
+  teleop: GamepieceType[][];
 }
 export interface Penalties {
   fouls: number;
@@ -723,8 +720,7 @@ export interface TaggedResource {
   role: ResourceRole;
 }
 export interface ScorerID {
-  goals: ScorerPair;
-  height: GoalHeight;
+  alliance: Alliance;
 }
 export interface ResourceRequirementStatus {
   element: ResourceRequirementStatusElement;
@@ -777,12 +773,16 @@ export interface MatchStationStatusRecord {
 export interface StampedAllianceStationStatus {
   astop: boolean;
   bypass: boolean;
+  command_enable: boolean;
+  command_mode: DSMode;
   ds_eth: boolean;
   ds_report?: AllianceStationDSReport | null;
   estop: boolean;
+  master_estop: boolean;
   match_state: MatchPlayState;
   match_time: Duration;
   occupancy: AllianceStationOccupancy;
+  remaining_time: Duration;
   station: AllianceStationId;
   team?: number | null;
   time: number;
@@ -802,6 +802,7 @@ export interface QualsMatchGeneratorParams {
 export interface Match {
   blue_alliance?: number | null;
   blue_teams: (number | null)[];
+  config: MatchConfig;
   match_number: number;
   match_subtype?: MatchSubtype | null;
   match_type: MatchType;

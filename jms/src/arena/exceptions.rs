@@ -1,4 +1,4 @@
-use super::{matches::MatchPlayState, ArenaState};
+use super::{matches::MatchPlayState, state::ArenaState};
 
 #[derive(thiserror::Error, Debug)]
 #[error("Arena State Transition Error: {from:?} to {to:?} ({why})")]

@@ -15,11 +15,11 @@ use log::{error, info};
 use std::{time::Duration, sync::Arc, collections::HashMap};
 use tokio::{
   net::TcpListener,
-  sync::{broadcast::{self, Sender}, Mutex, mpsc}, time::{interval, Interval},
+  sync::{Mutex, mpsc}, time::{interval, Interval},
 };
 use tokio_tungstenite::tungstenite;
 
-use crate::{arena::resource::SharedResources, ui::websocket::ws::Websocket};
+use crate::{ui::websocket::ws::Websocket, arena::Arena};
 
 use self::{event::{EventMessage2UI, EventMessage2JMS}, debug::{DebugMessage2JMS, DebugMessage2UI}, arena::{ArenaMessage2UI, ArenaMessage2JMS}, matches::{MatchMessage2UI, MatchMessage2JMS}, resources::{ResourceMessage2UI, ResourceMessage2JMS}, ws::{WebsocketHandler, DecoratedWebsocketHandler, WebsocketContext, SerialisedMessage}, tickets::{TicketMessage2JMS, TicketMessage2UI}};
 
@@ -51,7 +51,7 @@ pub struct Websockets {
 }
 
 impl Websockets {
-  pub async fn new(resources: SharedResources) -> Self {
+  pub async fn new(arena: Arena) -> Self {
     // let (tx, _) = broadcast::channel(512);
     let bcast = Arc::new(Mutex::new(HashMap::new()));
 
@@ -59,7 +59,7 @@ impl Websockets {
       context: WebsocketContext {
         bcast,
         handlers: Arc::new(Mutex::new(Vec::new())),
-        resources: resources.clone()
+        arena
       },
     }
   }
@@ -117,7 +117,7 @@ impl Websockets {
 
               // Remove the resource when it disconnects, whether gracefully or not
               if let Some(id) = ws.resource_id {
-                context.resources.lock().await.remove(&id);
+                context.arena.resources().write().await.remove(&id);
                 let mut bcasts = context.bcast.lock().await;
                 let keys = bcasts.keys().filter(|k| k.0 == id).cloned().collect::<Vec<(String, Vec<String>)>>();
                 for k in keys {

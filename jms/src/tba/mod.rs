@@ -101,12 +101,13 @@ impl TBAWorker {
             error!("TBA Team Error: {}", e);
           }
         },
-        event = matches.get() => {
-          match event? {
-            db::WatchEvent::Insert(m) => self.publish_match(&m.data).await?,
-            db::WatchEvent::Remove(key) => matches::TBAMatch::delete(key, &self.client).await?,
-          }
-        },
+        // TODO: Re-enable
+        // event = matches.get() => {
+        //   match event? {
+        //     db::WatchEvent::Insert(m) => self.publish_match(&m.data).await?,
+        //     db::WatchEvent::Remove(key) => matches::TBAMatch::delete(key, &self.client).await?,
+        //   }
+        // },
         event = rankings.get() => {
           event?;
           let ranks = models::TeamRanking::all(&db::database())?;
@@ -125,22 +126,23 @@ impl TBAWorker {
     }
   }
 
-  async fn publish_match(&self, m: &models::Match) -> anyhow::Result<()> {
-    let mut tba_match = matches::TBAMatch::try_from(m.clone())?;
-    match tba_match.issue(&self.client).await {
-      Ok(_) => (),
-      Err(_) => {
-        // Try again without the score breakdown
-        info!("Trying match upload again without score breakdown...");
-        tba_match.score_breakdown = None;
-        if let Err(e) = tba_match.issue(&self.client).await {
-          error!("TBA Match Error: {}", e);
-        }
-      },
-    };
+// TODO: Re-enable
+  // async fn publish_match(&self, m: &models::Match) -> anyhow::Result<()> {
+  //   let mut tba_match = matches::TBAMatch::try_from(m.clone())?;
+  //   match tba_match.issue(&self.client).await {
+  //     Ok(_) => (),
+  //     Err(_) => {
+  //       // Try again without the score breakdown
+  //       info!("Trying match upload again without score breakdown...");
+  //       tba_match.score_breakdown = None;
+  //       if let Err(e) = tba_match.issue(&self.client).await {
+  //         error!("TBA Match Error: {}", e);
+  //       }
+  //     },
+  //   };
 
-    Ok(())
-  }
+  //   Ok(())
+  // }
 }
 
 #[async_trait::async_trait]

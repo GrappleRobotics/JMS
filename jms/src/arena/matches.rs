@@ -1,11 +1,12 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use anyhow::{bail, Result};
 
+use chrono::Duration;
 use log::{info, warn};
 use schemars::JsonSchema;
 
-use crate::{arena::exceptions::MatchWrongState, db, models, scoring::scores::{MatchScore, MatchScoreSnapshot}};
+use crate::models;
 
 use serde::{Serialize, Deserialize};
 
@@ -23,15 +24,6 @@ pub enum MatchPlayState {
   Fault, // E-stop, cancelled, etc. Fault is unrecoverable without reloading the match.
 }
 
-#[derive(Clone, Debug, Serialize, JsonSchema)]
-pub struct MatchConfig {
-  warmup_cooldown_time: Duration,
-  auto_time: Duration,
-  pause_time: Duration,
-  teleop_time: Duration,
-  endgame_time: Duration,
-}
-
 // TODO: Abstract out the loaded parts of the match
 
 #[derive(Clone, Debug, Serialize, JsonSchema)]
@@ -39,13 +31,10 @@ pub struct LoadedMatch {
   #[serde(serialize_with = "models::serialize_match")]
   #[schemars(with = "models::SerializedMatch")]
   pub match_meta: models::Match,
-  state: MatchPlayState,
-  remaining_time: Duration,
-  pub match_time: Option<Duration>,
-
-  #[serde(serialize_with = "models::serialize_match_score")]
-  #[schemars(with = "MatchScoreSnapshot")]
-  pub score: MatchScore,
+  pub state: MatchPlayState,
+  pub remaining_time: std::time::Duration,
+  pub match_time: Option<std::time::Duration>,
+  pub endgame: bool,
 
   #[serde(skip)]
   match_start_time: Option<Instant>,
@@ -53,39 +42,20 @@ pub struct LoadedMatch {
   state_first: bool,
   #[serde(skip)]
   state_start_time: Instant,
-
-  config: MatchConfig,
-  endgame: bool,
 }
 
 impl LoadedMatch {
   pub fn new(m: models::Match) -> LoadedMatch {
     LoadedMatch {
       state: MatchPlayState::Waiting,
-      score: MatchScore::new(m.red_teams.len(), m.blue_teams.len()),
       match_meta: m,
       state_first: true,
       state_start_time: Instant::now(),
       match_start_time: None,
-      remaining_time: Duration::from_secs(0),
+      remaining_time: std::time::Duration::ZERO,
       match_time: None,
-      config: MatchConfig {
-        warmup_cooldown_time: Duration::from_secs(3),
-        auto_time: Duration::from_secs(15),
-        pause_time: Duration::from_secs(1),
-        teleop_time: Duration::from_secs(2 * 60 + 15),
-        endgame_time: Duration::from_secs(30),
-      },
       endgame: false,
     }
-  }
-
-  pub fn current_state(&self) -> MatchPlayState {
-    self.state
-  }
-
-  pub fn metadata(&self) -> &models::Match {
-    &self.match_meta
   }
 
   pub fn start(&mut self) -> Result<()> {
@@ -101,17 +71,6 @@ impl LoadedMatch {
     }
   }
 
-  pub async fn commit_score(&mut self) -> Result<models::Match> {
-    if self.state == MatchPlayState::Complete {
-      Ok(self.match_meta.commit(&self.score, &db::database()).await?.clone())
-    } else {
-      bail!(MatchWrongState {
-        state: self.state,
-        why: "Can't commit score before Match is complete!".to_owned()
-      })
-    }
-  }
-
   pub fn fault(&mut self) {
     self.do_change_state(MatchPlayState::Fault);
   }
@@ -121,45 +80,46 @@ impl LoadedMatch {
   pub fn update(&mut self) {
     let first = self.state_first;
     self.state_first = false;
-    let elapsed = self.elapsed();
-
     let mut endgame = false;
 
+    let elapsed = Duration::from_std(Instant::now() - self.state_start_time).unwrap();
     if let Some(start) = self.match_start_time {
       self.match_time = Some(Instant::now() - start);
     }
 
+    let mut remaining = Duration::zero();
+
     match self.state {
       MatchPlayState::Waiting => (),
       MatchPlayState::Warmup => {
-        self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
-        if self.remaining_time == Duration::ZERO {
+        remaining = self.match_meta.config.warmup_cooldown_time.0 - elapsed;
+        if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Auto);
         }
       }
       MatchPlayState::Auto => {
         self.match_start_time = Some(Instant::now());
-        self.remaining_time = self.config.auto_time.saturating_sub(elapsed);
-        if self.remaining_time == Duration::ZERO {
+        remaining = self.match_meta.config.auto_time.0 - elapsed;
+        if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Pause);
         }
       }
       MatchPlayState::Pause => {
-        self.remaining_time = self.config.pause_time.saturating_sub(elapsed);
-        if self.remaining_time == Duration::ZERO {
+        remaining = self.match_meta.config.pause_time.0 - elapsed;
+        if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Teleop);
         }
       }
       MatchPlayState::Teleop => {
-        self.remaining_time = self.config.teleop_time.saturating_sub(elapsed);
-        if self.remaining_time == Duration::ZERO {
+        remaining = self.match_meta.config.teleop_time.0 - elapsed;
+        if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Cooldown);
         }
-        endgame = self.remaining_time <= self.config.endgame_time;
+        endgame = remaining <= self.match_meta.config.endgame_time.0;
       }
       MatchPlayState::Cooldown => {
-        self.remaining_time = self.config.warmup_cooldown_time.saturating_sub(elapsed);
-        if self.remaining_time == Duration::ZERO {
+        remaining = self.match_meta.config.warmup_cooldown_time.0 - elapsed;
+        if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Complete);
         }
         endgame = true;
@@ -174,11 +134,9 @@ impl LoadedMatch {
       }
     }
 
-    self.endgame = endgame;
-  }
+    self.remaining_time = remaining.to_std().unwrap_or(std::time::Duration::ZERO);
 
-  pub fn remaining_time(&self) -> Duration {
-    self.remaining_time
+    self.endgame = endgame;
   }
 
   fn do_change_state(&mut self, state: MatchPlayState) {
@@ -188,9 +146,5 @@ impl LoadedMatch {
       self.state_start_time = Instant::now();
       self.state_first = true;
     }
-  }
-
-  pub fn elapsed(&self) -> Duration {
-    return Instant::now() - self.state_start_time;
   }
 }

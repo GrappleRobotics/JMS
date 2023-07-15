@@ -8,8 +8,8 @@ import { WebsocketComponent } from "support/ws-component";
 import { MatchGenerationRecordData, PlayoffAlliance, PlayoffMode, SerialisedMatchGeneration } from "ws-schema";
 import { EventWizardPageContent } from "./EventWizard";
 
-const PLAYOFF_TYPES: PlayoffMode[]  = [ "Bracket", "RoundRobin" ];
-const PLAYOFF_TYPE_NAMES            = [ "Elimination Bracket", "Round Robin" ];
+const PLAYOFF_TYPES: PlayoffMode[]  = [ "Bracket", "RoundRobin", "DoubleBracket" ];
+const PLAYOFF_TYPE_NAMES            = [ "Elimination Bracket", "Round Robin", "Double Elimination Bracket" ];
 
 type PlayoffGenRecordData = Extract<MatchGenerationRecordData, { Playoff: any }>;
 
@@ -23,7 +23,7 @@ export default class PlayoffGenerator extends WebsocketComponent<{}, PlayoffGene
   
   readonly state: PlayoffGeneratorState = {
     alliances: [],
-    playoff_type: "Bracket"
+    playoff_type: "DoubleBracket"
   };
 
   componentDidMount = () => this.handles = [
@@ -106,6 +106,9 @@ export default class PlayoffGenerator extends WebsocketComponent<{}, PlayoffGene
         return <span>
           { n/2 * (n-1) + 2 } matches ({n_alliances % 2 == 0 ? "No Byes" : "w/ Bye"})
         </span>;
+      // TODO: Calculate this
+      case "DoubleBracket":
+        return <span>15 matches</span>;
       default:
         return <i> Unknown... </i>;
     }

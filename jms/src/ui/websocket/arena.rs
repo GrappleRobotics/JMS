@@ -2,7 +2,7 @@ use anyhow::{anyhow, bail};
 
 use jms_macros::define_websocket_msg;
 
-use crate::{arena::{matches::LoadedMatch, station::{AllianceStationId, SharedAllianceStations, station_mut}, ArenaSignal, ArenaState, AudienceDisplay, SharedArena, ArenaAccessRestriction, station::SerialisedAllianceStation}, db::{self, TableType}, models, scoring::scores::ScoreUpdateData};
+use crate::{arena::{matches::LoadedMatch, station::AllianceStationId, station::SerialisedAllianceStation, Arena, state::{ArenaState, ArenaSignal}, audience::AudienceDisplay}, db::{self, TableType}, models, scoring::scores::{ScoreUpdateData, MatchScoreSnapshot}};
 
 use super::{WebsocketMessage2JMS, ws::{Websocket, WebsocketContext, WebsocketHandler}};
 
@@ -23,6 +23,7 @@ define_websocket_msg!($ArenaMessage {
   },
   $Match {
     send Current(Option<LoadedMatch>),
+    send Score(MatchScoreSnapshot),
     recv LoadTest,
     recv Unload,
     recv Load(String),
@@ -41,33 +42,26 @@ define_websocket_msg!($ArenaMessage {
       CustomMessage(String)
     },
     PlaySound(String)
-  },
-  $Access {
-    send Current(ArenaAccessRestriction),
-    recv Set(ArenaAccessRestriction)
   }
 });
 
-pub struct WSArenaHandler(pub SharedArena, pub SharedAllianceStations);
+pub struct WSArenaHandler(pub Arena);
 
 #[async_trait::async_trait]
 impl WebsocketHandler for WSArenaHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
-    let arena = self.0.lock().await;
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(arena.current_match.clone()).into()).await;
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(arena.state.state.clone()).into()).await;
-    {
-      let stns = self.1.lock().await;
-      ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(stns.iter().map(|x| x.clone().into()).collect()).into()).await;
-    }
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::Current(arena.audience_display.clone()).into()).await;
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAccess2UI::Current(arena.access.clone()).into()).await;
+    let arena = &self.0;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(arena.current_match().await).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Score(arena.score().await.into()).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(arena.state().await).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(arena.stations().await.iter().map(|&x| x.into()).collect()).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::Current(arena.audience().await).into()).await;
     Ok(())
   }
 
   async fn handle(&self, msg: &WebsocketMessage2JMS, ws: &mut Websocket) -> anyhow::Result<()> {
     if let WebsocketMessage2JMS::Arena(msg) = msg {
-      let mut arena = self.0.lock().await;
+      let arena = &self.0;
 
       match msg.clone() {
         ArenaMessage2JMS::State(msg) => match msg {
@@ -75,17 +69,17 @@ impl WebsocketHandler for WSArenaHandler {
             if signal == ArenaSignal::Estop {
               error!("Estop Trig'd by Resource: {:?} ({:?})", ws.resource_id, ws.resource().await);
             }
-            arena.signal(signal).await;
+            arena.signal(signal).await?;
           },
         },
         ArenaMessage2JMS::Alliance(msg) => match msg {
           ArenaMessageAlliance2JMS::UpdateAlliance { station, bypass, team, estop, astop } => {
-            let current_state = arena.current_state();
+            let current_state = arena.state().await;
             let idle = matches!(current_state, ArenaState::Idle { .. });
             let prestart = matches!(current_state, ArenaState::Prestart { .. });
 
-            let mut stns = self.1.lock().await;
-            let stn = station_mut(&mut stns, station).ok_or(anyhow!("No alliance station: {}", station))?;
+            let stn_lock = arena.station_for_id(station).await.ok_or(anyhow!("No alliance station: {}", station))?;
+            let mut stn = stn_lock.write().await;
             match bypass {
               Some(byp) if (idle || prestart) => stn.bypass = byp,
               Some(_) => bail!("Can't bypass unless in IDLE or PRESTART"),
@@ -104,22 +98,21 @@ impl WebsocketHandler for WSArenaHandler {
           },
         },
         ArenaMessage2JMS::Match(msg) => match msg {
-          ArenaMessageMatch2JMS::LoadTest => arena.load_match(LoadedMatch::new(models::Match::new_test())).await?,
-          ArenaMessageMatch2JMS::Unload => arena.unload_match().await?,
-          ArenaMessageMatch2JMS::Load(match_id) => arena.load_match(LoadedMatch::new(models::Match::get_or_err(match_id, &db::database())?)).await?,
+          ArenaMessageMatch2JMS::LoadTest => arena.arena_impl().load_match(LoadedMatch::new(models::Match::new_test())).await?,
+          ArenaMessageMatch2JMS::Unload => arena.arena_impl().unload_match().await?,
+          ArenaMessageMatch2JMS::Load(match_id) => arena.arena_impl().load_match(LoadedMatch::new(models::Match::get_or_err(match_id, &db::database())?)).await?,
           ArenaMessageMatch2JMS::ScoreUpdate(update) => {
-            match arena.current_match.as_mut() {
-              Some(m) => match update.alliance {
-                models::Alliance::Blue => m.score.blue.update(update.update),
-                models::Alliance::Red => m.score.red.update(update.update),
-              },
-              None => bail!("Can't update score: no match is running!"),
+            let a = arena.arena_impl();
+            let mut score = a.score.write().await;
+            match update.alliance {
+              models::Alliance::Blue => score.blue.update(update.update),
+              models::Alliance::Red => score.red.update(update.update),
             }
           },
         },
         ArenaMessage2JMS::AudienceDisplay(msg) => match msg {
           ArenaMessageAudienceDisplay2JMS::Set(set_msg) => {
-            arena.audience_display = match set_msg {
+            *(arena.arena_impl().audience.write().await) = match set_msg {
               ArenaMessageAudienceDisplaySet2JMS::Field => AudienceDisplay::Field,
               ArenaMessageAudienceDisplaySet2JMS::MatchPreview => AudienceDisplay::MatchPreview,
               ArenaMessageAudienceDisplaySet2JMS::MatchPlay => AudienceDisplay::MatchPlay,
@@ -142,14 +135,10 @@ impl WebsocketHandler for WSArenaHandler {
           ArenaMessageAudienceDisplay2JMS::PlaySound(sound) => {
             ws.context.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::PlaySound(sound).into()).await;
           }
-        },
-        ArenaMessage2JMS::Access(msg) => match msg {
-          ArenaMessageAccess2JMS::Set(condition) => arena.access = condition,
-        },
+        }
       }
 
       // Broadcast when there's any changes
-      drop(arena);
       // self.broadcast(&ws.context).await?;
     }
 

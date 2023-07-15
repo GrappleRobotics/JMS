@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, time::Duration};
 
 use anyhow::{bail, Result};
 
@@ -26,12 +26,14 @@ impl FieldRadio {
     Self { settings }
   }
 
-  pub async fn configure(&self, teams: &[TeamRadioConfig]) -> Result<()> {
+  pub async fn configure(&self, teams: &[TeamRadioConfig], configure_admin: bool) -> Result<()> {
     info!("Configuring Radio...");
     let addr = SocketAddr::new(self.settings.ip.into(), 22);
     let session = SSHSession::connect(addr, &self.settings.user, &self.settings.pass).await?;
 
-    self.configure_admin(&session).await?;
+    if configure_admin {
+      self.configure_admin(&session).await?;
+    }
     self.configure_teams(&session, teams).await?;
     info!("Radio Configured!");
     Ok(())
@@ -41,6 +43,7 @@ impl FieldRadio {
     self
       .do_uci(
         session,
+        true,
         &vec![
           format!(
             "set wireless.radio1.channel='{}'",
@@ -65,6 +68,7 @@ impl FieldRadio {
             self.settings.admin_key.as_ref().unwrap_or(&"".to_owned())
           )
           .as_str(),
+          "set wireless.@wifi-iface[0].encryption='psk2'",
           "commit wireless",
         ],
       )
@@ -84,6 +88,7 @@ impl FieldRadio {
               format!("set wireless.@wifi-iface[{}].disabled='0'", radio_num),
               format!("set wireless.@wifi-iface[{}].ssid='{}'", radio_num, team),
               format!("set wireless.@wifi-iface[{}].key='{}'", radio_num, wpakey),
+              format!("set wireless.@wifi-iface[{}].encryption='psk2'", radio_num),
             ]
           }
           (Some(team), _) => {
@@ -92,6 +97,7 @@ impl FieldRadio {
               format!("set wireless.@wifi-iface[{}].disabled='1'", radio_num),
               format!("set wireless.@wifi-iface[{}].ssid='{}-no-key'", radio_num, team),
               format!("set wireless.@wifi-iface[{}].key='{}-no-key'", radio_num, team),
+              format!("set wireless.@wifi-iface[{}].encryption='psk2'", radio_num),
             ]
           }
           (None, _) => {
@@ -102,11 +108,13 @@ impl FieldRadio {
                 radio_num, radio_num
               ),
               format!("set wireless.@wifi-iface[{}].key='unoccupied-{}'", radio_num, radio_num),
+              format!("set wireless.@wifi-iface[{}].encryption='psk2'", radio_num),
             ]
           }
         }
       })
       .collect();
+    cfgs.push("set wireless.radio0.disabled='0'".to_owned());
     cfgs.push("commit wireless".to_owned());
 
     let chan_cfg = format!(
@@ -119,20 +127,30 @@ impl FieldRadio {
     let mut cfgs: Vec<&str> = cfgs.iter().map(|x| x.as_str()).collect();
     cfgs.insert(0, chan_cfg.as_str());
 
-    self.do_uci(session, &cfgs).await?;
+    self.do_uci(session, false, &cfgs).await?;
     Ok(())
   }
 
-  async fn do_uci(&self, session: &SSHSession, cmds: &[&str]) -> Result<CommandResult> {
+  async fn do_uci(&self, session: &SSHSession, admin: bool, cmds: &[&str]) -> Result<CommandResult> {
     let cmd = format!("uci batch <<EOI && {}\nEOI\n", cmds.join("\n"));
     let reply = session.run(&cmd).await?;
     if !reply.success() {
       bail!("Failed to apply UCI {}", reply.output());
     }
 
-    let reply = session.run("/sbin/wifi; /etc/init.d/network restart").await?;
+    tokio::time::sleep(Duration::from_millis(1000)).await;
+
+    // let reply = session.run("/sbin/wifi; /etc/init.d/network restart").await?;
+    let reply = session.run("/sbin/wifi down radio0; /sbin/wifi up radio0").await?;
     if !reply.success() {
-      bail!("Failed to restart router network {}", reply.output());
+      bail!("Failed to reload radio0 {}", reply.output());
+    }
+
+    if admin {
+      let reply = session.run("/sbin/wifi down radio1; /sbin/wifi up radio1").await?;
+      if !reply.success() {
+        bail!("Failed to reload radio0 {}", reply.output());
+      }
     }
 
     Ok(reply)

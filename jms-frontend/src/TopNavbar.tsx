@@ -8,6 +8,7 @@ import { Button, FormControl, Modal } from 'react-bootstrap';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import { Link } from 'react-router-dom';
+import { clear_fta_key, set_fta_key } from 'support/resourceid';
 import { role2id } from 'support/ws-additional';
 import { WebsocketComponent } from 'support/ws-component';
 import { ArenaState, LoadedMatch, SerializedMatch, TaggedResource } from 'ws-schema';
@@ -66,9 +67,9 @@ export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref
     if (!connected) return "DISCONNECTED";
     switch (state?.state) {
       case "Idle":
-        return state.ready ? "Idle" : "Idle (working...)";
+        return state.net_ready ? "Idle" : "Idle (working...)";
       case "Prestart":
-        return state.ready ? "Prestart Ready" : "Prestarting...";
+        return state.net_ready ? "Prestart Ready" : "Prestarting...";
       case "MatchArmed":
         return "ARMED";
       case "MatchPlay":
@@ -81,9 +82,7 @@ export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref
             return match?.state;
         }
       case "MatchComplete":
-        return state.ready ? "Match Complete" : "Match Completed (score wait)";
-      case "MatchCommit":
-        return "Scores Committed";
+        return state.net_ready ? "Match Complete" : "Match Completed (working...)";
       case "Estop":
         return "// EMERGENCY STOP //";
       default:
@@ -107,7 +106,17 @@ export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref
           onEnter={ok}
         />
       </React.Fragment>
-    }).then(pass => this.send({ Resource: { SetFTA: pass } }))
+    }).then(pass => {
+      set_fta_key(pass);
+      // this.send({ Resource: { SetFTA: pass } });
+      this.transact<boolean>({ Resource: { SetFTA: pass } }, "Resource/SetFTAAck")
+        .then(b => {
+          if (!b.msg) {
+            alert("Wrong FTA key");
+            clear_fta_key();
+          }
+        });
+    })
   }
 
   render() {
@@ -156,7 +165,7 @@ export default class TopNavbar extends WebsocketComponent<{ innerRef?: React.Ref
           {
             resource?.fta ? <React.Fragment>
               <Navbar.Brand className="brand-fta"> <strong>FTA</strong> </Navbar.Brand>
-              <Nav.Link onClick={() => this.send({ Resource: { SetFTA: null } })}>
+              <Nav.Link onClick={() => { this.send({ Resource: { SetFTA: null } }); clear_fta_key(); }}>
                 <FontAwesomeIcon icon={faRightFromBracket} /> Logout
               </Nav.Link>
             </React.Fragment> 

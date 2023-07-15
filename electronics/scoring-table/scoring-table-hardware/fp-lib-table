@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "TC2050-IDC-NL")(type "KiCad")(uri "${KIPRJMOD}/TC2050-IDC-NL.pretty")(options "")(descr ""))
+)

@@ -1,8 +1,8 @@
 use log::info;
 
-use crate::{db::{self, TableType}, models::{self, AwardRecipient, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance}, schedule::round_robin::round_robin_update};
+use crate::{db::{self, TableType}, models::{self, AwardRecipient, MatchGenerationRecord, MatchGenerationRecordData, PlayoffAlliance}};
 
-use super::{bracket::bracket_update, worker::MatchGenerator, GenerationUpdate};
+use super::{worker::MatchGenerator, GenerationUpdate, bracket::bracket_update, round_robin::round_robin_update};
 
 #[derive(Debug, Clone)]
 pub struct PlayoffMatchGenerator;
@@ -55,25 +55,41 @@ impl MatchGenerator for PlayoffMatchGenerator {
     };
 
     let update = match mode {
-      models::PlayoffMode::Bracket => bracket_update(&alliances, &existing_matches),
+      models::PlayoffMode::Bracket => bracket_update(false, &alliances, &existing_matches),
+      models::PlayoffMode::DoubleBracket => bracket_update(true, &alliances, &existing_matches),
       models::PlayoffMode::RoundRobin => round_robin_update(&alliances, &existing_matches),
     };
 
     match update {
       GenerationUpdate::MatchUpdates(updates) => {
         for pending in updates {
-          // let alliance_blue = alliances.iter().find(|a| a.id == pending.blue).unwrap();
-          // let alliance_red = alliances.iter().find(|a| a.id == pending.red).unwrap();
-          let blue_teams = pending.blue.and_then(|id| alliances.iter().find_map(|a| (a.id == id).then(|| a.teams.clone()))).unwrap_or(vec![]);
-          let red_teams = pending.red.and_then(|id| alliances.iter().find_map(|a| (a.id == id).then(|| a.teams.clone()))).unwrap_or(vec![]);
+          let (blue_teams, blue_alliance) = match pending.blue {
+            super::PlayoffAllianceDescriptor::Alliance(alliance) => {
+              (
+                alliances.iter().find_map(|a| (a.id == alliance).then(|| a.teams.clone())).unwrap(),
+                Some(alliance)
+              )
+            },
+            _ => (vec![], None)
+          };
+
+          let (red_teams, red_alliance) = match pending.red {
+            super::PlayoffAllianceDescriptor::Alliance(alliance) => {
+              (
+                alliances.iter().find_map(|a| (a.id == alliance).then(|| a.teams.clone())).unwrap(),
+                Some(alliance)
+              )
+            },
+            _ => (vec![], None)
+          };
 
           if let Some(mut existing) = models::Match::by_set_match(models::MatchType::Playoff, Some(pending.playoff_type), pending.set, pending.match_num, &db::database())? {
             if !existing.played {
               existing.blue_teams = blue_teams;
               existing.red_teams = red_teams;
-              existing.blue_alliance = pending.blue;
-              existing.red_alliance = pending.red;
-              existing.ready = pending.blue.is_some() && pending.red.is_some();
+              existing.blue_alliance = blue_alliance;
+              existing.red_alliance = red_alliance;
+              existing.ready = blue_alliance.is_some() && red_alliance.is_some();
               existing.insert(&db::database())?;
             }
           } else {
@@ -83,15 +99,16 @@ impl MatchGenerator for PlayoffMatchGenerator {
               match_subtype: Some(pending.playoff_type),
               set_number: pending.set,
               match_number: pending.match_num,
-              blue_teams: blue_teams,
-              blue_alliance: pending.blue,
-              red_teams: red_teams,
-              red_alliance: pending.red,
+              blue_teams,
+              blue_alliance,
+              red_teams,
+              red_alliance,
               score: None,
               score_time: None,
               winner: None,
               played: false,
-              ready: pending.blue.is_some() && pending.red.is_some()
+              ready: blue_alliance.is_some() && red_alliance.is_some(),
+              config: models::MatchConfig::default()
             };
             m.insert(&db::database())?;
           }

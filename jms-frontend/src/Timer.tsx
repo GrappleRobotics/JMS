@@ -1,11 +1,11 @@
 import { WebsocketComponent } from "support/ws-component";
-import { ArenaMessageMatch2UI, Duration } from "ws-schema";
+import { ArenaMessageMatch2UI, Duration, LoadedMatch } from "ws-schema";
 
 export default class Timer extends WebsocketComponent<{}, { remaining?: Duration }> {
   readonly state: { remaining?: Duration } = {};
 
   componentDidMount = () => this.handles = [
-    this.listenFn("Arena/Match/Current", (msg: ArenaMessageMatch2UI["Current"]) => this.setState({ remaining: msg?.remaining_time }))
+    this.listenFn("Arena/Match/Current", (msg?: LoadedMatch) => this.setState({ remaining: msg?.remaining_time }))
   ];
 
   render() {

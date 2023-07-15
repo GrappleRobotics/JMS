@@ -3,7 +3,7 @@ use bytes::{Buf, BufMut};
 use chrono::{DateTime, Utc};
 use tokio_util::codec::{Decoder, Encoder};
 
-use crate::{arena::station::AllianceStationId, utils::bufutil::utf8_str_with_len};
+use crate::arena::station::AllianceStationId;
 
 #[derive(Debug)]
 pub struct Ds2FmsTCP {
@@ -119,7 +119,7 @@ impl Decoder for DSTCPCodec {
       let id = buf.get_u8();
       let mut pkt = Ds2FmsTCP { tags: vec![] };
 
-      let size = buf.remaining(); // Full size of current tag class (including all tags)
+      let _size = buf.remaining(); // Full size of current tag class (including all tags)
       let tag: Option<Ds2FmsTCPTags> = match id {
         0x00 => {
           // WPILib Version

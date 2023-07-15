@@ -2,8 +2,10 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 import { withVal } from "support/util";
-import { Alliance, SerialisedAllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, ArenaState, Duration, LoadedMatch, MatchConfig, MatchPlayState, SnapshotScore, MatchScore, MatchScoreSnapshot } from "ws-schema";
 import BaseAudienceScene from "./BaseAudienceScene";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faLink } from "@fortawesome/free-solid-svg-icons";
 
 type MatchProgressBarProps = {
   config: MatchConfig,
@@ -19,13 +21,13 @@ class MatchProgressBar extends React.PureComponent<MatchProgressBarProps> {
     let bars = [
       {
         name: "AUTONOMOUS",
-        max: config.auto_time.secs,
+        max: config.auto_time / 1000,
         state: "Auto",
         complete: ["Pause", "Teleop", "Cooldown", "Complete"]
       },
       {
         name: "TELEOP",
-        max: config.teleop_time.secs,
+        max: config.teleop_time / 1000,
         state: "Teleop",
         complete: ["Cooldown", "Complete"]
       }
@@ -65,19 +67,28 @@ type AllianceScoreProps = {
   has_rp: boolean,
   alliance: Alliance,
   score: SnapshotScore,
+  other_score: SnapshotScore,
   stations: SerialisedAllianceStation[],
   img?: string
 }
 
 class AllianceScore extends React.PureComponent<AllianceScoreProps> {
   render() {
-    const { reverse, alliance, score, stations, img, has_rp } = this.props;
+    const { reverse, alliance, score, other_score, stations, img, has_rp } = this.props;
 
     const els = [
-      <Col className="score-image">
+      <Col className="score-image" md="auto">
         {
           withVal(img, () => <img src={`/img/${img}`} />)
         }
+      </Col>,
+      <Col className="score-node" data-alliance={alliance}>
+        <Row>
+          <Col className="score-node-image"> <FontAwesomeIcon icon={faLink} /> </Col>
+        </Row>
+        <Row>
+          <Col className="score-node-count"> { score.derived.link_count } / { score.derived.meets_coopertition && other_score.derived.meets_coopertition ?  4 : 5 } </Col>
+        </Row>
       </Col>,
       <Col className="alliance-teams" data-alliance={alliance}>
         {
@@ -110,6 +121,7 @@ class AllianceScore extends React.PureComponent<AllianceScoreProps> {
 type AudienceSceneMatchPlayState = {
   stations: SerialisedAllianceStation[],
   match?: LoadedMatch,
+  score?: MatchScoreSnapshot,
   arenaState?: ArenaState
 };
 
@@ -120,6 +132,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
   componentDidMount = () => this.handles = [
     this.listen("Arena/Alliance/CurrentStations", "stations"),
     this.listen("Arena/Match/Current", "match"),
+    this.listen("Arena/Match/Score", "score"),
     this.listen("Arena/State/Current", "arenaState"),
     this.listenFn<string>("Arena/AudienceDisplay/PlaySound", (sound) => this.playSound(sound))
   ];
@@ -167,9 +180,9 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
   show = () => {
     // const { arena, event } = this.props;
     // const { match } = arena;
-    const { match, stations } = this.state;
+    const { match, stations, score } = this.state;
 
-    if (match == null)
+    if (match == null || score == null)
       return <div className="audience-field" />
     else {
       const has_rp = match.match_meta.match_type === "Qualification";
@@ -178,7 +191,7 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
         <div className="score-block">
           <Row className="m-0 progress-row">
             <MatchProgressBar
-              config={match.config}
+              config={match.match_meta.config}
               remaining={match.remaining_time}
               state={match.state}
               endgame={match.endgame}
@@ -204,14 +217,16 @@ export default class AudienceSceneMatchPlay extends BaseAudienceScene<{}, Audien
             <AllianceScore
               alliance="red"
               img="game/game.png"
-              score={match.score.red}
+              score={score.red}
+              other_score={score.blue}
               stations={stations.filter(s => s.station.alliance === "red")}
               has_rp={has_rp}
             />
             <AllianceScore
               alliance="blue"
               img="tourney_logo_white.png"
-              score={match.score.blue}
+              score={score.blue}
+              other_score={score.red}
               stations={stations.filter(s => s.station.alliance === "blue")}
               has_rp={has_rp}
               reverse

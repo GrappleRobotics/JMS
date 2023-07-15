@@ -6,9 +6,14 @@
 *.dylib
 *.kvdb
 
+# Event backups
+*.tar.gz
+
+!network/*
+
 jms-test/
-jms/JMS_BACKUP
-jms/JMS_BACKUPS
+JMS_BACKUP
+JMS_BACKUPS
 
 # Test binary, built with `go test -c`
 *.test

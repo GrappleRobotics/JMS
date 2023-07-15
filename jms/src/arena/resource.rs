@@ -17,21 +17,11 @@ pub mod referee {
 }
 
 pub mod scorer {
-  #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq)]
-  #[serde(rename_all="snake_case")]
-  pub enum GoalHeight {
-    Low, High
-  }
-
-  #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq)]
-  pub enum ScorerPair {
-    AB, CD
-  }
+  use crate::models::Alliance;
 
   #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq)]
   pub struct ScorerID {
-    goals: ScorerPair,
-    height: GoalHeight
+    alliance: Alliance
   }
 }
 
@@ -131,8 +121,6 @@ impl Resources {
     }
   }
 }
-
-pub type SharedResources = std::sync::Arc<tokio::sync::Mutex<Resources>>;
 
 // Resource Requirements
 

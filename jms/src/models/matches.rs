@@ -1,3 +1,5 @@
+use chrono::Duration;
+
 use serde::Serialize;
 
 use crate::{db::{self, DBDateTime, TableType, DBDuration}, schedule::{playoffs::PlayoffMatchGenerator, worker::MatchGenerationWorker}, scoring::scores::{MatchScore, WinStatus, MatchScoreSnapshot}};
@@ -18,6 +20,27 @@ pub enum MatchSubtype {
   Quarterfinal, Semifinal, Final
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct MatchConfig {
+  pub warmup_cooldown_time: DBDuration,
+  pub auto_time: DBDuration,
+  pub pause_time: DBDuration,
+  pub teleop_time: DBDuration,
+  pub endgame_time: DBDuration,
+}
+
+impl Default for MatchConfig {
+  fn default() -> Self {
+    Self {
+      warmup_cooldown_time: Duration::seconds(3).into(),
+      auto_time: Duration::seconds(15).into(),
+      pause_time: Duration::seconds(1).into(),
+      teleop_time: Duration::seconds(2 * 60 + 15).into(),
+      endgame_time: Duration::seconds(30).into(),
+    }
+  }
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Match {
   pub start_time: Option<DBDateTime>,
@@ -36,7 +59,9 @@ pub struct Match {
 
   pub winner: Option<Alliance>, // Will be None if tie, but means nothing if the match isn't played yet
   pub played: bool,
-  pub ready: bool
+  pub ready: bool,
+
+  pub config: MatchConfig
 }
 
 // To send to frontend, as the impls of serde::Serialize are for DB storage and not
@@ -67,7 +92,8 @@ impl Match {
       score_time: None,
       winner: None,
       played: false,
-      ready: true
+      ready: true,
+      config: MatchConfig::default()
     }
   }
 
@@ -219,6 +245,7 @@ where
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum PlayoffMode {
   Bracket,
+  DoubleBracket,
   RoundRobin,
 }
 

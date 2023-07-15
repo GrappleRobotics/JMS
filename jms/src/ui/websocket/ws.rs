@@ -1,11 +1,11 @@
-use std::{collections::HashSet, time::Duration, sync::Arc};
+use std::{time::Duration, sync::Arc};
 
 use atomic_counter::AtomicCounter;
 use futures::{StreamExt, SinkExt, stream::FuturesUnordered};
-use tokio::{sync::{broadcast, mpsc, Mutex}, net::TcpStream, time::{interval, Interval}};
+use tokio::{sync::{mpsc, Mutex}, net::TcpStream, time::{interval, Interval}};
 use tokio_tungstenite::{accept_async, tungstenite};
 
-use crate::arena::resource::{SharedResources, TaggedResource, Resources};
+use crate::arena::{resource::{TaggedResource, Resources}, Arena};
 
 use super::{WebsocketMessage2UI, WebsocketMessage2JMS, SharedBroadcasts};
 
@@ -66,7 +66,7 @@ pub struct WebsocketContext {
   // pub bcast_tx: broadcast::Sender<SerialisedMessage>,
   pub bcast: SharedBroadcasts,
   pub handlers: SharedHandlers,
-  pub resources: SharedResources
+  pub arena: Arena
 }
 
 impl WebsocketContext {
@@ -128,7 +128,8 @@ impl Websocket {
   }
 
   pub async fn resource(&self) -> Option<TaggedResource> {
-    self.context.resources.lock().await.get(self.resource_id.as_deref()).cloned()
+    // self.context.resources.lock().await.get(self.resource_id.as_deref()).cloned()
+    self.context.arena.arena_impl().resources.write().await.get(self.resource_id.as_deref()).cloned()
   }
 
   pub fn resource_mut<'a>(&self, resources: &'a mut Resources) -> Option<&'a mut TaggedResource> {

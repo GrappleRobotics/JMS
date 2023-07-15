@@ -6,7 +6,7 @@ import { Area, CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, Toolti
 import { WebsocketComponent } from "support/ws-component";
 import { MatchStationStatusRecord, MatchStationStatusRecordKey } from "ws-schema";
 
-const DOWNSAMPLE_STRIDE = 10;
+const DOWNSAMPLE_STRIDE = 1;
 
 type MatchLogViewState = {
   data?: MatchStationStatusRecord,

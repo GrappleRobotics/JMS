@@ -1,4 +1,5 @@
 import PlayoffBracketGraph, { as_playoffs } from "components/PlayoffBracket";
+import PlayoffDoubleBracketGraph from "components/PlayoffDoubleBracket";
 import PlayoffRoundRobin from "components/PlayoffRoundRobin";
 import moment from "moment";
 import React from "react";
@@ -112,6 +113,7 @@ export default class Rankings extends WebsocketComponent<RankingsProps, Rankings
               playoff_data ? (
                 playoff_data?.mode === "Bracket"
                   ? <PlayoffBracketGraph dark_mode gen_record={playoffs!} next={next_match} />
+                  : playoff_data?.mode === "DoubleBracket" ? <PlayoffDoubleBracketGraph dark_mode gen_record={playoffs!} next={next_match} />
                   : <Row className="grow" style={{ fontSize: "2.5vw", maxHeight: "80vh" }}>
                       <PlayoffRoundRobin dark_mode gen_record={playoffs!} next={next_match} />
                     </Row>

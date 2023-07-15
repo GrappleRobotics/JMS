@@ -38,7 +38,8 @@ export class PosSelector extends React.Component<PosSelectorProps, PosSelectorSt
   componentDidMount = () => {
     this.colRef.current!.addEventListener("resize", () => this.recalcSize());
     window.addEventListener("resize", () => this.recalcSize());
-    setTimeout(() => this.recalcSize(), 1000);
+    setTimeout(() => this.recalcSize(), 100);
+    setTimeout(() => this.recalcSize(), 500);
   }
 
   recalcSize = () => {

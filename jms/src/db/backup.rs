@@ -6,17 +6,17 @@ use tokio::time::interval;
 use walkdir::WalkDir;
 use zip::write::FileOptions;
 
-use crate::{config::Interactive, models, arena::SharedArena};
+use crate::{config::Interactive, models, arena::Arena};
 
 use super::TableType;
 
 pub struct DBBackup {
-  pub arena: SharedArena,
+  pub arena: Arena,
   pub settings: DBBackupSettings
 }
 
 impl DBBackup {
-  pub fn new(arena: SharedArena, settings: DBBackupSettings) -> Self {
+  pub fn new(arena: Arena, settings: DBBackupSettings) -> Self {
     Self { arena, settings }
   }
 
@@ -43,8 +43,8 @@ impl DBBackup {
           };
         },
         _ = interval.tick() => {
-          let arena = self.arena.lock().await;
-          if arena.can_backup() {
+          info!("Backup Tick");
+          if self.arena.can_backup().await {
             update = true;
           }
         }

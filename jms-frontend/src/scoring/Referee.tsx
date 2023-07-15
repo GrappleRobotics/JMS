@@ -10,12 +10,12 @@ import { capitalise } from "support/strings";
 import { otherAlliance, withVal } from "support/util";
 import { ALLIANCES, NEAR_FAR } from "support/ws-additional";
 import { WebsocketComponent, withRole } from "support/ws-component";
-import { Alliance, SerialisedAllianceStation, ArenaAccessRestriction, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, EndgamePointType, ArenaState, NearFar } from "ws-schema";
+import { Alliance, SerialisedAllianceStation, LoadedMatch, Penalties, SnapshotScore, ScoreUpdate, ArenaState, NearFar, MatchScoreSnapshot, EndgameType } from "ws-schema";
 
 type RefereePanelState = {
   match?: LoadedMatch,
   stations: SerialisedAllianceStation[],
-  access?: ArenaAccessRestriction,
+  score?: MatchScoreSnapshot,
   state?: ArenaState
 }
 
@@ -25,7 +25,7 @@ abstract class RefereePanelBase<P={}> extends WebsocketComponent<P, RefereePanel
   componentDidMount = () => this.handles = [
     this.listen("Arena/Alliance/CurrentStations", "stations"),
     this.listen("Arena/Match/Current", "match"),
-    this.listen("Arena/Access/Current", "access"),
+    this.listen("Arena/Match/Score", "score"),
     this.listen("Arena/State/Current", "state")
   ]
 
@@ -79,7 +79,7 @@ abstract class RefereePanelBase<P={}> extends WebsocketComponent<P, RefereePanel
   render() {
     return <Container fluid>
       {
-        (this.state.match?.score != null && this.state.stations.length > 0) ? this.renderIt() : this.renderWaiting()
+        (this.state.match != null && this.state.score != null && this.state.stations.length > 0) ? this.renderIt() : this.renderWaiting()
       }
     </Container>
   }
@@ -93,12 +93,10 @@ type RefereeTeamCardProps = {
   endgame: boolean
 };
 
-const ENDGAME_MAP: { [K in EndgamePointType]: string } = {
+const ENDGAME_MAP: { [K in EndgameType]: string } = {
   None: "None",
-  Low: "Low",
-  Mid: "Mid",
-  High: "High",
-  Traversal: "Trav."
+  Parked: "ENDGAME Park",
+  Docked: "ENDGAME Docked"
 };
 
 export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
@@ -106,7 +104,7 @@ export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
     const { idx, station, score, update, endgame } = this.props;
     const alliance = station.station.alliance;
 
-    const has_taxi = score.live.taxi[idx];
+    const has_mobility = score.live.mobility[idx];
 
     return withVal(station.team, team => <Col className="referee-station" data-alliance={alliance}>
       <Row>
@@ -114,13 +112,13 @@ export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
         <Col>
           <Button
             className="btn-block referee-station-score"
-            data-score-type="taxi"
-            data-score-value={has_taxi}
-            onClick={() => update( { Taxi: { station: idx, crossed: !has_taxi } } )}
+            data-score-type="mobility"
+            data-score-value={has_mobility}
+            onClick={() => update( { Mobility: { station: idx, crossed: !has_mobility } } )}
           >
             {
-              has_taxi ? <React.Fragment> AUTO TAXI OK &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
-                : <React.Fragment> NO AUTO TAXI &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
+              has_mobility ? <React.Fragment> AUTO MOBILITY OK &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
+                : <React.Fragment> NO AUTO MOBILITY &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
             }
           </Button>
         </Col>
@@ -133,7 +131,7 @@ export class RefereeTeamCard extends React.PureComponent<RefereeTeamCardProps> {
               data-score-type="endgame"
               data-score-value={score.live.endgame[idx]}
               value={score.live.endgame[idx]}
-              values={_.keys(ENDGAME_MAP) as EndgamePointType[]}
+              values={_.keys(ENDGAME_MAP) as EndgameType[]}
               names={_.values(ENDGAME_MAP)}
               onChange={v => update({ Endgame: { station: idx, endgame: v } })}
               // disabled={!endgame}
@@ -160,11 +158,12 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
 
   renderIt() {
     const match = this.state.match!;
+    const score_all = this.state.score!;
     const alliance = this.props.alliance;
     const other_alliance = otherAlliance(alliance);
     
-    const score = match.score[alliance];
-    const other_score = match.score[other_alliance];
+    const score = score_all[alliance];
+    const other_score = score_all[other_alliance];
 
     const flip = this.props.position === "far";
 
@@ -183,11 +182,11 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
       <Row>
         <this.FoulsComponent
           alliance={flip ? "red" : "blue"}
-          score={match.score[flip ? "red" : "blue"]}
+          score={score_all[flip ? "red" : "blue"]}
         />
         <this.FoulsComponent
           alliance={flip ? "blue" : "red"}
-          score={match.score[flip ? "blue" : "red"]}
+          score={score_all[flip ? "blue" : "red"]}
         />
       </Row>
       <Row>
@@ -201,15 +200,26 @@ export class AllianceReferee extends RefereePanelBase<AllianceRefereeProps> {
           />)
         }
       </Row>
+      <Row>
+        <Button
+          className="btn-block referee-station-score"
+          data-score-type="auto_docked"
+          data-score-value={score.live.auto_docked}
+          onClick={() => this.updateScore(alliance,  { AutoDocked: { docked: !score.live.auto_docked } } )}
+        >
+          {
+            score.live.auto_docked ? <React.Fragment> AUTO DOCKED &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
+              : <React.Fragment> NO AUTO DOCKED &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
+          }
+        </Button>
+      </Row>
     </React.Fragment>
   }
 }
 
 export class HeadReferee extends RefereePanelBase {
   renderTopBar = () => {
-    const { match, state, access } = this.state;
-
-    const canChangeAccess = state != null && !(state.state === "MatchArmed" || state.state === "MatchPlay");
+    const { match, state } = this.state;
 
     return <React.Fragment>
       <Row className="mb-3">
@@ -217,7 +227,7 @@ export class HeadReferee extends RefereePanelBase {
           <h3 className="mb-0"> { match?.match_meta?.name || "Waiting for Scorekeeper..." } </h3>
           <h4 className="text-muted"> { match?.state || "--" } &nbsp; { match?.remaining_time?.secs }s </h4>
         </Col>
-        <Col md="auto" className="head-ref-field-ax">
+        {/* <Col md="auto" className="head-ref-field-ax">
           <Button
             variant="purple"
             size="lg"
@@ -244,7 +254,7 @@ export class HeadReferee extends RefereePanelBase {
           >
             NORMAL
           </Button>
-        </Col>
+        </Col> */}
       </Row>
     </React.Fragment>
   }
@@ -254,8 +264,7 @@ export class HeadReferee extends RefereePanelBase {
   }
 
   renderIt() {
-    let match = this.state.match!;
-    let { score } = match;
+    let score = this.state.score!;
 
     return <React.Fragment>
       { this.renderTopBar() }
