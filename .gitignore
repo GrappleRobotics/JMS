@@ -6,6 +6,8 @@
 *.dylib
 *.kvdb
 
+/data
+
 # Event backups
 *.tar.gz
 

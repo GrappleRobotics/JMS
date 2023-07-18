@@ -1,5 +1,0 @@
-[workspace]
-members = [
-    "jms",
-    "jms-radio-config"
-]
