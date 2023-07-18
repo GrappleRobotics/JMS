@@ -2,9 +2,8 @@ pub mod matches;
 
 use std::time::Duration;
 
-use futures::StreamExt;
 use jms_arena_lib::{ArenaSignal, ArenaSignalMessage, ArenaState, MatchPlayState};
-use jms_base::{logging, redis::{redis_connect, JsonAsyncCommands, AsyncCommands}, rabbit::{rabbit_connect, rabbit_subscribe, rabbit_publish}, mq::MessageQueue};
+use jms_base::{logging, redis::{redis_connect, JsonAsyncCommands, AsyncCommands}, mq::MessageQueue};
 use log::{info, error};
 use matches::LoadedMatch;
 
