@@ -10,4 +10,5 @@ ENV CARGO_TARGET_DIR=/tmp/cargo
 RUN apk add zlib-dev bash musl-dev g++ make libressl-dev
 
 ADD jms-base /work/jms-base
+ADD jms-macros /work/jms-macros
 RUN cd /work/jms-base && cargo build --release

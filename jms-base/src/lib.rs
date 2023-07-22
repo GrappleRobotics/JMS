@@ -1,3 +1,3 @@
 pub mod logging;
-pub mod redis;
+pub mod kv;
 pub mod mq;

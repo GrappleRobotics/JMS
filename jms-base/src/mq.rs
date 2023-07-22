@@ -1,9 +1,9 @@
-use std::{sync::atomic::AtomicUsize, collections::HashMap, marker::PhantomData};
+use std::{sync::{atomic::AtomicUsize, Arc}, collections::HashMap, marker::PhantomData};
 
 use futures::StreamExt;
 use lapin::{options::{QueueDeleteOptions, QueueDeclareOptions, ExchangeDeclareOptions, BasicPublishOptions, QueueBindOptions, BasicConsumeOptions}, types::{FieldTable, DeliveryTag}, BasicProperties, Consumer, acker::Acker, protocol::basic::AMQPProperties, message::Delivery};
 use log::error;
-use tokio::sync::{RwLock, oneshot};
+use tokio::sync::{RwLock, oneshot, Mutex};
 
 const JMS_EXCHANGE: &'static str = "JMS";
 const RPC_EXCHANGE: &'static str = "JMS-RPC";
@@ -11,11 +11,11 @@ const RPC_EXCHANGE: &'static str = "JMS-RPC";
 pub struct MessageQueue {
   #[allow(dead_code)]
   connection: lapin::Connection,
-  channel: lapin::Channel,
 
   reply_queue: String,
-  correlation_index: AtomicUsize,
-  correlation_map: RwLock<HashMap<String, oneshot::Sender<Delivery>>>
+  correlation_index: Arc<AtomicUsize>,
+  correlation_map: Arc<RwLock<HashMap<String, oneshot::Sender<Delivery>>>>,
+  rpc_recv_mutex: Arc<Mutex<()>>
 }
 
 impl MessageQueue {
@@ -36,34 +36,35 @@ impl MessageQueue {
     channel.queue_bind(reply_queue, RPC_EXCHANGE, reply_queue, QueueBindOptions::default(), FieldTable::default()).await?;
 
     Ok(MessageQueue {
-      connection, channel,
+      connection,
       reply_queue: reply_queue.to_owned(),
-      correlation_index: AtomicUsize::new(0),
-      correlation_map: RwLock::new(HashMap::new())
+      correlation_index: Arc::new(AtomicUsize::new(0)),
+      correlation_map: Arc::new(RwLock::new(HashMap::new())),
+      rpc_recv_mutex: Arc::new(Mutex::new(()))
     })
   }
 
-  pub async fn spin(&self) -> anyhow::Result<()> {
-    let mut reply_consumer = self.channel.basic_consume(&self.reply_queue, &self.reply_queue, BasicConsumeOptions::default(), FieldTable::default()).await?;
-    loop {
-      let next = reply_consumer.next().await;
-      match next {
-        None => return Ok(()),
-        Some(Ok(delivery)) => {
-          if let Some(correlation) = delivery.properties.correlation_id() {
-            let mut map = self.correlation_map.write().await;
-            let callback = map.remove(&correlation.to_string());
-            if let Some(callback) = callback {
-              callback.send(delivery).ok();
-            }
-          }
-          
-        },
-        Some(Err(e)) => error!("RPC listen error: {}", e)
-      }
-    }
+  pub async fn channel(&self) -> anyhow::Result<MessageQueueChannel> {
+    Ok(MessageQueueChannel {
+      channel: self.connection.create_channel().await?,
+      reply_queue: self.reply_queue.clone(),
+      correlation_index: self.correlation_index.clone(),
+      correlation_map: self.correlation_map.clone(),
+      rpc_recv_mutex: self.rpc_recv_mutex.clone()
+    })
   }
+}
 
+pub struct MessageQueueChannel {
+  channel: lapin::Channel,
+
+  reply_queue: String,
+  correlation_index: Arc<AtomicUsize>,
+  correlation_map: Arc<RwLock<HashMap<String, oneshot::Sender<Delivery>>>>,
+  rpc_recv_mutex: Arc<Mutex<()>>
+}
+
+impl MessageQueueChannel {
   pub async fn publish<T: serde::Serialize>(&self, topic: &str, data: T) -> anyhow::Result<()> {
     let json = serde_json::to_vec(&data).unwrap();
     self.channel.basic_publish(JMS_EXCHANGE, topic, BasicPublishOptions::default(), &json[..], BasicProperties::default()).await?.await?;
@@ -122,8 +123,8 @@ impl MessageQueue {
       );
     
     let (tx, rx) = oneshot::channel();
-
-    self.correlation_map.write().await.insert(props.correlation_id().as_ref().unwrap().to_string(), tx);
+    let our_correlation = props.correlation_id().as_ref().unwrap().to_string();
+    self.correlation_map.write().await.insert(our_correlation.clone(), tx);
 
     self.channel.basic_publish(
       RPC_EXCHANGE, 
@@ -133,8 +134,37 @@ impl MessageQueue {
       props
     ).await?;
 
-    let response = rx.await?;
-    Ok(serde_json::from_slice(&response.data[..])?)
+    tokio::select! {
+      response = rx => { return Ok(serde_json::from_slice(&response?.data[..])?) },
+      _ = self.rpc_recv_mutex.lock() => {
+        // The responsibility for keeping track of RPC messages is ours
+        let mut reply_consumer = self.channel.basic_consume(&self.reply_queue, &self.reply_queue, BasicConsumeOptions::default(), FieldTable::default()).await?;
+        loop {
+          let next = reply_consumer.next().await;
+          match next {
+            None => anyhow::bail!("RPC closed"),
+            Some(Ok(delivery)) => {
+              if let Some(correlation) = delivery.properties.correlation_id() {
+                let mut map = self.correlation_map.write().await;
+                let callback = map.remove(&correlation.to_string());
+
+                if correlation.to_string() == our_correlation {
+                  // We found the one belonging to us, return it
+                  return Ok(serde_json::from_slice(&delivery.data[..])?);
+                }
+
+                if let Some(callback) = callback {
+                  // It's not for us - maybe it's for someone else
+                  callback.send(delivery).ok();
+                }
+              }
+              
+            },
+            Some(Err(e)) => error!("RPC listen error: {}", e)
+          }
+        }
+      }
+    }
   }
 }
 

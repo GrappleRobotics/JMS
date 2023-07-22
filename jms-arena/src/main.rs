@@ -2,14 +2,14 @@ pub mod matches;
 
 use std::time::Duration;
 
-use jms_arena_lib::{ArenaSignal, ArenaSignalMessage, ArenaState, MatchPlayState};
-use jms_base::{logging, redis::{redis_connect, JsonAsyncCommands, AsyncCommands}, mq::MessageQueue};
-use log::{info, error};
+use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC};
+use jms_base::{logging, kv::KVStore, mq::{MessageQueueChannel, MessageQueue}};
+use log::info;
 use matches::LoadedMatch;
 
 struct Arena {
-  redis: jms_base::redis::aio::Connection,
-  mq: MessageQueue,
+  kv: KVStore,
+  mq: MessageQueueChannel,
 
   last_state: Option<ArenaState>,
   state: ArenaState,
@@ -18,9 +18,9 @@ struct Arena {
 }
 
 impl Arena {
-  pub async fn new(redis: jms_base::redis::aio::Connection, mq: MessageQueue) -> Self {
+  pub async fn new(kv: KVStore, mq: MessageQueueChannel) -> Self {
     Self {
-      redis, mq,
+      kv, mq,
       state: ArenaState::Init,
       last_state: None,
 
@@ -33,7 +33,7 @@ impl Arena {
     self.last_state = Some(self.state);
     self.state = new_state;
 
-    self.redis.json_set("arena:state", "$", &self.state).await?;
+    self.kv.json_set("arena:state", "$", &self.state).await?;
     self.mq.publish("arena.state.new", new_state).await?;
 
     Ok(())
@@ -41,7 +41,7 @@ impl Arena {
 
   pub async fn request_network(&mut self) -> anyhow::Result<()> {
     info!("Requesting Network Start");
-    self.redis.hset("arena:network", "ready", false).await?;
+    self.kv.hset("arena:network", "ready", false).await?;
     self.mq.publish("arena.network.start", ()).await?;    // TODO: Move this to RPC?
     Ok(())
   }
@@ -52,7 +52,7 @@ impl Arena {
     Ok(())
   }
 
-  pub async fn spin_once(&mut self, signal: Option<ArenaSignalMessage>) -> anyhow::Result<()> {
+  pub async fn spin_once(&mut self, signal: Option<ArenaSignal>) -> anyhow::Result<()> {
     let first = self.last_state != Some(self.state);
     self.last_state = Some(self.state);
 
@@ -66,7 +66,7 @@ impl Arena {
           m.fault();
         }
 
-        if signal.map(|s| s.signal) == Some(ArenaSignal::EstopReset) {
+        if signal == Some(ArenaSignal::EstopReset) {
           self.set_state(ArenaState::Reset).await?;
         }
       },
@@ -78,13 +78,13 @@ impl Arena {
           self.request_network().await?;
         }
 
-        if self.redis.hget("arena:network", "ready").await? {
+        if self.kv.hget("arena:network", "ready").await? {
           info!("Network Ready");
           self.set_state(ArenaState::Idle { net_ready: true }).await?;
         }
       },
       ArenaState::Idle { net_ready: true } => {
-        if signal.map(|s| s.signal) == Some(ArenaSignal::Prestart) {
+        if signal == Some(ArenaSignal::Prestart) {
           match &self.current_match {
             Some(m) if m.state == MatchPlayState::Waiting => {
               self.set_state(ArenaState::Prestart { net_ready: false }).await?;
@@ -99,14 +99,14 @@ impl Arena {
           self.request_network().await?;
         }
 
-        if self.redis.hget("arena:network", "ready").await? {
+        if self.kv.hget("arena:network", "ready").await? {
           info!("Network Ready");
           self.set_state(ArenaState::Prestart { net_ready: true }).await?;
         }
       },
       ArenaState::Prestart { net_ready: true } => {
         match signal {
-          Some(sig) => match sig.signal {
+          Some(sig) => match sig {
             ArenaSignal::MatchArm { force } => {
               // TODO: If consensus says ready (how to do that? maybe scan over a subnamespace?)
               self.set_state(ArenaState::MatchArmed).await?;
@@ -119,7 +119,7 @@ impl Arena {
         }
       },
       ArenaState::MatchArmed => {
-        if signal.map(|s| s.signal) == Some(ArenaSignal::MatchPlay) {
+        if signal == Some(ArenaSignal::MatchPlay) {
           self.set_state(ArenaState::MatchPlay).await?;
         }
       },
@@ -141,13 +141,13 @@ impl Arena {
           self.request_network().await?;
         }
 
-        if self.redis.hget("arena:network", "ready").await? {
+        if self.kv.hget("arena:network", "ready").await? {
           info!("Network Ready");
           self.set_state(ArenaState::Prestart { net_ready: true }).await?;
         }
       },
       ArenaState::MatchComplete { net_ready: true } => {
-        if signal.map(|s| s.signal) == Some(ArenaSignal::MatchCommit) {
+        if signal == Some(ArenaSignal::MatchCommit) {
           self.commit_scores().await?;
           self.set_state(ArenaState::Reset).await?;
         }
@@ -155,30 +155,55 @@ impl Arena {
     }
 
     match self.current_match.as_ref() {
-      Some(m) => m.write_state(&mut self.redis).await?,
-      None => self.redis.del("arena:match").await?,
+      Some(m) => m.write_state(&mut self.kv).await?,
+      None => self.kv.del("arena:match").await?,
     }
 
     Ok(())
   }
+}
 
-  pub async fn run(&mut self) -> anyhow::Result<()> {
+#[async_trait::async_trait]
+impl ArenaRPC for Arena {
+  fn mq(&self) -> &MessageQueueChannel {
+    &self.mq
+  }
+
+  async fn signal(&mut self, signal: ArenaSignal, _source: String) -> Result<(), String> {
+    self.spin_once(Some(signal)).await.map_err(|e| format!("{}", e))
+  }
+
+  async fn load_test_match(&mut self) -> Result<(), String> {
+    info!("Loading Test Match...");
+    match self.state {
+      ArenaState::Idle { .. } => {
+        self.current_match = Some(LoadedMatch::new());
+        Ok(())
+      },
+      _ => Err(format!("Can't load match in state: {:?}", self.state))
+    }
+  }
+
+  async fn unload_match(&mut self) -> Result<(), String> {
+    info!("Unloading Match...");
+    match self.state {
+      ArenaState::Idle { .. } => {
+        self.current_match = None;
+        Ok(())
+      },
+      _ => Err(format!("Can't unload match in state: {:?}", self.state))
+    }
+  }
+}
+
+impl Arena {
+  async fn run(&mut self) -> anyhow::Result<()> {
     let mut interval = tokio::time::interval(Duration::from_millis(1000 / 50));
-    let mut signal_consumer = self.mq.rpc_subscribe("arena.signal", "arena-signal", "arena", false).await?;
+    let mut rpc = self.rpc_handle().await?;
 
     loop {
       tokio::select! {
-        msg = signal_consumer.next() => match msg {
-          Some(Ok(msg)) => {
-            let reply = self.spin_once(Some(msg.data)).await.map_err(|e| { error!("{}", e); format!("{}", e) });
-            self.mq.rpc_reply(&msg.properties, reply).await?;
-            interval.reset();
-          },
-          Some(Err(e)) => {
-            error!("Error in receiving from Rabbit: {}", e);
-          },
-          None => ()
-        },
+        msg = rpc.next() => self.rpc_process(msg).await?,
         _ = interval.tick() => {
           self.spin_once(None).await?;
         }
@@ -190,14 +215,11 @@ impl Arena {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
   logging::configure(false);
-  info!("Connecting to Redis");
-  let (_, redis_connection) = redis_connect().await?;
-  info!("Connecting to Message Queue");
+  let kv = KVStore::new().await?;
   let mq = MessageQueue::new("arena-reply").await?;
   info!("Connected!");
 
-  
-  let mut arena = Arena::new(redis_connection, mq).await;
+  let mut arena = Arena::new(kv, mq.channel().await?).await;
   arena.run().await?;
 
   Ok(())

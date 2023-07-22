@@ -24,5 +24,6 @@ services:
       dockerfile: jms-arena/Dockerfile
     volumes:
     - "./jms-base:/work/jms-base"
+    - "./jms-macros:/work/jms-macros"
     - "./jms-arena:/work/jms-arena"
     command: /bin/sh -c "while sleep 1000; do :; done"
