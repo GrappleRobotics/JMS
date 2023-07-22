@@ -7,7 +7,7 @@ WORKDIR /work
 # when mounted as a dev volume (especially on windows)
 ENV CARGO_TARGET_DIR=/tmp/cargo
 
-RUN apk add zlib-dev bash musl-dev g++ make libressl-dev
+RUN apk add zlib-dev bash musl-dev g++ make libressl-dev git python3
 
 ADD jms-base /work/jms-base
 ADD jms-macros /work/jms-macros

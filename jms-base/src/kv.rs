@@ -10,7 +10,7 @@ pub struct KVStore {
 
 impl KVStore {
   pub async fn new() -> anyhow::Result<Self> {
-    let redis_uri = std::env::var("REDIS_URI").unwrap_or("redis://redis:6379".to_owned());
+    let redis_uri = std::env::var("REDIS_URI").unwrap_or("redis://localhost:6379/0".to_owned());
     let redis_client = redis::Client::open(redis_uri)?;
     let redis_connection = redis_client.get_async_connection().await?;
 

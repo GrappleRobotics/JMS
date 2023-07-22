@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    restart: unless-stopped
+    volumes:
+    - "./data/redis:/data"
+    ports:
+    - "6379:6379"
+    - "8001:8001"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+    - "5672:5672"
+    - "15672:15672"
+  

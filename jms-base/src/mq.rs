@@ -20,7 +20,7 @@ pub struct MessageQueue {
 
 impl MessageQueue {
   pub async fn new(reply_queue: &str) -> anyhow::Result<Self> {
-    let rabbit_uri = std::env::var("RABBITMQ_URI").unwrap_or("amqp://rabbitmq:5672/%2f".to_owned());
+    let rabbit_uri = std::env::var("RABBITMQ_URI").unwrap_or("amqp://localhost:5672/%2f".to_owned());
     let connection = lapin::Connection::connect(&rabbit_uri, lapin::ConnectionProperties::default()).await?;
     let channel = connection.create_channel().await?;
 
