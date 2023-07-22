@@ -1,7 +1,7 @@
 {
-  "name": "JMS Arena",
+  "name": "JMS Core",
   "dockerComposeFile": "../../docker-compose.dev.yml",
-  "service": "jms-arena",
+  "service": "jms-core",
   "workspaceFolder": "/work",
   "shutdownAction": "none",
   "customizations": {

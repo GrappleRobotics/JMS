@@ -21,9 +21,23 @@ services:
   jms-arena:
     build:
       context: .
-      dockerfile: jms-arena/Dockerfile
+      dockerfile: jms-arena/Dockerfile.dev
+    depends_on:
+    - redis
+    - rabbitmq
     volumes:
     - "./jms-base:/work/jms-base"
     - "./jms-macros:/work/jms-macros"
     - "./jms-arena:/work/jms-arena"
-    command: /bin/sh -c "while sleep 1000; do :; done"
+  
+  jms-core:
+    build:
+      context: .
+      dockerfile: jms-core/Dockerfile.dev
+    depends_on:
+    - redis
+    - rabbitmq
+    volumes:
+    - "./jms-base:/work/jms-base"
+    - "./jms-macros:/work/jms-macros"
+    - "./jms-core:/work/jms-core"

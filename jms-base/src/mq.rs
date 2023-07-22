@@ -81,7 +81,9 @@ impl MessageQueueChannel {
     let q = self.channel.queue_declare(queue, QueueDeclareOptions::default(), FieldTable::default()).await?;
     self.channel.queue_bind(q.name().as_str(), exchange, topic, QueueBindOptions::default(), FieldTable::default()).await?;
     
-    let consumer = self.channel.basic_consume(q.name().as_str(), subscriber_name, BasicConsumeOptions::default(), FieldTable::default()).await?;
+    let mut options = BasicConsumeOptions::default();
+    options.no_ack = true;      // Auto-ack when we receive the message
+    let consumer = self.channel.basic_consume(q.name().as_str(), subscriber_name, options, FieldTable::default()).await?;
     Ok(MessageQueueSubscriber { consumer, _phantom: PhantomData })
   }
 

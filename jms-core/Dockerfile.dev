@@ -1,0 +1,15 @@
+# To be invoked in project root
+FROM node:lts-alpine as node
+
+FROM jms-base:latest
+
+# Add node.js packages
+COPY --from=node /usr/local/bin /usr/local/bin
+COPY --from=node /usr/local/lib /usr/local/lib
+COPY --from=node /opt /opt
+
+WORKDIR /work
+
+ADD jms-core /work/jms-core
+
+CMD ["/bin/sh", "-c", "while sleep 1000; do :; done"]

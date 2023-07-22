@@ -4,6 +4,5 @@ FROM jms-base:latest
 WORKDIR /work
 
 ADD jms-arena /work/jms-arena
-RUN cd /work/jms-arena && cargo build --release
 
-CMD /work/jms-arena/target/release/jms-arena
+CMD ["/bin/sh", "-c", "while sleep 1000; do :; done"]
