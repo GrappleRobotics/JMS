@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use chrono::Duration;
 use jms_arena_lib::MatchPlayState;
-use jms_base::kv::{aio::Connection, AsyncCommands, KVStore};
+use jms_base::kv::{aio::Connection, AsyncCommands, KVConnection};
 use log::{warn, info};
 
 pub struct LoadedMatch {
@@ -110,7 +110,7 @@ impl LoadedMatch {
     Ok(())
   }
 
-  pub async fn write_state(&self, kv: &mut KVStore) -> anyhow::Result<()> {
+  pub async fn write_state(&self, kv: &mut KVConnection) -> anyhow::Result<()> {
     kv.hset("arena:match", "remaining_ms", self.remaining.num_milliseconds()).await?;
     kv.hset("arena:match", "endgame", self.endgame).await?;
     kv.hset("arena:match", "state", serde_json::to_string(&self.state)?).await?;

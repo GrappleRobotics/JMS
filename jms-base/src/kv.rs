@@ -4,11 +4,11 @@ pub use redis::*;
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
-pub struct KVStore {
+pub struct KVConnection {
   redis: Arc<RwLock<redis::aio::Connection>>
 }
 
-impl KVStore {
+impl KVConnection {
   pub async fn new() -> anyhow::Result<Self> {
     let redis_uri = std::env::var("REDIS_URI").unwrap_or("redis://localhost:6379/0".to_owned());
     let redis_client = redis::Client::open(redis_uri)?;
@@ -40,5 +40,9 @@ impl KVStore {
   pub async fn del(&self, key: &str) -> anyhow::Result<()> {
     self.redis.write().await.del(key).await?;
     Ok(())
+  }
+
+  pub async fn keys(&self, pattern: &str) -> anyhow::Result<Vec<String>> {
+    Ok(self.redis.write().await.keys(pattern).await?)
   }
 }

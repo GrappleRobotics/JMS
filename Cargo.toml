@@ -1,0 +1,11 @@
+[workspace]
+members = [
+  "jms-base",
+  "jms-macros",
+  "jms-arena/jms-arena-lib",
+  "jms-arena",
+  "jms-core/jms-core-lib",
+  "jms-core",
+  "jms-util",
+  "jms-radio-config",
+]

@@ -1,0 +1,15 @@
+[package]
+name = "jms-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jms-core-lib = { path = "jms-core-lib" }
+jms-base = { path = "../jms-base" }
+serde = "1.0.174"
+tokio = { version = "1.29.1", features = ["full"] }
+anyhow = "1.0.72"
+chrono = "0.4.26"
+log = "0.4.19"
+nalgebra = "0.32.3"
+rand = "0.8.5"

@@ -1,7 +1,7 @@
 use std::{sync::{atomic::AtomicUsize, Arc}, collections::HashMap, marker::PhantomData};
 
 use futures::StreamExt;
-use lapin::{options::{QueueDeleteOptions, QueueDeclareOptions, ExchangeDeclareOptions, BasicPublishOptions, QueueBindOptions, BasicConsumeOptions}, types::{FieldTable, DeliveryTag}, BasicProperties, Consumer, acker::Acker, protocol::basic::AMQPProperties, message::Delivery};
+use lapin::{options::{QueueDeleteOptions, QueueDeclareOptions, ExchangeDeclareOptions, BasicPublishOptions, QueueBindOptions, BasicConsumeOptions}, types::{FieldTable, DeliveryTag}, BasicProperties, Consumer, acker::Acker, message::Delivery};
 use log::error;
 use tokio::sync::{RwLock, oneshot, Mutex};
 

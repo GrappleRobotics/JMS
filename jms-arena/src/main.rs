@@ -3,12 +3,12 @@ pub mod matches;
 use std::time::Duration;
 
 use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC};
-use jms_base::{logging, kv::KVStore, mq::{MessageQueueChannel, MessageQueue}};
+use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue}};
 use log::info;
 use matches::LoadedMatch;
 
 struct Arena {
-  kv: KVStore,
+  kv: KVConnection,
   mq: MessageQueueChannel,
 
   last_state: Option<ArenaState>,
@@ -18,7 +18,7 @@ struct Arena {
 }
 
 impl Arena {
-  pub async fn new(kv: KVStore, mq: MessageQueueChannel) -> Self {
+  pub async fn new(kv: KVConnection, mq: MessageQueueChannel) -> Self {
     Self {
       kv, mq,
       state: ArenaState::Init,
@@ -215,7 +215,7 @@ impl Arena {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
   logging::configure(false);
-  let kv = KVStore::new().await?;
+  let kv = KVConnection::new().await?;
   let mq = MessageQueue::new("arena-reply").await?;
   info!("Connected!");
 
