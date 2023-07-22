@@ -10,7 +10,7 @@ const RPC_EXCHANGE: &'static str = "JMS-RPC";
 
 pub struct MessageQueue {
   #[allow(dead_code)]
-  connection: lapin::Connection,
+  connection: Arc<lapin::Connection>,
 
   reply_queue: String,
   correlation_index: Arc<AtomicUsize>,
@@ -36,7 +36,7 @@ impl MessageQueue {
     channel.queue_bind(reply_queue, RPC_EXCHANGE, reply_queue, QueueBindOptions::default(), FieldTable::default()).await?;
 
     Ok(MessageQueue {
-      connection,
+      connection: Arc::new(connection),
       reply_queue: reply_queue.to_owned(),
       correlation_index: Arc::new(AtomicUsize::new(0)),
       correlation_map: Arc::new(RwLock::new(HashMap::new())),
@@ -46,6 +46,7 @@ impl MessageQueue {
 
   pub async fn channel(&self) -> anyhow::Result<MessageQueueChannel> {
     Ok(MessageQueueChannel {
+      connection: self.connection.clone(),
       channel: self.connection.create_channel().await?,
       reply_queue: self.reply_queue.clone(),
       correlation_index: self.correlation_index.clone(),
@@ -56,6 +57,7 @@ impl MessageQueue {
 }
 
 pub struct MessageQueueChannel {
+  connection: Arc<lapin::Connection>,
   channel: lapin::Channel,
 
   reply_queue: String,
@@ -65,6 +67,17 @@ pub struct MessageQueueChannel {
 }
 
 impl MessageQueueChannel {
+  pub async fn clone(&self) -> anyhow::Result<Self> {
+    Ok(Self {
+      connection: self.connection.clone(),
+      channel: self.connection.create_channel().await?,
+      reply_queue: self.reply_queue.clone(),
+      correlation_index: self.correlation_index.clone(),
+      correlation_map: self.correlation_map.clone(),
+      rpc_recv_mutex: self.rpc_recv_mutex.clone()
+    })
+  }
+
   pub async fn publish<T: serde::Serialize>(&self, topic: &str, data: T) -> anyhow::Result<()> {
     let json = serde_json::to_vec(&data).unwrap();
     self.channel.basic_publish(JMS_EXCHANGE, topic, BasicPublishOptions::default(), &json[..], BasicProperties::default()).await?.await?;

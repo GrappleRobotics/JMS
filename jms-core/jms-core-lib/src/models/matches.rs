@@ -11,6 +11,51 @@ pub enum Alliance {
   Blue, Red
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Hash, schemars::JsonSchema)]
+pub struct AllianceStationId {
+  pub alliance: Alliance,
+  pub station: u32,
+}
+
+impl AllianceStationId {
+  pub fn new(alliance: Alliance, station: u32) -> Self {
+    Self { alliance, station }
+  }
+
+  // To station idx, where 0-2 are Blue 1-3, and 3-5 are Red 4-6
+  pub fn to_station_idx(&self) -> u8 {
+    let stn: u8 = ((self.station - 1) % 3).try_into().unwrap();
+
+    // 0, 1, 2 = Blue 1, 2, 3
+    // 3, 4, 5 = Red  1, 2, 3
+    match self.alliance {
+      Alliance::Blue => stn,
+      Alliance::Red => stn + 3,
+    }
+  }
+
+  pub fn to_ds_number(&self) -> u8 {
+    let stn: u8 = ((self.station - 1) % 3).try_into().unwrap();
+
+    // Driver Station uses a different format, where Red is seen as 0, 1, 2
+    match self.alliance {
+      Alliance::Blue => stn + 3,
+      Alliance::Red => stn,
+    }
+  }
+
+  pub fn to_id(&self) -> String {
+    format!("{}{}", self.alliance.to_string().to_lowercase(), self.station)
+  }
+
+  pub fn all() -> Vec<AllianceStationId> {
+    vec![
+      Self::new(Alliance::Blue, 1), Self::new(Alliance::Blue, 2), Self::new(Alliance::Blue, 3),
+      Self::new(Alliance::Red, 1), Self::new(Alliance::Red, 2), Self::new(Alliance::Red, 3),
+    ]
+  }
+}
+
 #[derive(Debug, strum::EnumString, strum::Display, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum MatchType {
   Test, Qualification, Playoff

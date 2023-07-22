@@ -24,14 +24,6 @@ pub enum ArenaSignal {
   MatchCommit,
 }
 
-// #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-// pub struct ArenaSignalMessage {
-//   pub signal: ArenaSignal,
-//   pub source: String,
-// }
-
-// pub type ArenaSignalReply = Result<(), String>;
-
 /* MATCHES */
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -46,19 +38,33 @@ pub enum MatchPlayState {
   Fault
 }
 
-// #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-// pub enum LoadMatchCall {
-//   TestMatch,
-//   Unload
-// }
+/* ALLIANCE STATIONS */
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct AllianceStation {
+  pub team: Option<u16>,
+  pub bypass: bool,
+  pub estop: bool,
+  pub astop: bool
+}
 
-// pub type LoadMatchReply = Result<(), String>;
+impl Default for AllianceStation {
+  fn default() -> Self {
+    Self {
+      team: None,
+      bypass: false,
+      estop: false,
+      astop: false
+    }
+  }
+}
 
 /* RPC */
+
 #[jms_macros::service]
 pub trait ArenaRPC {
   async fn signal(signal: ArenaSignal, source: String) -> Result<(), String>;
 
+  async fn load_match(id: String) -> Result<(), String>;
   async fn load_test_match() -> Result<(), String>;
   async fn unload_match() -> Result<(), String>;
 }

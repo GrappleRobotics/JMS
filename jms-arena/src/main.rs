@@ -2,8 +2,9 @@ pub mod matches;
 
 use std::time::Duration;
 
-use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC};
+use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation};
 use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue}};
+use jms_core_lib::{models::{Alliance, AllianceStationId, self}, db::Table};
 use log::info;
 use matches::LoadedMatch;
 
@@ -52,6 +53,15 @@ impl Arena {
     Ok(())
   }
 
+  pub async fn reset_stations(&mut self) -> anyhow::Result<()> {
+    info!("Resetting Alliance Stations");
+    for stn in AllianceStationId::all() {
+      let key = format!("arena:station:{}", stn.to_id());
+      self.kv.json_set(&key, "$", &AllianceStation::default()).await?;
+    }
+    Ok(())
+  }
+
   pub async fn spin_once(&mut self, signal: Option<ArenaSignal>) -> anyhow::Result<()> {
     let first = self.last_state != Some(self.state);
     self.last_state = Some(self.state);
@@ -71,6 +81,7 @@ impl Arena {
         }
       },
       ArenaState::Reset => {
+        self.reset_stations().await?;
         self.set_state(ArenaState::Idle { net_ready: false }).await?;
       },
       ArenaState::Idle { net_ready: false } => {
@@ -171,6 +182,12 @@ impl ArenaRPC for Arena {
 
   async fn signal(&mut self, signal: ArenaSignal, _source: String) -> Result<(), String> {
     self.spin_once(Some(signal)).await.map_err(|e| format!("{}", e))
+  }
+
+  async fn load_match(&mut self, id: String) -> Result<(), String> {
+    let m = models::Match::get(&id, &self.kv).await.map_err(|e| e.to_string())?;
+    // TODO:
+    Ok(())
   }
 
   async fn load_test_match(&mut self) -> Result<(), String> {

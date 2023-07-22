@@ -41,7 +41,7 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
     db.del(&self.key()).await
   }
 
-  async fn delete_by(&self, id: &str, db: &kv::KVConnection) -> anyhow::Result<()> {
+  async fn delete_by(id: &str, db: &kv::KVConnection) -> anyhow::Result<()> {
     db.del(&format!("{}:{}", Self::PREFIX, id)).await
   }
 

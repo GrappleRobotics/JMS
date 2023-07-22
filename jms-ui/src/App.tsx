@@ -22,7 +22,7 @@ import { TeamEstops } from 'TeamEstop';
 import Timer from 'Timer';
 import TopNavbar from 'TopNavbar';
 import EventWizard from 'wizard/EventWizard';
-import { TaggedResource } from 'ws-schema';
+// import { TaggedResource } from 'ws-schema';
 
 type AppState = {
   errors: String[],

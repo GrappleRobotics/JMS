@@ -56,6 +56,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "prebuild": "npx json2ts ../jms-websocket/schema.json --no-additionalProperties > src/ws-schema.d.ts",
+    "prestart": "npx json2ts ../jms-websocket/schema.json --no-additionalProperties > src/ws-schema.d.ts",
+    "pretest": "npx json2ts ../jms-websocket/schema.json --no-additionalProperties > src/ws-schema.d.ts",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

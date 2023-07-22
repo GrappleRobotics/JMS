@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 jms-arena-lib = { path = "jms-arena-lib" }
 jms-base = { path = "../jms-base" }
+jms-core-lib = { path = "../jms-core/jms-core-lib" }
 tokio = { version = "1.29.1", features = ["full"] }
 anyhow = "1.0.72"
 log = "0.4.19"

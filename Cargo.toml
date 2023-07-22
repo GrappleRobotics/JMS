@@ -8,4 +8,5 @@ members = [
   "jms-core",
   "jms-util",
   "jms-radio-config",
+  "jms-websocket"
 ]

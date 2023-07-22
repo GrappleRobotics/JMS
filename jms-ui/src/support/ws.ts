@@ -46,7 +46,7 @@ export default class JmsWebsocket {
   connectCallbacks: Map<string, ConnectCallback>;
   callbacks: Map<string, Callback<any>>;
   sendQueue: RecvMeta[];
-  role: [ResourceRole, string];
+  // role: [ResourceRole, string];
   seq_num: number;
   reply_waiting: Map<number, Callback<any> & { reject: (r: any) => void }>;
 
@@ -56,7 +56,7 @@ export default class JmsWebsocket {
     this.callbacks = new Map<string, Callback<any>>();
     this.connectCallbacks = new Map<string, ConnectCallback>();
     this.sendQueue = [];
-    this.role = [ "Unknown", "" ];
+    // this.role = [ "Unknown", "" ];
     this.seq_num = 0;
     this.reply_waiting = new Map<number, Callback<any> & { reject: (r: any) => void }>();
 
@@ -77,30 +77,21 @@ export default class JmsWebsocket {
     ws.onopen = () => {
       console.log("WS Connected");
       setTimeout(() => {
-        this.send({ Resource: { SetID: resource_id() } });
-        if (get_fta_key() != null) {
-          this.transact({ Resource: { SetFTA: get_fta_key() } }, "Resource/SetFTAAck")
-            .then(b => {
-              if (!b.msg)
-                clear_fta_key();
-            })
-        }
-        // this.transact<any>({ Resource: { SetID: resource_id() } }, [])
-        //   .then(() => {
-        //     console.log("WS Ack'd ID");
-        //     this.connectCallbacks.forEach(cb => cb(true));
-        //     this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
-        //     this.sendQueue.forEach(sq => this.sendNow(sq));
-        //     this.sendQueue = [];
-        //     this.send({ Resource: { SetRole: this.role[0] } });
-        //   });
+        // this.send({ Resource: { SetID: resource_id() } });
+        // if (get_fta_key() != null) {
+        //   this.transact({ Resource: { SetFTA: get_fta_key() } }, "Resource/SetFTAAck")
+        //     .then(b => {
+        //       if (!b.msg)
+        //         clear_fta_key();
+        //     })
+        // }
         setTimeout(() => {
           this.connectCallbacks.forEach(cb => cb(true));
           this.callbacks.forEach(cb => this.send({ Subscribe: cb.path }));
           this.send({ Subscribe: ["Ping"] });
           this.sendQueue.forEach(sq => this.sendNow(sq));
           this.sendQueue = [];
-          this.send({ Resource: { SetRole: this.role[0] } });
+          // this.send({ Resource: { SetRole: this.role[0] } });
         }, 500);
       }, 100);
       that.ws = ws;
@@ -163,10 +154,10 @@ export default class JmsWebsocket {
   }
 
   updateRole = (role: ResourceRole, location: string) => {
-    if (location !== this.role[1] || this.role[1] === "Unknown") {
-      this.role = [role, location];
-      this.send({ Resource: { SetRole: role } });
-    }
+    // if (location !== this.role[1] || this.role[1] === "Unknown") {
+    //   this.role = [role, location];
+    //   this.send({ Resource: { SetRole: role } });
+    // }
   }
 
   send(msg: WebsocketMessage2JMS) {

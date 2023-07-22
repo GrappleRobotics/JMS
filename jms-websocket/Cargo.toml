@@ -1,0 +1,21 @@
+[package]
+name = "jms-websocket"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.72"
+async-trait = "0.1.72"
+atomic-counter = "1.0.1"
+clap = "4.3.19"
+futures = "0.3.28"
+jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
+jms-base = { path = "../jms-base" }
+jms-core-lib = { path = "../jms-core/jms-core-lib" }
+jms-macros = { path = "../jms-macros" }
+log = "0.4.19"
+schemars = "0.8.12"
+serde = "1.0.174"
+serde_json = "1.0.103"
+tokio = { version = "1.29.1", features = ["full"] }
+tokio-tungstenite = "0.19.0"
