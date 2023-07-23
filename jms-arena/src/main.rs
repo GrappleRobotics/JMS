@@ -2,9 +2,9 @@ pub mod matches;
 
 use std::time::Duration;
 
-use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation};
+use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY};
 use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue}};
-use jms_core_lib::{models::{Alliance, AllianceStationId, self}, db::Table};
+use jms_core_lib::{models::{AllianceStationId, self}, db::Table};
 use log::info;
 use matches::LoadedMatch;
 
@@ -34,16 +34,9 @@ impl Arena {
     self.last_state = Some(self.state);
     self.state = new_state;
 
-    self.kv.json_set("arena:state", "$", &self.state).await?;
+    self.kv.json_set(ARENA_STATE_KEY, "$", &self.state).await?;
     self.mq.publish("arena.state.new", new_state).await?;
 
-    Ok(())
-  }
-
-  pub async fn request_network(&mut self) -> anyhow::Result<()> {
-    info!("Requesting Network Start");
-    self.kv.hset("arena:network", "ready", false).await?;
-    self.mq.publish("arena.network.start", ()).await?;    // TODO: Move this to RPC?
     Ok(())
   }
 
@@ -56,8 +49,7 @@ impl Arena {
   pub async fn reset_stations(&mut self) -> anyhow::Result<()> {
     info!("Resetting Alliance Stations");
     for stn in AllianceStationId::all() {
-      let key = format!("arena:station:{}", stn.to_id());
-      self.kv.json_set(&key, "$", &AllianceStation::default()).await?;
+      self.kv.json_set(&stn.to_kv_key(), "$", &AllianceStation::default(stn)).await?;
     }
     Ok(())
   }
@@ -85,14 +77,8 @@ impl Arena {
         self.set_state(ArenaState::Idle { net_ready: false }).await?;
       },
       ArenaState::Idle { net_ready: false } => {
-        if first {
-          self.request_network().await?;
-        }
-
-        if self.kv.hget("arena:network", "ready").await? {
-          info!("Network Ready");
-          self.set_state(ArenaState::Idle { net_ready: true }).await?;
-        }
+        // TODO: Network
+        self.set_state(ArenaState::Idle { net_ready: true }).await?;
       },
       ArenaState::Idle { net_ready: true } => {
         if signal == Some(ArenaSignal::Prestart) {
@@ -106,14 +92,8 @@ impl Arena {
         }
       },
       ArenaState::Prestart { net_ready: false } => {
-        if first {
-          self.request_network().await?;
-        }
-
-        if self.kv.hget("arena:network", "ready").await? {
-          info!("Network Ready");
-          self.set_state(ArenaState::Prestart { net_ready: true }).await?;
-        }
+        // TODO: Network
+        self.set_state(ArenaState::Prestart { net_ready: true }).await?;
       },
       ArenaState::Prestart { net_ready: true } => {
         match signal {
@@ -148,14 +128,8 @@ impl Arena {
         }
       },
       ArenaState::MatchComplete { net_ready: false } => {
-        if first {
-          self.request_network().await?;
-        }
-
-        if self.kv.hget("arena:network", "ready").await? {
-          info!("Network Ready");
-          self.set_state(ArenaState::Prestart { net_ready: true }).await?;
-        }
+        // TODO: Network
+        self.set_state(ArenaState::Prestart { net_ready: true }).await?;
       },
       ArenaState::MatchComplete { net_ready: true } => {
         if signal == Some(ArenaSignal::MatchCommit) {
@@ -186,15 +160,32 @@ impl ArenaRPC for Arena {
 
   async fn load_match(&mut self, id: String) -> Result<(), String> {
     let m = models::Match::get(&id, &self.kv).await.map_err(|e| e.to_string())?;
-    // TODO:
-    Ok(())
+    match self.state {
+      ArenaState::Idle { .. } => {
+        // Load match
+        self.current_match = Some(LoadedMatch::new(m.id()));
+
+        // Set teams
+        for (i, team) in m.blue_teams.into_iter().enumerate() {
+          let id = AllianceStationId::new(models::Alliance::Blue, i + 1);
+          self.kv.json_set(&id.to_kv_key(), "$.team", &team).await.map_err(|e| e.to_string())?;
+        }
+
+        for (i, team) in m.red_teams.into_iter().enumerate() {
+          let id = AllianceStationId::new(models::Alliance::Red, i + 1);
+          self.kv.json_set(&id.to_kv_key(), "$.team", &team).await.map_err(|e| e.to_string())?;
+        }
+        Ok(())
+      },
+      _ => Err(format!("Can't load match in state: {:?}", self.state))
+    }
   }
 
   async fn load_test_match(&mut self) -> Result<(), String> {
     info!("Loading Test Match...");
     match self.state {
       ArenaState::Idle { .. } => {
-        self.current_match = Some(LoadedMatch::new());
+        self.current_match = Some(LoadedMatch::new("test".to_owned()));
         Ok(())
       },
       _ => Err(format!("Can't load match in state: {:?}", self.state))

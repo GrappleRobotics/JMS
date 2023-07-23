@@ -1,3 +1,4 @@
+pub mod arena;
 pub mod debug;
 pub mod event;
 pub mod matches;
@@ -6,6 +7,7 @@ pub mod ws;
 use debug::{DebugMessage2JMS, DebugMessage2UI, WSDebugHandler};
 use event::{EventMessage2JMS, EventMessage2UI, WSEventHandler};
 use matches::{MatchMessage2JMS, MatchMessage2UI, WSMatchHandler};
+use arena::{ArenaMessage2JMS, ArenaMessage2UI, WSArenaHandler};
 use jms_base::{mq::{MessageQueueChannel, MessageQueue}, kv::KVConnection};
 use jms_macros::define_websocket_msg;
 
@@ -32,7 +34,7 @@ define_websocket_msg!($WebsocketMessage {
 
   ext Debug(DebugMessage),
   ext Event(EventMessage),
-  // ext Arena(ArenaMessage),
+  ext Arena(ArenaMessage),
   ext Match(MatchMessage),
   // ext Resource(ResourceMessage),
   // ext Ticket(TicketMessage),

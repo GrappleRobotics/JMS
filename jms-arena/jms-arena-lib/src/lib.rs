@@ -1,3 +1,8 @@
+use jms_core_lib::{models::AllianceStationId, db::DBDuration};
+
+pub const ARENA_STATE_KEY: &'static str = "arena:state";
+pub const ARENA_MATCH_KEY: &'static str = "arena:match";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(tag = "state")]
 pub enum ArenaState {
@@ -38,18 +43,28 @@ pub enum MatchPlayState {
   Fault
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct SerialisedLoadedMatch {
+  pub match_id: String,
+  pub remaining: DBDuration,
+  pub endgame: bool,
+  pub state: MatchPlayState
+}
+
 /* ALLIANCE STATIONS */
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct AllianceStation {
+  pub id: AllianceStationId,
   pub team: Option<u16>,
   pub bypass: bool,
   pub estop: bool,
   pub astop: bool
 }
 
-impl Default for AllianceStation {
-  fn default() -> Self {
+impl AllianceStation {
+  pub fn default(id: AllianceStationId) -> Self {
     Self {
+      id,
       team: None,
       bypass: false,
       estop: false,

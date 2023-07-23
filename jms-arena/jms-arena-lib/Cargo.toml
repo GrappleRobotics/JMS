@@ -10,6 +10,7 @@ schemars = "0.8.12"
 serde = "1.0.171"
 jms-macros = { path = "../../jms-macros" }
 jms-base = { path = "../../jms-base" }
+jms-core-lib = { path = "../../jms-core/jms-core-lib" }
 async-trait = "0.1.71"
 anyhow = "1.0.72"
 log = "0.4.19"

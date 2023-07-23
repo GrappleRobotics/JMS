@@ -14,11 +14,11 @@ pub enum Alliance {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Hash, schemars::JsonSchema)]
 pub struct AllianceStationId {
   pub alliance: Alliance,
-  pub station: u32,
+  pub station: usize,
 }
 
 impl AllianceStationId {
-  pub fn new(alliance: Alliance, station: u32) -> Self {
+  pub fn new(alliance: Alliance, station: usize) -> Self {
     Self { alliance, station }
   }
 
@@ -46,6 +46,10 @@ impl AllianceStationId {
 
   pub fn to_id(&self) -> String {
     format!("{}{}", self.alliance.to_string().to_lowercase(), self.station)
+  }
+
+  pub fn to_kv_key(&self) -> String {
+    format!("arena:station:{}", self.to_id())
   }
 
   pub fn all() -> Vec<AllianceStationId> {

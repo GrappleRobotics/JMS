@@ -1,11 +1,13 @@
 use std::time::Instant;
 
 use chrono::Duration;
-use jms_arena_lib::MatchPlayState;
-use jms_base::kv::{aio::Connection, AsyncCommands, KVConnection};
+use jms_arena_lib::{MatchPlayState, SerialisedLoadedMatch, ARENA_MATCH_KEY};
+use jms_base::kv::KVConnection;
+use jms_core_lib::db::DBDuration;
 use log::{warn, info};
 
 pub struct LoadedMatch {
+  pub match_id: String,
   pub state: MatchPlayState,
   last_state: Option<MatchPlayState>,
   
@@ -17,8 +19,9 @@ pub struct LoadedMatch {
 }
 
 impl LoadedMatch {
-  pub fn new() -> Self {
+  pub fn new(match_id: String) -> Self {
     Self {
+      match_id,
       state: MatchPlayState::Waiting,
       last_state: None,
       match_start_time: None,
@@ -111,9 +114,13 @@ impl LoadedMatch {
   }
 
   pub async fn write_state(&self, kv: &mut KVConnection) -> anyhow::Result<()> {
-    kv.hset("arena:match", "remaining_ms", self.remaining.num_milliseconds()).await?;
-    kv.hset("arena:match", "endgame", self.endgame).await?;
-    kv.hset("arena:match", "state", serde_json::to_string(&self.state)?).await?;
+    let serialised = SerialisedLoadedMatch {
+      match_id: self.match_id.clone(),
+      remaining: DBDuration(self.remaining),
+      endgame: self.endgame,
+      state: self.state
+    };
+    kv.json_set(ARENA_MATCH_KEY, "$", &serialised).await?;
     Ok(())
   }
 }

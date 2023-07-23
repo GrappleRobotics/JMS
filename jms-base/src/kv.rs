@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 pub use redis::*;
+pub use redis_macros::Json;
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
@@ -24,8 +25,9 @@ impl KVConnection {
     Ok(())
   }
 
-  pub async fn json_get<RV: FromRedisValue>(&self, key: &str, path: &str) -> anyhow::Result<RV> {
-    Ok(self.redis.write().await.json_get(key, path).await?)
+  pub async fn json_get<V: serde::de::DeserializeOwned>(&self, key: &str, path: &str) -> anyhow::Result<V> {
+    let Json(us): Json<V> = self.redis.write().await.json_get(key, path).await?;
+    Ok(us)
   }
 
   pub async fn hset<V: ToRedisArgs + Send + Sync>(&self, key: &str, field: &str, value: V) -> anyhow::Result<()> {

@@ -12,7 +12,7 @@ pub trait DBSingleton: serde::Serialize + serde::de::DeserializeOwned + Default 
 
   async fn get(db: &kv::KVConnection) -> anyhow::Result<Self> {
     match db.json_get(&Self::KEY, "$").await {
-      Ok(Json(v)) => Ok(v),
+      Ok(v) => Ok(v),
       Err(_) => {
         let default = Self::default();
         default.update(db).await?;
@@ -46,8 +46,7 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
   }
 
   async fn get(id: &str, db: &kv::KVConnection) -> anyhow::Result<Self> {
-    let Json(us): Json<Self> = db.json_get(&format!("{}:{}", Self::PREFIX, id), "$").await?;
-    Ok(us)
+    db.json_get(&format!("{}:{}", Self::PREFIX, id), "$").await
   }
 
   async fn ids(db: &kv::KVConnection) -> anyhow::Result<Vec<String>> {

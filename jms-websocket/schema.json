@@ -30,6 +30,384 @@
         "red"
       ]
     },
+    "AllianceStation": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "estop",
+        "id"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "id": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "AllianceStationId": {
+      "type": "object",
+      "required": [
+        "alliance",
+        "station"
+      ],
+      "properties": {
+        "alliance": {
+          "$ref": "#/definitions/Alliance"
+        },
+        "station": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "ArenaMessage2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "State"
+          ],
+          "properties": {
+            "State": {
+              "$ref": "#/definitions/ArenaMessageState2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "$ref": "#/definitions/ArenaMessageAlliance2JMS"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessage2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "State"
+          ],
+          "properties": {
+            "State": {
+              "$ref": "#/definitions/ArenaMessageState2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Alliance"
+          ],
+          "properties": {
+            "Alliance": {
+              "$ref": "#/definitions/ArenaMessageAlliance2UI"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAlliance2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "UpdateAlliance"
+          ],
+          "properties": {
+            "UpdateAlliance": {
+              "type": "object",
+              "required": [
+                "station"
+              ],
+              "properties": {
+                "astop": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "bypass": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "estop": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "station": {
+                  "$ref": "#/definitions/AllianceStationId"
+                },
+                "team": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageAlliance2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "CurrentStations"
+          ],
+          "properties": {
+            "CurrentStations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AllianceStation"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageState2JMS": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Signal"
+          ],
+          "properties": {
+            "Signal": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/ArenaSignal"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageState2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "$ref": "#/definitions/ArenaState"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaSignal": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Estop",
+            "EstopReset",
+            "Prestart",
+            "PrestartUndo",
+            "MatchPlay",
+            "MatchCommit"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "MatchArm"
+          ],
+          "properties": {
+            "MatchArm": {
+              "type": "object",
+              "required": [
+                "force"
+              ],
+              "properties": {
+                "force": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaState": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "Init"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "Reset"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "net_ready",
+            "state"
+          ],
+          "properties": {
+            "net_ready": {
+              "type": "boolean"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "Idle"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "Estop"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "net_ready",
+            "state"
+          ],
+          "properties": {
+            "net_ready": {
+              "type": "boolean"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "Prestart"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "MatchArmed"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "MatchPlay"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "net_ready",
+            "state"
+          ],
+          "properties": {
+            "net_ready": {
+              "type": "boolean"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "MatchComplete"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "Award": {
       "type": "object",
       "required": [
@@ -824,6 +1202,18 @@
         {
           "type": "object",
           "required": [
+            "Arena"
+          ],
+          "properties": {
+            "Arena": {
+              "$ref": "#/definitions/ArenaMessage2JMS"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
             "Match"
           ],
           "properties": {
@@ -876,6 +1266,18 @@
           "properties": {
             "Event": {
               "$ref": "#/definitions/EventMessage2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Arena"
+          ],
+          "properties": {
+            "Arena": {
+              "$ref": "#/definitions/ArenaMessage2UI"
             }
           },
           "additionalProperties": false
