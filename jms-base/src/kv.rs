@@ -20,6 +20,11 @@ impl KVConnection {
     })
   }
 
+  pub async fn expire(&self, key: &str, seconds: usize) -> anyhow::Result<()> {
+    self.redis.write().await.expire(key, seconds).await?;
+    Ok(())
+  }
+
   pub async fn json_set<V: serde::Serialize + Send + Sync>(&self, key: &str, path: &str, value: &V) -> anyhow::Result<()> {
     self.redis.write().await.json_set(key, path, value).await?;
     Ok(())

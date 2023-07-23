@@ -6,6 +6,7 @@ members = [
   "jms-arena",
   "jms-core/jms-core-lib",
   "jms-core",
+  "jms-driverstation",
   "jms-util",
   "jms-radio-config",
   "jms-websocket"
