@@ -184,6 +184,7 @@ async fn main() -> anyhow::Result<()> {
       ws.register(Duration::from_millis(1000), WSDebugHandler {}).await;
       ws.register(Duration::from_millis(1000), WSEventHandler {}).await;
       ws.register(Duration::from_millis(1000), WSMatchHandler {}).await;
+      ws.register(Duration::from_millis(1000), WSArenaHandler {}).await;
 
       ws.begin().await
     },

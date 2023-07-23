@@ -73,7 +73,7 @@
         },
         "station": {
           "type": "integer",
-          "format": "uint32",
+          "format": "uint",
           "minimum": 0.0
         }
       }
@@ -103,6 +103,18 @@
             }
           },
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Match"
+          ],
+          "properties": {
+            "Match": {
+              "$ref": "#/definitions/ArenaMessageMatch2JMS"
+            }
+          },
+          "additionalProperties": false
         }
       ]
     },
@@ -128,6 +140,18 @@
           "properties": {
             "Alliance": {
               "$ref": "#/definitions/ArenaMessageAlliance2UI"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Match"
+          ],
+          "properties": {
+            "Match": {
+              "$ref": "#/definitions/ArenaMessageMatch2UI"
             }
           },
           "additionalProperties": false
@@ -203,6 +227,52 @@
         }
       ]
     },
+    "ArenaMessageMatch2JMS": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "LoadTest",
+            "Unload"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Load"
+          ],
+          "properties": {
+            "Load": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ArenaMessageMatch2UI": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Current"
+          ],
+          "properties": {
+            "Current": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/SerialisedLoadedMatch"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "ArenaMessageState2JMS": {
       "oneOf": [
         {
@@ -212,17 +282,7 @@
           ],
           "properties": {
             "Signal": {
-              "type": "array",
-              "items": [
-                {
-                  "$ref": "#/definitions/ArenaSignal"
-                },
-                {
-                  "type": "string"
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2
+              "$ref": "#/definitions/ArenaSignal"
             }
           },
           "additionalProperties": false
@@ -928,6 +988,19 @@
         }
       ]
     },
+    "MatchPlayState": {
+      "type": "string",
+      "enum": [
+        "Waiting",
+        "Warmup",
+        "Auto",
+        "Pause",
+        "Teleop",
+        "Cooldown",
+        "Complete",
+        "Fault"
+      ]
+    },
     "MatchSubtype": {
       "type": "string",
       "enum": [
@@ -987,6 +1060,30 @@
           "type": "integer",
           "format": "uint",
           "minimum": 0.0
+        }
+      }
+    },
+    "SerialisedLoadedMatch": {
+      "type": "object",
+      "required": [
+        "endgame",
+        "match_id",
+        "remaining",
+        "state"
+      ],
+      "properties": {
+        "endgame": {
+          "type": "boolean"
+        },
+        "match_id": {
+          "type": "string"
+        },
+        "remaining": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "state": {
+          "$ref": "#/definitions/MatchPlayState"
         }
       }
     },

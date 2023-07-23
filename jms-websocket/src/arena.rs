@@ -1,4 +1,4 @@
-use jms_arena_lib::{ArenaState, ArenaSignal, AllianceStation, ArenaRPCClient, ARENA_STATE_KEY};
+use jms_arena_lib::{ArenaState, ArenaSignal, AllianceStation, ArenaRPCClient, ARENA_STATE_KEY, SerialisedLoadedMatch};
 use jms_core_lib::models::AllianceStationId;
 use jms_macros::define_websocket_msg;
 
@@ -7,7 +7,7 @@ use crate::{ws::{WebsocketHandler, WebsocketContext, Websocket}, WebsocketMessag
 define_websocket_msg!($ArenaMessage {
   $State {
     send Current(ArenaState),
-    recv Signal(ArenaSignal, String)
+    recv Signal(ArenaSignal)
   },
   $Alliance {
     send CurrentStations(Vec<AllianceStation>),
@@ -19,14 +19,14 @@ define_websocket_msg!($ArenaMessage {
       astop: Option<bool>
     }
   },
-  // $Match {
-  //   send Current(Option<LoadedMatch>),
-  //   send Score(MatchScoreSnapshot),
-  //   recv LoadTest,
-  //   recv Unload,
-  //   recv Load(String),
-  //   recv ScoreUpdate(ScoreUpdateData)
-  // },
+  $Match {
+    send Current(Option<SerialisedLoadedMatch>),
+    // send Score(MatchScoreSnapshot),
+    recv LoadTest,
+    recv Unload,
+    recv Load(String),
+    // recv ScoreUpdate(ScoreUpdateData)
+  },
   // $AudienceDisplay {
   //   send Current(AudienceDisplay),
   //   recv $Set {
@@ -64,8 +64,8 @@ impl WebsocketHandler for WSArenaHandler {
     if let WebsocketMessage2JMS::Arena(msg) = msg {
       match msg.clone() {
         ArenaMessage2JMS::State(msg) => match msg {
-          ArenaMessageState2JMS::Signal(signal, source) => {
-            ArenaRPCClient::signal(&ws.context.mq, signal, source).await?.map_err(|x| anyhow::anyhow!(x))?;
+          ArenaMessageState2JMS::Signal(signal) => {
+            ArenaRPCClient::signal(&ws.context.mq, signal, "WebUI".to_owned()).await?.map_err(|x| anyhow::anyhow!(x))?;
           },
         },
         ArenaMessage2JMS::Alliance(msg) => match msg {
@@ -96,19 +96,19 @@ impl WebsocketHandler for WSArenaHandler {
             }
           },
         },
-        // ArenaMessage2JMS::Match(msg) => match msg {
-        //   ArenaMessageMatch2JMS::LoadTest => arena.arena_impl().load_match(LoadedMatch::new(models::Match::new_test())).await?,
-        //   ArenaMessageMatch2JMS::Unload => arena.arena_impl().unload_match().await?,
-        //   ArenaMessageMatch2JMS::Load(match_id) => arena.arena_impl().load_match(LoadedMatch::new(models::Match::get_or_err(match_id, &db::database())?)).await?,
-        //   ArenaMessageMatch2JMS::ScoreUpdate(update) => {
-        //     let a = arena.arena_impl();
-        //     let mut score = a.score.write().await;
-        //     match update.alliance {
-        //       models::Alliance::Blue => score.blue.update(update.update),
-        //       models::Alliance::Red => score.red.update(update.update),
-        //     }
-        //   },
-        // },
+        ArenaMessage2JMS::Match(msg) => match msg {
+          ArenaMessageMatch2JMS::LoadTest => { ArenaRPCClient::load_test_match(&ws.context.mq).await?.map_err(|e| anyhow::anyhow!(e))?; },
+          ArenaMessageMatch2JMS::Unload => { ArenaRPCClient::unload_match(&ws.context.mq).await?.map_err(|e| anyhow::anyhow!(e))?; },
+          ArenaMessageMatch2JMS::Load(match_id) => { ArenaRPCClient::load_match(&ws.context.mq, match_id).await?.map_err(|e| anyhow::anyhow!(e))?; },
+          // ArenaMessageMatch2JMS::ScoreUpdate(update) => {
+          //   let a = arena.arena_impl();
+          //   let mut score = a.score.write().await;
+          //   match update.alliance {
+          //     models::Alliance::Blue => score.blue.update(update.update),
+          //     models::Alliance::Red => score.red.update(update.update),
+          //   }
+          // },
+        },
         // ArenaMessage2JMS::AudienceDisplay(msg) => match msg {
         //   ArenaMessageAudienceDisplay2JMS::Set(set_msg) => {
         //     *(arena.arena_impl().audience.write().await) = match set_msg {
