@@ -1,3 +1,5 @@
+use chrono::TimeZone;
+
 use jms_core_lib::{models, db::{DBSingleton, Table, self}};
 use jms_macros::define_websocket_msg;
 
@@ -13,13 +15,13 @@ define_websocket_msg!($EventMessage {
     recv Insert(models::Team),
     recv Delete(String)
   },
-  // $Schedule {
-  //   send CurrentBlocks(Vec<models::ScheduleBlock>),
-  //   recv NewBlock,
-  //   recv DeleteBlock(usize),
-  //   recv UpdateBlock(models::ScheduleBlock),
-  //   recv LoadDefault(usize)   // Time since unix epoch, on the starting day of the event
-  // },
+  $Schedule {
+    send CurrentBlocks(Vec<models::ScheduleBlock>),
+    recv NewBlock,
+    recv DeleteBlock(String),
+    recv UpdateBlock(models::ScheduleBlock),
+    recv LoadDefault(usize)   // Time since unix epoch, on the starting day of the event
+  },
   // $Alliance {
   //   send CurrentAll(Vec<models::PlayoffAlliance>),
   //   recv Create(usize),
@@ -46,7 +48,7 @@ impl WebsocketHandler for WSEventHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
     ctx.broadcast::<EventMessage2UI>(EventMessageDetails2UI::Current( models::EventDetails::get(&ctx.kv)? ).into()).await;
     ctx.broadcast::<EventMessage2UI>(EventMessageTeam2UI::CurrentAll( models::Team::all(&ctx.kv)? ).into()).await;
-    // ctx.broadcast::<EventMessage2UI>(EventMessageSchedule2UI::CurrentBlocks( models::ScheduleBlock::sorted(&ctx.kv).await? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageSchedule2UI::CurrentBlocks( models::ScheduleBlock::sorted(&ctx.kv)? ).into()).await;
     // ctx.broadcast::<EventMessage2UI>(EventMessageAlliance2UI::CurrentAll( models::PlayoffAlliance::all(&ctx.kv).await? ).into()).await;
     // ctx.broadcast::<EventMessage2UI>(EventMessageRanking2UI::CurrentAll( models::TeamRanking::sorted(&db::database())? ).into()).await;
     ctx.broadcast::<EventMessage2UI>(EventMessageAward2UI::CurrentAll( models::Award::all(&ctx.kv)? ).into()).await;
@@ -57,21 +59,21 @@ impl WebsocketHandler for WSEventHandler {
     if let WebsocketMessage2JMS::Event(msg) = msg {
       match msg.clone() {
         EventMessage2JMS::Details(msg) => match msg {
-          EventMessageDetails2JMS::Update(mut details) => { details.update(&ws.context.kv)?; },
+          EventMessageDetails2JMS::Update(details) => { details.update(&ws.context.kv)?; },
         },
         EventMessage2JMS::Team(msg) => match msg {
             EventMessageTeam2JMS::Insert(team) => { team.maybe_gen_wpa().insert(&ws.context.kv)?; },
             EventMessageTeam2JMS::Delete(team_id) => { models::Team::delete_by(&team_id, &ws.context.kv)?; },
         },
-        // EventMessage2JMS::Schedule(msg) => match msg {
-        //     EventMessageSchedule2JMS::NewBlock => { models::ScheduleBlock::append_default(&db::database())?; },
-        //     EventMessageSchedule2JMS::DeleteBlock(block_id) => { models::ScheduleBlock::remove_by(block_id, &db::database())?; },
-        //     EventMessageSchedule2JMS::UpdateBlock(mut block) => { block.insert(&db::database())?; },
-        //     EventMessageSchedule2JMS::LoadDefault(timestamp) => { 
-        //       let start_day = Local.from_utc_datetime(&NaiveDateTime::from_timestamp((timestamp).try_into()?, 0)).date();
-        //       models::ScheduleBlock::generate_default_2day(start_day, &db::database())?;
-        //     },
-        // },
+        EventMessage2JMS::Schedule(msg) => match msg {
+            EventMessageSchedule2JMS::NewBlock => { models::ScheduleBlock::append_default(&ws.context.kv)?; },
+            EventMessageSchedule2JMS::DeleteBlock(block_id) => { models::ScheduleBlock::delete_by(&block_id, &ws.context.kv)?; },
+            EventMessageSchedule2JMS::UpdateBlock(block) => { block.insert(&ws.context.kv)?; },
+            EventMessageSchedule2JMS::LoadDefault(timestamp) => { 
+              let start_day = chrono::Local.from_utc_datetime(&chrono::NaiveDateTime::from_timestamp((timestamp).try_into()?, 0)).date();
+              models::ScheduleBlock::generate_default_2day(start_day, &ws.context.kv)?;
+            },
+        },
         // EventMessage2JMS::Alliance(msg) => match msg {
         //     EventMessageAlliance2JMS::Create(count) => { models::PlayoffAlliance::create_all(count, &db::database())?; },
         //     EventMessageAlliance2JMS::Clear => { models::PlayoffAlliance::clear(&db::database())?; },
@@ -80,7 +82,7 @@ impl WebsocketHandler for WSEventHandler {
         // },
         EventMessage2JMS::Award(msg) => match msg {
             EventMessageAward2JMS::Create(name) => { models::Award { id: db::generate_id(), name: name.clone(), recipients: vec![] }.insert(&ws.context.kv)?; },
-            EventMessageAward2JMS::Update(mut award) => { award.insert(&ws.context.kv)?; },
+            EventMessageAward2JMS::Update(award) => { award.insert(&ws.context.kv)?; },
             EventMessageAward2JMS::Delete(award_id) => { models::Award::delete_by(&award_id, &ws.context.kv)?; },
         }
       };

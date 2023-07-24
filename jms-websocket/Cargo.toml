@@ -7,6 +7,7 @@ edition = "2021"
 anyhow = "1.0.72"
 async-trait = "0.1.72"
 atomic-counter = "1.0.1"
+chrono = "0.4.26"
 clap = "4.3.19"
 futures = "0.3.28"
 jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
