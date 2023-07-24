@@ -1,5 +1,6 @@
-use jms_arena_lib::{ArenaState, ArenaSignal, AllianceStation, ArenaRPCClient, ARENA_STATE_KEY, SerialisedLoadedMatch};
+use jms_arena_lib::{ArenaState, ArenaSignal, AllianceStation, ArenaRPCClient, ARENA_STATE_KEY, SerialisedLoadedMatch, ARENA_MATCH_KEY};
 use jms_core_lib::models::AllianceStationId;
+use jms_driverstation_lib::DriverStationReport;
 use jms_macros::define_websocket_msg;
 
 use crate::{ws::{WebsocketHandler, WebsocketContext, Websocket}, WebsocketMessage2JMS};
@@ -18,6 +19,9 @@ define_websocket_msg!($ArenaMessage {
       estop: Option<bool>,
       astop: Option<bool>
     }
+  },
+  $DriverStation {
+    send Reports(Vec<DriverStationReport>)
   },
   $Match {
     send Current(Option<SerialisedLoadedMatch>),
@@ -48,15 +52,25 @@ pub struct WSArenaHandler();
 #[async_trait::async_trait]
 impl WebsocketHandler for WSArenaHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
-    // ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(arena.current_match().await).into()).await;
-    // ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Score(arena.score().await.into()).into()).await;
+    let m = ctx.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$").await.ok();
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(m).into()).await;
+
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(ctx.kv.json_get(ARENA_STATE_KEY, "$").await?).into()).await;
+    
     let mut stations: Vec<AllianceStation> = vec![];
     for stn in AllianceStationId::all() {
       stations.push(ctx.kv.json_get(&stn.to_kv_key(), "$").await?);
     }
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(stations).into()).await;
-    // ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAudienceDisplay2UI::Current(arena.audience().await).into()).await;
+    
+    let mut dss: Vec<DriverStationReport> = vec![];
+    for key in ctx.kv.keys("ds:*").await? {
+      if let Ok(ds) = ctx.kv.json_get(&key, "$").await {
+        dss.push(ds);
+      }
+    }
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageDriverStation2UI::Reports(dss).into()).await;
+    
     Ok(())
   }
 

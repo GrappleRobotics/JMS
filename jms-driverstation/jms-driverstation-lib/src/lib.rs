@@ -15,6 +15,7 @@ impl Default for RobotState {
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DriverStationReport {
+  pub team: u16,
   pub robot_ping: bool,
   pub rio_ping: bool,
   pub radio_ping: bool,

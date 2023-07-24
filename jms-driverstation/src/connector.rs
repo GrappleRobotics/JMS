@@ -257,6 +257,7 @@ impl DSConnection {
     // let mut stns = self.stations.lock().await;
 
     let mut report = DriverStationReport {
+      team: pkt.team,
       robot_ping: pkt.robot,
       rio_ping: pkt.rio,
       radio_ping: pkt.radio,

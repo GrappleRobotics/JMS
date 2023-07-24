@@ -12,6 +12,7 @@ futures = "0.3.28"
 jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
 jms-base = { path = "../jms-base" }
 jms-core-lib = { path = "../jms-core/jms-core-lib" }
+jms-driverstation-lib = { path = "../jms-driverstation/jms-driverstation-lib" }
 jms-macros = { path = "../jms-macros" }
 log = "0.4.19"
 schemars = "0.8.12"
