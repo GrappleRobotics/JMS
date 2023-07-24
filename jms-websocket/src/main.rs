@@ -178,7 +178,7 @@ async fn main() -> anyhow::Result<()> {
     },
     None => {
       let mq = MessageQueue::new("websocket-reply").await?;
-      let kv = KVConnection::new().await?;
+      let kv = KVConnection::new()?;
 
       let ws = Websockets::new(mq.channel().await?, kv).await;
       ws.register(Duration::from_millis(1000), WSDebugHandler {}).await;

@@ -1,55 +1,65 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub use redis::*;
 pub use redis_macros::Json;
-use tokio::sync::RwLock;
 
-#[derive(Clone)]
+// We had the opportunity to make this async, but given the sub-millisecond latency of Redis, 
+// the async overhead is most likely higher than the performance gains that we stand to get. 
+
 pub struct KVConnection {
-  redis: Arc<RwLock<redis::aio::Connection>>
+  client: Arc<redis::Client>,
+  redis: std::sync::Mutex<redis::Connection>
 }
 
 impl KVConnection {
-  pub async fn new() -> anyhow::Result<Self> {
+  pub fn new() -> anyhow::Result<Self> {
     let redis_uri = std::env::var("REDIS_URI").unwrap_or("redis://localhost:6379/0".to_owned());
-    let redis_client = redis::Client::open(redis_uri)?;
-    let redis_connection = redis_client.get_async_connection().await?;
+    let redis_client = redis::Client::open(redis_uri.clone())?;
+    let redis_connection = redis_client.get_connection()?;
 
     Ok(Self {
-      redis: Arc::new(RwLock::new(redis_connection))
+      client: Arc::new(redis_client),
+      redis: std::sync::Mutex::new(redis_connection)
     })
   }
 
-  pub async fn expire(&self, key: &str, seconds: usize) -> anyhow::Result<()> {
-    self.redis.write().await.expire(key, seconds).await?;
+  pub fn clone(&self) -> anyhow::Result<Self> {
+    Ok(Self {
+      client: self.client.clone(),
+      redis: Mutex::new(self.client.get_connection()?)
+    })
+  }
+
+  pub fn expire(&self, key: &str, seconds: usize) -> anyhow::Result<()> {
+    self.redis.lock().unwrap().expire(key, seconds)?;
     Ok(())
   }
 
-  pub async fn json_set<V: serde::Serialize + Send + Sync>(&self, key: &str, path: &str, value: &V) -> anyhow::Result<()> {
-    self.redis.write().await.json_set(key, path, value).await?;
+  pub fn json_set<V: serde::Serialize>(&self, key: &str, path: &str, value: &V) -> anyhow::Result<()> {
+    self.redis.lock().unwrap().json_set(key, path, value)?;
     Ok(())
   }
 
-  pub async fn json_get<V: serde::de::DeserializeOwned>(&self, key: &str, path: &str) -> anyhow::Result<V> {
-    let Json(us): Json<V> = self.redis.write().await.json_get(key, path).await?;
+  pub fn json_get<V: serde::de::DeserializeOwned>(&self, key: &str, path: &str) -> anyhow::Result<V> {
+    let Json(us): Json<V> = self.redis.lock().unwrap().json_get(key, path)?;
     Ok(us)
   }
 
-  pub async fn hset<V: ToRedisArgs + Send + Sync>(&self, key: &str, field: &str, value: V) -> anyhow::Result<()> {
-    self.redis.write().await.hset(key, field, value).await?;
+  pub fn hset<V: ToRedisArgs>(&self, key: &str, field: &str, value: V) -> anyhow::Result<()> {
+    self.redis.lock().unwrap().hset(key, field, value)?;
     Ok(())
   }
 
-  pub async fn hget<RV: FromRedisValue>(&self, key: &str, field: &str) -> anyhow::Result<RV> {
-    Ok(self.redis.write().await.hget(key, field).await?)
+  pub fn hget<RV: FromRedisValue>(&self, key: &str, field: &str) -> anyhow::Result<RV> {
+    Ok(self.redis.lock().unwrap().hget(key, field)?)
   }
 
-  pub async fn del(&self, key: &str) -> anyhow::Result<()> {
-    self.redis.write().await.del(key).await?;
+  pub fn del(&self, key: &str) -> anyhow::Result<()> {
+    self.redis.lock().unwrap().del(key)?;
     Ok(())
   }
 
-  pub async fn keys(&self, pattern: &str) -> anyhow::Result<Vec<String>> {
-    Ok(self.redis.write().await.keys(pattern).await?)
+  pub fn keys(&self, pattern: &str) -> anyhow::Result<Vec<String>> {
+    Ok(self.redis.lock().unwrap().keys(pattern)?)
   }
 }

@@ -33,13 +33,13 @@ impl ScheduleBlock {
     (duration.num_seconds() / self.cycle_time.0.num_seconds()) as usize
   }
 
-  pub async fn by_type(block_type: ScheduleBlockType, db: &kv::KVConnection) -> anyhow::Result<Vec<ScheduleBlock>> {
-    let v = Self::sorted(db).await?;
+  pub fn by_type(block_type: ScheduleBlockType, db: &kv::KVConnection) -> anyhow::Result<Vec<ScheduleBlock>> {
+    let v = Self::sorted(db)?;
     Ok(v.into_iter().filter(|x| x.block_type == block_type).collect())
   }
 
-  pub async fn sorted(db: &kv::KVConnection) -> anyhow::Result<Vec<ScheduleBlock>> {
-    let mut v = Self::all(db).await?;
+  pub fn sorted(db: &kv::KVConnection) -> anyhow::Result<Vec<ScheduleBlock>> {
+    let mut v = Self::all(db)?;
     v.sort_by(|a, b| a.start_time.cmp(&b.start_time));
     Ok(v)
   }

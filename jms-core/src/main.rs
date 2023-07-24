@@ -5,7 +5,7 @@ use jms_core_lib::{db::{Table, self}, models::{Team, ScheduleBlock}};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let kv = kv::KVConnection::new().await?;
+    let kv = kv::KVConnection::new()?;
 
     let block = ScheduleBlock {
         id: db::generate_id(),
@@ -16,9 +16,9 @@ async fn main() -> anyhow::Result<()> {
         cycle_time: chrono::Duration::milliseconds(2000).into()
     };
 
-    block.insert(&kv).await?;
+    block.insert(&kv)?;
 
-    println!("{:?}", ScheduleBlock::all(&kv).await?);
+    println!("{:?}", ScheduleBlock::all(&kv)?);
 
     Ok(())
 }

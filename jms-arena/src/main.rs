@@ -34,7 +34,7 @@ impl Arena {
     self.last_state = Some(self.state);
     self.state = new_state;
 
-    self.kv.json_set(ARENA_STATE_KEY, "$", &self.state).await?;
+    self.kv.json_set(ARENA_STATE_KEY, "$", &self.state)?;
     self.mq.publish("arena.state.new", new_state).await?;
 
     Ok(())
@@ -49,7 +49,7 @@ impl Arena {
   pub async fn reset_stations(&mut self) -> anyhow::Result<()> {
     info!("Resetting Alliance Stations");
     for stn in AllianceStationId::all() {
-      self.kv.json_set(&stn.to_kv_key(), "$", &AllianceStation::default(stn)).await?;
+      self.kv.json_set(&stn.to_kv_key(), "$", &AllianceStation::default(stn))?;
     }
     Ok(())
   }
@@ -140,8 +140,8 @@ impl Arena {
     }
 
     match self.current_match.as_ref() {
-      Some(m) => m.write_state(&mut self.kv).await?,
-      None => self.kv.del("arena:match").await?,
+      Some(m) => m.write_state(&mut self.kv)?,
+      None => self.kv.del("arena:match")?,
     }
 
     Ok(())
@@ -159,7 +159,7 @@ impl ArenaRPC for Arena {
   }
 
   async fn load_match(&mut self, id: String) -> Result<(), String> {
-    let m = models::Match::get(&id, &self.kv).await.map_err(|e| e.to_string())?;
+    let m = models::Match::get(&id, &self.kv).map_err(|e| e.to_string())?;
     match self.state {
       ArenaState::Idle { .. } => {
         // Load match
@@ -168,12 +168,12 @@ impl ArenaRPC for Arena {
         // Set teams
         for (i, team) in m.blue_teams.into_iter().enumerate() {
           let id = AllianceStationId::new(models::Alliance::Blue, i + 1);
-          self.kv.json_set(&id.to_kv_key(), "$.team", &team).await.map_err(|e| e.to_string())?;
+          self.kv.json_set(&id.to_kv_key(), "$.team", &team).map_err(|e| e.to_string())?;
         }
 
         for (i, team) in m.red_teams.into_iter().enumerate() {
           let id = AllianceStationId::new(models::Alliance::Red, i + 1);
-          self.kv.json_set(&id.to_kv_key(), "$.team", &team).await.map_err(|e| e.to_string())?;
+          self.kv.json_set(&id.to_kv_key(), "$.team", &team).map_err(|e| e.to_string())?;
         }
         Ok(())
       },
@@ -223,7 +223,7 @@ impl Arena {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
   logging::configure(false);
-  let kv = KVConnection::new().await?;
+  let kv = KVConnection::new()?;
   let mq = MessageQueue::new("arena-reply").await?;
   info!("Connected!");
 

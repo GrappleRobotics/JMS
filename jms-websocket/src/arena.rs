@@ -52,20 +52,20 @@ pub struct WSArenaHandler();
 #[async_trait::async_trait]
 impl WebsocketHandler for WSArenaHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
-    let m = ctx.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$").await.ok();
+    let m = ctx.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$").ok();
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageMatch2UI::Current(m).into()).await;
 
-    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(ctx.kv.json_get(ARENA_STATE_KEY, "$").await?).into()).await;
+    ctx.broadcast::<ArenaMessage2UI>(ArenaMessageState2UI::Current(ctx.kv.json_get(ARENA_STATE_KEY, "$")?).into()).await;
     
     let mut stations: Vec<AllianceStation> = vec![];
     for stn in AllianceStationId::all() {
-      stations.push(ctx.kv.json_get(&stn.to_kv_key(), "$").await?);
+      stations.push(ctx.kv.json_get(&stn.to_kv_key(), "$")?);
     }
     ctx.broadcast::<ArenaMessage2UI>(ArenaMessageAlliance2UI::CurrentStations(stations).into()).await;
     
     let mut dss: Vec<DriverStationReport> = vec![];
-    for key in ctx.kv.keys("ds:*").await? {
-      if let Ok(ds) = ctx.kv.json_get(&key, "$").await {
+    for key in ctx.kv.keys("ds:*")? {
+      if let Ok(ds) = ctx.kv.json_get(&key, "$") {
         dss.push(ds);
       }
     }
@@ -84,29 +84,29 @@ impl WebsocketHandler for WSArenaHandler {
         },
         ArenaMessage2JMS::Alliance(msg) => match msg {
           ArenaMessageAlliance2JMS::UpdateAlliance { station, bypass, team, estop, astop } => {
-            let current_state: ArenaState = ws.context.kv.json_get(ARENA_STATE_KEY, "$").await?;
+            let current_state: ArenaState = ws.context.kv.json_get(ARENA_STATE_KEY, "$")?;
             let idle = matches!(current_state, ArenaState::Idle { .. });
             let prestart = matches!(current_state, ArenaState::Prestart { .. });
 
             match bypass {
-              Some(byp) if (idle || prestart) => ws.context.kv.json_set(&station.to_kv_key(), "$.bypass", &byp).await?,
+              Some(byp) if (idle || prestart) => ws.context.kv.json_set(&station.to_kv_key(), "$.bypass", &byp)?,
               Some(_) => anyhow::bail!("Can't bypass unless in IDLE or PRESTART"),
               None => ()
             }
 
             match team {
-              Some(0) if idle => ws.context.kv.json_set(&station.to_kv_key(), "$.team", &Option::<u16>::None).await?,
-              Some(id) if idle => ws.context.kv.json_set(&station.to_kv_key(), "$.team", &Some(id)).await?,
+              Some(0) if idle => ws.context.kv.json_set(&station.to_kv_key(), "$.team", &Option::<u16>::None)?,
+              Some(id) if idle => ws.context.kv.json_set(&station.to_kv_key(), "$.team", &Some(id))?,
               Some(_) => anyhow::bail!("Can't set team unless in IDLE"),
               None => ()
             }
 
             if Some(true) == estop {
-              ws.context.kv.json_set(&station.to_kv_key(), "$.estop", &true).await?;
+              ws.context.kv.json_set(&station.to_kv_key(), "$.estop", &true)?;
             }
 
             if Some(true) == astop {
-              ws.context.kv.json_set(&station.to_kv_key(), "$.astop", &true).await?;
+              ws.context.kv.json_set(&station.to_kv_key(), "$.astop", &true)?;
             }
           },
         },

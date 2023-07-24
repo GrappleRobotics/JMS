@@ -113,14 +113,14 @@ impl LoadedMatch {
     Ok(())
   }
 
-  pub async fn write_state(&self, kv: &mut KVConnection) -> anyhow::Result<()> {
+  pub fn write_state(&self, kv: &mut KVConnection) -> anyhow::Result<()> {
     let serialised = SerialisedLoadedMatch {
       match_id: self.match_id.clone(),
       remaining: DBDuration(self.remaining),
       endgame: self.endgame,
       state: self.state
     };
-    kv.json_set(ARENA_MATCH_KEY, "$", &serialised).await?;
+    kv.json_set(ARENA_MATCH_KEY, "$", &serialised)?;
     Ok(())
   }
 }

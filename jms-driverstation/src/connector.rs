@@ -199,8 +199,8 @@ impl DSConnection {
 
   async fn _encode_udp_update(&self, _team: u16) -> Option<Fms2DsUDP> {
     if let Some(station) = self._get_desired_alliance_station().await {
-      if let Ok(arena_state) = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$").await {
-        let (command_enable, command_state, remaining) = match self.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$").await {
+      if let Ok(arena_state) = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$") {
+        let (command_enable, command_state, remaining) = match self.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$") {
           Ok(m) => match m.state {
             MatchPlayState::Auto => (true, RobotState::Auto, m.remaining.0),
             MatchPlayState::Pause => (false, RobotState::Teleop, m.remaining.0),
@@ -282,8 +282,8 @@ impl DSConnection {
     }
 
     let key = format!("ds:{}", pkt.team);
-    self.kv.json_set(&key, "$", &report).await.ok();
-    self.kv.expire(&key, 2).await.ok();
+    self.kv.json_set(&key, "$", &report).ok();
+    self.kv.expire(&key, 2).ok();
   }
 
   fn _process_tcp_tag(&mut self, tag: &Ds2FmsTCPTags) {
@@ -343,7 +343,7 @@ impl DSConnection {
     }
 
     for stn_id in AllianceStationId::all() {
-      let stn: anyhow::Result<AllianceStation> = self.kv.json_get(&stn_id.to_kv_key(), "$").await;
+      let stn: anyhow::Result<AllianceStation> = self.kv.json_get(&stn_id.to_kv_key(), "$");
       match stn {
         Ok(s) if s.team == team => return Some(s),
         _ => ()

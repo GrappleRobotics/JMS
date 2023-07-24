@@ -74,7 +74,7 @@ impl WebsocketContext {
       bcast: self.bcast.clone(),
       handlers: self.handlers.clone(),
       mq: self.mq.clone().await?,
-      kv: self.kv.clone()
+      kv: self.kv.clone()?
     })
   }
 

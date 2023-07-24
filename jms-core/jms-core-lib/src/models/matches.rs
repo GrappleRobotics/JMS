@@ -267,14 +267,14 @@ impl Table for MatchGenerationRecord {
 }
 
 impl MatchGenerationRecord {
-  pub async fn get_by(match_type: MatchType, db: &kv::KVConnection) -> anyhow::Result<Option<MatchGenerationRecordData>> {
-    let first = Self::get(&match_type.to_string(), db).await.ok();
+  pub fn get_by(match_type: MatchType, db: &kv::KVConnection) -> anyhow::Result<Option<MatchGenerationRecordData>> {
+    let first = Self::get(&match_type.to_string(), db).ok();
 
     match first {
       Some(mgr) => Ok(mgr.data),
       None => {
         let mgr = MatchGenerationRecord { match_type, data: None };
-        mgr.insert(db).await?;
+        mgr.insert(db)?;
         Ok(mgr.data)
       },
     }

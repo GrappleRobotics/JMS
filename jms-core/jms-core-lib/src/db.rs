@@ -10,19 +10,19 @@ pub fn generate_id() -> String {
 pub trait DBSingleton: serde::Serialize + serde::de::DeserializeOwned + Default + Send + Sync {
   const KEY: &'static str;
 
-  async fn get(db: &kv::KVConnection) -> anyhow::Result<Self> {
-    match db.json_get(&Self::KEY, "$").await {
+  fn get(db: &kv::KVConnection) -> anyhow::Result<Self> {
+    match db.json_get(&Self::KEY, "$") {
       Ok(v) => Ok(v),
       Err(_) => {
         let default = Self::default();
-        default.update(db).await?;
+        default.update(db)?;
         Ok(default)
       }
     }
   }
 
-  async fn update(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
-    db.json_set(&Self::KEY, "$", &self).await
+  fn update(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.json_set(&Self::KEY, "$", &self)
   }
 }
 
@@ -33,31 +33,31 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
   fn id(&self) -> String;
   fn key(&self) -> String { format!("{}:{}", Self::PREFIX, self.id()) }
 
-  async fn insert(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
-    db.json_set(&self.key(), "$", &self).await
+  fn insert(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.json_set(&self.key(), "$", &self)
   }
 
-  async fn delete(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
-    db.del(&self.key()).await
+  fn delete(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.del(&self.key())
   }
 
-  async fn delete_by(id: &str, db: &kv::KVConnection) -> anyhow::Result<()> {
-    db.del(&format!("{}:{}", Self::PREFIX, id)).await
+  fn delete_by(id: &str, db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.del(&format!("{}:{}", Self::PREFIX, id))
   }
 
-  async fn get(id: &str, db: &kv::KVConnection) -> anyhow::Result<Self> {
-    db.json_get(&format!("{}:{}", Self::PREFIX, id), "$").await
+  fn get(id: &str, db: &kv::KVConnection) -> anyhow::Result<Self> {
+    db.json_get(&format!("{}:{}", Self::PREFIX, id), "$")
   }
 
-  async fn ids(db: &kv::KVConnection) -> anyhow::Result<Vec<String>> {
-    let keys = db.keys(&format!("{}:*", Self::PREFIX)).await?;
+  fn ids(db: &kv::KVConnection) -> anyhow::Result<Vec<String>> {
+    let keys = db.keys(&format!("{}:*", Self::PREFIX))?;
     Ok(keys.iter().map(|x| x[Self::PREFIX.len() + 1..].to_owned()).collect())
   }
 
-  async fn all(db: &kv::KVConnection) -> anyhow::Result<Vec<Self>> {
+  fn all(db: &kv::KVConnection) -> anyhow::Result<Vec<Self>> {
     let mut v = vec![];
-    for id in Self::ids(db).await? {
-      match Self::get(&id, db).await {
+    for id in Self::ids(db)? {
+      match Self::get(&id, db) {
         Ok(value) => v.push(value),
         _ => ()     // It's since been deleted
       }
@@ -65,9 +65,9 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
     Ok(v)
   }
 
-  async fn clear(db: &kv::KVConnection) -> anyhow::Result<()> {
-    for id in Self::ids(db).await? {
-      db.del(&format!("{}:{}", Self::PREFIX, id)).await.ok();
+  fn clear(db: &kv::KVConnection) -> anyhow::Result<()> {
+    for id in Self::ids(db)? {
+      db.del(&format!("{}:{}", Self::PREFIX, id)).ok();
     }
     Ok(())
   }

@@ -44,12 +44,12 @@ pub struct WSEventHandler;
 #[async_trait::async_trait]
 impl WebsocketHandler for WSEventHandler {
   async fn broadcast(&self, ctx: &WebsocketContext) -> anyhow::Result<()> {
-    ctx.broadcast::<EventMessage2UI>(EventMessageDetails2UI::Current( models::EventDetails::get(&ctx.kv).await? ).into()).await;
-    ctx.broadcast::<EventMessage2UI>(EventMessageTeam2UI::CurrentAll( models::Team::all(&ctx.kv).await? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageDetails2UI::Current( models::EventDetails::get(&ctx.kv)? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageTeam2UI::CurrentAll( models::Team::all(&ctx.kv)? ).into()).await;
     // ctx.broadcast::<EventMessage2UI>(EventMessageSchedule2UI::CurrentBlocks( models::ScheduleBlock::sorted(&ctx.kv).await? ).into()).await;
     // ctx.broadcast::<EventMessage2UI>(EventMessageAlliance2UI::CurrentAll( models::PlayoffAlliance::all(&ctx.kv).await? ).into()).await;
     // ctx.broadcast::<EventMessage2UI>(EventMessageRanking2UI::CurrentAll( models::TeamRanking::sorted(&db::database())? ).into()).await;
-    ctx.broadcast::<EventMessage2UI>(EventMessageAward2UI::CurrentAll( models::Award::all(&ctx.kv).await? ).into()).await;
+    ctx.broadcast::<EventMessage2UI>(EventMessageAward2UI::CurrentAll( models::Award::all(&ctx.kv)? ).into()).await;
     Ok(())
   }
 
@@ -57,11 +57,11 @@ impl WebsocketHandler for WSEventHandler {
     if let WebsocketMessage2JMS::Event(msg) = msg {
       match msg.clone() {
         EventMessage2JMS::Details(msg) => match msg {
-          EventMessageDetails2JMS::Update(mut details) => { details.update(&ws.context.kv).await?; },
+          EventMessageDetails2JMS::Update(mut details) => { details.update(&ws.context.kv)?; },
         },
         EventMessage2JMS::Team(msg) => match msg {
-            EventMessageTeam2JMS::Insert(team) => { team.maybe_gen_wpa().insert(&ws.context.kv).await?; },
-            EventMessageTeam2JMS::Delete(team_id) => { models::Team::delete_by(&team_id, &ws.context.kv).await?; },
+            EventMessageTeam2JMS::Insert(team) => { team.maybe_gen_wpa().insert(&ws.context.kv)?; },
+            EventMessageTeam2JMS::Delete(team_id) => { models::Team::delete_by(&team_id, &ws.context.kv)?; },
         },
         // EventMessage2JMS::Schedule(msg) => match msg {
         //     EventMessageSchedule2JMS::NewBlock => { models::ScheduleBlock::append_default(&db::database())?; },
@@ -79,9 +79,9 @@ impl WebsocketHandler for WSEventHandler {
         //     EventMessageAlliance2JMS::Promote => { models::PlayoffAlliance::promote(&db::database())?; },
         // },
         EventMessage2JMS::Award(msg) => match msg {
-            EventMessageAward2JMS::Create(name) => { models::Award { id: db::generate_id(), name: name.clone(), recipients: vec![] }.insert(&ws.context.kv).await?; },
-            EventMessageAward2JMS::Update(mut award) => { award.insert(&ws.context.kv).await?; },
-            EventMessageAward2JMS::Delete(award_id) => { models::Award::delete_by(&award_id, &ws.context.kv).await?; },
+            EventMessageAward2JMS::Create(name) => { models::Award { id: db::generate_id(), name: name.clone(), recipients: vec![] }.insert(&ws.context.kv)?; },
+            EventMessageAward2JMS::Update(mut award) => { award.insert(&ws.context.kv)?; },
+            EventMessageAward2JMS::Delete(award_id) => { models::Award::delete_by(&award_id, &ws.context.kv)?; },
         }
       };
 

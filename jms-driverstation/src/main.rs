@@ -18,7 +18,7 @@ async fn tcp(kv: KVConnection, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> anyhow:
       let (stream, addr) = server.accept().await?;
       info!("Connected: {}", addr);
 
-      let mut conn = DSConnection::new(kv.clone(), addr, stream, udp_tx.subscribe()).await;
+      let mut conn = DSConnection::new(kv.clone()?, addr, stream, udp_tx.subscribe()).await;
       tokio::spawn(async move {
         conn.process().await;
         info!(
@@ -59,7 +59,7 @@ async fn tcp(kv: KVConnection, udp_tx: &broadcast::Sender<Ds2FmsUDP>) -> anyhow:
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
   logging::configure(false);
-  let kv = KVConnection::new().await?;
+  let kv = KVConnection::new()?;
 
   let (udp_tx, _) = broadcast::channel(16);
 
