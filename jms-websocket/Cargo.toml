@@ -15,9 +15,12 @@ jms-base = { path = "../jms-base" }
 jms-core-lib = { path = "../jms-core/jms-core-lib" }
 jms-driverstation-lib = { path = "../jms-driverstation/jms-driverstation-lib" }
 jms-macros = { path = "../jms-macros" }
+jms-websocket-macros = { path = "./jms-websocket-macros" }
 log = "0.4.19"
+regex = "1.9.1"
 schemars = "0.8.12"
 serde = "1.0.174"
 serde_json = "1.0.103"
 tokio = { version = "1.29.1", features = ["full"] }
 tokio-tungstenite = "0.19.0"
+uuid = { verison = "1.4.1", features = ["v4"] }

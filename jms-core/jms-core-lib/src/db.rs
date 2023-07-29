@@ -1,5 +1,4 @@
 use jms_base::kv;
-use redis_macros::Json;
 use uuid::Uuid;
 
 pub fn generate_id() -> String {

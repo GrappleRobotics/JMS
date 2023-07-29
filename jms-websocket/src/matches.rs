@@ -1,4 +1,3 @@
-use anyhow::bail;
 use jms_core_lib::{models, db::Table};
 use jms_macros::define_websocket_msg;
 

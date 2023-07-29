@@ -1,24 +1,16 @@
-use jms_macros::define_websocket_msg;
+use uuid::Uuid;
 
-use super::{ws::{WebsocketHandler, Websocket}, WebsocketMessage2JMS};
+use crate::ws::WebsocketContext;
 
-define_websocket_msg!($DebugMessage {
-  ReplyTest(String)
-});
+#[jms_websocket_macros::websocket_handler]
+pub trait DebugWebsocket {
+  #[publish]
+  async fn test_publish(&self, _: &WebsocketContext) -> anyhow::Result<String> {
+    Ok(format!("Hello World {}", Uuid::new_v4()))
+  }
 
-pub struct WSDebugHandler;
-
-#[async_trait::async_trait]
-impl WebsocketHandler for WSDebugHandler {
-  async fn handle(&self, msg: &WebsocketMessage2JMS, ws: &mut Websocket) -> anyhow::Result<()> {
-    if let WebsocketMessage2JMS::Debug(msg) = msg {
-      ws.require_fta().await?;
-
-      match msg.clone() {
-        DebugMessage2JMS::ReplyTest(word) => { ws.reply::<DebugMessage2UI>(DebugMessage2UI::ReplyTest(word)).await }
-      }
-    }
-
-    Ok(())
+  #[endpoint]
+  async fn test_endpoint(&self, _: &WebsocketContext, in_text: String) -> anyhow::Result<String> {
+    Ok(in_text.to_uppercase())
   }
 }

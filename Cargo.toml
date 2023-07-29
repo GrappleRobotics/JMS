@@ -9,5 +9,6 @@ members = [
   "jms-driverstation",
   "jms-util",
   "jms-radio-config",
-  "jms-websocket"
+  "jms-websocket",
+  "jms-websocket/jms-websocket-macros"
 ]
