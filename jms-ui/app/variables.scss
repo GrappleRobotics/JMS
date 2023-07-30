@@ -1,0 +1,85 @@
+@use "sass:color";
+
+@import "~bootswatch/dist/darkly/variables";
+
+$primary: #005fc4;
+$success: #28a745;
+
+$theme-colors: (
+  "primary": $primary,
+  "secondary": $secondary,
+  "success": $success,
+  "info": $info,
+  "warning": $warning,
+  "danger": $danger,
+  "light": $light,
+  "dark": $dark,
+
+  "good": #28a745,
+  "bad": #e74c3c,
+  "red": #f53e31,
+  "blue": #3152f5,
+  "green": #28a745,
+  "orange": #d47500,
+  "purple": #9300e9,
+  "yellow": #fcca03,
+  "hazard-yellow": #735a00,
+  "hazard-red": #730000,
+  "gold": #9c8501,
+  "silver": #888,
+  "bronze": #865320,
+);
+
+$accordion-bg: $dark;
+$accordion-color: white;
+$accordion-button-active-bg: $secondary;
+$accordion-button-active-color: white;
+
+$alliances: ( "red", "blue" );
+
+$web-font-path: "";     // Darkly tries to load a webfont, which will block execution on some devices if we're operating without
+                        // an internet connection. This will prevent that loading.
+
+@function theme-color($key) {
+  @return map-get($theme-colors, $key);
+}
+
+@mixin scroll-gradient-horizontal($time) {
+  background-size: 400% 100%;
+  animation: scroll-gradient $time linear infinite;
+}
+
+@keyframes scroll-gradient {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@mixin hazard-btn($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
+  border-color: $bg_b;
+  &:hover {
+    &:enabled {
+      @include scroll-gradient-horizontal(60s);
+    }
+  }
+  @include hazard($bg_a, $bg_b, $text);
+}
+
+@mixin hazard($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
+  background: repeating-linear-gradient(
+    45deg,
+    $bg_a, $bg_a 10px, $bg_b 10px, $bg_b 20px
+  );
+  color: $text;
+}
+
+@mixin hazard-active($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff, $scroll: 60s) {
+  @include hazard($bg_a, $bg_b, $text);
+  @include scroll-gradient-horizontal($scroll);
+}

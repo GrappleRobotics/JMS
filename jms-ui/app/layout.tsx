@@ -1,10 +1,5 @@
+"use client";
 import type { Metadata } from 'next'
-import ThemeRegistry from './ThemeRegistry';
-
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
 
 import { WebsocketManagerComponent } from './support/ws-component';
 import "./global.scss";
@@ -24,7 +19,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <WebsocketManagerComponent>
-          <ThemeRegistry options={{ key: 'mui' }}>{ children }</ThemeRegistry>
+          <main>
+            { children }
+          </main>
         </WebsocketManagerComponent>
       </body>
     </html>

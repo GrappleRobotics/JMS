@@ -1,12 +1,25 @@
 'use client';
 import { v4 as uuid } from 'uuid';
-import { WebsocketPublish, WebsocketRpcRequest, WebsocketRpcResponse } from '../ws-schema';
+import { User, UserToken, WebsocketPublish, WebsocketRpcRequest, WebsocketRpcResponse } from '../ws-schema';
 import { KeysOfUnion } from './util';
 
 export type ConnectCallback = (isOpen: boolean) => void;
 
-export function jmsAuthToken() {
-  return sessionStorage.getItem("jmsAuthToken");
+export function jmsAuthToken(): UserToken | null {
+  let token = sessionStorage.getItem("jmsAuthToken");
+  if (token !== null) {
+    return JSON.parse(token);
+  } else {
+    return null;
+  }
+}
+
+export function clearJmsAuthToken() {
+  sessionStorage.removeItem("jmsAuthToken");
+}
+
+export function setJmsAuthToken(token: UserToken) {
+  sessionStorage.setItem("jmsAuthToken", JSON.stringify(token));
 }
 
 export default class JmsWebsocket {
@@ -15,12 +28,16 @@ export default class JmsWebsocket {
   connectCallbacks: Map<string, ConnectCallback>;
   callbacks: Map<string, { path: string, fn: (msg: any) => void }>;
   reply_waiting: Map<string, { accept: (msg: any) => void, reject: (error: string) => void }>;
+  on_login: Map<string, (token: User | null) => void>;
+  user: User | null;
 
   constructor(timeout=250) {
     this.timeout = timeout;
     this.callbacks = new Map();
     this.connectCallbacks = new Map();
     this.reply_waiting = new Map();
+    this.on_login = new Map();
+    this.user = null;
 
     this.connect = this.connect.bind(this);
     this.dead = this.dead.bind(this);
@@ -29,6 +46,7 @@ export default class JmsWebsocket {
     this.call = this.call.bind(this);
     this.subscribe = this.subscribe.bind(this);
     this.onConnectChange = this.onConnectChange.bind(this);
+    this.logout = this.logout.bind(this);
   }
 
   connect(url: string) {
@@ -48,9 +66,29 @@ export default class JmsWebsocket {
           }));
 
           /* Try to login */
-          // let result = this.call<"debug/test_endpoint">("debug/test_endpoint", { in_text: "abcd" });
-          this.call<"debug/test_endpoint">("debug/test_endpoint", { in_text: "hello world" }).then(x => console.log("RESPONSE: " + x))
-        }, 500);
+          this.call<"user/auth_with_token">("user/auth_with_token", null)
+            .then(result => {
+              if (result["type"] === "AuthSuccess" || result["type"] === "AuthSuccessNewPin") {
+                setJmsAuthToken(result["token"]);
+
+                if (result["type"] === "AuthSuccessNewPin") {
+                  let key = prompt(`Please set a new PIN for User: ${result["user"].username}`)
+                  if (key !== null) {
+                    this.call<"user/update_pin">("user/update_pin", { pin: key })
+                      .then(user => {
+                        this.on_login.forEach(cb => cb(user));
+                        this.user = result["user"];
+                      })
+                      .catch(e => alert(`Error! ${e}`))
+                  }
+                } else {
+                  this.on_login.forEach(cb => cb(result["user"]))
+                  this.user = result["user"];
+                }
+              }
+            })
+            .catch(error => clearJmsAuthToken())
+        }, 100);
       }, 100);
       that.ws = ws;
       clearTimeout(timer);
@@ -59,12 +97,16 @@ export default class JmsWebsocket {
     ws.onclose = e => {
       console.log("WS Closed, retrying...", e.reason);
       this.connectCallbacks.forEach(cb => cb(false));
+      this.user = null;
+      this.on_login.forEach(cb => cb(null));
       timer = setTimeout(() => that.tryReconnect(url), that.timeout);
     };
 
     ws.onerror = err => {
       console.log("WS Error, closing...", err);
       this.connectCallbacks.forEach(cb => cb(false));
+      this.user = null;
+      this.on_login.forEach(cb => cb(null));
       ws.close();
     };
 
@@ -133,7 +175,8 @@ export default class JmsWebsocket {
     this.sendNow({
       message_id: msg_id,
       path: path,
-      data: args
+      data: args,
+      token: jmsAuthToken()
     });
 
     return p as any;
@@ -165,6 +208,8 @@ export default class JmsWebsocket {
       this.callbacks.delete(id);
     if (this.connectCallbacks.has(id))
       this.connectCallbacks.delete(id);
+    if (this.on_login.has(id))
+      this.on_login.delete(id);
   }
 
   removeHandles(ids?: string[]) {
@@ -178,5 +223,53 @@ export default class JmsWebsocket {
     this.connectCallbacks.set(id, cb);
     cb(this.alive());
     return id;
+  }
+
+  onLogin(cb: (user: User | null) => void): string {
+    let id = uuid();
+    this.on_login.set(id, cb);
+    cb(this.user);
+    return id;
+  }
+
+  logout() {
+    this.call<"user/logout">("user/logout", null)
+      .then(v => {
+        this.user = null;
+        clearJmsAuthToken();
+        this.on_login.forEach(cb => cb(null));
+      });
+  }
+
+  login(username: string, pin: string): Promise<void> {
+    let p = new Promise<void>((resolve, reject) => {
+      this.call<"user/auth_with_pin">("user/auth_with_pin", { username, pin })
+        .then(result => {
+            if (result["type"] === "AuthSuccess" || result["type"] === "AuthSuccessNewPin") {
+              setJmsAuthToken(result["token"]);
+
+              if (result["type"] === "AuthSuccessNewPin") {
+                let key = prompt(`Please set a new PIN for User: ${result["user"].username}`)
+                if (key !== null) {
+                  this.call<"user/update_pin">("user/update_pin", { pin: key })
+                    .then(user => {
+                      this.on_login.forEach(cb => cb(user));
+                      this.user = result["user"];
+                    })
+                    .catch(e => alert(`Error! ${e}`))
+                }
+              } else {
+                this.on_login.forEach(cb => cb(result["user"]))
+                this.user = result["user"];
+              }
+            }
+          resolve();
+        })
+        .catch(e => {
+          clearJmsAuthToken();
+          reject(e);
+        });
+    });
+    return p;
   }
 }

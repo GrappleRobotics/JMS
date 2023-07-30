@@ -1,0 +1,17 @@
+@import "./variables.scss";
+
+.navbar-top {
+  background-color: theme-color("dark");
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+
+  color: white;
+
+  .navbar-text {
+    padding: 0;
+  }
+
+  &[data-connected="false"] {
+    background-color: theme-color("bad");
+  }
+}

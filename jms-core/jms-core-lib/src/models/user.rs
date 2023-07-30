@@ -52,6 +52,13 @@ impl User {
     }
   }
 
+  // Get case-insensitive
+  pub fn get(username: &str, kv: &KVConnection) -> anyhow::Result<Self> {
+    let keys = Self::ids(kv)?;
+    let key = keys.iter().find(|x| x.to_lowercase() == username.to_lowercase()).ok_or(anyhow::anyhow!("No User Found!"))?;
+    kv.json_get(&format!("{}:{}", Self::PREFIX, key), "$")
+  }
+
   pub fn set_pin(&mut self, pin: &str) {
     self.pin_hash = Some(bcrypt::hash(pin.clone(), 10).unwrap());
     self.pin_is_numeric = pin.chars().all(char::is_numeric);

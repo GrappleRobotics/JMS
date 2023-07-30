@@ -168,54 +168,62 @@
     "AuthResult": {
       "oneOf": [
         {
-          "type": "string",
-          "enum": [
-            "NoToken"
-          ]
+          "type": "object",
+          "required": [
+            "token",
+            "type",
+            "user"
+          ],
+          "properties": {
+            "token": {
+              "$ref": "#/definitions/UserToken"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "AuthSuccess"
+              ]
+            },
+            "user": {
+              "$ref": "#/definitions/User"
+            }
+          }
         },
         {
           "type": "object",
           "required": [
-            "AuthSuccess"
+            "token",
+            "type",
+            "user"
           ],
           "properties": {
-            "AuthSuccess": {
-              "type": "array",
-              "items": [
-                {
-                  "$ref": "#/definitions/User"
-                },
-                {
-                  "$ref": "#/definitions/UserToken"
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2
+            "token": {
+              "$ref": "#/definitions/UserToken"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "AuthSuccessNewPin"
+              ]
+            },
+            "user": {
+              "$ref": "#/definitions/User"
             }
-          },
-          "additionalProperties": false
+          }
         },
         {
           "type": "object",
           "required": [
-            "AuthSuccessNewPin"
+            "type"
           ],
           "properties": {
-            "AuthSuccessNewPin": {
-              "type": "array",
-              "items": [
-                {
-                  "$ref": "#/definitions/User"
-                },
-                {
-                  "$ref": "#/definitions/UserToken"
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2
+            "type": {
+              "type": "string",
+              "enum": [
+                "NoToken"
+              ]
             }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     },
@@ -355,6 +363,27 @@
           ],
           "properties": {
             "data": {
+              "required": [
+                "pin"
+              ],
+              "properties": {
+                "pin": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "user/update_pin"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "const": null
             },
             "path": {
@@ -434,6 +463,20 @@
             },
             "path": {
               "const": "user/auth_with_pin"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/User"
+            },
+            "path": {
+              "const": "user/update_pin"
             }
           }
         },

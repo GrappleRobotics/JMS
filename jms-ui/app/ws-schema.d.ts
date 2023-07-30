@@ -53,20 +53,18 @@ export type ArenaState =
  * via the `definition` "AuthResult".
  */
 export type AuthResult =
-  | "NoToken"
   | {
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      AuthSuccess: [User, UserToken];
+      token: UserToken;
+      type: "AuthSuccess";
+      user: User;
     }
   | {
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      AuthSuccessNewPin: [User, UserToken];
+      token: UserToken;
+      type: "AuthSuccessNewPin";
+      user: User;
+    }
+  | {
+      type: "NoToken";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -98,6 +96,12 @@ export type WebsocketRpcRequest =
       path: "user/auth_with_pin";
     }
   | {
+      data: {
+        pin: string;
+      };
+      path: "user/update_pin";
+    }
+  | {
       data: null;
       path: "user/logout";
     }
@@ -127,6 +131,10 @@ export type WebsocketRpcResponse =
       path: "user/auth_with_pin";
     }
   | {
+      data: User;
+      path: "user/update_pin";
+    }
+  | {
       data: null;
       path: "user/logout";
     }
@@ -144,6 +152,14 @@ export interface TempWebsocketRootSchema {
 }
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "UserToken".
+ */
+export interface UserToken {
+  token: string;
+  user: string;
+}
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "User".
  */
 export interface User {
@@ -153,12 +169,4 @@ export interface User {
   realname: string;
   tokens: string[];
   username: string;
-}
-/**
- * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
- * via the `definition` "UserToken".
- */
-export interface UserToken {
-  token: string;
-  user: string;
 }

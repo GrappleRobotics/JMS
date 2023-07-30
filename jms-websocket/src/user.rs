@@ -3,9 +3,10 @@ use jms_core_lib::{models::{MaybeToken, User, UserToken}, db::Table};
 use crate::ws::WebsocketContext;
 
 #[derive(serde::Serialize, schemars::JsonSchema)]
+#[serde(tag = "type")]
 pub enum AuthResult {
-  AuthSuccess(User, UserToken),
-  AuthSuccessNewPin(User, UserToken),
+  AuthSuccess { user: User, token: UserToken },
+  AuthSuccessNewPin { user: User, token: UserToken },
   NoToken,
 }
 
@@ -15,18 +16,18 @@ pub trait UserWebsocket {
   async fn auth_with_token(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<AuthResult> {
     if User::ids(&ctx.kv)?.is_empty() {
       // Create the default FTA User since there are no current users
-      let mut user = User::new("fta", "FTA", true);
+      let mut user = User::new("FTA", "FTA", true);
       let utoken = user.new_token();
       user.insert(&ctx.kv)?;  // Make sure the user gets the new token
 
-      Ok(AuthResult::AuthSuccessNewPin(user, utoken))
+      Ok(AuthResult::AuthSuccessNewPin { user, token: utoken })
     } else if let Some(utoken) = &token.0 {
       // User has a token - log them in
       let user = token.auth(&ctx.kv)?;
       if user.pin_hash.is_none() {
-        Ok(AuthResult::AuthSuccessNewPin(user, utoken.clone()))
+        Ok(AuthResult::AuthSuccessNewPin { user, token: utoken.clone() })
       } else {
-        Ok(AuthResult::AuthSuccess(user, utoken.clone()))
+        Ok(AuthResult::AuthSuccess { user, token: utoken.clone() })
       }
     } else {
       // User didn't present a token - they're a guest
@@ -41,10 +42,18 @@ pub trait UserWebsocket {
     user.insert(&ctx.kv)?;  // Make sure the user gets the new token
 
     if user.pin_hash.is_none() {
-      Ok(AuthResult::AuthSuccessNewPin(user, token))
+      Ok(AuthResult::AuthSuccessNewPin { user, token })
     } else {
-      Ok(AuthResult::AuthSuccess(user, token))
+      Ok(AuthResult::AuthSuccess { user, token })
     }
+  }
+
+  #[endpoint]
+  async fn update_pin(&self, ctx: &WebsocketContext, token: &MaybeToken, pin: String) -> anyhow::Result<User> {
+    let mut user = token.auth(&ctx.kv)?;
+    user.set_pin(&pin);
+    user.insert(&ctx.kv)?;
+    return Ok(user)
   }
   
   #[endpoint]
