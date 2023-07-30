@@ -1,20 +1,21 @@
-use jms_arena_lib::{ArenaState, ArenaSignal, AllianceStation, ArenaRPCClient, ARENA_STATE_KEY, SerialisedLoadedMatch, ARENA_MATCH_KEY};
-use jms_core_lib::models::AllianceStationId;
-use jms_driverstation_lib::DriverStationReport;
-use jms_macros::define_websocket_msg;
+use std::time::Duration;
 
-use crate::{ws::{WebsocketHandler, WebsocketContext, Websocket}, WebsocketMessage2JMS};
+use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY};
+use jms_core_lib::models::MaybeToken;
+
+use crate::ws::WebsocketContext;
 
 #[jms_websocket_macros::websocket_handler]
 pub trait ArenaWebsocket {
   #[publish]
-  async fn current_state(&self, ctx: &WebsocketContext) -> anyhow::Result<ArenaState> {
+  async fn state(&self, ctx: &WebsocketContext) -> anyhow::Result<ArenaState> {
     Ok(ctx.kv.json_get(ARENA_STATE_KEY, "$")?)
   }
 
   #[endpoint]
-  async fn signal(&self, ctx: &WebsocketContext, sig: ArenaSignal) -> anyhow::Result<()> {
-    Ok(())
+  async fn signal(&self, ctx: &WebsocketContext, _token: &MaybeToken, signal: ArenaSignal) -> anyhow::Result<()> {
+    let fut = ArenaRPCClient::signal(&ctx.mq, signal, "WebUI".to_owned());
+    tokio::time::timeout(Duration::from_millis(200), fut).await??.map_err(|e| anyhow::anyhow!(e))
   }
 }
 

@@ -37,18 +37,15 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
   let ident = &t.ident;
 
   let trait_ident = syn::Ident::new(&format!("{}Trait", ident), ident.span());
-  let publish_ident = syn::Ident::new(&format!("{}Publish", ident), ident.span());
-  let rpc_request_ident = syn::Ident::new(&format!("{}RpcRequest", ident), ident.span());
-  let rpc_response_ident = syn::Ident::new(&format!("{}RpcResponse", ident), ident.span());
 
   let mut last_published = vec![];
   let mut last_published_defaults = vec![];
   let mut update_publisher_body = vec![];
   let mut on_subscribe_body = vec![];
-  let mut publish_body = vec![];
-  let mut rpc_request_body = vec![];
-  let mut rpc_response_body = vec![];
   let mut rpc_body = vec![];
+
+  let mut publish_names_body = vec![];
+  let mut rpc_names_body = vec![];
 
   for item in &t.items {
     if let TraitItem::Fn(f) = item {
@@ -57,17 +54,13 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
       } else if f.attrs.len() == 1 {
         // We're either a publish or an endpoint
         let f_ident = &f.sig.ident;
+        let name = f_ident.to_string();
         let return_type = &f.sig.output;
 
         if let ReturnType::Type(_, typ) = return_type {
           if let Some(return_type) = extract_type_from_result(typ) {
             if f.attrs[0].path().is_ident("publish") {
               // Publish gets pushed directly
-              publish_body.push(quote! {
-                #[allow(non_camel_case_types)]
-                #f_ident(#return_type)
-              });
-
               let last_published_ident = syn::Ident::new(&format!("last_{}", f_ident), f_ident.span());
 
               last_published.push(quote! {
@@ -78,6 +71,10 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                 #last_published_ident: tokio::sync::RwLock::new(None)
               });
 
+              publish_names_body.push(quote! {
+                v.push(#name.to_owned());
+              });
+
               update_publisher_body.push(quote! {
                 {
                   let v = self.#f_ident(context).await?;
@@ -86,7 +83,7 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                     Some(v2) if v2 == &v => {},
                     _ => {
                       *last = Some(v.clone());
-                      to_publish.push(serde_json::to_value(#publish_ident::#f_ident(v))?);
+                      to_publish.push((#name.to_owned(), serde_json::to_value(v)?));
                     }
                   }
                 }
@@ -98,7 +95,7 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                 if topic == #f_ident_str {
                   let last = self.#last_published_ident.read().await;
                   if let Some(v) = &*last {
-                    to_publish.push(serde_json::to_value(#publish_ident::#f_ident(v.clone()))?);
+                    to_publish.push((#name.to_owned(), serde_json::to_value(v)?));
                   }
                 }
               })
@@ -109,7 +106,13 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                   // Ignore the context
                   match &*arg.ty {
                     syn::Type::Reference(re) => match &*re.elem {
-                      syn::Type::Path(path) if path.path.segments.iter().find(|x| x.ident == "WebsocketContext").is_some() => None,
+                      syn::Type::Path(path) if path.path.segments.iter().find(|x| x.ident == "WebsocketContext" ||  x.ident == "UserToken").is_some() => None,
+                      syn::Type::Path(path) => {
+                        match path.path.segments.last() {
+                          Some(x) if x.ident == "WebsocketContext" || x.ident == "MaybeToken" => None,
+                          _ => Some(arg)
+                        }
+                      },
                       _ => Some(arg)
                     },
                     _ => Some(arg)
@@ -117,25 +120,34 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                 } else {
                   None
                 }
+              }).collect::<Vec<_>>();
+
+              rpc_names_body.push(quote! {
+                v.push(#name.to_owned());
               });
 
-              let untyped_args = args.clone().map(|x| &x.pat).collect::<Vec<_>>();
-
-              rpc_request_body.push(quote! {
-                #[allow(non_camel_case_types)]
-                #f_ident { #(#args),* }
-              });
-
-              rpc_response_body.push(quote! {
-                #[allow(non_camel_case_types)]
-                #f_ident(#return_type)
-              });
-
-              rpc_body.push(quote! {
-                #rpc_request_ident::#f_ident { #(#untyped_args),* } => {
-                  Ok(serde_json::to_value(#rpc_response_ident::#f_ident(self.#f_ident(ctx, #(#untyped_args),*).await?))?)
-                }
-              });
+              if args.is_empty() {
+                rpc_body.push(quote! {
+                  #name => {
+                    Ok((#name.to_owned(), serde_json::to_value(self.#f_ident(ctx, token).await?)?))
+                  }
+                })
+              } else {
+                let destructured_from_msg_args = args.iter().map(|arg| {
+                  match &*arg.pat {
+                    syn::Pat::Ident(ident) => {
+                      let arg_name = ident.ident.to_string();
+                      quote! { serde_json::from_value(msg.as_ref().ok_or(anyhow::anyhow!("No arguments presented!"))?.get(#arg_name).ok_or(anyhow::anyhow!("Arguments must be an object!"))?.clone())? }
+                    },
+                    _ => Err(syn::Error::new(arg.span(), "Argument Pattern should be an ident")).unwrap()
+                  }
+                });
+                rpc_body.push(quote! {
+                  #name => {
+                    Ok((#name.to_owned(), serde_json::to_value(self.#f_ident(ctx, token, #(#destructured_from_msg_args,)*).await?)?))
+                  }
+                });
+              }
             } else {
               return Err(syn::Error::new(f.attrs[0].span(), "Unrecognised Attribute, should be either `publish` or `endpoint`"))
             }
@@ -150,21 +162,6 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
   }
 
   Ok(quote! {
-    #[derive(serde::Serialize, schemars::JsonSchema)]
-    #vis enum #publish_ident {
-      #(#publish_body),*
-    }
-
-    #[derive(serde::Deserialize, schemars::JsonSchema)]
-    #vis enum #rpc_request_ident {
-      #(#rpc_request_body),*
-    }
-
-    #[derive(serde::Serialize, schemars::JsonSchema)]
-    #vis enum #rpc_response_ident {
-      #(#rpc_response_body),*
-    }
-
     #vis struct #ident {
       #(#last_published),*
     }
@@ -182,7 +179,34 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
 
     #[async_trait::async_trait]
     impl crate::handler::WebsocketHandler for #ident {
-      async fn update_publishers(&self, context: &WebsocketContext) -> anyhow::Result<Vec<serde_json::Value>> {
+      // fn publish_schema(&self, gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+      //   use schemars::JsonSchema;
+      //   #publish_ident::json_schema(gen)
+      // }
+
+      // fn rpc_request_schema(&self, gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+      //   use schemars::JsonSchema;
+      //   #rpc_request_ident::json_schema(gen)
+      // }
+
+      // fn rpc_response_schema(&self, gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+      //   use schemars::JsonSchema;
+      //   #rpc_response_ident::json_schema(gen)
+      // }
+
+      fn publishers(&self) -> Vec<String> {
+        let mut v = vec![];
+        #(#publish_names_body)*
+        v
+      }
+
+      fn rpcs(&self) -> Vec<String> {
+        let mut v = vec![];
+        #(#rpc_names_body)*
+        v
+      }
+
+      async fn update_publishers(&self, context: &WebsocketContext) -> anyhow::Result<Vec<(String, serde_json::Value)>> {
         let mut to_publish = vec![];
 
         #(#update_publisher_body)*
@@ -190,7 +214,7 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
         Ok(to_publish)
       }
 
-      async fn on_subscribe(&self, topic: &str) -> anyhow::Result<Vec<serde_json::Value>> {
+      async fn on_subscribe(&self, topic: &str) -> anyhow::Result<Vec<(String, serde_json::Value)>> {
         let mut to_publish = vec![];
 
         #(#on_subscribe_body)*
@@ -198,10 +222,10 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
         Ok(to_publish)
       }
 
-      async fn process_rpc_call(&self, ctx: &WebsocketContext, msg: serde_json::Value) -> anyhow::Result<serde_json::Value> {
-        let msg = serde_json::from_value(msg)?;
-        match msg {
-          #(#rpc_body),*
+      async fn process_rpc_call(&self, ctx: &WebsocketContext, token: &MaybeToken, path: String, msg: Option<serde_json::Value>) -> anyhow::Result<(String, serde_json::Value)> {
+        match path.as_str() {
+          #(#rpc_body),*,
+          _ => unreachable!()
         }
       }
     }

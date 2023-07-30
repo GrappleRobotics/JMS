@@ -1,310 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AllWebsocketMessages",
-  "type": "object",
-  "required": [
-    "jms2ui",
-    "recv_meta",
-    "send_meta",
-    "ui2jms"
-  ],
-  "properties": {
-    "jms2ui": {
-      "$ref": "#/definitions/WebsocketMessage2UI"
-    },
-    "recv_meta": {
-      "$ref": "#/definitions/RecvMeta"
-    },
-    "send_meta": {
-      "$ref": "#/definitions/SendMeta"
-    },
-    "ui2jms": {
-      "$ref": "#/definitions/WebsocketMessage2JMS"
-    }
-  },
+  "title": "TempWebsocketRootSchema",
   "definitions": {
-    "Alliance": {
-      "type": "string",
-      "enum": [
-        "blue",
-        "red"
-      ]
-    },
-    "AllianceStation": {
-      "type": "object",
-      "required": [
-        "astop",
-        "bypass",
-        "estop",
-        "id"
-      ],
-      "properties": {
-        "astop": {
-          "type": "boolean"
-        },
-        "bypass": {
-          "type": "boolean"
-        },
-        "estop": {
-          "type": "boolean"
-        },
-        "id": {
-          "$ref": "#/definitions/AllianceStationId"
-        },
-        "team": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint16",
-          "minimum": 0.0
-        }
-      }
-    },
-    "AllianceStationId": {
-      "type": "object",
-      "required": [
-        "alliance",
-        "station"
-      ],
-      "properties": {
-        "alliance": {
-          "$ref": "#/definitions/Alliance"
-        },
-        "station": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        }
-      }
-    },
-    "ArenaMessage2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "State"
-          ],
-          "properties": {
-            "State": {
-              "$ref": "#/definitions/ArenaMessageState2JMS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Alliance"
-          ],
-          "properties": {
-            "Alliance": {
-              "$ref": "#/definitions/ArenaMessageAlliance2JMS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Match"
-          ],
-          "properties": {
-            "Match": {
-              "$ref": "#/definitions/ArenaMessageMatch2JMS"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessage2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "State"
-          ],
-          "properties": {
-            "State": {
-              "$ref": "#/definitions/ArenaMessageState2UI"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Alliance"
-          ],
-          "properties": {
-            "Alliance": {
-              "$ref": "#/definitions/ArenaMessageAlliance2UI"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Match"
-          ],
-          "properties": {
-            "Match": {
-              "$ref": "#/definitions/ArenaMessageMatch2UI"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageAlliance2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "UpdateAlliance"
-          ],
-          "properties": {
-            "UpdateAlliance": {
-              "type": "object",
-              "required": [
-                "station"
-              ],
-              "properties": {
-                "astop": {
-                  "type": [
-                    "boolean",
-                    "null"
-                  ]
-                },
-                "bypass": {
-                  "type": [
-                    "boolean",
-                    "null"
-                  ]
-                },
-                "estop": {
-                  "type": [
-                    "boolean",
-                    "null"
-                  ]
-                },
-                "station": {
-                  "$ref": "#/definitions/AllianceStationId"
-                },
-                "team": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "format": "uint",
-                  "minimum": 0.0
-                }
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageAlliance2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "CurrentStations"
-          ],
-          "properties": {
-            "CurrentStations": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/AllianceStation"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageMatch2JMS": {
-      "oneOf": [
-        {
-          "type": "string",
-          "enum": [
-            "LoadTest",
-            "Unload"
-          ]
-        },
-        {
-          "type": "object",
-          "required": [
-            "Load"
-          ],
-          "properties": {
-            "Load": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageMatch2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Current"
-          ],
-          "properties": {
-            "Current": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/SerialisedLoadedMatch"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageState2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Signal"
-          ],
-          "properties": {
-            "Signal": {
-              "$ref": "#/definitions/ArenaSignal"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "ArenaMessageState2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Current"
-          ],
-          "properties": {
-            "Current": {
-              "$ref": "#/definitions/ArenaState"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
     "ArenaSignal": {
       "oneOf": [
         {
@@ -468,928 +165,386 @@
         }
       ]
     },
-    "Award": {
-      "type": "object",
-      "required": [
-        "id",
-        "name",
-        "recipients"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "recipients": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AwardRecipient"
-          }
-        }
-      }
-    },
-    "AwardRecipient": {
-      "type": "object",
-      "properties": {
-        "awardee": {
-          "type": [
-            "string",
-            "null"
+    "AuthResult": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "NoToken"
           ]
         },
-        "team": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        }
-      }
-    },
-    "DebugMessage2JMS": {
-      "oneOf": [
         {
           "type": "object",
           "required": [
-            "ReplyTest"
+            "AuthSuccess"
           ],
           "properties": {
-            "ReplyTest": {
-              "type": "string"
+            "AuthSuccess": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/User"
+                },
+                {
+                  "$ref": "#/definitions/UserToken"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "AuthSuccessNewPin"
+          ],
+          "properties": {
+            "AuthSuccessNewPin": {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/User"
+                },
+                {
+                  "$ref": "#/definitions/UserToken"
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
             }
           },
           "additionalProperties": false
         }
       ]
     },
-    "DebugMessage2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "ReplyTest"
-          ],
-          "properties": {
-            "ReplyTest": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventDetails": {
+    "User": {
       "type": "object",
       "required": [
-        "av_chroma_key",
-        "av_event_colour",
-        "webcasts"
+        "permissions",
+        "pin_is_numeric",
+        "realname",
+        "tokens",
+        "username"
       ],
       "properties": {
-        "av_chroma_key": {
-          "type": "string"
-        },
-        "av_event_colour": {
-          "type": "string"
-        },
-        "code": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "event_name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "webcasts": {
+        "permissions": {
           "type": "array",
           "items": {
             "type": "string"
           }
-        }
-      }
-    },
-    "EventMessage2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Details"
-          ],
-          "properties": {
-            "Details": {
-              "$ref": "#/definitions/EventMessageDetails2JMS"
-            }
-          },
-          "additionalProperties": false
         },
-        {
-          "type": "object",
-          "required": [
-            "Team"
-          ],
-          "properties": {
-            "Team": {
-              "$ref": "#/definitions/EventMessageTeam2JMS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Award"
-          ],
-          "properties": {
-            "Award": {
-              "$ref": "#/definitions/EventMessageAward2JMS"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventMessage2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Details"
-          ],
-          "properties": {
-            "Details": {
-              "$ref": "#/definitions/EventMessageDetails2UI"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Team"
-          ],
-          "properties": {
-            "Team": {
-              "$ref": "#/definitions/EventMessageTeam2UI"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Award"
-          ],
-          "properties": {
-            "Award": {
-              "$ref": "#/definitions/EventMessageAward2UI"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventMessageAward2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Create"
-          ],
-          "properties": {
-            "Create": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Update"
-          ],
-          "properties": {
-            "Update": {
-              "$ref": "#/definitions/Award"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Delete"
-          ],
-          "properties": {
-            "Delete": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventMessageAward2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "CurrentAll"
-          ],
-          "properties": {
-            "CurrentAll": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Award"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventMessageDetails2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Update"
-          ],
-          "properties": {
-            "Update": {
-              "$ref": "#/definitions/EventDetails"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventMessageDetails2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Current"
-          ],
-          "properties": {
-            "Current": {
-              "$ref": "#/definitions/EventDetails"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventMessageTeam2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Insert"
-          ],
-          "properties": {
-            "Insert": {
-              "$ref": "#/definitions/Team"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Delete"
-          ],
-          "properties": {
-            "Delete": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "EventMessageTeam2UI": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "CurrentAll"
-          ],
-          "properties": {
-            "CurrentAll": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
-            }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "Match": {
-      "type": "object",
-      "required": [
-        "blue_teams",
-        "match_number",
-        "match_type",
-        "played",
-        "ready",
-        "red_teams",
-        "set_number"
-      ],
-      "properties": {
-        "blue_alliance": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "blue_teams": {
-          "type": "array",
-          "items": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint",
-            "minimum": 0.0
-          }
-        },
-        "match_number": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "match_subtype": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/MatchSubtype"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "match_type": {
-          "$ref": "#/definitions/MatchType"
-        },
-        "played": {
-          "type": "boolean"
-        },
-        "ready": {
-          "type": "boolean"
-        },
-        "red_alliance": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "red_teams": {
-          "type": "array",
-          "items": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint",
-            "minimum": 0.0
-          }
-        },
-        "set_number": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "start_time": {
+        "pin_hash": {
           "type": [
             "string",
             "null"
-          ],
-          "format": "date-time"
-        },
-        "winner": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Alliance"
-            },
-            {
-              "type": "null"
-            }
           ]
+        },
+        "pin_is_numeric": {
+          "type": "boolean"
+        },
+        "realname": {
+          "type": "string"
+        },
+        "tokens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "username": {
+          "type": "string"
         }
       }
     },
-    "MatchMessage2JMS": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "Reset"
-          ],
-          "properties": {
-            "Reset": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
+    "UserToken": {
+      "type": "object",
+      "required": [
+        "token",
+        "user"
+      ],
+      "properties": {
+        "token": {
+          "type": "string"
         },
-        {
-          "type": "object",
-          "required": [
-            "Delete"
-          ],
-          "properties": {
-            "Delete": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Update"
-          ],
-          "properties": {
-            "Update": {
-              "$ref": "#/definitions/Match"
-            }
-          },
-          "additionalProperties": false
+        "user": {
+          "type": "string"
         }
-      ]
+      }
     },
-    "MatchMessage2UI": {
+    "WebsocketPublish": {
+      "title": "WebsocketPublish",
       "oneOf": [
         {
-          "type": "object",
           "required": [
-            "All"
+            "debug"
           ],
           "properties": {
-            "All": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/SerializedMatch"
-              }
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Next"
-          ],
-          "properties": {
-            "Next": {
-              "anyOf": [
+            "debug": {
+              "oneOf": [
                 {
-                  "$ref": "#/definitions/SerializedMatch"
-                },
-                {
-                  "type": "null"
+                  "type": "object",
+                  "required": [
+                    "test_publish"
+                  ],
+                  "properties": {
+                    "test_publish": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
                 }
               ]
             }
-          },
-          "additionalProperties": false
+          }
         },
         {
-          "type": "object",
           "required": [
-            "Last"
+            "arena"
           ],
           "properties": {
-            "Last": {
-              "anyOf": [
+            "arena": {
+              "oneOf": [
                 {
-                  "$ref": "#/definitions/SerializedMatch"
-                },
-                {
-                  "type": "null"
+                  "type": "object",
+                  "required": [
+                    "state"
+                  ],
+                  "properties": {
+                    "state": {
+                      "$ref": "#/definitions/ArenaState"
+                    }
+                  },
+                  "additionalProperties": false
                 }
               ]
             }
-          },
-          "additionalProperties": false
-        }
-      ]
-    },
-    "MatchPlayState": {
-      "type": "string",
-      "enum": [
-        "Waiting",
-        "Warmup",
-        "Auto",
-        "Pause",
-        "Teleop",
-        "Cooldown",
-        "Complete",
-        "Fault"
-      ]
-    },
-    "MatchSubtype": {
-      "type": "string",
-      "enum": [
-        "Quarterfinal",
-        "Semifinal",
-        "Final"
-      ]
-    },
-    "MatchType": {
-      "type": "string",
-      "enum": [
-        "Test",
-        "Qualification",
-        "Playoff"
-      ]
-    },
-    "RecvMeta": {
-      "type": "object",
-      "required": [
-        "msg",
-        "seq"
-      ],
-      "properties": {
-        "msg": {
-          "$ref": "#/definitions/WebsocketMessage2JMS"
-        },
-        "seq": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        }
-      }
-    },
-    "SendMeta": {
-      "type": "object",
-      "required": [
-        "bcast",
-        "msg",
-        "seq"
-      ],
-      "properties": {
-        "bcast": {
-          "type": "boolean"
-        },
-        "msg": {
-          "$ref": "#/definitions/WebsocketMessage2UI"
-        },
-        "reply": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "seq": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        }
-      }
-    },
-    "SerialisedLoadedMatch": {
-      "type": "object",
-      "required": [
-        "endgame",
-        "match_id",
-        "remaining",
-        "state"
-      ],
-      "properties": {
-        "endgame": {
-          "type": "boolean"
-        },
-        "match_id": {
-          "type": "string"
-        },
-        "remaining": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "state": {
-          "$ref": "#/definitions/MatchPlayState"
-        }
-      }
-    },
-    "SerializedMatch": {
-      "type": "object",
-      "required": [
-        "blue_teams",
-        "id",
-        "match_number",
-        "match_type",
-        "name",
-        "played",
-        "ready",
-        "red_teams",
-        "set_number",
-        "short_name"
-      ],
-      "properties": {
-        "blue_alliance": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "blue_teams": {
-          "type": "array",
-          "items": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint",
-            "minimum": 0.0
           }
-        },
-        "id": {
-          "type": "string"
-        },
-        "match_number": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "match_subtype": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/MatchSubtype"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "match_type": {
-          "$ref": "#/definitions/MatchType"
-        },
-        "name": {
-          "type": "string"
-        },
-        "played": {
-          "type": "boolean"
-        },
-        "ready": {
-          "type": "boolean"
-        },
-        "red_alliance": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "red_teams": {
-          "type": "array",
-          "items": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "uint",
-            "minimum": 0.0
-          }
-        },
-        "set_number": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "short_name": {
-          "type": "string"
-        },
-        "start_time": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "date-time"
-        },
-        "winner": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Alliance"
-            },
-            {
-              "type": "null"
-            }
-          ]
         }
-      }
+      ]
     },
-    "Team": {
-      "type": "object",
-      "required": [
-        "id",
-        "number",
-        "schedule"
-      ],
-      "properties": {
-        "affiliation": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "location": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "name": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "notes": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "number": {
-          "type": "integer",
-          "format": "uint",
-          "minimum": 0.0
-        },
-        "schedule": {
-          "type": "boolean"
-        },
-        "wpakey": {
-          "type": [
-            "string",
-            "null"
-          ]
-        }
-      }
-    },
-    "WebsocketMessage2JMS": {
+    "WebsocketRpcRequest": {
+      "title": "WebsocketRpcRequest",
       "oneOf": [
         {
-          "type": "string",
-          "enum": [
-            "Ping",
-            "Pong"
-          ]
-        },
-        {
-          "type": "object",
           "required": [
-            "Subscribe"
+            "debug"
           ],
           "properties": {
-            "Subscribe": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
+            "debug": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "test_endpoint"
+                  ],
+                  "properties": {
+                    "test_endpoint": {
+                      "type": "object",
+                      "required": [
+                        "in_text"
+                      ],
+                      "properties": {
+                        "in_text": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             }
-          },
-          "additionalProperties": false
+          }
         },
         {
-          "type": "object",
           "required": [
-            "Debug"
+            "user"
           ],
           "properties": {
-            "Debug": {
-              "$ref": "#/definitions/DebugMessage2JMS"
+            "user": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "auth_with_token"
+                  ],
+                  "properties": {
+                    "auth_with_token": {
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "auth_with_pin"
+                  ],
+                  "properties": {
+                    "auth_with_pin": {
+                      "type": "object",
+                      "required": [
+                        "pin",
+                        "username"
+                      ],
+                      "properties": {
+                        "pin": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "logout"
+                  ],
+                  "properties": {
+                    "logout": {
+                      "type": "object"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             }
-          },
-          "additionalProperties": false
+          }
         },
         {
-          "type": "object",
           "required": [
-            "Event"
+            "arena"
           ],
           "properties": {
-            "Event": {
-              "$ref": "#/definitions/EventMessage2JMS"
+            "arena": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "signal"
+                  ],
+                  "properties": {
+                    "signal": {
+                      "type": "object",
+                      "required": [
+                        "signal"
+                      ],
+                      "properties": {
+                        "signal": {
+                          "$ref": "#/definitions/ArenaSignal"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Arena"
-          ],
-          "properties": {
-            "Arena": {
-              "$ref": "#/definitions/ArenaMessage2JMS"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Match"
-          ],
-          "properties": {
-            "Match": {
-              "$ref": "#/definitions/MatchMessage2JMS"
-            }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     },
-    "WebsocketMessage2UI": {
+    "WebsocketRpcResponse": {
+      "title": "WebsocketRpcResponse",
       "oneOf": [
         {
-          "type": "string",
-          "enum": [
-            "Ping",
-            "Pong"
-          ]
-        },
-        {
-          "type": "object",
           "required": [
-            "Error"
+            "debug"
           ],
           "properties": {
-            "Error": {
-              "type": "string"
+            "debug": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "test_endpoint"
+                  ],
+                  "properties": {
+                    "test_endpoint": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             }
-          },
-          "additionalProperties": false
+          }
         },
         {
-          "type": "object",
           "required": [
-            "Debug"
+            "user"
           ],
           "properties": {
-            "Debug": {
-              "$ref": "#/definitions/DebugMessage2UI"
+            "user": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "auth_with_token"
+                  ],
+                  "properties": {
+                    "auth_with_token": {
+                      "$ref": "#/definitions/AuthResult"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "auth_with_pin"
+                  ],
+                  "properties": {
+                    "auth_with_pin": {
+                      "$ref": "#/definitions/AuthResult"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "logout"
+                  ],
+                  "properties": {
+                    "logout": {
+                      "type": "null"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             }
-          },
-          "additionalProperties": false
+          }
         },
         {
-          "type": "object",
           "required": [
-            "Event"
+            "arena"
           ],
           "properties": {
-            "Event": {
-              "$ref": "#/definitions/EventMessage2UI"
+            "arena": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "signal"
+                  ],
+                  "properties": {
+                    "signal": {
+                      "type": "null"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Arena"
-          ],
-          "properties": {
-            "Arena": {
-              "$ref": "#/definitions/ArenaMessage2UI"
-            }
-          },
-          "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "required": [
-            "Match"
-          ],
-          "properties": {
-            "Match": {
-              "$ref": "#/definitions/MatchMessage2UI"
-            }
-          },
-          "additionalProperties": false
+          }
         }
       ]
     }

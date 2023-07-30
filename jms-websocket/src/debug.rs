@@ -1,3 +1,4 @@
+use jms_core_lib::models::MaybeToken;
 use uuid::Uuid;
 
 use crate::ws::WebsocketContext;
@@ -10,7 +11,7 @@ pub trait DebugWebsocket {
   }
 
   #[endpoint]
-  async fn test_endpoint(&self, _: &WebsocketContext, in_text: String) -> anyhow::Result<String> {
+  async fn test_endpoint(&self, _: &WebsocketContext, _token: &MaybeToken, in_text: String) -> anyhow::Result<String> {
     Ok(in_text.to_uppercase())
   }
 }

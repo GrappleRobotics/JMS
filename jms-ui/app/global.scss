@@ -1,0 +1,50 @@
+// E-Stop / Hazard
+@mixin scroll-gradient-horizontal($time) {
+  background-size: 400% 100%;
+  animation: scroll-gradient $time linear infinite;
+}
+
+@keyframes scroll-gradient {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@mixin hazard-btn($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
+  border-color: $bg_b;
+  &:hover {
+    &:enabled {
+      @include scroll-gradient-horizontal(60s);
+    }
+  }
+  @include hazard($bg_a, $bg_b, $text);
+}
+
+@mixin hazard($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff) {
+  background: repeating-linear-gradient(
+    45deg,
+    $bg_a, $bg_a 10px, $bg_b 10px, $bg_b 20px
+  );
+  color: $text;
+}
+
+@mixin hazard-active($bg_a, $bg_b: darken($bg_a, 10%), $text: #fff, $scroll: 60s) {
+  @include hazard($bg_a, $bg_b, $text);
+  @include scroll-gradient-horizontal($scroll);
+}
+
+.estop {
+  @include hazard-btn(#730000);
+  color: white !important;
+}
+
+.hazard {
+  @include hazard-btn(#735a00);
+  color: white !important;
+}

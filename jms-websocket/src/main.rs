@@ -1,16 +1,19 @@
 use std::time::Duration;
 
+use arena::ArenaWebsocket;
 use clap::{Command, Arg};
 use debug::DebugWebsocket;
 use jms_base::{mq::MessageQueue, kv::KVConnection};
+use user::UserWebsocket;
 use ws::{Websockets, WebsocketContext};
 
-// pub mod arena;
+pub mod arena;
 pub mod debug;
 // pub mod event;
 pub mod handler;
 // pub mod matches;
 pub mod ws;
+pub mod user;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -31,30 +34,35 @@ async fn main() -> anyhow::Result<()> {
         )
     ).get_matches();
 
+  
+  // let file = gen_schema.get_one::<String>("file").expect("required");
+  // let file = Path::new(file);
+  // let schema = schemars::schema_for!(AllWebsocketMessages);
+  
+  // std::fs::write(file, serde_json::to_string_pretty(&schema)?)?;
+
+  let mq = MessageQueue::new("websocket-reply").await?;
+  let kv = KVConnection::new()?;
+
+  let mut ws = Websockets::new();
+  ws.register(Duration::from_millis(1000), "debug", DebugWebsocket::new()).await;
+  ws.register(Duration::from_millis(1000), "arena", ArenaWebsocket::new()).await;
+  ws.register(Duration::from_millis(1000), "user", UserWebsocket::new()).await;
+  // ws.register(Duration::from_millis(1000), WSEventHandler {}).await;
+  // ws.register(Duration::from_millis(1000), WSMatchHandler {}).await;
+  // ws.register(Duration::from_millis(1000), WSArenaHandler {}).await;
+
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {
-      // let file = gen_schema.get_one::<String>("file").expect("required");
-      // let file = Path::new(file);
-      // let schema = schemars::schema_for!(AllWebsocketMessages);
-      
+      let file = gen_schema.get_one::<String>("file").expect("required");
+      // let schema = ws.to_schema();
+
       // std::fs::write(file, serde_json::to_string_pretty(&schema)?)?;
-      Ok(())
     },
-    None => {
-      let mq = MessageQueue::new("websocket-reply").await?;
-      let kv = KVConnection::new()?;
-
-      let mut ws = Websockets::new(WebsocketContext::new(mq.channel().await?, kv));
-      ws.register(Duration::from_millis(1000), "debug", DebugWebsocket::new()).await;
-      // ws.register(Duration::from_millis(1000), WSDebugHandler {}).await;
-      // ws.register(Duration::from_millis(1000), WSEventHandler {}).await;
-      // ws.register(Duration::from_millis(1000), WSMatchHandler {}).await;
-      // ws.register(Duration::from_millis(1000), WSArenaHandler {}).await;
-
-      ws.begin().await?;
-      Ok(())
-    },
-    _ => unreachable!()
+    _ => {
+      ws.begin(WebsocketContext::new(mq.channel().await?, kv)).await?;
+    }
   }
 
+  Ok(())
 }
