@@ -158,6 +158,12 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                     path_schema.const_value = Some(serde_json::to_value(format!("{}/{}", handler_key, #name)).unwrap());
                     s.object().required.insert("path".to_owned());
                     s.object().properties.insert("path".to_owned(), schemars::schema::Schema::Object(path_schema));
+
+                    let mut data_schema = schemars::schema::SchemaObject::default();
+                    data_schema.const_value = Some(serde_json::json!(null));
+                    s.object().required.insert("data".to_owned());
+                    s.object().properties.insert("data".to_owned(), schemars::schema::Schema::Object(data_schema));
+
                     sub.push(schemars::schema::Schema::Object(s));
                   }
                 });

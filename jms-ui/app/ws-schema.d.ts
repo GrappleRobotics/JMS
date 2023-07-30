@@ -87,12 +87,7 @@ export type WebsocketPublish =
  */
 export type WebsocketRpcRequest =
   | {
-      data: {
-        in_text: string;
-      };
-      path: "debug/test_endpoint";
-    }
-  | {
+      data: null;
       path: "user/auth_with_token";
     }
   | {
@@ -103,7 +98,14 @@ export type WebsocketRpcRequest =
       path: "user/auth_with_pin";
     }
   | {
+      data: null;
       path: "user/logout";
+    }
+  | {
+      data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
     }
   | {
       data: {
@@ -117,10 +119,6 @@ export type WebsocketRpcRequest =
  */
 export type WebsocketRpcResponse =
   | {
-      data: string;
-      path: "debug/test_endpoint";
-    }
-  | {
       data: AuthResult;
       path: "user/auth_with_token";
     }
@@ -131,6 +129,10 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "user/logout";
+    }
+  | {
+      data: string;
+      path: "debug/test_endpoint";
     }
   | {
       data: null;

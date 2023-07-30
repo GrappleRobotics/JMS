@@ -316,25 +316,8 @@
           ],
           "properties": {
             "data": {
-              "required": [
-                "in_text"
-              ],
-              "properties": {
-                "in_text": {
-                  "type": "string"
-                }
-              }
+              "const": null
             },
-            "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
-        {
-          "required": [
-            "path"
-          ],
-          "properties": {
             "path": {
               "const": "user/auth_with_token"
             }
@@ -367,11 +350,36 @@
         },
         {
           "required": [
+            "data",
             "path"
           ],
           "properties": {
+            "data": {
+              "const": null
+            },
             "path": {
               "const": "user/logout"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
             }
           }
         },
@@ -401,20 +409,6 @@
     "WebsocketRpcResponse": {
       "title": "WebsocketRpcResponse",
       "oneOf": [
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
         {
           "required": [
             "data",
@@ -454,6 +448,20 @@
             },
             "path": {
               "const": "user/logout"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_endpoint"
             }
           }
         },

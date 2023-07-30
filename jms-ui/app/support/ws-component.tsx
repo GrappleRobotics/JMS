@@ -4,10 +4,10 @@ import JmsWebsocket from "./ws";
 import { WebsocketPublish, WebsocketRpcRequest, WebsocketRpcResponse } from "../ws-schema";
 
 export type WebsocketContextT = {
-  rpc_call:   <Handler extends keyof WebsocketRpcRequest, Method extends keyof WebsocketRpcRequest[Handler]>
-              (handler: Handler, method: Method, args: WebsocketRpcRequest[Handler][Method]) => Promise<WebsocketRpcResponse[Handler][Method]>,
-  subscribe:  <Handler extends keyof WebsocketPublish, Method extends keyof WebsocketPublish[Handler]>
-              (handler: Handler, method: Method, callback: (msg: WebsocketPublish[Handler][Method]) => any) => string,
+  call: <Path extends WebsocketRpcRequest["path"]>
+         (path: Path, args: Extract<WebsocketRpcRequest, { path: Path }>["data"]) => Promise<Extract<WebsocketRpcResponse, { path: Path }>["data"]>,
+  subscribe: <Path extends WebsocketPublish["path"]>
+              (path: Path, fn: (data: Extract<WebsocketPublish, { path: Path }>["data"]) => void) => string,
   unsubscribe: (paths: string[]) => void,
   connected: boolean
 };
@@ -22,8 +22,8 @@ export class WebsocketManagerComponent extends React.Component<{ children: React
   handles: string[] = [];
 
   readonly state: WebsocketContextT = {
-    rpc_call: this.socket.call,
-    subscribe: this.socket.subscribe,
+    call: this.socket.call as any,
+    subscribe: this.socket.subscribe as any,
     unsubscribe: this.socket.removeHandles,
     connected: false
   };
@@ -52,25 +52,28 @@ export abstract class WebsocketComponent<P={},S={}> extends React.Component<P,S>
 
   handles: string[] = [];
 
-  subscribe = <Handler extends keyof WebsocketPublish, Method extends keyof WebsocketPublish[Handler], K extends keyof S & WebsocketPublish[Handler][Method]>
-          (handler: Handler, method: Method, key: K) => 
+  subscribe = <Path extends WebsocketPublish["path"], K extends keyof S & Extract<WebsocketPublish, { path: Path }>["data"]>
+          (path: Path, key: K) => 
   {
-    const fn = (data: WebsocketPublish[Handler][Method]) => {
+    const fn = (data: Extract<WebsocketPublish, { path: Path }>["data"]) => {
       this.setState({ [key]: data } as Pick<S, K>)
     };
-    return this.subscribeFn<Handler, Method>(handler, method, fn);
+    return this.subscribeFn<Path>(path, fn as any);
   }
   
-  subscribeFn = <Handler extends keyof WebsocketPublish, Method extends keyof WebsocketPublish[Handler]>
-                (handler: Handler, method: Method, fn: (data: WebsocketPublish[Handler][Method]) => void) => {
-    let callback_id = this.context.subscribe<Handler, Method>(handler, method, fn);
+  subscribeFn = <Path extends WebsocketPublish["path"]>
+              (path: Path, fn: (data: Extract<WebsocketPublish, { path: Path }>["data"]) => void) => 
+  {
+    let callback_id = this.context.subscribe<Path>(path, fn as any);
     this.handles.push(callback_id);
     return callback_id;
   }
 
-  call = <Handler extends keyof WebsocketRpcRequest, Method extends keyof WebsocketRpcRequest[Handler]>
-         (handler: Handler, method: Method, args: WebsocketRpcRequest[Handler][Method]): Promise<WebsocketRpcResponse[Handler][Method]> => 
-         this.context.rpc_call<Handler, Method>(handler, method, args);
+  call = <Path extends WebsocketRpcRequest["path"]>
+         (path: Path, args: Extract<WebsocketRpcRequest, { path: Path }>["data"]): Promise<Extract<WebsocketRpcResponse, { path: Path }>["data"]> => 
+  {
+    return this.context.call<Path>(path, args as any) as any;
+  }
 
   isConnected = () => this.context.connected;
 

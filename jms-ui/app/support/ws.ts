@@ -13,8 +13,8 @@ export default class JmsWebsocket {
   timeout: number;
   ws?: WebSocket;
   connectCallbacks: Map<string, ConnectCallback>;
-  callbacks: Map<string, { handler: string, method: string, fn: (msg: WebsocketPublish) => void }>;
-  reply_waiting: Map<string, { accept: (msg: WebsocketRpcResponse) => void, reject: (error: string) => void }>;
+  callbacks: Map<string, { path: string, fn: (msg: any) => void }>;
+  reply_waiting: Map<string, { accept: (msg: any) => void, reject: (error: string) => void }>;
 
   constructor(timeout=250) {
     this.timeout = timeout;
@@ -43,11 +43,13 @@ export default class JmsWebsocket {
           this.connectCallbacks.forEach(cb => cb(true));
           this.callbacks.forEach(cb => this.sendNow({
             message_id: uuid(),
-            data: { subscribe: `${cb.handler}/${cb.method}` }
+            path: "subscribe",
+            data: cb.path
           }));
 
           /* Try to login */
-          console.log(this.call<"user", "auth_with_token">("user", "auth_with_token", {}))
+          // let result = this.call<"debug/test_endpoint">("debug/test_endpoint", { in_text: "abcd" });
+          this.call<"debug/test_endpoint">("debug/test_endpoint", { in_text: "hello world" }).then(x => console.log("RESPONSE: " + x))
         }, 500);
       }, 100);
       that.ws = ws;
@@ -83,16 +85,15 @@ export default class JmsWebsocket {
         } else {
           console.warn(`Got a reply for Message ID ${meta.replying_to} but there are no waiting promises!`);
         }
-      } else if (data.toLowerCase() === "ping") {
+      } else if (meta.path === "ping") {
         this.sendNow({
           message_id: uuid(),
-          replying_to: data.message_id,
-          data: "pong"
+          replying_to: meta.message_id,
+          path: "pong"
         });
-      } else if (typeof data === "object") {
-        // Trigger all callbacks whom apply
+      } else {
         this.callbacks.forEach(cb => {
-          if (cb.handler in data && cb.method in data[cb.handler]) {
+          if (meta.path === `${cb.path}`) {
             cb.fn(data);
           }
         });
@@ -117,42 +118,46 @@ export default class JmsWebsocket {
       this.connect(url);
   }
 
-  call = <Handler extends keyof WebsocketRpcRequest, Method extends keyof WebsocketRpcRequest[Handler]>
-         (handler: Handler, method: Method, args: WebsocketRpcRequest[Handler][Method]): Promise<WebsocketRpcResponse[Handler][Method]> => 
+  call = <Path extends WebsocketRpcRequest["path"]>
+         (path: Path, args: Extract<WebsocketRpcRequest, { path: Path }>["data"]): Promise<Extract<WebsocketRpcResponse, { path: Path }>["data"]> => 
   {
     let msg_id = uuid();
     let that = this;
-    let p = new Promise<WebsocketRpcResponse[Handler][Method]>((resolve, reject) => {
+    let p = new Promise<Extract<WebsocketRpcResponse, { path: Path }>["data"]>((resolve, reject) => {
       that.reply_waiting.set(msg_id, {
-        accept: (msg: WebsocketRpcResponse) => resolve(msg[handler][method]),
+        accept: (msg: any) => resolve(msg as any),
         reject: reject
       })
     });
 
     this.sendNow({
       message_id: msg_id,
-      data: { handler: { method: args } }
+      path: path,
+      data: args
     });
 
-    return p;
+    return p as any;
   }
   
-  sendNow(data: any) {
-    this.ws!.send(JSON.stringify(data));
-  }
-
-  subscribe = <Handler extends KeysOfUnion<WebsocketPublish>, Method extends keyof KeysOfUnion<WebsocketPublish[Handler]>>
-              (handler: Handler, method: Method, fn: (data: WebsocketPublish[Handler][Method]) => void) =>
+  subscribe = <Path extends WebsocketPublish["path"]>
+              (path: Path, fn: (data: Extract<WebsocketPublish, { path: Path }>["data"]) => void) => 
   {
     let callback_id = uuid();
-    this.callbacks.set(callback_id, { handler: handler as string, method: method as string, fn: (msg: WebsocketPublish) => fn(msg[handler][method]) });
+    this.callbacks.set(callback_id, { path: path as string, fn: (msg: any) => fn(msg) });
 
-    let msg_id = uuid();
     if (this.alive()) {
-      this.sendNow({ message_id: msg_id, data: { subscribe: `${handler as string}/${method as string}` } });
+      this.sendNow({
+        message_id: uuid(),
+        path: "subscribe",
+        data: path
+      });
     }
 
     return callback_id;
+  }
+
+  sendNow(data: any) {
+    this.ws!.send(JSON.stringify(data));
   }
 
   removeHandle(id: string) {
