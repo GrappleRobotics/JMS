@@ -206,57 +206,47 @@ impl Websockets {
     ));
   }
 
-  // pub fn to_schema(&self) -> RootSchema {
-  //   let mut generator = schemars::gen::SchemaGenerator::default();
-  //   let mut obj = SchemaObject::default();
-  //   obj.metadata().title = Some("TempWebsocketRootSchema".to_owned());
+  pub fn to_schema(&self) -> RootSchema {
+    let mut generator = schemars::gen::SchemaGenerator::default();
+    let mut obj = SchemaObject::default();
+    obj.metadata().title = Some("TempWebsocketRootSchema".to_owned());
 
-  //   let mut publish_schemas = vec![];
-  //   let mut rpc_request_schemas = vec![];
-  //   let mut rpc_response_schemas = vec![];
+    let mut publish_schemas = vec![];
+    let mut rpc_request_schemas = vec![];
+    let mut rpc_response_schemas = vec![];
 
-  //   for (key, (_, handler)) in self.handlers.iter() {
-  //     if !handler.publishers().is_empty() {
-  //       let mut publish_obj = SchemaObject::default();
-  //       publish_obj.object().required.insert(key.clone());
-  //       publish_obj.object().properties.insert(key.clone(), handler.publish_schema(&mut generator));
-  //       publish_schemas.push(Schema::Object(publish_obj));
-  //     }
+    for (key, (_, handler)) in self.handlers.iter() {
+      if !handler.publishers().is_empty() {
+        publish_schemas.extend(handler.publish_schema(key, &mut generator));
+      }
 
-  //     if !handler.rpcs().is_empty() {
-  //       let mut rpc_request_obj = SchemaObject::default();
-  //       rpc_request_obj.object().required.insert(key.clone());
-  //       rpc_request_obj.object().properties.insert(key.clone(), handler.rpc_request_schema(&mut generator));
-  //       rpc_request_schemas.push(Schema::Object(rpc_request_obj));
+      if !handler.rpcs().is_empty() {
+        rpc_request_schemas.extend(handler.rpc_request_schema(key, &mut generator));
+        rpc_response_schemas.extend(handler.rpc_response_schema(key, &mut generator));
+      }
+    }
 
-  //       let mut rpc_response_obj = SchemaObject::default();
-  //       rpc_response_obj.object().required.insert(key.clone());
-  //       rpc_response_obj.object().properties.insert(key.clone(), handler.rpc_response_schema(&mut generator));
-  //       rpc_response_schemas.push(Schema::Object(rpc_response_obj));
-  //     }
-  //   }
+    let mut publish_schema = SchemaObject::default();
+    publish_schema.metadata().title = Some("WebsocketPublish".to_owned());
+    publish_schema.subschemas().one_of = Some(publish_schemas);
+    generator.definitions_mut().insert("WebsocketPublish".to_owned(), Schema::Object(publish_schema));
 
-  //   let mut publish_schema = SchemaObject::default();
-  //   publish_schema.metadata().title = Some("WebsocketPublish".to_owned());
-  //   publish_schema.subschemas().one_of = Some(publish_schemas);
-  //   generator.definitions_mut().insert("WebsocketPublish".to_owned(), Schema::Object(publish_schema));
+    let mut rpc_request_schema = SchemaObject::default();
+    rpc_request_schema.metadata().title = Some("WebsocketRpcRequest".to_owned());
+    rpc_request_schema.subschemas().one_of = Some(rpc_request_schemas);
+    generator.definitions_mut().insert("WebsocketRpcRequest".to_owned(), Schema::Object(rpc_request_schema));
 
-  //   let mut rpc_request_schema = SchemaObject::default();
-  //   rpc_request_schema.metadata().title = Some("WebsocketRpcRequest".to_owned());
-  //   rpc_request_schema.subschemas().one_of = Some(rpc_request_schemas);
-  //   generator.definitions_mut().insert("WebsocketRpcRequest".to_owned(), Schema::Object(rpc_request_schema));
+    let mut rpc_response_schema = SchemaObject::default();
+    rpc_response_schema.metadata().title = Some("WebsocketRpcResponse".to_owned());
+    rpc_response_schema.subschemas().one_of = Some(rpc_response_schemas);
+    generator.definitions_mut().insert("WebsocketRpcResponse".to_owned(), Schema::Object(rpc_response_schema));
 
-  //   let mut rpc_response_schema = SchemaObject::default();
-  //   rpc_response_schema.metadata().title = Some("WebsocketRpcResponse".to_owned());
-  //   rpc_response_schema.subschemas().one_of = Some(rpc_response_schemas);
-  //   generator.definitions_mut().insert("WebsocketRpcResponse".to_owned(), Schema::Object(rpc_response_schema));
-
-  //   RootSchema {
-  //     meta_schema: generator.settings().meta_schema.clone(),
-  //     schema: obj,
-  //     definitions: generator.definitions().clone(),
-  //   }
-  // }
+    RootSchema {
+      meta_schema: generator.settings().meta_schema.clone(),
+      schema: obj,
+      definitions: generator.definitions().clone(),
+    }
+  }
 
   pub async fn begin(self, ctx: WebsocketContext) -> anyhow::Result<()> {
     info!("Starting Websockets...");

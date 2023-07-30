@@ -55,9 +55,9 @@ async fn main() -> anyhow::Result<()> {
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {
       let file = gen_schema.get_one::<String>("file").expect("required");
-      // let schema = ws.to_schema();
+      let schema = ws.to_schema();
 
-      // std::fs::write(file, serde_json::to_string_pretty(&schema)?)?;
+      std::fs::write(file, serde_json::to_string_pretty(&schema)?)?;
     },
     _ => {
       ws.begin(WebsocketContext::new(mq.channel().await?, kv)).await?;

@@ -12,7 +12,7 @@ pub trait WebsocketHandler {
   fn publishers(&self) -> Vec<String>;
   fn rpcs(&self) -> Vec<String>;
 
-  // fn publish_schema(&self, gen: &mut SchemaGenerator) -> Schema;
-  // fn rpc_request_schema(&self, gen: &mut SchemaGenerator) -> Schema;
-  // fn rpc_response_schema(&self, gen: &mut SchemaGenerator) -> Schema;
+  fn publish_schema(&self, handler_key: &str, gen: &mut SchemaGenerator) -> Vec<Schema>;
+  fn rpc_request_schema(&self, handler_key: &str, gen: &mut SchemaGenerator) -> Vec<Schema>;
+  fn rpc_response_schema(&self, handler_key: &str, gen: &mut SchemaGenerator) -> Vec<Schema>;
 }

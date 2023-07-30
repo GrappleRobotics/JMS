@@ -47,6 +47,10 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
   let mut publish_names_body = vec![];
   let mut rpc_names_body = vec![];
 
+  let mut publish_schemas = vec![];
+  let mut rpc_response_schemas = vec![];
+  let mut rpc_request_schemas = vec![];
+
   for item in &t.items {
     if let TraitItem::Fn(f) = item {
       if f.attrs.len() > 1 {
@@ -98,7 +102,21 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                     to_publish.push((#name.to_owned(), serde_json::to_value(v)?));
                   }
                 }
-              })
+              });
+
+              publish_schemas.push(quote! {
+                {
+                  // let s = schemars::schema_for!(#return_type);
+                  let mut s = schemars::schema::SchemaObject::default();
+                  let mut path_schema = schemars::schema::SchemaObject::default();
+                  path_schema.const_value = Some(serde_json::to_value(format!("{}/{}", handler_key, #name)).unwrap());
+                  s.object().required.insert("path".to_owned());
+                  s.object().required.insert("data".to_owned());
+                  s.object().properties.insert("path".to_owned(), schemars::schema::Schema::Object(path_schema));
+                  s.object().properties.insert("data".to_owned(), gen.subschema_for::<#return_type>());
+                  sub.push(schemars::schema::Schema::Object(s));
+                }
+              });
             } else if f.attrs[0].path().is_ident("endpoint") {
               // Filter the args to only be those that aren't self or the context
               let args = f.sig.inputs.iter().filter_map(|input| {
@@ -131,7 +149,18 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                   #name => {
                     Ok((#name.to_owned(), serde_json::to_value(self.#f_ident(ctx, token).await?)?))
                   }
-                })
+                });
+
+                rpc_request_schemas.push(quote! {
+                  {
+                    let mut s = schemars::schema::SchemaObject::default();
+                    let mut path_schema = schemars::schema::SchemaObject::default();
+                    path_schema.const_value = Some(serde_json::to_value(format!("{}/{}", handler_key, #name)).unwrap());
+                    s.object().required.insert("path".to_owned());
+                    s.object().properties.insert("path".to_owned(), schemars::schema::Schema::Object(path_schema));
+                    sub.push(schemars::schema::Schema::Object(s));
+                  }
+                });
               } else {
                 let destructured_from_msg_args = args.iter().map(|arg| {
                   match &*arg.pat {
@@ -142,12 +171,56 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
                     _ => Err(syn::Error::new(arg.span(), "Argument Pattern should be an ident")).unwrap()
                   }
                 });
+
                 rpc_body.push(quote! {
                   #name => {
                     Ok((#name.to_owned(), serde_json::to_value(self.#f_ident(ctx, token, #(#destructured_from_msg_args,)*).await?)?))
                   }
                 });
+
+                let arg_schema_builder = args.iter().map(|arg| {
+                  match &*arg.pat {
+                    syn::Pat::Ident(ident) => {
+                      let arg_name: String = ident.ident.to_string();
+                      let ty = &*arg.ty;
+                      quote! {
+                        arg_schema.object().required.insert(#arg_name.to_owned());
+                        arg_schema.object().properties.insert(#arg_name.to_owned(), gen.subschema_for::<#ty>());
+                      }
+                    },
+                    _ => Err(syn::Error::new(arg.span(), "Argument Pattern should be an ident")).unwrap()
+                  }
+                });
+
+                rpc_request_schemas.push(quote! {
+                  {
+                    let mut s = schemars::schema::SchemaObject::default();
+                    let mut path_schema = schemars::schema::SchemaObject::default();
+                    path_schema.const_value = Some(serde_json::to_value(format!("{}/{}", handler_key, #name)).unwrap());
+                    s.object().required.insert("path".to_owned());
+                    s.object().properties.insert("path".to_owned(), schemars::schema::Schema::Object(path_schema));
+
+                    let mut arg_schema = schemars::schema::SchemaObject::default();
+                    #(#arg_schema_builder)*
+                    s.object().required.insert("data".to_owned());
+                    s.object().properties.insert("data".to_owned(), schemars::schema::Schema::Object(arg_schema));
+                    sub.push(schemars::schema::Schema::Object(s));
+                  }
+                });
               }
+
+              rpc_response_schemas.push(quote! {
+                {
+                  let mut s = schemars::schema::SchemaObject::default();
+                  let mut path_schema = schemars::schema::SchemaObject::default();
+                  path_schema.const_value = Some(serde_json::to_value(format!("{}/{}", handler_key, #name)).unwrap());
+                  s.object().required.insert("path".to_owned());
+                  s.object().required.insert("data".to_owned());
+                  s.object().properties.insert("path".to_owned(), schemars::schema::Schema::Object(path_schema));
+                  s.object().properties.insert("data".to_owned(), gen.subschema_for::<#return_type>());
+                  sub.push(schemars::schema::Schema::Object(s));
+                }
+              });
             } else {
               return Err(syn::Error::new(f.attrs[0].span(), "Unrecognised Attribute, should be either `publish` or `endpoint`"))
             }
@@ -179,20 +252,23 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
 
     #[async_trait::async_trait]
     impl crate::handler::WebsocketHandler for #ident {
-      // fn publish_schema(&self, gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-      //   use schemars::JsonSchema;
-      //   #publish_ident::json_schema(gen)
-      // }
+      fn publish_schema(&self, handler_key: &str, gen: &mut schemars::gen::SchemaGenerator) -> Vec<schemars::schema::Schema> {
+        let mut sub = vec![];
+        #(#publish_schemas)*
+        sub
+      }
 
-      // fn rpc_request_schema(&self, gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-      //   use schemars::JsonSchema;
-      //   #rpc_request_ident::json_schema(gen)
-      // }
+      fn rpc_request_schema(&self, handler_key: &str, gen: &mut schemars::gen::SchemaGenerator) -> Vec<schemars::schema::Schema> {
+        let mut sub = vec![];
+        #(#rpc_request_schemas)*
+        sub
+      }
 
-      // fn rpc_response_schema(&self, gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
-      //   use schemars::JsonSchema;
-      //   #rpc_response_ident::json_schema(gen)
-      // }
+      fn rpc_response_schema(&self, handler_key: &str, gen: &mut schemars::gen::SchemaGenerator) -> Vec<schemars::schema::Schema> {
+        let mut sub = vec![];
+        #(#rpc_response_schemas)*
+        sub
+      }
 
       fn publishers(&self) -> Vec<String> {
         let mut v = vec![];

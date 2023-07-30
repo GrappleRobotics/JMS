@@ -278,47 +278,29 @@
       "oneOf": [
         {
           "required": [
-            "debug"
+            "data",
+            "path"
           ],
           "properties": {
-            "debug": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "test_publish"
-                  ],
-                  "properties": {
-                    "test_publish": {
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ]
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_publish"
             }
           }
         },
         {
           "required": [
-            "arena"
+            "data",
+            "path"
           ],
           "properties": {
-            "arena": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "state"
-                  ],
-                  "properties": {
-                    "state": {
-                      "$ref": "#/definitions/ArenaState"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ]
+            "data": {
+              "$ref": "#/definitions/ArenaState"
+            },
+            "path": {
+              "const": "arena/state"
             }
           }
         }
@@ -329,122 +311,88 @@
       "oneOf": [
         {
           "required": [
-            "debug"
+            "data",
+            "path"
           ],
           "properties": {
-            "debug": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "test_endpoint"
-                  ],
-                  "properties": {
-                    "test_endpoint": {
-                      "type": "object",
-                      "required": [
-                        "in_text"
-                      ],
-                      "properties": {
-                        "in_text": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  },
-                  "additionalProperties": false
+            "data": {
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
                 }
-              ]
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
             }
           }
         },
         {
           "required": [
-            "user"
+            "path"
           ],
           "properties": {
-            "user": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "auth_with_token"
-                  ],
-                  "properties": {
-                    "auth_with_token": {
-                      "type": "object"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "required": [
-                    "auth_with_pin"
-                  ],
-                  "properties": {
-                    "auth_with_pin": {
-                      "type": "object",
-                      "required": [
-                        "pin",
-                        "username"
-                      ],
-                      "properties": {
-                        "pin": {
-                          "type": "string"
-                        },
-                        "username": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "required": [
-                    "logout"
-                  ],
-                  "properties": {
-                    "logout": {
-                      "type": "object"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ]
+            "path": {
+              "const": "user/auth_with_token"
             }
           }
         },
         {
           "required": [
-            "arena"
+            "data",
+            "path"
           ],
           "properties": {
-            "arena": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "signal"
-                  ],
-                  "properties": {
-                    "signal": {
-                      "type": "object",
-                      "required": [
-                        "signal"
-                      ],
-                      "properties": {
-                        "signal": {
-                          "$ref": "#/definitions/ArenaSignal"
-                        }
-                      }
-                    }
-                  },
-                  "additionalProperties": false
+            "data": {
+              "required": [
+                "pin",
+                "username"
+              ],
+              "properties": {
+                "pin": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
                 }
-              ]
+              }
+            },
+            "path": {
+              "const": "user/auth_with_pin"
+            }
+          }
+        },
+        {
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "const": "user/logout"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "signal"
+              ],
+              "properties": {
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/signal"
             }
           }
         }
@@ -455,94 +403,71 @@
       "oneOf": [
         {
           "required": [
-            "debug"
+            "data",
+            "path"
           ],
           "properties": {
-            "debug": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "test_endpoint"
-                  ],
-                  "properties": {
-                    "test_endpoint": {
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ]
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_endpoint"
             }
           }
         },
         {
           "required": [
-            "user"
+            "data",
+            "path"
           ],
           "properties": {
-            "user": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "auth_with_token"
-                  ],
-                  "properties": {
-                    "auth_with_token": {
-                      "$ref": "#/definitions/AuthResult"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "required": [
-                    "auth_with_pin"
-                  ],
-                  "properties": {
-                    "auth_with_pin": {
-                      "$ref": "#/definitions/AuthResult"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "object",
-                  "required": [
-                    "logout"
-                  ],
-                  "properties": {
-                    "logout": {
-                      "type": "null"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ]
+            "data": {
+              "$ref": "#/definitions/AuthResult"
+            },
+            "path": {
+              "const": "user/auth_with_token"
             }
           }
         },
         {
           "required": [
-            "arena"
+            "data",
+            "path"
           ],
           "properties": {
-            "arena": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "required": [
-                    "signal"
-                  ],
-                  "properties": {
-                    "signal": {
-                      "type": "null"
-                    }
-                  },
-                  "additionalProperties": false
-                }
-              ]
+            "data": {
+              "$ref": "#/definitions/AuthResult"
+            },
+            "path": {
+              "const": "user/auth_with_pin"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "user/logout"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "arena/signal"
             }
           }
         }
