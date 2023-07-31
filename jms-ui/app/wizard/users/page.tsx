@@ -21,7 +21,7 @@ export default function EventWizardUsers() {
 
   useEffect(() => {
     refreshUsers();
-  });
+  }, []);
 
   return <React.Fragment>
     <Card>
@@ -44,6 +44,7 @@ export default function EventWizardUsers() {
                 <td> { user.realname } </td>
                 <td>
                   <Typeahead
+                    id={`role-typeahead-${user.username}`}
                     multiple
                     options={Object.keys(PERMISSIONS)}
                     selected={user.permissions}
