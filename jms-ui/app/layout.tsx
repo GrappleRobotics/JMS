@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 
 import { WebsocketManagerComponent } from './support/ws-component';
 import "./global.scss";
+import ErrorProvider from './support/errors';
 
 export const metadata: Metadata = {
   title: 'JMS',
@@ -19,9 +20,11 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <WebsocketManagerComponent>
-          <main>
-            { children }
-          </main>
+          <ErrorProvider>
+            <main>
+              { children }
+            </main>
+          </ErrorProvider>
         </WebsocketManagerComponent>
       </body>
     </html>

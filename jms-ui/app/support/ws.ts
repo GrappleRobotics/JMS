@@ -47,6 +47,7 @@ export default class JmsWebsocket {
     this.subscribe = this.subscribe.bind(this);
     this.onConnectChange = this.onConnectChange.bind(this);
     this.logout = this.logout.bind(this);
+    this.login = this.login.bind(this);
   }
 
   connect(url: string) {

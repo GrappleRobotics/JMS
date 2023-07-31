@@ -68,6 +68,11 @@ export type AuthResult =
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "Permission".
+ */
+export type Permission = "Admin";
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketPublish".
  */
 export type WebsocketPublish =
@@ -84,6 +89,12 @@ export type WebsocketPublish =
  * via the `definition` "WebsocketRpcRequest".
  */
 export type WebsocketRpcRequest =
+  | {
+      data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
+    }
   | {
       data: null;
       path: "user/auth_with_token";
@@ -107,12 +118,6 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        in_text: string;
-      };
-      path: "debug/test_endpoint";
-    }
-  | {
-      data: {
         signal: ArenaSignal;
       };
       path: "arena/signal";
@@ -122,6 +127,10 @@ export type WebsocketRpcRequest =
  * via the `definition` "WebsocketRpcResponse".
  */
 export type WebsocketRpcResponse =
+  | {
+      data: string;
+      path: "debug/test_endpoint";
+    }
   | {
       data: AuthResult;
       path: "user/auth_with_token";
@@ -137,10 +146,6 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "user/logout";
-    }
-  | {
-      data: string;
-      path: "debug/test_endpoint";
     }
   | {
       data: null;
@@ -163,7 +168,7 @@ export interface UserToken {
  * via the `definition` "User".
  */
 export interface User {
-  permissions: string[];
+  permissions: Permission[];
   pin_hash?: string | null;
   pin_is_numeric: boolean;
   realname: string;

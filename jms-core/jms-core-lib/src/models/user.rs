@@ -3,21 +3,18 @@ use uuid::Uuid;
 
 use crate::db::{self, Table};
 
-pub const PERMISSION_ADMIN: &'static str = "admin";
-
-pub fn has_permission(required: &str, permission: &str) -> bool {
-  if permission == PERMISSION_ADMIN {
-    return true;
-  }
-
-  required == permission
+#[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub enum Permission {
+  Admin,
 }
 
-pub fn require_permission(required: &str, permission: &str) -> anyhow::Result<()> {
-  if has_permission(required, permission) {
-    Ok(())
-  } else {
-    Err(anyhow::anyhow!("User does not have required permission!"))
+impl Permission {
+  pub fn has(&self, required: &Permission) -> bool {
+    if self == &Permission::Admin {
+      return true;
+    }
+
+    return required == self;
   }
 }
 
@@ -27,7 +24,7 @@ pub struct User {
   pub realname: String,
   pub pin_hash: Option<String>,
   pub pin_is_numeric: bool,
-  pub permissions: Vec<String>,
+  pub permissions: Vec<Permission>,
   pub tokens: Vec<String>
 }
 
@@ -47,7 +44,7 @@ impl User {
       realname: realname.to_owned(),
       pin_hash: None,
       pin_is_numeric: false,
-      permissions: if admin { vec![PERMISSION_ADMIN.to_owned()] } else { vec![] },
+      permissions: if admin { vec![Permission::Admin] } else { vec![] },
       tokens: vec![]
     }
   }
@@ -72,9 +69,9 @@ impl User {
     }
   }
 
-  pub fn require_permission(&self, permission: &str) -> anyhow::Result<()> {
+  pub fn require_permission(&self, permission: &Permission) -> anyhow::Result<()> {
     for perm in &self.permissions {
-      if has_permission(permission, perm) {
+      if perm.has(permission) {
         return Ok(())
       }
     }

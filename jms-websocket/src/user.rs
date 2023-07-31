@@ -1,4 +1,4 @@
-use jms_core_lib::{models::{MaybeToken, User, UserToken}, db::Table};
+use jms_core_lib::{models::{MaybeToken, User, UserToken, Permission}, db::Table};
 
 use crate::ws::WebsocketContext;
 
@@ -62,6 +62,28 @@ pub trait UserWebsocket {
     let index = user.tokens.iter().position(|x| x == &token.0.as_ref().unwrap().token).unwrap();
     user.tokens.remove(index);
     user.insert(&ctx.kv)?;
+    Ok(())
+  }
+
+  /* USER MANAGEMENT */
+
+  #[endpoint]
+  async fn users(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<Vec<User>> {
+    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    Ok(User::all(&ctx.kv)?)
+  }
+
+  #[endpoint]
+  async fn modify_user(&self, ctx: &WebsocketContext, token: &MaybeToken, user: User) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    user.insert(&ctx.kv)?;
+    Ok(())
+  }
+
+  #[endpoint]
+  async fn delete_user(&self, ctx: &WebsocketContext, token: &MaybeToken, user_id: String) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    User::delete_by(&user_id, &ctx.kv)?;
     Ok(())
   }
 }
