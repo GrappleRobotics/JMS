@@ -30,6 +30,7 @@ export default class JmsWebsocket {
   reply_waiting: Map<string, { accept: (msg: any) => void, reject: (error: string) => void }>;
   on_login: Map<string, (token: User | null) => void>;
   user: User | null;
+  send_queue: object[];
 
   constructor(timeout=250) {
     this.timeout = timeout;
@@ -38,6 +39,7 @@ export default class JmsWebsocket {
     this.reply_waiting = new Map();
     this.on_login = new Map();
     this.user = null;
+    this.send_queue = [];
 
     this.connect = this.connect.bind(this);
     this.dead = this.dead.bind(this);
@@ -48,6 +50,8 @@ export default class JmsWebsocket {
     this.onConnectChange = this.onConnectChange.bind(this);
     this.logout = this.logout.bind(this);
     this.login = this.login.bind(this);
+    this.send = this.send.bind(this);
+    this.sendNow = this.sendNow.bind(this);
   }
 
   connect(url: string) {
@@ -65,6 +69,10 @@ export default class JmsWebsocket {
             path: "subscribe",
             data: cb.path
           }));
+
+          for (let msg of this.send_queue) {
+            this.sendNow(msg);
+          }
 
           /* Try to login */
           this.call<"user/auth_with_token">("user/auth_with_token", null)
@@ -129,7 +137,7 @@ export default class JmsWebsocket {
           console.warn(`Got a reply for Message ID ${meta.replying_to} but there are no waiting promises!`);
         }
       } else if (meta.path === "ping") {
-        this.sendNow({
+        this.send({
           message_id: uuid(),
           replying_to: meta.message_id,
           path: "pong"
@@ -149,7 +157,7 @@ export default class JmsWebsocket {
   }
 
   dead() {
-    return !this.ws || this.ws.readyState === WebSocket.CLOSED;
+    return this.ws == undefined || this.ws.readyState === WebSocket.CLOSED;
   }
 
   alive() {
@@ -173,7 +181,7 @@ export default class JmsWebsocket {
       })
     });
 
-    this.sendNow({
+    this.send({
       message_id: msg_id,
       path: path,
       data: args,
@@ -198,6 +206,14 @@ export default class JmsWebsocket {
     }
 
     return callback_id;
+  }
+
+  send(data: any) {
+    if (this.alive()) {
+      this.sendNow(data);
+    } else {
+      this.send_queue.push(data);
+    }
   }
 
   sendNow(data: any) {

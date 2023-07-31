@@ -230,7 +230,9 @@
     "Permission": {
       "type": "string",
       "enum": [
-        "Admin"
+        "Admin",
+        "FTA",
+        "FTAA"
       ]
     },
     "User": {
@@ -297,10 +299,10 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "$ref": "#/definitions/ArenaState"
             },
             "path": {
-              "const": "debug/test_publish"
+              "const": "arena/state"
             }
           }
         },
@@ -311,10 +313,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/ArenaState"
+              "type": "string"
             },
             "path": {
-              "const": "arena/state"
+              "const": "debug/test_publish"
             }
           }
         }
@@ -323,27 +325,6 @@
     "WebsocketRpcRequest": {
       "title": "WebsocketRpcRequest",
       "oneOf": [
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "in_text"
-              ],
-              "properties": {
-                "in_text": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
         {
           "required": [
             "data",
@@ -425,6 +406,62 @@
           ],
           "properties": {
             "data": {
+              "const": null
+            },
+            "path": {
+              "const": "user/users"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "user"
+              ],
+              "properties": {
+                "user": {
+                  "$ref": "#/definitions/User"
+                }
+              }
+            },
+            "path": {
+              "const": "user/modify_user"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "user_id"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "user/delete_user"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "required": [
                 "signal"
               ],
@@ -438,12 +475,7 @@
               "const": "arena/signal"
             }
           }
-        }
-      ]
-    },
-    "WebsocketRpcResponse": {
-      "title": "WebsocketRpcResponse",
-      "oneOf": [
+        },
         {
           "required": [
             "data",
@@ -451,13 +483,25 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
             },
             "path": {
               "const": "debug/test_endpoint"
             }
           }
-        },
+        }
+      ]
+    },
+    "WebsocketRpcResponse": {
+      "title": "WebsocketRpcResponse",
+      "oneOf": [
         {
           "required": [
             "data",
@@ -521,10 +565,69 @@
           ],
           "properties": {
             "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/User"
+              }
+            },
+            "path": {
+              "const": "user/users"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "user/modify_user"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "user/delete_user"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "type": "null"
             },
             "path": {
               "const": "arena/signal"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_endpoint"
             }
           }
         }

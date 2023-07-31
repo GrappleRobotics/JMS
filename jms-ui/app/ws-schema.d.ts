@@ -70,31 +70,25 @@ export type AuthResult =
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "Permission".
  */
-export type Permission = "Admin";
+export type Permission = "Admin" | "FTA" | "FTAA";
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketPublish".
  */
 export type WebsocketPublish =
   | {
-      data: string;
-      path: "debug/test_publish";
-    }
-  | {
       data: ArenaState;
       path: "arena/state";
+    }
+  | {
+      data: string;
+      path: "debug/test_publish";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcRequest".
  */
 export type WebsocketRpcRequest =
-  | {
-      data: {
-        in_text: string;
-      };
-      path: "debug/test_endpoint";
-    }
   | {
       data: null;
       path: "user/auth_with_token";
@@ -117,20 +111,38 @@ export type WebsocketRpcRequest =
       path: "user/logout";
     }
   | {
+      data: null;
+      path: "user/users";
+    }
+  | {
+      data: {
+        user: User;
+      };
+      path: "user/modify_user";
+    }
+  | {
+      data: {
+        user_id: string;
+      };
+      path: "user/delete_user";
+    }
+  | {
       data: {
         signal: ArenaSignal;
       };
       path: "arena/signal";
+    }
+  | {
+      data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcResponse".
  */
 export type WebsocketRpcResponse =
-  | {
-      data: string;
-      path: "debug/test_endpoint";
-    }
   | {
       data: AuthResult;
       path: "user/auth_with_token";
@@ -148,8 +160,24 @@ export type WebsocketRpcResponse =
       path: "user/logout";
     }
   | {
+      data: User[];
+      path: "user/users";
+    }
+  | {
+      data: null;
+      path: "user/modify_user";
+    }
+  | {
+      data: null;
+      path: "user/delete_user";
+    }
+  | {
       data: null;
       path: "arena/signal";
+    }
+  | {
+      data: string;
+      path: "debug/test_endpoint";
     };
 
 export interface TempWebsocketRootSchema {

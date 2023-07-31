@@ -15,3 +15,9 @@ export function user_has_permission(required: Permission, user: User) {
   }
   return false;
 }
+
+export const PERMISSIONS: { [k in Permission]: string } = {
+  "Admin": "Admin",
+  "FTA": "FTA",
+  "FTAA": "FTAA"
+}

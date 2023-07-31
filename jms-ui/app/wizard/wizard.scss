@@ -1,0 +1,14 @@
+@import "../variables.scss";
+
+.event-wizard-tab-link {
+  background-color: theme-color("dark");
+
+  &[data-active="true"] {
+    background-color: theme-color("primary");
+  }
+
+  &:hover {
+    cursor: pointer;
+    opacity: 80%;
+  }
+}

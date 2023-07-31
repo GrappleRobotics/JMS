@@ -6,6 +6,8 @@ use crate::db::{self, Table};
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum Permission {
   Admin,
+  FTA,
+  FTAA,
 }
 
 impl Permission {

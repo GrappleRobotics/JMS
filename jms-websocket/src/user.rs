@@ -75,7 +75,15 @@ pub trait UserWebsocket {
 
   #[endpoint]
   async fn modify_user(&self, ctx: &WebsocketContext, token: &MaybeToken, user: User) -> anyhow::Result<()> {
-    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    let tok_user = token.auth(&ctx.kv)?;
+    tok_user.require_permission(&Permission::Admin)?;
+
+    if tok_user.id() == user.id() {
+      if tok_user.permissions.contains(&Permission::Admin) && !user.permissions.contains(&Permission::Admin) {
+        anyhow::bail!("Can't remove admin from yourself!");
+      }
+    }
+
     user.insert(&ctx.kv)?;
     Ok(())
   }
