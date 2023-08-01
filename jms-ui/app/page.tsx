@@ -37,9 +37,11 @@ export default function Home() {
       <h2 className="my-4"> Welcome to JMS! </h2>
 
       <HomeTileSep> At the Scoring Table </HomeTileSep>
-      <HomeTile name="Event Wizard" href="/wizard" img="wizard.jpg"> Configure your event, generate schedules, and give out awards. </HomeTile>
-      <HomeTileSep> On the Field </HomeTileSep>
-      <HomeTileSep> In the Stands </HomeTileSep>
+      <HomeTileRow>
+        <HomeTile name="Event Wizard" href="/wizard" img="wizard.jpg"> Configure your event, generate schedules, and give out awards. </HomeTile>
+        <HomeTileSep> On the Field </HomeTileSep>
+        <HomeTileSep> In the Stands </HomeTileSep>
+      </HomeTileRow>
     </UserPage>
   )
 }
