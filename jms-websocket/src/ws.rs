@@ -4,7 +4,6 @@ use futures::{StreamExt, SinkExt, stream::FuturesUnordered};
 use jms_core_lib::models::{UserToken, MaybeToken};
 use log::{error, debug, info};
 use schemars::schema::{Schema, SchemaObject, RootSchema};
-use serde_json::json;
 use tokio::{sync::broadcast, net::{TcpStream, TcpListener}, time::{interval, Interval}};
 use tokio_tungstenite::{accept_async, tungstenite};
 

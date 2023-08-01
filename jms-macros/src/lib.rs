@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Attribute, Visibility, Ident, PatType, braced, parse::{ParseStream, Parse, discouraged::Speculative}, Token, FnArg, parenthesized, Pat, parse_macro_input, spanned::Spanned, Type, token, punctuated::Punctuated, Variant, Path, DeriveInput};
+use syn::{Attribute, Visibility, Ident, PatType, braced, parse::{ParseStream, Parse}, Token, FnArg, parenthesized, Pat, parse_macro_input, spanned::Spanned, Type, DeriveInput};
 
 /* RPC */
 
@@ -201,7 +199,7 @@ fn define_service_trait(svc: &Service) -> proc_macro2::TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn service(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn service(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let svc = parse_macro_input!(input as Service);
 
     let trait_inner = define_service_trait(&svc);
@@ -215,7 +213,7 @@ pub fn service(attr: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Updateable)]
 pub fn derive_updateable(input: TokenStream) -> TokenStream {
     let DeriveInput {
-        attrs, vis, ident, generics, data
+        attrs, vis, ident, generics: _, data
     } = parse_macro_input!(input as DeriveInput);
 
     let update_enum_ident = syn::Ident::new(&format!("{}Update", ident), ident.span());
@@ -225,11 +223,11 @@ pub fn derive_updateable(input: TokenStream) -> TokenStream {
         _ => panic!("Partials are only derived for structs.")
     };
 
-    let enum_fields = fields.clone().map(|(field_vis, field_ident, field_type)| quote! {
+    let enum_fields = fields.clone().map(|(_field_vis, field_ident, field_type)| quote! {
         #field_ident(#field_type)
     });
 
-    let match_arms = fields.clone().map(|(field_vis, field_ident, field_type)| {
+    let match_arms = fields.clone().map(|(_field_vis, field_ident, _field_type)| {
         quote! {
             Self::#field_ident(#field_ident) => full.#field_ident = #field_ident
         }
@@ -250,8 +248,6 @@ pub fn derive_updateable(input: TokenStream) -> TokenStream {
             }
         }
     };
-
-    println!("{:?}", out.to_string());
 
     out.into()
 }
