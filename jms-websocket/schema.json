@@ -319,7 +319,8 @@
       "required": [
         "display_number",
         "number",
-        "schedule"
+        "schedule",
+        "wpakey"
       ],
       "properties": {
         "affiliation": {
@@ -358,10 +359,7 @@
           "type": "boolean"
         },
         "wpakey": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": "string"
         }
       }
     },
@@ -460,10 +458,7 @@
           ],
           "properties": {
             "wpakey": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "type": "string"
             }
           },
           "additionalProperties": false
@@ -631,10 +626,13 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/ArenaState"
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
             },
             "path": {
-              "const": "arena/state"
+              "const": "team/teams"
             }
           }
         },
@@ -659,13 +657,10 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
+              "type": "string"
             },
             "path": {
-              "const": "team/teams"
+              "const": "debug/test_publish"
             }
           }
         },
@@ -676,10 +671,10 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "$ref": "#/definitions/ArenaState"
             },
             "path": {
-              "const": "debug/test_publish"
+              "const": "arena/state"
             }
           }
         }
@@ -688,62 +683,6 @@
     "WebsocketRpcRequest": {
       "title": "WebsocketRpcRequest",
       "oneOf": [
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "signal"
-              ],
-              "properties": {
-                "signal": {
-                  "$ref": "#/definitions/ArenaSignal"
-                }
-              }
-            },
-            "path": {
-              "const": "arena/signal"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "details"
-              ],
-              "properties": {
-                "details": {
-                  "$ref": "#/definitions/EventDetails"
-                }
-              }
-            },
-            "path": {
-              "const": "event/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "event/schedule_get"
-            }
-          }
-        },
         {
           "required": [
             "data",
@@ -842,6 +781,83 @@
             },
             "path": {
               "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "details"
+              ],
+              "properties": {
+                "details": {
+                  "$ref": "#/definitions/EventDetails"
+                }
+              }
+            },
+            "path": {
+              "const": "event/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "event/schedule_get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "signal"
+              ],
+              "properties": {
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/signal"
             }
           }
         },
@@ -1013,27 +1029,6 @@
               "const": "user/delete"
             }
           }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "in_text"
-              ],
-              "properties": {
-                "in_text": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
         }
       ]
     },
@@ -1047,10 +1042,38 @@
           ],
           "properties": {
             "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "type": "null"
             },
             "path": {
-              "const": "arena/signal"
+              "const": "team/delete"
             }
           }
         },
@@ -1092,24 +1115,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/Team"
+              "type": "string"
             },
             "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/update"
+              "const": "debug/test_endpoint"
             }
           }
         },
@@ -1123,7 +1132,7 @@
               "type": "null"
             },
             "path": {
-              "const": "team/delete"
+              "const": "arena/signal"
             }
           }
         },
@@ -1239,20 +1248,6 @@
             },
             "path": {
               "const": "user/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "debug/test_endpoint"
             }
           }
         }

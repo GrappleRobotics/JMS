@@ -12,11 +12,7 @@ pub trait TeamWebsocket {
   #[endpoint]
   async fn new_team(&self, ctx: &WebsocketContext, token: &MaybeToken, team_number: usize, display_number: String, name: Option<String>, affiliation: Option<String>, location: Option<String>) -> anyhow::Result<Team> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::ManageTeams])?;
-    let team = Team {
-      number: team_number,
-      display_number, affiliation, location, name,
-      notes: None, wpakey: None, schedule: true
-    };
+    let team = Team::new(team_number, display_number, name, affiliation, location);
     team.insert(&ctx.kv)?;
     Ok(team)
   }

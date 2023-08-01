@@ -100,7 +100,7 @@ export type TeamUpdate =
       notes: string | null;
     }
   | {
-      wpakey: string | null;
+      wpakey: string;
     }
   | {
       schedule: boolean;
@@ -134,42 +134,26 @@ export type UserUpdate =
  */
 export type WebsocketPublish =
   | {
-      data: ArenaState;
-      path: "arena/state";
+      data: Team[];
+      path: "team/teams";
     }
   | {
       data: EventDetails;
       path: "event/details";
     }
   | {
-      data: Team[];
-      path: "team/teams";
-    }
-  | {
       data: string;
       path: "debug/test_publish";
+    }
+  | {
+      data: ArenaState;
+      path: "arena/state";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcRequest".
  */
 export type WebsocketRpcRequest =
-  | {
-      data: {
-        signal: ArenaSignal;
-      };
-      path: "arena/signal";
-    }
-  | {
-      data: {
-        details: EventDetails;
-      };
-      path: "event/update";
-    }
-  | {
-      data: null;
-      path: "event/schedule_get";
-    }
   | {
       data: {
         affiliation: string | null;
@@ -192,6 +176,28 @@ export type WebsocketRpcRequest =
         team_number: number;
       };
       path: "team/delete";
+    }
+  | {
+      data: {
+        details: EventDetails;
+      };
+      path: "event/update";
+    }
+  | {
+      data: null;
+      path: "event/schedule_get";
+    }
+  | {
+      data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
+    }
+  | {
+      data: {
+        signal: ArenaSignal;
+      };
+      path: "arena/signal";
     }
   | {
       data: null;
@@ -238,30 +244,12 @@ export type WebsocketRpcRequest =
         user_id: string;
       };
       path: "user/delete";
-    }
-  | {
-      data: {
-        in_text: string;
-      };
-      path: "debug/test_endpoint";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcResponse".
  */
 export type WebsocketRpcResponse =
-  | {
-      data: null;
-      path: "arena/signal";
-    }
-  | {
-      data: EventDetails;
-      path: "event/update";
-    }
-  | {
-      data: ScheduleBlock[];
-      path: "event/schedule_get";
-    }
   | {
       data: Team;
       path: "team/new_team";
@@ -273,6 +261,22 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "team/delete";
+    }
+  | {
+      data: EventDetails;
+      path: "event/update";
+    }
+  | {
+      data: ScheduleBlock[];
+      path: "event/schedule_get";
+    }
+  | {
+      data: string;
+      path: "debug/test_endpoint";
+    }
+  | {
+      data: null;
+      path: "arena/signal";
     }
   | {
       data: AuthResult;
@@ -305,10 +309,6 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "user/delete";
-    }
-  | {
-      data: string;
-      path: "debug/test_endpoint";
     };
 
 export interface TempWebsocketRootSchema {
@@ -369,5 +369,5 @@ export interface Team {
   notes?: string | null;
   number: number;
   schedule: boolean;
-  wpakey?: string | null;
+  wpakey: string;
 }

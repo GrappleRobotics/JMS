@@ -144,7 +144,6 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
           <th>Affiliation</th>
           <th>Location</th>
           <th>Scheduled?</th>
-          <th>WPA?</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -176,7 +175,6 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
                   <FontAwesomeIcon icon={t.schedule ? faCheck : faTimes} />
                 </Button>
               </td>
-              <td className={`text-${t.wpakey ? "success" : "danger"}`}> {t.wpakey != null ? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={faTimes} />} </td>
               <td>
                 <Button
                   variant="danger"

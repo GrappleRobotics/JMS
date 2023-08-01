@@ -11,7 +11,7 @@ pub struct Team {
   pub affiliation: Option<String>,
   pub location: Option<String>,
   pub notes: Option<String>,
-  pub wpakey: Option<String>,
+  pub wpakey: String,
   pub schedule: bool,
 }
 
@@ -27,21 +27,20 @@ impl db::Table for Team {
 }
 
 impl Team {
-  pub fn maybe_gen_wpa(mut self) -> Team {
-    if self.wpakey.is_some() {
-      return self
-    } else {
-      use rand::distributions::Alphanumeric;
-      use rand::{thread_rng, Rng};
+  pub fn new(number: usize, display_number: String, name: Option<String>, affiliation: Option<String>, location: Option<String>) -> Self {
+    use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
       
-      self.wpakey = Some(
-        thread_rng()
-          .sample_iter(&Alphanumeric)
-          .take(30)
-          .map(char::from)
-          .collect()
-      );
-      return self
+    let wpakey = thread_rng()
+      .sample_iter(&Alphanumeric)
+      .take(30)
+      .map(char::from)
+      .collect();
+
+    Self {
+      number, display_number,
+      name, affiliation, location,
+      notes: None, wpakey, schedule: true
     }
   }
 }
