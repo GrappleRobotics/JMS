@@ -58,6 +58,10 @@ impl Arena {
     let first = self.last_state != Some(self.state);
     self.last_state = Some(self.state);
 
+    if signal == Some(ArenaSignal::Estop) {
+      self.set_state(ArenaState::Estop).await?;
+    }
+
     // Run through match logic
     match self.state.clone() {
       ArenaState::Init => {
@@ -141,7 +145,8 @@ impl ArenaRPC for Arena {
     &self.mq
   }
 
-  async fn signal(&mut self, signal: ArenaSignal, _source: String) -> Result<(), String> {
+  async fn signal(&mut self, signal: ArenaSignal, source: String) -> Result<(), String> {
+    info!("Signal: {:?} from {}", signal, source);
     self.spin_once(Some(signal)).await.map_err(|e| format!("{}", e))
   }
 

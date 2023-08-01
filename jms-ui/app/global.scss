@@ -21,3 +21,7 @@
   @include hazard-btn(theme-color("hazard-yellow"));
 }
 
+.btn-block {
+  width: 100%;
+  display: block;
+}

@@ -14,4 +14,34 @@
   &[data-connected="false"] {
     background-color: theme-color("bad");
   }
+
+  &[data-arena-state="Estop"] {
+    @include hazard-active(theme-color("hazard-red"));
+  }
+
+  &[data-arena-state="Prestart"] {
+    background-color: theme-color("success");
+  }
+
+  &[data-arena-state="MatchArmed"] {
+    @include hazard-active(theme-color("hazard-yellow"));
+  }
+}
+
+.modal-xl {
+  max-width: 80vw !important;
+}
+
+.estop-big {
+  display: block;
+  width: 100%;
+  padding: 5rem;
+  font-size: 6vw;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.estop-subtitle {
+  font-size: 1.25rem;
+  text-align: center;
 }

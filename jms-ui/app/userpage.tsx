@@ -9,6 +9,8 @@ import Link from "next/link";
 import { useErrors } from "./support/errors";
 import { ArenaState, SerialisedLoadedMatch } from "./ws-schema";
 import { PermissionGate } from "./support/permissions";
+import confirmBool from "./components/Confirm";
+import JmsWebsocket from "./support/ws";
 
 interface UserPageProps {
   container?: boolean,
@@ -31,8 +33,20 @@ export default function UserPage(props: UserPageProps) {
   </React.Fragment>
 };
 
+const ARENA_STATE_MAP: { [k in ArenaState["state"]]: string } = {
+  "Init": "Initialising...",
+  "Idle": "Idle",
+  "Estop": "EMERGENCY STOP",
+  "MatchArmed": "ARMED",
+  "MatchComplete": "Match Complete",
+  "MatchPlay": "Match Play",
+  "Prestart": "Prestart",
+  "Reset": "Resetting..."
+};
+
 function TopNavbar() {
-  const { user, connected, logout, subscribe, unsubscribe } = useWebsocket();
+  const { user, connected, logout, subscribe, unsubscribe, call } = useWebsocket();
+  const { addError } = useErrors();
 
   const [ arenaState, setArenaState ] = useState<ArenaState>();
   const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null);
@@ -45,7 +59,7 @@ function TopNavbar() {
     return () => unsubscribe(handles);
   }, []);
 
-  let state_comment = arenaState?.state || "Waiting...";
+  let state_comment = arenaState ? ARENA_STATE_MAP[arenaState.state] : "Waiting...";
   if (currentMatch) {
     if (currentMatch.state in ["Auto", "Pause", "Teleop"]) 
       state_comment = `${currentMatch.state} (T-${currentMatch.remaining.toFixed(0)})`;
@@ -54,7 +68,9 @@ function TopNavbar() {
   return <Navbar className="navbar-top" data-connected={connected} data-arena-state={arenaState?.state} data-match-state={currentMatch?.state} variant="dark">
     <Container>
       <PermissionGate permissions={["Estop"]}>
-        <Button className="mx-3" variant="estop">E-STOP</Button>
+        { arenaState?.state === "Estop" ? <PermissionGate permissions={["FTA"]}>
+          <Button className="mx-3" variant="estop-reset" onClick={() => call<"arena/signal">("arena/signal", { signal: "EstopReset" })}>RESET</Button>
+        </PermissionGate> : <Button className="mx-3" variant="estop" onClick={() => estopModal(call, addError)}>E-STOP</Button>}
       </PermissionGate>
 
       <Navbar.Brand>
@@ -75,4 +91,32 @@ function TopNavbar() {
       </Navbar.Collapse>
     </Container>
   </Navbar>;
+}
+
+async function estopModal(call: JmsWebsocket["call"], addError: (e: string) => void) {
+  const subtitle = <p className="estop-subtitle text-muted">
+    Anyone can E-Stop the match. <br />
+    E-Stop if there is a safety threat or as instructed by the FTA. <br />
+    <strong className="text-danger"> Robot Faults are NOT Field E-Stop conditions. </strong>
+  </p>
+
+  let result = await confirmBool(subtitle, {
+    size: "xl",
+    okBtn: {
+      size: "lg",
+      className: "estop-big",
+      variant: "estop",
+      children: "EMERGENCY STOP"
+    },
+    cancelBtn: {
+      size: "lg",
+      className: "btn-block",
+      children: "CANCEL",
+      variant: "secondary"
+    }
+  });
+
+  if (result) {
+    call<"arena/signal">("arena/signal", { signal: "Estop" }).catch(addError);
+  }
 }
