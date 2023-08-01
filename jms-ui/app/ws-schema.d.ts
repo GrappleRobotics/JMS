@@ -78,30 +78,65 @@ export type Permission = "Admin" | "FTA" | "FTAA" | "ManageEvent" | "ManageTeams
 export type ScheduleBlockType = "General" | "Qualification" | "Playoff";
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "TeamUpdate".
+ */
+export type TeamUpdate =
+  | {
+      number: number;
+    }
+  | {
+      display_number: string;
+    }
+  | {
+      name: string | null;
+    }
+  | {
+      affiliation: string | null;
+    }
+  | {
+      location: string | null;
+    }
+  | {
+      notes: string | null;
+    }
+  | {
+      wpakey: string | null;
+    }
+  | {
+      schedule: boolean;
+    };
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketPublish".
  */
 export type WebsocketPublish =
   | {
-      data: EventDetails;
-      path: "event/details";
+      data: ArenaState;
+      path: "arena/state";
     }
   | {
-      data: Team[];
-      path: "team/teams";
+      data: EventDetails;
+      path: "event/details";
     }
   | {
       data: string;
       path: "debug/test_publish";
     }
   | {
-      data: ArenaState;
-      path: "arena/state";
+      data: Team[];
+      path: "team/teams";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcRequest".
  */
 export type WebsocketRpcRequest =
+  | {
+      data: {
+        signal: ArenaSignal;
+      };
+      path: "arena/signal";
+    }
   | {
       data: {
         details: EventDetails;
@@ -111,30 +146,6 @@ export type WebsocketRpcRequest =
   | {
       data: null;
       path: "event/schedule_get";
-    }
-  | {
-      data: {
-        team: Team;
-      };
-      path: "team/update";
-    }
-  | {
-      data: {
-        team_number: number;
-      };
-      path: "team/delete";
-    }
-  | {
-      data: {
-        in_text: string;
-      };
-      path: "debug/test_endpoint";
-    }
-  | {
-      data: {
-        signal: ArenaSignal;
-      };
-      path: "arena/signal";
     }
   | {
       data: null;
@@ -172,6 +183,35 @@ export type WebsocketRpcRequest =
         user_id: string;
       };
       path: "user/delete_user";
+    }
+  | {
+      data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
+    }
+  | {
+      data: {
+        affiliation: string | null;
+        display_number: string;
+        location: string | null;
+        name: string | null;
+        team_number: number;
+      };
+      path: "team/new_team";
+    }
+  | {
+      data: {
+        team_number: number;
+        updates: TeamUpdate[];
+      };
+      path: "team/update";
+    }
+  | {
+      data: {
+        team_number: number;
+      };
+      path: "team/delete";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -179,28 +219,16 @@ export type WebsocketRpcRequest =
  */
 export type WebsocketRpcResponse =
   | {
+      data: null;
+      path: "arena/signal";
+    }
+  | {
       data: EventDetails;
       path: "event/update";
     }
   | {
       data: ScheduleBlock[];
       path: "event/schedule_get";
-    }
-  | {
-      data: Team;
-      path: "team/update";
-    }
-  | {
-      data: null;
-      path: "team/delete";
-    }
-  | {
-      data: string;
-      path: "debug/test_endpoint";
-    }
-  | {
-      data: null;
-      path: "arena/signal";
     }
   | {
       data: AuthResult;
@@ -229,6 +257,22 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "user/delete_user";
+    }
+  | {
+      data: string;
+      path: "debug/test_endpoint";
+    }
+  | {
+      data: Team;
+      path: "team/new_team";
+    }
+  | {
+      data: Team;
+      path: "team/update";
+    }
+  | {
+      data: null;
+      path: "team/delete";
     };
 
 export interface TempWebsocketRootSchema {

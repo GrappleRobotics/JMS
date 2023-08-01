@@ -5,7 +5,7 @@ import EditableFormControl from "@/app/components/EditableFormControl";
 import { useErrors } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { useWebsocket } from "@/app/support/ws-component";
-import { Team } from "@/app/ws-schema";
+import { Team, TeamUpdate, WebsocketRpcRequest } from "@/app/ws-schema";
 import { faCheck, faCloudDownloadAlt, faCross, faInfoCircle, faSpinner, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
@@ -17,12 +17,16 @@ import { withConfirm } from "@/app/components/Confirm";
 // This is a well-known public key I've created. It may be cancelled at any time.
 const TBA_AUTH_KEY = "19iOXH0VVxCvYQTlmIRpXyx2xoUQuZoWEPECGitvJcFxEY6itgqDP7A4awVL2CJn";
 
+type NewTeamT = Extract<WebsocketRpcRequest, { path: "team/new_team" }>["data"];
+
 export default withPermission(["ManageTeams"], function EventWizardTeams() {
   const [ teams, setTeams ] = useState<Team[]>([]);
-  const [ newTeam, setNewTeam ] = useState<Team>({
-    number: 0,
+  const [ newTeam, setNewTeam ] = useState<NewTeamT>({
+    team_number: 0,
     display_number: "",
-    schedule: true,
+    affiliation: null,
+    location: null,
+    name: null
   });
   const [ fetching, setFetching ] = useState(false);
   const { call, subscribe, unsubscribe } = useWebsocket();
@@ -33,8 +37,8 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
     return () => { unsubscribe([cb]) }
   }, []);
 
-  const updateTeam = (team_i: number, spec: Spec<Team>) => {
-    call<"team/update">("team/update", { team: update(teams[team_i], spec) })
+  const updateTeam = (team_i: number, updates: TeamUpdate[]) => {
+    call<"team/update">("team/update", { team_number: teams[team_i].number, updates })
       .then(t => setTeams(update(teams, { [team_i]: { $set: t } })))
       .catch(addError)
   }
@@ -53,11 +57,15 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
           let location = [msg.city, msg.state_prov, msg.country].filter(x => x !== null && x !== undefined).join(", ");
 
           if (name !== "Off-Season Demo Team") {
-            updateTeam(i, {
-              name: { $set: nullIfEmpty(force ? (name || t.name) : (t.name || name)) },
-              affiliation: { $set: nullIfEmpty(force ? (affiliation || t.affiliation) : (t.affiliation || affiliation)) },
-              location: { $set: nullIfEmpty(force ? (location || t.location) : (t.location || location)) },
-            });
+            let updates = [];
+            if (name != null && (force || t.name == null))
+              updates.push({ name });
+            if (affiliation != null && (force || t.affiliation == null))
+              updates.push({ affiliation });
+            if (location != null && (force || t.location == null))
+              updates.push({ location });
+            
+            updateTeam(i, updates);
           }
         })
         .catch(addError)
@@ -67,9 +75,9 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
       .then(() => setFetching(false))
   }
 
-  const NewTeamField = (nt_props: { field: keyof Omit<Team, "schedule" | "wpakey">, name: string } & FormControlProps & React.HTMLAttributes<HTMLInputElement>) => {
+  const NewTeamField = (nt_props: { field: keyof NewTeamT, name: string } & FormControlProps & React.HTMLAttributes<HTMLInputElement>) => {
     const { field, name, type, ...props } = nt_props;
-    const mutate = type === "number" ? ((v: string | null) => v === null ? undefined : parseInt(v)) : (v: string | null) => (v === null ? undefined : v);
+    const mutate = type === "number" ? ((v: string | null) => v === null ? null : parseInt(v)) : (v: string | null) => (v === null ? null : v);
     
     return <BufferedFormControl
       autofocus
@@ -84,24 +92,23 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
         let t = newTeam;
         // @ts-ignore
         t[field] = v;
-        if (t.number === 0) {
+        if (t.team_number === 0) {
           addError("Team Number can't be 0!");
-        } else if (teams.filter(x => x.number === t.number).length > 0) {
+        } else if (teams.filter(x => x.number === t.team_number).length > 0) {
           addError("This team already exists!");
         } else {
           if (nullIfEmpty(t.display_number) === null) {
-            t.display_number = "" + t.number;
+            t.display_number = "" + t.team_number;
           }
 
-          call<"team/update">("team/update", { team: t })
+          call<"team/new_team">("team/new_team", t)
             .then(t => {
-              setNewTeam({ number: 0, display_number: "", schedule: true });
+              setNewTeam({ team_number: 0, display_number: "", affiliation: null, location: null, name: null });
               setTeams(update(teams, { $push: [t] }))
             })
             .catch(addError)
-          }
         }
-      }
+      }}
     />
   }
 
@@ -112,7 +119,7 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
       type="text"
       { ...props }
       value={ teams[i][field] || "" }
-      onUpdate={ v => updateTeam(i, { [field]: { $set: nullIfEmpty(v as string) } }) }
+      onUpdate={ v => updateTeam(i, [ { [field]: nullIfEmpty(v as string) } as TeamUpdate ]) }
     />
   }
 
@@ -143,7 +150,7 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
       </thead>
       <tbody>
         <tr>
-          <td> <NewTeamField field="number" name="9999" type="number" /> </td>
+          <td> <NewTeamField field="team_number" name="9999" type="number" /> </td>
           <td> <NewTeamField field="display_number" name="9999a" /> </td>
           <td> <NewTeamField field="name" name="Team Name" /> </td>
           <td> <NewTeamField field="affiliation" name="Affiliation..." /> </td>
@@ -164,7 +171,7 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
                 <Button
                   size="sm"
                   variant={ t.schedule ? "success" : "danger" }
-                  onClick={() => updateTeam(i, { schedule: { $set: !t.schedule } })}
+                  onClick={() => updateTeam(i, [ { schedule: !t.schedule } ])}
                 >
                   <FontAwesomeIcon icon={t.schedule ? faCheck : faTimes} />
                 </Button>
