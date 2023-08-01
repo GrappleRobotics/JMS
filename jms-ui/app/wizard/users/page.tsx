@@ -1,15 +1,64 @@
 "use client";
+import { confirmModal, withConfirm } from "@/app/components/Confirm";
 import { useErrors } from "@/app/support/errors";
-import { PERMISSIONS } from "@/app/support/permissions";
+import { PERMISSIONS, withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
-import { User } from "@/app/ws-schema";
+import { Permission, User } from "@/app/ws-schema";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
-import { Button, Card, Form, Table } from "react-bootstrap";
+import { Button, Card, Form, InputGroup, Table } from "react-bootstrap";
 import { Typeahead } from "react-bootstrap-typeahead";
+import update from "immutability-helper";
+import JmsWebsocket from "@/app/support/ws";
 
-export default function EventWizardUsers() {
+async function newUserModal(call: JmsWebsocket["call"]) {
+  let details = await confirmModal("", {
+    title: "New User",
+    data: {
+      username: "",
+      realname: "",
+      permissions: [],
+      tokens: [],
+      pin_is_numeric: false
+    } as User,
+    renderInner: (data, onUpdate) => <React.Fragment>
+      <InputGroup className="m-2">
+        <InputGroup.Text>Username</InputGroup.Text>
+        <Form.Control
+          type="text"
+          value={data.username}
+          onChange={e => onUpdate(update(data, { username: { $set: e.target.value.trim() } }))}
+        />
+      </InputGroup>
+
+      <InputGroup className="m-2">
+        <InputGroup.Text>Real Name</InputGroup.Text>
+        <Form.Control
+          type="text"
+          value={data.realname}
+          onChange={e => onUpdate(update(data, { realname: { $set: e.target.value.trim() } }))}
+        />
+      </InputGroup>
+
+      <InputGroup className="m-2">
+        <InputGroup.Text>Permissions</InputGroup.Text>
+        <Typeahead
+          id={`role-typeahead-modal`}
+          multiple
+          options={Object.keys(PERMISSIONS)}
+          selected={data.permissions}
+          onChange={(perms) => onUpdate(update(data, { permissions: { $set: perms as Permission[] } }))}
+        />
+      </InputGroup>
+    </React.Fragment>,
+  });
+
+  call<"user/modify_user">("user/modify_user", { user: details })
+    .catch(e => alert(e));
+}
+
+export default withPermission("Admin", function EventWizardUsers() {
   const [ users, setUsers ] = useState<User[]>([]);
   const { call } = useWebsocket();
 
@@ -57,13 +106,26 @@ export default function EventWizardUsers() {
                   />
                 </td>
                 <td>
-                  <Button size="sm" variant="danger" disabled={user.permissions.includes("Admin")}>
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={user.permissions.includes("Admin")}
+                    onClick={() => withConfirm(() => call<"user/delete_user">("user/delete_user", { user_id: user.username }).then(refreshUsers))}
+                  >
                     <FontAwesomeIcon icon={faTrash} />
                   </Button> &nbsp;
-                  <Button size="sm" variant="info" onClick={() => call<"user/modify_user">("user/modify_user", { user: { ...user, pin_hash: null } }).catch(addError)}>
+                  <Button
+                    size="sm"
+                    variant="info"
+                    onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, pin_hash: null } }).catch(addError))}
+                  >
                     Reset PIN
                   </Button> &nbsp;
-                  <Button size="sm" variant="warning" onClick={() => call<"user/modify_user">("user/modify_user", { user: { ...user, tokens: [] } })}>
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, tokens: [] } }))}
+                  >
                     Invalidate Tokens
                   </Button>
                 </td>
@@ -72,10 +134,10 @@ export default function EventWizardUsers() {
           </tbody>
         </Table>
 
-        <Button variant="success">
+        <Button variant="success" onClick={() => newUserModal(call).then(refreshUsers)}>
           Add User
         </Button>
       </Card.Body>
     </Card>
   </React.Fragment>
-}
+})

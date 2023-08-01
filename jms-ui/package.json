@@ -25,6 +25,7 @@
     "bootswatch": "^5.3.1",
     "eslint": "8.46.0",
     "eslint-config-next": "13.4.12",
+    "immutability-helper": "^3.1.1",
     "moment": "^2.29.4",
     "next": "13.4.12",
     "react": "18.2.0",
