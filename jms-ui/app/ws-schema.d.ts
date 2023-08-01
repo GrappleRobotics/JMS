@@ -84,6 +84,16 @@ export type Permission =
   | "Estop";
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "RobotState".
+ */
+export type RobotState = "Auto" | "Test" | "Teleop";
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "MatchPlayState".
+ */
+export type MatchPlayState = "Waiting" | "Warmup" | "Auto" | "Pause" | "Teleop" | "Cooldown" | "Complete" | "Fault";
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "ScheduleBlockType".
  */
 export type ScheduleBlockType = "General" | "Qualification" | "Playoff";
@@ -145,30 +155,67 @@ export type UserUpdate =
  */
 export type WebsocketPublish =
   | {
-      data: ArenaState;
-      path: "arena/state";
-    }
-  | {
-      data: AllianceStation[];
-      path: "arena/stations";
-    }
-  | {
-      data: EventDetails;
-      path: "event/details";
+      data: Team[];
+      path: "team/teams";
     }
   | {
       data: string;
       path: "debug/test_publish";
     }
   | {
-      data: Team[];
-      path: "team/teams";
+      data: EventDetails;
+      path: "event/details";
+    }
+  | {
+      data: ArenaState;
+      path: "arena/state";
+    }
+  | {
+      data: SerialisedLoadedMatch | null;
+      path: "arena/current_match";
+    }
+  | {
+      data: AllianceStation[];
+      path: "arena/stations";
+    }
+  | {
+      data: DriverStationReport[];
+      path: "arena/ds";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcRequest".
  */
 export type WebsocketRpcRequest =
+  | {
+      data: {
+        affiliation: string | null;
+        display_number: string;
+        location: string | null;
+        name: string | null;
+        team_number: number;
+      };
+      path: "team/new_team";
+    }
+  | {
+      data: {
+        team_number: number;
+        updates: TeamUpdate[];
+      };
+      path: "team/update";
+    }
+  | {
+      data: {
+        team_number: number;
+      };
+      path: "team/delete";
+    }
+  | {
+      data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
+    }
   | {
       data: null;
       path: "user/auth_with_token";
@@ -217,12 +264,6 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        signal: ArenaSignal;
-      };
-      path: "arena/signal";
-    }
-  | {
-      data: {
         details: EventDetails;
       };
       path: "event/update";
@@ -233,38 +274,31 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        in_text: string;
+        signal: ArenaSignal;
       };
-      path: "debug/test_endpoint";
-    }
-  | {
-      data: {
-        affiliation: string | null;
-        display_number: string;
-        location: string | null;
-        name: string | null;
-        team_number: number;
-      };
-      path: "team/new_team";
-    }
-  | {
-      data: {
-        team_number: number;
-        updates: TeamUpdate[];
-      };
-      path: "team/update";
-    }
-  | {
-      data: {
-        team_number: number;
-      };
-      path: "team/delete";
+      path: "arena/signal";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcResponse".
  */
 export type WebsocketRpcResponse =
+  | {
+      data: Team;
+      path: "team/new_team";
+    }
+  | {
+      data: Team;
+      path: "team/update";
+    }
+  | {
+      data: null;
+      path: "team/delete";
+    }
+  | {
+      data: string;
+      path: "debug/test_endpoint";
+    }
   | {
       data: AuthResult;
       path: "user/auth_with_token";
@@ -298,10 +332,6 @@ export type WebsocketRpcResponse =
       path: "user/delete";
     }
   | {
-      data: null;
-      path: "arena/signal";
-    }
-  | {
       data: EventDetails;
       path: "event/update";
     }
@@ -310,20 +340,8 @@ export type WebsocketRpcResponse =
       path: "event/schedule_get";
     }
   | {
-      data: string;
-      path: "debug/test_endpoint";
-    }
-  | {
-      data: Team;
-      path: "team/new_team";
-    }
-  | {
-      data: Team;
-      path: "team/update";
-    }
-  | {
       data: null;
-      path: "team/delete";
+      path: "arena/signal";
     };
 
 export interface TempWebsocketRootSchema {
@@ -370,6 +388,23 @@ export interface User {
 }
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "DriverStationReport".
+ */
+export interface DriverStationReport {
+  actual_station?: AllianceStationId | null;
+  battery_voltage: number;
+  estop: boolean;
+  mode: RobotState;
+  pkts_lost: number;
+  pkts_sent: number;
+  radio_ping: boolean;
+  rio_ping: boolean;
+  robot_ping: boolean;
+  rtt: number;
+  team: number;
+}
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "EventDetails".
  */
 export interface EventDetails {
@@ -390,6 +425,16 @@ export interface ScheduleBlock {
   id: string;
   name: string;
   start_time: string;
+}
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "SerialisedLoadedMatch".
+ */
+export interface SerialisedLoadedMatch {
+  endgame: boolean;
+  match_id: string;
+  remaining: number;
+  state: MatchPlayState;
 }
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema

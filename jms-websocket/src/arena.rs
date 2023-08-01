@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY, AllianceStation};
+use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY, AllianceStation, SerialisedLoadedMatch, ARENA_MATCH_KEY};
 use jms_core_lib::models::{MaybeToken, AllianceStationId, Permission};
 use jms_driverstation_lib::{DriverStationReport, DS_PREFIX};
 
@@ -29,6 +29,13 @@ pub trait ArenaWebsocket {
     tokio::time::timeout(Duration::from_millis(200), fut).await??.map_err(|e| anyhow::anyhow!(e))
   }
 
+  /* Match */
+  
+  #[publish]
+  async fn current_match(&self, ctx: &WebsocketContext) -> anyhow::Result<Option<SerialisedLoadedMatch>> {
+    Ok(ctx.kv.json_get(ARENA_MATCH_KEY, "$").ok())
+  }
+  
   /* Alliance Stations */
 
   #[publish]

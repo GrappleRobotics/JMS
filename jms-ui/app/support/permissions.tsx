@@ -62,3 +62,13 @@ export function withPermission<F extends React.ComponentType>(permissions: Permi
 
   return WithPermissionsFunc;
 }
+
+export function PermissionGate({ children, permissions }: { children: React.ReactNode, permissions: Permission[] }) {
+  const { user } = useWebsocket();
+
+  if (!user || !user_has_permission(permissions, user)) {
+    return <React.Fragment />
+  }
+
+  return children;
+}
