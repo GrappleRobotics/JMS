@@ -27,6 +27,7 @@ export default function WizardLayout({ children }: { children: React.ReactNode }
           <br /> <h6 className="text-muted"> Pre-Event </h6>
           <WizardTabLink link="event">Event Details</WizardTabLink>
           <WizardTabLink link="teams">Manage Teams</WizardTabLink>
+          <WizardTabLink link="schedule">Manage Schedule</WizardTabLink>
         </Nav>
       </Col>
       <Col className="event-wizard-view">
