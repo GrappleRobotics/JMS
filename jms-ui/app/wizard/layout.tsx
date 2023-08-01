@@ -29,7 +29,7 @@ export default function WizardLayout({ children }: { children: React.ReactNode }
           <WizardTabLink link="teams">Manage Teams</WizardTabLink>
         </Nav>
       </Col>
-      <Col className="event-wizard-view" md={9}>
+      <Col className="event-wizard-view">
         <Card>
           <Card.Body>
             { children }

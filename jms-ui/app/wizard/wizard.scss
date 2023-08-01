@@ -1,5 +1,9 @@
 @import "../variables.scss";
 
+.event-wizard-nav {
+  max-width: 17em;
+}
+
 .event-wizard-tab-link {
   background-color: theme-color("dark");
 

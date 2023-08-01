@@ -22,22 +22,21 @@ impl db::Table for Team {
 }
 
 impl Team {
-  pub fn maybe_gen_wpa(&self) -> Team {
+  pub fn maybe_gen_wpa(mut self) -> Team {
     if self.wpakey.is_some() {
-      return self.clone()
+      return self
     } else {
       use rand::distributions::Alphanumeric;
       use rand::{thread_rng, Rng};
       
-      let mut new_team = self.clone();
-      new_team.wpakey = Some(
+      self.wpakey = Some(
         thread_rng()
           .sample_iter(&Alphanumeric)
           .take(30)
           .map(char::from)
           .collect()
       );
-      return new_team
+      return self
     }
   }
 }
