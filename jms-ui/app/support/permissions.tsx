@@ -16,20 +16,22 @@ export function has_permission(required: Permission, permission: Permission) {
   return permission === required;
 }
 
-export function user_has_permission(required: Permission, user: User) {
+export function user_has_permission(required: Permission[], user: User) {
   for (let perm of user.permissions) {
-    if (has_permission(required, perm)) {
-      return true;
+    for (let req of required) {
+      if (has_permission(req, perm)) {
+        return true;
+      }
     }
   }
   return false;
 }
 
-export function withPermission<F extends React.ComponentType>(permission: Permission, component: F) : React.ComponentType {
+export function withPermission<F extends React.ComponentType>(permissions: Permission[], component: F) : React.ComponentType {
   function WithPermissionsFunc() {
     const { user } = useWebsocket();
 
-    if (!user || !user_has_permission(permission, user)) {
+    if (!user || !user_has_permission(permissions, user)) {
       return <Alert variant="danger"> You don't have permission to access this page! </Alert>
     }
 

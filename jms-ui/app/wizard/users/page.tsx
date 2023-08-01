@@ -58,7 +58,7 @@ async function newUserModal(call: JmsWebsocket["call"]) {
     .catch(e => alert(e));
 }
 
-export default withPermission("Admin", function EventWizardUsers() {
+export default withPermission(["Admin"], function EventWizardUsers() {
   const [ users, setUsers ] = useState<User[]>([]);
   const { call } = useWebsocket();
 
