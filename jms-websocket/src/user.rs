@@ -69,14 +69,14 @@ pub trait UserWebsocket {
 
   #[endpoint]
   async fn users(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<Vec<User>> {
-    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    token.auth(&ctx.kv)?.require_permission(&[Permission::Admin])?;
     Ok(User::all(&ctx.kv)?)
   }
 
   #[endpoint]
   async fn modify_user(&self, ctx: &WebsocketContext, token: &MaybeToken, user: User) -> anyhow::Result<()> {
     let tok_user = token.auth(&ctx.kv)?;
-    tok_user.require_permission(&Permission::Admin)?;
+    tok_user.require_permission(&[Permission::Admin])?;
 
     if tok_user.id() == user.id() {
       if tok_user.permissions.contains(&Permission::Admin) && !user.permissions.contains(&Permission::Admin) {
@@ -90,7 +90,7 @@ pub trait UserWebsocket {
 
   #[endpoint]
   async fn delete_user(&self, ctx: &WebsocketContext, token: &MaybeToken, user_id: String) -> anyhow::Result<()> {
-    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    token.auth(&ctx.kv)?.require_permission(&[Permission::Admin])?;
     User::delete_by(&user_id, &ctx.kv)?;
     Ok(())
   }

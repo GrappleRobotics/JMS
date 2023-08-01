@@ -70,7 +70,7 @@ export type AuthResult =
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "Permission".
  */
-export type Permission = "Admin" | "FTA" | "FTAA";
+export type Permission = "Admin" | "FTA" | "FTAA" | "ManageEvent" | "ManageTeams" | "ManageSchedule";
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "ScheduleBlockType".
@@ -86,16 +86,16 @@ export type WebsocketPublish =
       path: "event/details";
     }
   | {
+      data: Team[];
+      path: "team/teams";
+    }
+  | {
       data: string;
       path: "debug/test_publish";
     }
   | {
       data: ArenaState;
       path: "arena/state";
-    }
-  | {
-      data: Team[];
-      path: "team/teams";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -111,6 +111,18 @@ export type WebsocketRpcRequest =
   | {
       data: null;
       path: "event/schedule_get";
+    }
+  | {
+      data: {
+        team: Team;
+      };
+      path: "team/update";
+    }
+  | {
+      data: {
+        team_number: number;
+      };
+      path: "team/delete";
     }
   | {
       data: {
@@ -160,18 +172,6 @@ export type WebsocketRpcRequest =
         user_id: string;
       };
       path: "user/delete_user";
-    }
-  | {
-      data: {
-        team: Team;
-      };
-      path: "team/update";
-    }
-  | {
-      data: {
-        team_number: number;
-      };
-      path: "team/delete";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -185,6 +185,14 @@ export type WebsocketRpcResponse =
   | {
       data: ScheduleBlock[];
       path: "event/schedule_get";
+    }
+  | {
+      data: Team;
+      path: "team/update";
+    }
+  | {
+      data: null;
+      path: "team/delete";
     }
   | {
       data: string;
@@ -221,14 +229,6 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "user/delete_user";
-    }
-  | {
-      data: Team;
-      path: "team/update";
-    }
-  | {
-      data: null;
-      path: "team/delete";
     };
 
 export interface TempWebsocketRootSchema {

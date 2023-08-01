@@ -6,11 +6,26 @@ import React from "react";
 export const PERMISSIONS: { [k in Permission]: string } = {
   "Admin": "Admin",
   "FTA": "FTA",
-  "FTAA": "FTAA"
+  "FTAA": "FTAA",
+
+  "ManageEvent": "Manage Event",
+  "ManageTeams": "Manage Teams",
+  "ManageSchedule": "Manage Schedule"
+}
+
+// See user.rs in jms-core-lib, this should echo Permission::has
+export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
+  "Admin": Object.keys(PERMISSIONS) as Permission[],
+  "FTA": [ "ManageEvent", "ManageTeams", "ManageSchedule" ],
+  "FTAA": [],
+
+  "ManageEvent": [],
+  "ManageTeams": [],
+  "ManageSchedule": []
 }
 
 export function has_permission(required: Permission, permission: Permission) {
-  if (permission === "Admin") {
+  if (PERMISSION_IMPLICATIONS[permission].includes(required)) {
     return true;
   }
   return permission === required;

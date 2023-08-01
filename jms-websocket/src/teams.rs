@@ -11,14 +11,14 @@ pub trait TeamWebsocket {
 
   #[endpoint]
   async fn update(&self, ctx: &WebsocketContext, token: &MaybeToken, team: Team) -> anyhow::Result<Team> {
-    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    token.auth(&ctx.kv)?.require_permission(&[Permission::ManageTeams])?;
     team.insert(&ctx.kv)?;
     Ok(team)
   }
 
   #[endpoint]
   async fn delete(&self, ctx: &WebsocketContext, token: &MaybeToken, team_number: usize) -> anyhow::Result<()> {
-    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    token.auth(&ctx.kv)?.require_permission(&[Permission::ManageTeams])?;
     Team::delete_by(&team_number.to_string(), &ctx.kv)?;
     Ok(())
   }

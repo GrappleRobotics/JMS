@@ -17,7 +17,7 @@ import { withConfirm } from "@/app/components/Confirm";
 // This is a well-known public key I've created. It may be cancelled at any time.
 const TBA_AUTH_KEY = "19iOXH0VVxCvYQTlmIRpXyx2xoUQuZoWEPECGitvJcFxEY6itgqDP7A4awVL2CJn";
 
-export default withPermission(["FTA"], function EventWizardTeams() {
+export default withPermission(["ManageTeams"], function EventWizardTeams() {
   const [ teams, setTeams ] = useState<Team[]>([]);
   const [ newTeam, setNewTeam ] = useState<Team>({
     number: 0,

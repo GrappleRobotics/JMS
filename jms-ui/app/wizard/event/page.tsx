@@ -11,7 +11,7 @@ import { Card, Col, Form, InputGroup, Row } from "react-bootstrap";
 import update, { Spec } from "immutability-helper";
 import { SketchPicker } from 'react-color';
 
-export default withPermission("Admin", function EventWizardUsers() {
+export default withPermission(["ManageEvent"], function EventWizardUsers() {
   const [ details, setDetails ] = useState<EventDetails | null>(null);
   const { call, subscribe } = useWebsocket();
   const { addError } = useErrors();

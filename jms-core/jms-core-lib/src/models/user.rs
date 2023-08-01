@@ -6,17 +6,25 @@ use crate::db::{self, Table};
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum Permission {
   Admin,
+  /* Roles */
   FTA,
   FTAA,
+  /* Permissions */
+  ManageEvent,
+  ManageTeams,
+  ManageSchedule,
 }
 
 impl Permission {
   pub fn has(&self, required: &Permission) -> bool {
-    if self == &Permission::Admin {
-      return true;
-    }
+    match (self, required) {
+      (Permission::Admin, _) => true,
+      (a, b) if a == b => true,
 
-    return required == self;
+      (Permission::FTA, Permission::ManageEvent | Permission::ManageTeams | Permission::ManageSchedule) => true,
+
+      _ => false
+    }
   }
 }
 
@@ -71,10 +79,12 @@ impl User {
     }
   }
 
-  pub fn require_permission(&self, permission: &Permission) -> anyhow::Result<()> {
+  pub fn require_permission(&self, permission: &[Permission]) -> anyhow::Result<()> {
     for perm in &self.permissions {
-      if perm.has(permission) {
-        return Ok(())
+      for required in permission {
+        if perm.has(required) {
+          return Ok(())
+        }
       }
     }
     Err(anyhow::anyhow!("User does not have required permissions!"))

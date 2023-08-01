@@ -11,7 +11,7 @@ pub trait EventWebsocket {
 
   #[endpoint]
   async fn update(&self, ctx: &WebsocketContext, token: &MaybeToken, details: EventDetails) -> anyhow::Result<EventDetails> {
-    token.auth(&ctx.kv)?.require_permission(&Permission::Admin)?;
+    token.auth(&ctx.kv)?.require_permission(&[Permission::ManageEvent])?;
     details.update(&ctx.kv)?;
     Ok(details)
   }
