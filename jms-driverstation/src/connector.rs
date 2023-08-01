@@ -5,7 +5,7 @@ use futures::{StreamExt, SinkExt};
 use jms_arena_lib::{AllianceStation, ARENA_STATE_KEY, ArenaState, SerialisedLoadedMatch, ARENA_MATCH_KEY, MatchPlayState};
 use jms_base::kv::KVConnection;
 use jms_core_lib::models::{AllianceStationId, Alliance, MatchType};
-use jms_driverstation_lib::{RobotState, TournamentLevel, DriverStationReport};
+use jms_driverstation_lib::{RobotState, TournamentLevel, DriverStationReport, DS_PREFIX};
 use log::{error, info};
 use tokio::{net::{TcpStream, UdpSocket}, sync::broadcast, time::{Instant, self}};
 use tokio_util::{codec::Framed, udp::UdpFramed};
@@ -281,7 +281,7 @@ impl DSConnection {
       }
     }
 
-    let key = format!("ds:{}", pkt.team);
+    let key = format!("{}:{}", DS_PREFIX, pkt.team);
     self.kv.json_set(&key, "$", &report).ok();
     self.kv.expire(&key, 2).ok();
   }

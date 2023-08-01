@@ -11,10 +11,13 @@ pub enum Permission {
   /* Roles */
   FTA,
   FTAA,
+  Scorekeeper,
   /* Permissions */
   ManageEvent,
   ManageTeams,
   ManageSchedule,
+  MatchFlow,
+  Estop
 }
 
 impl Permission {
@@ -23,7 +26,11 @@ impl Permission {
       (Permission::Admin, _) => true,
       (a, b) if a == b => true,
 
-      (Permission::FTA, Permission::ManageEvent | Permission::ManageTeams | Permission::ManageSchedule) => true,
+      (Permission::FTA, Permission::ManageEvent | Permission::ManageTeams | Permission::ManageSchedule | 
+                        Permission::MatchFlow | Permission::Estop) => true,
+
+      (Permission::FTAA, Permission::Estop) => true, 
+      (Permission::Scorekeeper, Permission::MatchFlow | Permission::Estop) => true,
 
       _ => false
     }

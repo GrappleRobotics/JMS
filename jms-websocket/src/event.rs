@@ -1,4 +1,4 @@
-use jms_core_lib::{models::{EventDetails, MaybeToken, Permission, ScheduleBlock}, db::{DBSingleton, Table}};
+use jms_core_lib::{models::{EventDetails, MaybeToken, Permission, ScheduleBlock}, db::{Singleton, Table}};
 
 use crate::ws::WebsocketContext;
 

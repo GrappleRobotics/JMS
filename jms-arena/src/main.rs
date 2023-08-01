@@ -74,36 +74,27 @@ impl Arena {
       },
       ArenaState::Reset => {
         self.reset_stations().await?;
-        self.set_state(ArenaState::Idle { net_ready: false }).await?;
+        self.set_state(ArenaState::Idle).await?;
       },
-      ArenaState::Idle { net_ready: false } => {
-        // TODO: Network
-        self.set_state(ArenaState::Idle { net_ready: true }).await?;
-      },
-      ArenaState::Idle { net_ready: true } => {
+      ArenaState::Idle => {
         if signal == Some(ArenaSignal::Prestart) {
           match &self.current_match {
             Some(m) if m.state == MatchPlayState::Waiting => {
-              self.set_state(ArenaState::Prestart { net_ready: false }).await?;
+              self.set_state(ArenaState::Prestart).await?;
             },
             Some(m) => anyhow::bail!("Cannot Prestart when Match is in state: {:?}", m.state),
             None => anyhow::bail!("Cannot prestart without a match loaded!")
           }
         }
       },
-      ArenaState::Prestart { net_ready: false } => {
-        // TODO: Network
-        self.set_state(ArenaState::Prestart { net_ready: true }).await?;
-      },
-      ArenaState::Prestart { net_ready: true } => {
+      ArenaState::Prestart => {
         match signal {
           Some(sig) => match sig {
             ArenaSignal::MatchArm { force } => {
               // TODO: If consensus says ready (how to do that? maybe scan over a subnamespace?)
               self.set_state(ArenaState::MatchArmed).await?;
             },
-            ArenaSignal::Prestart => self.set_state(ArenaState::Prestart { net_ready: false }).await?,
-            ArenaSignal::PrestartUndo => self.set_state(ArenaState::Idle { net_ready: false }).await?,
+            ArenaSignal::PrestartUndo => self.set_state(ArenaState::Idle).await?,
             _ => ()
           },
           _ => ()
@@ -123,15 +114,11 @@ impl Arena {
         current_match.update().await?;
 
         match current_match.state {
-          MatchPlayState::Complete => { self.set_state(ArenaState::MatchComplete { net_ready: false }).await?; },
+          MatchPlayState::Complete => { self.set_state(ArenaState::MatchComplete).await?; },
           _ => ()
         }
       },
-      ArenaState::MatchComplete { net_ready: false } => {
-        // TODO: Network
-        self.set_state(ArenaState::Prestart { net_ready: true }).await?;
-      },
-      ArenaState::MatchComplete { net_ready: true } => {
+      ArenaState::MatchComplete => {
         if signal == Some(ArenaSignal::MatchCommit) {
           self.commit_scores().await?;
           self.set_state(ArenaState::Reset).await?;

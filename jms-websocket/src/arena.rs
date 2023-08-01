@@ -1,21 +1,46 @@
 use std::time::Duration;
 
-use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY};
-use jms_core_lib::models::MaybeToken;
+use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY, AllianceStation};
+use jms_core_lib::models::{MaybeToken, AllianceStationId, Permission};
+use jms_driverstation_lib::{DriverStationReport, DS_PREFIX};
 
 use crate::ws::WebsocketContext;
 
 #[jms_websocket_macros::websocket_handler]
 pub trait ArenaWebsocket {
+
+  /* Arena */
+
   #[publish]
   async fn state(&self, ctx: &WebsocketContext) -> anyhow::Result<ArenaState> {
     Ok(ctx.kv.json_get(ARENA_STATE_KEY, "$")?)
   }
 
   #[endpoint]
-  async fn signal(&self, ctx: &WebsocketContext, _token: &MaybeToken, signal: ArenaSignal) -> anyhow::Result<()> {
-    let fut = ArenaRPCClient::signal(&ctx.mq, signal, "WebUI".to_owned());
+  async fn signal(&self, ctx: &WebsocketContext, token: &MaybeToken, signal: ArenaSignal) -> anyhow::Result<()> {
+    let user = token.auth(&ctx.kv)?;
+    if signal == ArenaSignal::Estop {
+      user.require_permission(&[Permission::MatchFlow, Permission::Estop])?;
+    } else {
+      user.require_permission(&[Permission::MatchFlow])?;
+    }
+
+    let fut = ArenaRPCClient::signal(&ctx.mq, signal, user.username.clone());
     tokio::time::timeout(Duration::from_millis(200), fut).await??.map_err(|e| anyhow::anyhow!(e))
+  }
+
+  /* Alliance Stations */
+
+  #[publish]
+  async fn stations(&self, ctx: &WebsocketContext) -> anyhow::Result<Vec<AllianceStation>> {
+    AllianceStationId::all().iter().map(|id| ctx.kv.json_get(&id.to_kv_key(), "$")).collect()
+  }
+
+  /* Driver Station */
+
+  #[publish]
+  async fn ds(&self, ctx: &WebsocketContext) -> anyhow::Result<Vec<DriverStationReport>> {
+    ctx.kv.keys(&format!("{}:*", DS_PREFIX))?.iter().map(|x| ctx.kv.json_get(&x, "$")).collect()
   }
 }
 

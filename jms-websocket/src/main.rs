@@ -42,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
 
   let mut ws = Websockets::new();
   ws.register(Duration::from_millis(1000), "debug", DebugWebsocket::new()).await;
-  ws.register(Duration::from_millis(1000), "arena", ArenaWebsocket::new()).await;
+  ws.register(Duration::from_millis(50), "arena", ArenaWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "user", UserWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "event", EventWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "team", TeamWebsocket::new()).await;

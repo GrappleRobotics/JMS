@@ -2,6 +2,61 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "TempWebsocketRootSchema",
   "definitions": {
+    "Alliance": {
+      "type": "string",
+      "enum": [
+        "blue",
+        "red"
+      ]
+    },
+    "AllianceStation": {
+      "type": "object",
+      "required": [
+        "astop",
+        "bypass",
+        "estop",
+        "id"
+      ],
+      "properties": {
+        "astop": {
+          "type": "boolean"
+        },
+        "bypass": {
+          "type": "boolean"
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "id": {
+          "$ref": "#/definitions/AllianceStationId"
+        },
+        "team": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "AllianceStationId": {
+      "type": "object",
+      "required": [
+        "alliance",
+        "station"
+      ],
+      "properties": {
+        "alliance": {
+          "$ref": "#/definitions/Alliance"
+        },
+        "station": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "ArenaSignal": {
       "oneOf": [
         {
@@ -70,13 +125,9 @@
         {
           "type": "object",
           "required": [
-            "net_ready",
             "state"
           ],
           "properties": {
-            "net_ready": {
-              "type": "boolean"
-            },
             "state": {
               "type": "string",
               "enum": [
@@ -102,13 +153,9 @@
         {
           "type": "object",
           "required": [
-            "net_ready",
             "state"
           ],
           "properties": {
-            "net_ready": {
-              "type": "boolean"
-            },
             "state": {
               "type": "string",
               "enum": [
@@ -148,13 +195,9 @@
         {
           "type": "object",
           "required": [
-            "net_ready",
             "state"
           ],
           "properties": {
-            "net_ready": {
-              "type": "boolean"
-            },
             "state": {
               "type": "string",
               "enum": [
@@ -227,6 +270,72 @@
         }
       ]
     },
+    "DriverStationReport": {
+      "type": "object",
+      "required": [
+        "battery_voltage",
+        "estop",
+        "mode",
+        "pkts_lost",
+        "pkts_sent",
+        "radio_ping",
+        "rio_ping",
+        "robot_ping",
+        "rtt",
+        "team"
+      ],
+      "properties": {
+        "actual_station": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AllianceStationId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "battery_voltage": {
+          "type": "number",
+          "format": "double"
+        },
+        "estop": {
+          "type": "boolean"
+        },
+        "mode": {
+          "$ref": "#/definitions/RobotState"
+        },
+        "pkts_lost": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "pkts_sent": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "radio_ping": {
+          "type": "boolean"
+        },
+        "rio_ping": {
+          "type": "boolean"
+        },
+        "robot_ping": {
+          "type": "boolean"
+        },
+        "rtt": {
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0.0
+        },
+        "team": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
     "EventDetails": {
       "type": "object",
       "required": [
@@ -267,9 +376,20 @@
         "Admin",
         "FTA",
         "FTAA",
+        "Scorekeeper",
         "ManageEvent",
         "ManageTeams",
-        "ManageSchedule"
+        "ManageSchedule",
+        "MatchFlow",
+        "Estop"
+      ]
+    },
+    "RobotState": {
+      "type": "string",
+      "enum": [
+        "Auto",
+        "Test",
+        "Teleop"
       ]
     },
     "ScheduleBlock": {
@@ -626,13 +746,10 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
+              "$ref": "#/definitions/ArenaState"
             },
             "path": {
-              "const": "team/teams"
+              "const": "arena/state"
             }
           }
         },
@@ -643,10 +760,47 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/EventDetails"
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/AllianceStation"
+              }
             },
             "path": {
-              "const": "event/details"
+              "const": "arena/stations"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/DriverStationReport"
+              }
+            },
+            "path": {
+              "const": "arena/ds"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
+            },
+            "path": {
+              "const": "team/teams"
             }
           }
         },
@@ -671,10 +825,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/ArenaState"
+              "$ref": "#/definitions/EventDetails"
             },
             "path": {
-              "const": "arena/state"
+              "const": "event/details"
             }
           }
         }
@@ -683,163 +837,6 @@
     "WebsocketRpcRequest": {
       "title": "WebsocketRpcRequest",
       "oneOf": [
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "affiliation",
-                "display_number",
-                "location",
-                "name",
-                "team_number"
-              ],
-              "properties": {
-                "affiliation": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "display_number": {
-                  "type": "string"
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "team_number",
-                "updates"
-              ],
-              "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                },
-                "updates": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/TeamUpdate"
-                  }
-                }
-              }
-            },
-            "path": {
-              "const": "team/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "team_number"
-              ],
-              "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "path": {
-              "const": "team/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "details"
-              ],
-              "properties": {
-                "details": {
-                  "$ref": "#/definitions/EventDetails"
-                }
-              }
-            },
-            "path": {
-              "const": "event/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "event/schedule_get"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "in_text"
-              ],
-              "properties": {
-                "in_text": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
         {
           "required": [
             "data",
@@ -1029,12 +1026,7 @@
               "const": "user/delete"
             }
           }
-        }
-      ]
-    },
-    "WebsocketRpcResponse": {
-      "title": "WebsocketRpcResponse",
-      "oneOf": [
+        },
         {
           "required": [
             "data",
@@ -1042,7 +1034,41 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/Team"
+              "required": [
+                "affiliation",
+                "display_number",
+                "location",
+                "name",
+                "team_number"
+              ],
+              "properties": {
+                "affiliation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "display_number": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
             },
             "path": {
               "const": "team/new_team"
@@ -1056,7 +1082,23 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/Team"
+              "required": [
+                "team_number",
+                "updates"
+              ],
+              "properties": {
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                },
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/TeamUpdate"
+                  }
+                }
+              }
             },
             "path": {
               "const": "team/update"
@@ -1070,7 +1112,16 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "required": [
+                "team_number"
+              ],
+              "properties": {
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
             },
             "path": {
               "const": "team/delete"
@@ -1084,7 +1135,35 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/EventDetails"
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "details"
+              ],
+              "properties": {
+                "details": {
+                  "$ref": "#/definitions/EventDetails"
+                }
+              }
             },
             "path": {
               "const": "event/update"
@@ -1098,30 +1177,18 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/ScheduleBlock"
-              }
+              "const": null
             },
             "path": {
               "const": "event/schedule_get"
             }
           }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
+        }
+      ]
+    },
+    "WebsocketRpcResponse": {
+      "title": "WebsocketRpcResponse",
+      "oneOf": [
         {
           "required": [
             "data",
@@ -1248,6 +1315,93 @@
             },
             "path": {
               "const": "user/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_endpoint"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/EventDetails"
+            },
+            "path": {
+              "const": "event/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ScheduleBlock"
+              }
+            },
+            "path": {
+              "const": "event/schedule_get"
             }
           }
         }

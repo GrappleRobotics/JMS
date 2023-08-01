@@ -8,7 +8,7 @@ pub fn generate_id() -> String {
 }
 
 #[async_trait::async_trait]
-pub trait DBSingleton: serde::Serialize + serde::de::DeserializeOwned + Default + Send + Sync {
+pub trait Singleton: serde::Serialize + serde::de::DeserializeOwned + Default + Send + Sync {
   const KEY: &'static str;
 
   fn get(db: &kv::KVConnection) -> anyhow::Result<Self> {
@@ -24,6 +24,14 @@ pub trait DBSingleton: serde::Serialize + serde::de::DeserializeOwned + Default 
 
   fn update(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
     db.json_set(&Self::KEY, "$", &self)
+  }
+
+  fn expire(&self, seconds: usize, db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.expire(&Self::KEY, seconds)
+  } 
+
+  fn delete(db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.del(&Self::KEY)
   }
 }
 

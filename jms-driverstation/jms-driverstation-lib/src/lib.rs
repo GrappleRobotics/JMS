@@ -1,5 +1,7 @@
 use jms_core_lib::models::AllianceStationId;
 
+pub const DS_PREFIX: &'static str = "ds";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum RobotState {
   Auto,
@@ -13,7 +15,7 @@ impl Default for RobotState {
   }
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DriverStationReport {
   pub team: u16,
   pub robot_ping: bool,

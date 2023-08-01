@@ -8,12 +8,12 @@ pub const ARENA_MATCH_KEY: &'static str = "arena:match";
 pub enum ArenaState {
   Init,
   Reset,
-  Idle { net_ready: bool },
+  Idle,
   Estop,
-  Prestart { net_ready: bool },
+  Prestart,
   MatchArmed,
   MatchPlay,
-  MatchComplete { net_ready: bool }
+  MatchComplete
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -52,7 +52,7 @@ pub struct SerialisedLoadedMatch {
 }
 
 /* ALLIANCE STATIONS */
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct AllianceStation {
   pub id: AllianceStationId,
   pub team: Option<u16>,

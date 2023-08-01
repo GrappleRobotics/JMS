@@ -1,4 +1,4 @@
-use crate::db::DBSingleton;
+use crate::db::Singleton;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct EventDetails {
@@ -10,7 +10,7 @@ pub struct EventDetails {
 }
 
 #[async_trait::async_trait]
-impl DBSingleton for EventDetails {
+impl Singleton for EventDetails {
   const KEY: &'static str = "db:event_details";
 }
 
