@@ -30,6 +30,7 @@ impl Permission {
   }
 }
 
+#[derive(jms_macros::Updateable)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct User {
   pub username: String,

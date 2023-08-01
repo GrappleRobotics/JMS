@@ -536,6 +536,91 @@
         }
       }
     },
+    "UserUpdate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "username"
+          ],
+          "properties": {
+            "username": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "realname"
+          ],
+          "properties": {
+            "realname": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "pin_hash"
+          ],
+          "properties": {
+            "pin_hash": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "pin_is_numeric"
+          ],
+          "properties": {
+            "pin_is_numeric": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "permissions"
+          ],
+          "properties": {
+            "permissions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Permission"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "tokens"
+          ],
+          "properties": {
+            "tokens": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "WebsocketPublish": {
       "title": "WebsocketPublish",
       "oneOf": [
@@ -574,10 +659,13 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
             },
             "path": {
-              "const": "debug/test_publish"
+              "const": "team/teams"
             }
           }
         },
@@ -588,13 +676,10 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
+              "type": "string"
             },
             "path": {
-              "const": "team/teams"
+              "const": "debug/test_publish"
             }
           }
         }
@@ -656,157 +741,6 @@
             },
             "path": {
               "const": "event/schedule_get"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "user/auth_with_token"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "pin",
-                "username"
-              ],
-              "properties": {
-                "pin": {
-                  "type": "string"
-                },
-                "username": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "user/auth_with_pin"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "pin"
-              ],
-              "properties": {
-                "pin": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "user/update_pin"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "user/logout"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "user/users"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "user"
-              ],
-              "properties": {
-                "user": {
-                  "$ref": "#/definitions/User"
-                }
-              }
-            },
-            "path": {
-              "const": "user/modify_user"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "user_id"
-              ],
-              "properties": {
-                "user_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "user/delete_user"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "in_text"
-              ],
-              "properties": {
-                "in_text": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "debug/test_endpoint"
             }
           }
         },
@@ -910,6 +844,196 @@
               "const": "team/delete"
             }
           }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "user/auth_with_token"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "pin",
+                "username"
+              ],
+              "properties": {
+                "pin": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "user/auth_with_pin"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "pin"
+              ],
+              "properties": {
+                "pin": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "user/update_pin"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "user/logout"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "user/users"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "permissions",
+                "realname",
+                "username"
+              ],
+              "properties": {
+                "permissions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Permission"
+                  }
+                },
+                "realname": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "user/new"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "updates",
+                "username"
+              ],
+              "properties": {
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/UserUpdate"
+                  }
+                },
+                "username": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "user/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "user_id"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "user/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
+            }
+          }
         }
       ]
     },
@@ -958,6 +1082,48 @@
             },
             "path": {
               "const": "event/schedule_get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "team/delete"
             }
           }
         },
@@ -1041,10 +1207,24 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "$ref": "#/definitions/User"
             },
             "path": {
-              "const": "user/modify_user"
+              "const": "user/new"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/User"
+            },
+            "path": {
+              "const": "user/update"
             }
           }
         },
@@ -1058,7 +1238,7 @@
               "type": "null"
             },
             "path": {
-              "const": "user/delete_user"
+              "const": "user/delete"
             }
           }
         },
@@ -1073,48 +1253,6 @@
             },
             "path": {
               "const": "debug/test_endpoint"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "team/delete"
             }
           }
         }

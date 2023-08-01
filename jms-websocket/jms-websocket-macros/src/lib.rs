@@ -315,7 +315,7 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
 }
 
 #[proc_macro_attribute]
-pub fn websocket_handler(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn websocket_handler(_attr: TokenStream, input: TokenStream) -> TokenStream {
   let t = parse_macro_input!(input as ItemTrait);
 
   let out_trait = gen_websocket_handler_trait(&t);

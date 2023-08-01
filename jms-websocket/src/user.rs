@@ -1,4 +1,4 @@
-use jms_core_lib::{models::{MaybeToken, User, UserToken, Permission}, db::Table};
+use jms_core_lib::{models::{MaybeToken, User, UserToken, Permission, UserUpdate}, db::Table};
 
 use crate::ws::WebsocketContext;
 
@@ -74,22 +74,41 @@ pub trait UserWebsocket {
   }
 
   #[endpoint]
-  async fn modify_user(&self, ctx: &WebsocketContext, token: &MaybeToken, user: User) -> anyhow::Result<()> {
-    let tok_user = token.auth(&ctx.kv)?;
-    tok_user.require_permission(&[Permission::Admin])?;
-
-    if tok_user.id() == user.id() {
-      if tok_user.permissions.contains(&Permission::Admin) && !user.permissions.contains(&Permission::Admin) {
-        anyhow::bail!("Can't remove admin from yourself!");
-      }
-    }
-
+  async fn new(&self, ctx: &WebsocketContext, token: &MaybeToken, username: String, realname: String, permissions: Vec<Permission>) -> anyhow::Result<User> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::Admin])?;
+    let mut user = User::new(&username, &realname, false);
+    user.permissions = permissions;
     user.insert(&ctx.kv)?;
-    Ok(())
+    Ok(user)
   }
 
   #[endpoint]
-  async fn delete_user(&self, ctx: &WebsocketContext, token: &MaybeToken, user_id: String) -> anyhow::Result<()> {
+  async fn update(&self, ctx: &WebsocketContext, token: &MaybeToken, username: String, updates: Vec<UserUpdate>) -> anyhow::Result<User> {
+    let tok_user = token.auth(&ctx.kv)?;
+    tok_user.require_permission(&[Permission::Admin])?;
+
+    let mut user = User::get(&username, &ctx.kv)?;
+    for update in updates {
+      if tok_user.id() == user.id() {
+        match &update {
+          UserUpdate::permissions(perms) => {
+            if tok_user.permissions.contains(&Permission::Admin) && !perms.contains(&Permission::Admin) {
+              anyhow::bail!("Can't remove admin from yourself!");
+            }
+          },
+          _ => ()
+        }
+      }
+
+      update.apply(&mut user);
+    }
+
+    user.insert(&ctx.kv)?;
+    Ok(user)
+  }
+
+  #[endpoint]
+  async fn delete(&self, ctx: &WebsocketContext, token: &MaybeToken, user_id: String) -> anyhow::Result<()> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::Admin])?;
     User::delete_by(&user_id, &ctx.kv)?;
     Ok(())

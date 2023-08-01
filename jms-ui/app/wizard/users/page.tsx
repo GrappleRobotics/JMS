@@ -18,10 +18,8 @@ async function newUserModal(call: JmsWebsocket["call"]) {
     data: {
       username: "",
       realname: "",
-      permissions: [],
-      tokens: [],
-      pin_is_numeric: false
-    } as User,
+      permissions: [] as Permission[],
+    },
     renderInner: (data, onUpdate) => <React.Fragment>
       <InputGroup className="m-2">
         <InputGroup.Text>Username</InputGroup.Text>
@@ -37,7 +35,7 @@ async function newUserModal(call: JmsWebsocket["call"]) {
         <Form.Control
           type="text"
           value={data.realname}
-          onChange={e => onUpdate(update(data, { realname: { $set: e.target.value.trim() } }))}
+          onChange={e => onUpdate(update(data, { realname: { $set: e.target.value } }))}
         />
       </InputGroup>
 
@@ -54,7 +52,7 @@ async function newUserModal(call: JmsWebsocket["call"]) {
     </React.Fragment>,
   });
 
-  call<"user/modify_user">("user/modify_user", { user: details })
+  call<"user/new">("user/new", details)
     .catch(e => alert(e));
 }
 
@@ -96,7 +94,7 @@ export default withPermission(["Admin"], function EventWizardUsers() {
                 options={Object.keys(PERMISSIONS)}
                 selected={user.permissions}
                 onChange={(perms) => {
-                  call<"user/modify_user">("user/modify_user", { user: { ...user, permissions: perms } as any })
+                  call<"user/update">("user/update", { username: user.username, updates: [{permissions: perms as Permission[]}] })
                     .then(refreshUsers)
                     .catch(addError);
                 }}
@@ -108,21 +106,21 @@ export default withPermission(["Admin"], function EventWizardUsers() {
                 size="sm"
                 variant="danger"
                 disabled={user.permissions.includes("Admin")}
-                onClick={() => withConfirm(() => call<"user/delete_user">("user/delete_user", { user_id: user.username }).then(refreshUsers))}
+                onClick={() => withConfirm(() => call<"user/delete">("user/delete", { user_id: user.username }).then(refreshUsers))}
               >
                 <FontAwesomeIcon icon={faTrash} />
               </Button> &nbsp;
               <Button
                 size="sm"
                 variant="info"
-                onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, pin_hash: null } }).catch(addError))}
+                onClick={() => withConfirm(() => call<"user/update">("user/update", { username: user.username, updates: [{ pin_hash: null }] }).catch(addError))}
               >
                 Reset PIN
               </Button> &nbsp;
               <Button
                 size="sm"
                 variant="warning"
-                onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, tokens: [] } }))}
+                onClick={() => withConfirm(() => call<"user/update">("user/update", { username: user.username, updates: [{ tokens: [] }] }).catch(addError))}
               >
                 Invalidate Tokens
               </Button>
