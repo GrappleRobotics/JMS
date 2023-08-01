@@ -11,6 +11,7 @@ async-trait = "0.1.72"
 bcrypt = "0.15.0"
 chrono = { version = "0.4.26", features = ["serde"] }
 jms-base = { path = "../../jms-base" }
+jms-macros = { path = "../../jms-macros" }
 rand = "0.8.5"
 redis-macros = "0.2.1"
 schemars = { version = "0.8.12", features = ["chrono"] }

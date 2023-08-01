@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Attribute, Visibility, Ident, PatType, braced, parse::{ParseStream, Parse, discouraged::Speculative}, Token, FnArg, parenthesized, Pat, parse_macro_input, spanned::Spanned, Type, token, punctuated::Punctuated, Variant, Path};
+use syn::{Attribute, Visibility, Ident, PatType, braced, parse::{ParseStream, Parse, discouraged::Speculative}, Token, FnArg, parenthesized, Pat, parse_macro_input, spanned::Spanned, Type, token, punctuated::Punctuated, Variant, Path, DeriveInput};
 
 /* RPC */
 
@@ -211,295 +211,101 @@ pub fn service(attr: TokenStream, input: TokenStream) -> TokenStream {
     }.into()
 }
 
-/* WEBSOCKET */
-enum WebsocketMessageDirection {
-  Send,
-  Recv,
-  Both
-}
+/* PARTIALS */
+#[proc_macro_derive(Updateable)]
+pub fn derive_updateable(input: TokenStream) -> TokenStream {
+    let DeriveInput {
+        attrs, vis, ident, generics, data
+    } = parse_macro_input!(input as DeriveInput);
 
-impl WebsocketMessageDirection {
-  fn to_derives(&self) -> Vec<&'static str> {
-    let mut v = vec!["Debug", "Clone", "schemars::JsonSchema"];
-    match self {
-      WebsocketMessageDirection::Send => v.push("serde::Serialize"),
-      WebsocketMessageDirection::Recv => v.push("serde::Deserialize"),
-      WebsocketMessageDirection::Both => { 
-        v.push("serde::Serialize");
-        v.push("serde::Deserialize")
-      },
-    }
-    v
-  }
+    let update_enum_ident = syn::Ident::new(&format!("{}Update", ident), ident.span());
 
-  fn suffix(&self) -> &str {
-    match self {
-      WebsocketMessageDirection::Send => "2UI",
-      WebsocketMessageDirection::Recv => "2JMS",
-      WebsocketMessageDirection::Both => "",
-    }
-  }
+    let fields = match data {
+        syn::Data::Struct(ref s) => s.fields.iter().filter_map(|field| field.ident.as_ref().map(|ident| ( field.vis.clone(), ident.clone(), field.ty.clone() ))),
+        _ => panic!("Partials are only derived for structs.")
+    };
 
-  fn applies(&self, other: &Self) -> bool {
-    match (self, other) {
-      ( Self::Both, _ ) | ( _, Self::Both ) => true,
-      ( Self::Send, Self::Send ) => true,
-      ( Self::Recv, Self::Recv ) => true,
-      _ => false
-    }
-  }
-}
-
-impl Parse for WebsocketMessageDirection {
-  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-    Ok(input.step(|cursor| {
-      match cursor.ident() {
-        Some((ident, next)) if ident.to_string() == "send" => 
-          Ok( ( WebsocketMessageDirection::Send, next ) ),
-        Some((ident, next)) if ident.to_string() == "recv" =>
-          Ok( ( WebsocketMessageDirection::Recv, next ) ),
-        _ => Err(cursor.error("neither send nor recv"))
-      }
-    }).unwrap_or(WebsocketMessageDirection::Both))
-  }
-}
-
-enum WebsocketMessageField {
-  Msg(WebsocketMessage),
-  ExtMsg(ExtWebsocketMessage),
-  Data {
-    dir: WebsocketMessageDirection,
-    var: Variant
-  }
-}
-
-impl Parse for WebsocketMessageField {
-  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-    // Speculate WebsocketMessage
-    let fork = input.fork();
-    if let Ok(msg) = fork.parse() {
-      input.advance_to(&fork);
-      Ok(WebsocketMessageField::Msg(msg))
-    } else if let Ok(msg) = fork.parse() {
-      input.advance_to(&fork);
-      Ok(WebsocketMessageField::ExtMsg(msg))
-    } else {
-      // Speculation was wrong - drop the fork and parse dir / variant
-      Ok(WebsocketMessageField::Data {
-        dir: input.parse()?,
-        var: input.parse()?
-      })
-    }
-  }
-}
-
-struct WebsocketMessage {
-  dir: WebsocketMessageDirection,
-  #[allow(dead_code)]
-  dollar_token: token::Dollar,
-  name: Ident,
-  #[allow(dead_code)]
-  brace_token: token::Brace,
-  children: Punctuated<WebsocketMessageField, token::Comma>
-}
-
-mod kw {
-  syn::custom_keyword!(ext);
-} 
-
-struct ExtWebsocketMessage {
-  #[allow(dead_code)]
-  ext: kw::ext,
-  dir: WebsocketMessageDirection,
-  name: Ident,
-  #[allow(dead_code)]
-  paren: token::Paren,
-  message_type: Ident
-}
-
-enum StructuredWebsocketMessageField {
-  Msg(Ident, Ident),  // variant name, class name
-  Data(Variant),
-  // ExtMsg(Ident, Ident)    // variant name, class name
-}
-
-struct StructuredWebsocketMessage {
-  full_name: Ident,
-  children: Vec<StructuredWebsocketMessageField>
-}
-
-impl Parse for WebsocketMessage {
-  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-    let content;
-    Ok(WebsocketMessage {
-      dir: input.parse()?,
-      dollar_token: input.parse()?,
-      name: input.parse()?,
-      brace_token: braced!(content in input),
-      children: content.parse_terminated(WebsocketMessageField::parse, Token![,])?
-    })
-  }
-}
-
-impl Parse for ExtWebsocketMessage {
-  fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-    let lookahead = input.lookahead1();
-    if lookahead.peek(kw::ext) {
-      let content;
-      Ok(ExtWebsocketMessage {
-        ext: input.parse()?,
-        dir: input.parse()?,
-        name: input.parse()?,
-        paren: parenthesized!(content in input),
-        message_type: content.parse()?,
-      })
-    } else {
-      Err(lookahead.error())
-    }
-  }
-}
-
-fn build_messages_vec<'a>(root: &'a WebsocketMessage, prefix: &str, v: &mut Vec<(String, &'a WebsocketMessage)>) {
-  let name = format!("{}{}", prefix, root.name.to_string());
-  // Depth first
-  for child in root.children.iter() {
-    if let WebsocketMessageField::Msg(m) = child {
-      build_messages_vec(m, &name, v);
-    }
-  }
-  v.push((name.clone(), root));
-}
-
-fn define_websocket_msg_inner(target_dir: WebsocketMessageDirection, msg: &WebsocketMessage) -> proc_macro2::TokenStream {
-  let mut all_messages = vec![];
-  build_messages_vec(msg, "",&mut all_messages);
-  
-  let mut valid_messages = HashMap::<String, StructuredWebsocketMessage>::new();
-
-  // Filter out empty children and assign names
-  for (name, m) in all_messages {
-    if target_dir.applies(&m.dir) {
-      let fullname = format!("{}{}", name, target_dir.suffix());
-
-      let children = m.children.iter().filter_map(|child| match child {
-        WebsocketMessageField::Msg(child_msg) if target_dir.applies(&child_msg.dir) => {
-          let child_msg_full_name = format!("{}{}{}", name, child_msg.name.to_string(), target_dir.suffix());
-          valid_messages.get(&child_msg_full_name).map(|_| {
-            StructuredWebsocketMessageField::Msg(child_msg.name.clone(), Ident::new(&child_msg_full_name, child_msg.name.span()))
-          })
-        },
-        WebsocketMessageField::ExtMsg(ext_msg) if target_dir.applies(&ext_msg.dir) => {
-          let child_msg_name = format!("{}{}", ext_msg.message_type.to_string(), target_dir.suffix());
-          Some(StructuredWebsocketMessageField::Msg(ext_msg.name.clone(), Ident::new(&child_msg_name, ext_msg.message_type.span())))
-        },
-        WebsocketMessageField::Data { dir, var } if target_dir.applies(&dir) => {
-          Some(StructuredWebsocketMessageField::Data(var.clone()))
-        },
-        _ => None
-      }).collect::<Vec<StructuredWebsocketMessageField>>();
-
-      if children.len() > 0 {
-        valid_messages.insert(fullname.clone(), StructuredWebsocketMessage { 
-          full_name: Ident::new(&fullname, msg.name.span()), 
-          children
-        });
-      }
-    }
-  }
-
-  let enums = valid_messages.iter().map(|(_, msg)| {
-    // Each entry: (To, From, ToVariant)
-    let mut froms = vec![];
-    let mut path_maps = vec![];
-
-    // let root_name = &msg.name;
-    let root_cls = &msg.full_name;
-
-    let derives = target_dir.to_derives();
-    let derive_str = derives.iter().map(|&s| syn::parse_str::<Path>(s).unwrap());
-    
-    let fields = msg.children.iter().filter_map(|child| {
-      match child {
-        StructuredWebsocketMessageField::Msg(var_name, cls_name) => {
-          let var_name_str = var_name.to_string();
-
-          froms.push( (root_cls.clone(), cls_name.clone(), var_name.clone()) );
-          path_maps.push(quote! {
-            #root_cls::#var_name(submsg) => [vec![#var_name_str].as_slice(), submsg.ws_path().as_slice()].concat()
-          });
-
-          Some(quote! {
-            #var_name(#cls_name)
-          })
-        },
-        StructuredWebsocketMessageField::Data(var) => {
-          let var_name = &var.ident;
-          let var_name_str = var_name.to_string();
-
-          let inner = match &var.fields {
-            syn::Fields::Named(_) => "{ .. }",
-            syn::Fields::Unnamed(_) => "( .. )",
-            syn::Fields::Unit => "",
-          };
-
-          let field_tokens: proc_macro2::TokenStream = inner.parse().unwrap();
-
-          // let field_tokens = var.fields.to_token_stream();
-          path_maps.push(quote! {
-            #root_cls::#var_name #field_tokens => vec![#var_name_str]
-          });
-
-          Some(quote! {
-            #var
-          })
-        }
-      }
-    }).collect::<Vec<proc_macro2::TokenStream>>();
-
-    let from_quotes = froms.iter().map(|(to,from,variant)| {
-      quote! {
-        impl From<#from> for #to {
-          fn from(submsg: #from) -> Self {
-            #to::#variant(submsg)
-          }
-        }
-      }
+    let enum_fields = fields.clone().map(|(field_vis, field_ident, field_type)| quote! {
+        #field_ident(#field_type)
     });
 
-    path_maps.push(quote! { _ => vec![] });
-
-    quote! {
-      #[derive(#(#derive_str),*)]
-      pub enum #root_cls {
-        #(#fields),*
-      }
-
-      impl #root_cls {
-        pub fn ws_path(&self) -> Vec<&str> {
-          match self {
-            #(#path_maps),*
-          }
+    let match_arms = fields.clone().map(|(field_vis, field_ident, field_type)| {
+        quote! {
+            Self::#field_ident(#field_ident) => full.#field_ident = #field_ident
         }
-      }
+    });
 
-      #(#from_quotes)*
-    }
-  });
+    let out = quote! {
+        #[allow(non_camel_case_types)]
+        #(#attrs)*
+        #vis enum #update_enum_ident {
+            #(#enum_fields),*
+        }
 
-  quote! {
-    #(#enums)*
-  }
+        impl #update_enum_ident {
+            pub fn apply(self, full: &mut #ident) {
+                match self {
+                    #(#match_arms),*
+                }
+            }
+        }
+    };
+
+    println!("{:?}", out.to_string());
+
+    out.into()
 }
 
-#[proc_macro]
-pub fn define_websocket_msg(input: TokenStream) -> TokenStream {
-  let msg = parse_macro_input!(input as WebsocketMessage);
+// #[proc_macro_derive(Partial)]
+// pub fn derive_partial(input: TokenStream) -> TokenStream {
+//   let DeriveInput {
+//     attrs, vis, ident, generics, data
+//   } = parse_macro_input!(input as DeriveInput);
 
-  let send = define_websocket_msg_inner(WebsocketMessageDirection::Send, &msg);
-  let recv = define_websocket_msg_inner(WebsocketMessageDirection::Recv, &msg);
+//   let partial_ident = syn::Ident::new(&format!("{}Partial", ident), ident.span());
 
-  quote! {
-    #send
-    #recv
-  }.into()
-}
+//   let fields = match data {
+//     syn::Data::Struct(ref s) => s.fields.iter().filter_map(|field| field.ident.as_ref().map(|ident| ( field.vis.clone(), ident.clone(), field.ty.clone() ))),
+//     _ => panic!("Partials are only derived for structs.")
+//   };
+
+//   let mapped_fields = fields.clone().map(|(vis, ident, ty)| quote! {
+//     #vis #ident: core::option::Option<#ty>
+//   });
+
+//   let update_inner = fields.clone().map(|(_, ident, _)| quote! {
+//     if let Some(#ident) = self.#ident {
+//       full.#ident = #ident;
+//     }
+//   });
+
+//   let materialise_inner = fields.clone().map(|(_, ident, _)| {
+//     let ident_str = ident.to_string();
+//     quote! {
+//       #ident: self.#ident.ok_or(anyhow::anyhow!("Missing field: {}", #ident_str))?
+//     }
+//   });
+
+//   let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+//   let out = quote! {
+//     #(#attrs)*
+//     #vis struct #partial_ident #ty_generics #where_clause {
+//       #(#mapped_fields),*
+//     }
+
+//     impl #impl_generics #partial_ident #ty_generics #where_clause {
+//       pub fn apply(self, full: &mut #ident) {
+//         #(#update_inner)*
+//       }
+
+//       pub fn materialise(self) -> anyhow::Result<#ident> {
+//         Ok(#ident {
+//           #(#materialise_inner),*
+//         })
+//       }
+//     }
+//   };
+
+//   out.into()
+// }

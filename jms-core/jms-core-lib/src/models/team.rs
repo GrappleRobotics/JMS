@@ -1,5 +1,8 @@
+use std::num::ParseIntError;
+
 use crate::db;
 
+#[derive(jms_macros::Updateable)]
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Team {
   pub number: usize,
@@ -15,9 +18,11 @@ pub struct Team {
 #[async_trait::async_trait]
 impl db::Table for Team {
   const PREFIX: &'static str = "db:team";
+  type Id = usize;
+  type Err = ParseIntError;
 
-  fn id(&self) -> String {
-    self.number.to_string()
+  fn id(&self) -> Self::Id {
+    self.number
   }
 }
 

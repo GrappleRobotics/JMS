@@ -1,3 +1,5 @@
+use std::num::ParseIntError;
+
 use crate::db::Table;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -10,9 +12,11 @@ pub struct PlayoffAlliance {
 #[async_trait::async_trait]
 impl Table for PlayoffAlliance {
   const PREFIX: &'static str = "db:alliance";
+  type Id = usize;
+  type Err = ParseIntError;
 
-  fn id(&self) -> String {
-    return self.number.to_string()
+  fn id(&self) -> Self::Id {
+    return self.number
   }
 }
 

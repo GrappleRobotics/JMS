@@ -1,7 +1,10 @@
+use std::convert::Infallible;
+
 use chrono::Local;
 
 use jms_base::kv;
 use serde::Serialize;
+use strum::ParseError;
 
 use crate::db::Table;
 
@@ -212,6 +215,8 @@ impl Match {
 #[async_trait::async_trait]
 impl Table for Match {
   const PREFIX: &'static str = "db:match";
+  type Id = String;
+  type Err = Infallible;
 
   fn id(&self) -> String {
     match self.match_type {
@@ -260,15 +265,17 @@ pub struct MatchGenerationRecord {
 #[async_trait::async_trait]
 impl Table for MatchGenerationRecord {
   const PREFIX: &'static str = "db:match_gen";
+  type Id = MatchType;
+  type Err = ParseError;
 
-  fn id(&self) -> String {
-    self.match_type.to_string()
+  fn id(&self) -> MatchType {
+    self.match_type
   }
 }
 
 impl MatchGenerationRecord {
   pub fn get_by(match_type: MatchType, db: &kv::KVConnection) -> anyhow::Result<Option<MatchGenerationRecordData>> {
-    let first = Self::get(&match_type.to_string(), db).ok();
+    let first = Self::get(&match_type, db).ok();
 
     match first {
       Some(mgr) => Ok(mgr.data),

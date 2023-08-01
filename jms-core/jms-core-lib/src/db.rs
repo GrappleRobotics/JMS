@@ -1,3 +1,5 @@
+use std::{fmt::Display, str::FromStr};
+
 use jms_base::kv;
 use uuid::Uuid;
 
@@ -28,9 +30,11 @@ pub trait DBSingleton: serde::Serialize + serde::de::DeserializeOwned + Default 
 #[async_trait::async_trait]
 pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
   const PREFIX: &'static str;
+  type Err: Display;
+  type Id: ToString + FromStr<Err = Self::Err>;
   
-  fn id(&self) -> String;
-  fn key(&self) -> String { format!("{}:{}", Self::PREFIX, self.id()) }
+  fn id(&self) -> Self::Id;
+  fn key(&self) -> String { format!("{}:{}", Self::PREFIX, self.id().to_string()) }
 
   fn insert(&self, db: &kv::KVConnection) -> anyhow::Result<()> {
     db.json_set(&self.key(), "$", &self)
@@ -40,17 +44,22 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
     db.del(&self.key())
   }
 
-  fn delete_by(id: &str, db: &kv::KVConnection) -> anyhow::Result<()> {
-    db.del(&format!("{}:{}", Self::PREFIX, id))
+  fn delete_by(id: &Self::Id, db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.del(&format!("{}:{}", Self::PREFIX, id.to_string()))
   }
 
-  fn get(id: &str, db: &kv::KVConnection) -> anyhow::Result<Self> {
-    db.json_get(&format!("{}:{}", Self::PREFIX, id), "$")
+  fn get(id: &Self::Id, db: &kv::KVConnection) -> anyhow::Result<Self> {
+    db.json_get(&format!("{}:{}", Self::PREFIX, id.to_string()), "$")
   }
 
-  fn ids(db: &kv::KVConnection) -> anyhow::Result<Vec<String>> {
+  fn ids(db: &kv::KVConnection) -> anyhow::Result<Vec<Self::Id>> {
     let keys = db.keys(&format!("{}:*", Self::PREFIX))?;
-    Ok(keys.iter().map(|x| x[Self::PREFIX.len() + 1..].to_owned()).collect())
+    let mut ids = vec![];
+    for key in keys {
+      ids.push(FromStr::from_str(&key[Self::PREFIX.len() + 1..]).map_err(|e| anyhow::anyhow!("{}", e))?);
+    }
+    Ok(ids)
+    // Ok(keys.iter().map(|x| x[Self::PREFIX.len() + 1..].to_owned()).collect())
   }
 
   fn all(db: &kv::KVConnection) -> anyhow::Result<Vec<Self>> {
@@ -66,7 +75,7 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
 
   fn clear(db: &kv::KVConnection) -> anyhow::Result<()> {
     for id in Self::ids(db)? {
-      db.del(&format!("{}:{}", Self::PREFIX, id)).ok();
+      db.del(&format!("{}:{}", Self::PREFIX, id.to_string())).ok();
     }
     Ok(())
   }

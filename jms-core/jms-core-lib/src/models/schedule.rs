@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use chrono::{Local, TimeZone, Duration, NaiveTime, Date};
 use jms_base::kv;
 
@@ -22,6 +24,8 @@ pub struct ScheduleBlock {
 
 impl Table for ScheduleBlock {
   const PREFIX: &'static str = "db:schedule:block";
+  type Id = String;
+  type Err = Infallible;
 
   fn id(&self) -> String {
     self.id.clone()

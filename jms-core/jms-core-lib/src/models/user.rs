@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use jms_base::kv::KVConnection;
 use uuid::Uuid;
 
@@ -41,6 +43,8 @@ pub struct User {
 #[async_trait::async_trait]
 impl db::Table for User {
   const PREFIX: &'static str = "db:user";
+  type Id = String;
+  type Err = Infallible;
 
   fn id(&self) -> String {
     self.username.clone()
