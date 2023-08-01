@@ -1,6 +1,6 @@
 use crate::db::DBSingleton;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct EventDetails {
   pub code: Option<String>,
   pub event_name: Option<String>,

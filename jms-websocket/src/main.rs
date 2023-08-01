@@ -3,15 +3,18 @@ use std::time::Duration;
 use arena::ArenaWebsocket;
 use clap::{Command, Arg};
 use debug::DebugWebsocket;
+use event::EventWebsocket;
 use jms_base::{mq::MessageQueue, kv::KVConnection};
+use teams::TeamWebsocket;
 use user::UserWebsocket;
 use ws::{Websockets, WebsocketContext};
 
 pub mod arena;
 pub mod debug;
-// pub mod event;
+pub mod event;
 pub mod handler;
 // pub mod matches;
+pub mod teams;
 pub mod ws;
 pub mod user;
 
@@ -34,13 +37,6 @@ async fn main() -> anyhow::Result<()> {
         )
     ).get_matches();
 
-  
-  // let file = gen_schema.get_one::<String>("file").expect("required");
-  // let file = Path::new(file);
-  // let schema = schemars::schema_for!(AllWebsocketMessages);
-  
-  // std::fs::write(file, serde_json::to_string_pretty(&schema)?)?;
-
   let mq = MessageQueue::new("websocket-reply").await?;
   let kv = KVConnection::new()?;
 
@@ -48,9 +44,8 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(1000), "debug", DebugWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "arena", ArenaWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "user", UserWebsocket::new()).await;
-  // ws.register(Duration::from_millis(1000), WSEventHandler {}).await;
-  // ws.register(Duration::from_millis(1000), WSMatchHandler {}).await;
-  // ws.register(Duration::from_millis(1000), WSArenaHandler {}).await;
+  ws.register(Duration::from_millis(1000), "event", EventWebsocket::new()).await;
+  ws.register(Duration::from_millis(1000), "team", TeamWebsocket::new()).await;
 
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {

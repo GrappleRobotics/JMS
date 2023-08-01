@@ -1,9 +1,9 @@
 use crate::db;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Team {
-  pub id: String,
   pub number: usize,
+  pub display_number: String,
   pub name: Option<String>,
   pub affiliation: Option<String>,
   pub location: Option<String>,
@@ -17,7 +17,7 @@ impl db::Table for Team {
   const PREFIX: &'static str = "db:team";
 
   fn id(&self) -> String {
-    self.id.clone()
+    self.number.to_string()
   }
 }
 

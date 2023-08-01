@@ -73,71 +73,67 @@ export default withPermission("Admin", function EventWizardUsers() {
   }, []);
 
   return <React.Fragment>
-    <Card>
-      <Card.Body>
-        <h3> User Management </h3>
+    <h3> User Management </h3>
 
-        <Table className="my-4" striped hover>
-          <thead>
-            <tr>
-              <th> Username </th>
-              <th> Real Name </th>
-              <th> Permissions </th>
-              <th> Actions </th>
-            </tr>
-          </thead>
-          <tbody>
-            {
-              users.map(user => <tr>
-                <td> { user.username } </td>
-                <td> { user.realname } </td>
-                <td>
-                  <Typeahead
-                    id={`role-typeahead-${user.username}`}
-                    multiple
-                    options={Object.keys(PERMISSIONS)}
-                    selected={user.permissions}
-                    onChange={(perms) => {
-                      call<"user/modify_user">("user/modify_user", { user: { ...user, permissions: perms } as any })
-                        .then(refreshUsers)
-                        .catch(addError);
-                    }}
-                    size="sm"
-                  />
-                </td>
-                <td>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    disabled={user.permissions.includes("Admin")}
-                    onClick={() => withConfirm(() => call<"user/delete_user">("user/delete_user", { user_id: user.username }).then(refreshUsers))}
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </Button> &nbsp;
-                  <Button
-                    size="sm"
-                    variant="info"
-                    onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, pin_hash: null } }).catch(addError))}
-                  >
-                    Reset PIN
-                  </Button> &nbsp;
-                  <Button
-                    size="sm"
-                    variant="warning"
-                    onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, tokens: [] } }))}
-                  >
-                    Invalidate Tokens
-                  </Button>
-                </td>
-              </tr>)
-            }
-          </tbody>
-        </Table>
+    <Table className="my-4" striped hover>
+      <thead>
+        <tr>
+          <th> Username </th>
+          <th> Real Name </th>
+          <th> Permissions </th>
+          <th> Actions </th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          users.map(user => <tr>
+            <td> { user.username } </td>
+            <td> { user.realname } </td>
+            <td>
+              <Typeahead
+                id={`role-typeahead-${user.username}`}
+                multiple
+                options={Object.keys(PERMISSIONS)}
+                selected={user.permissions}
+                onChange={(perms) => {
+                  call<"user/modify_user">("user/modify_user", { user: { ...user, permissions: perms } as any })
+                    .then(refreshUsers)
+                    .catch(addError);
+                }}
+                size="sm"
+              />
+            </td>
+            <td>
+              <Button
+                size="sm"
+                variant="danger"
+                disabled={user.permissions.includes("Admin")}
+                onClick={() => withConfirm(() => call<"user/delete_user">("user/delete_user", { user_id: user.username }).then(refreshUsers))}
+              >
+                <FontAwesomeIcon icon={faTrash} />
+              </Button> &nbsp;
+              <Button
+                size="sm"
+                variant="info"
+                onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, pin_hash: null } }).catch(addError))}
+              >
+                Reset PIN
+              </Button> &nbsp;
+              <Button
+                size="sm"
+                variant="warning"
+                onClick={() => withConfirm(() => call<"user/modify_user">("user/modify_user", { user: { ...user, tokens: [] } }))}
+              >
+                Invalidate Tokens
+              </Button>
+            </td>
+          </tr>)
+        }
+      </tbody>
+    </Table>
 
-        <Button variant="success" onClick={() => newUserModal(call).then(refreshUsers)}>
-          Add User
-        </Button>
-      </Card.Body>
-    </Card>
+    <Button variant="success" onClick={() => newUserModal(call).then(refreshUsers)}>
+      Add User
+    </Button>
   </React.Fragment>
 })

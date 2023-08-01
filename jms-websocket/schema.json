@@ -227,6 +227,40 @@
         }
       ]
     },
+    "EventDetails": {
+      "type": "object",
+      "required": [
+        "av_chroma_key",
+        "av_event_colour",
+        "webcasts"
+      ],
+      "properties": {
+        "av_chroma_key": {
+          "type": "string"
+        },
+        "av_event_colour": {
+          "type": "string"
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "event_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "webcasts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "Permission": {
       "type": "string",
       "enum": [
@@ -234,6 +268,99 @@
         "FTA",
         "FTAA"
       ]
+    },
+    "ScheduleBlock": {
+      "type": "object",
+      "required": [
+        "block_type",
+        "cycle_time",
+        "end_time",
+        "id",
+        "name",
+        "start_time"
+      ],
+      "properties": {
+        "block_type": {
+          "$ref": "#/definitions/ScheduleBlockType"
+        },
+        "cycle_time": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "end_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "start_time": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ScheduleBlockType": {
+      "type": "string",
+      "enum": [
+        "General",
+        "Qualification",
+        "Playoff"
+      ]
+    },
+    "Team": {
+      "type": "object",
+      "required": [
+        "display_number",
+        "number",
+        "schedule"
+      ],
+      "properties": {
+        "affiliation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "display_number": {
+          "type": "string"
+        },
+        "location": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "schedule": {
+          "type": "boolean"
+        },
+        "wpakey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     },
     "User": {
       "type": "object",
@@ -299,10 +426,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/ArenaState"
+              "$ref": "#/definitions/EventDetails"
             },
             "path": {
-              "const": "arena/state"
+              "const": "event/details"
             }
           }
         },
@@ -319,12 +446,120 @@
               "const": "debug/test_publish"
             }
           }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ArenaState"
+            },
+            "path": {
+              "const": "arena/state"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
+            },
+            "path": {
+              "const": "team/teams"
+            }
+          }
         }
       ]
     },
     "WebsocketRpcRequest": {
       "title": "WebsocketRpcRequest",
       "oneOf": [
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "details"
+              ],
+              "properties": {
+                "details": {
+                  "$ref": "#/definitions/EventDetails"
+                }
+              }
+            },
+            "path": {
+              "const": "event/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "event/schedule_get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "signal"
+              ],
+              "properties": {
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/signal"
+            }
+          }
+        },
         {
           "required": [
             "data",
@@ -463,16 +698,16 @@
           "properties": {
             "data": {
               "required": [
-                "signal"
+                "team"
               ],
               "properties": {
-                "signal": {
-                  "$ref": "#/definitions/ArenaSignal"
+                "team": {
+                  "$ref": "#/definitions/Team"
                 }
               }
             },
             "path": {
-              "const": "arena/signal"
+              "const": "team/update"
             }
           }
         },
@@ -484,16 +719,18 @@
           "properties": {
             "data": {
               "required": [
-                "in_text"
+                "team_number"
               ],
               "properties": {
-                "in_text": {
-                  "type": "string"
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
                 }
               }
             },
             "path": {
-              "const": "debug/test_endpoint"
+              "const": "team/delete"
             }
           }
         }
@@ -502,6 +739,65 @@
     "WebsocketRpcResponse": {
       "title": "WebsocketRpcResponse",
       "oneOf": [
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/EventDetails"
+            },
+            "path": {
+              "const": "event/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ScheduleBlock"
+              }
+            },
+            "path": {
+              "const": "event/schedule_get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_endpoint"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "arena/signal"
+            }
+          }
+        },
         {
           "required": [
             "data",
@@ -610,10 +906,10 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "$ref": "#/definitions/Team"
             },
             "path": {
-              "const": "arena/signal"
+              "const": "team/update"
             }
           }
         },
@@ -624,10 +920,10 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "type": "null"
             },
             "path": {
-              "const": "debug/test_endpoint"
+              "const": "team/delete"
             }
           }
         }
