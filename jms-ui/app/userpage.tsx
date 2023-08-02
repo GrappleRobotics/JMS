@@ -122,7 +122,7 @@ const TopNavbar = React.forwardRef<HTMLElement>(function TopNavbar(props: {}, re
 
 const BottomNavbar = React.forwardRef<HTMLElement>(function(props: {}, ref) {
   const { subscribe, unsubscribe, call } = useWebsocket();
-  const [ components, setComponents ] = useState<JmsComponent[]>([]);
+  const [ components, setComponents ] = useState<[string, JmsComponent[]]>([]);
 
   useEffect(() => {
     let cbs = [
@@ -134,7 +134,7 @@ const BottomNavbar = React.forwardRef<HTMLElement>(function(props: {}, ref) {
   return <Row ref={ref} className="navbar-bottom">
     <Col>
       {
-        components.sort((a, b) => a.symbol.localeCompare(b.symbol)).map(c => <ComponentIndicator key={c.id} component={c} />)
+        components?.[1]?.sort((a, b) => a.symbol.localeCompare(b.symbol))?.map(c => <ComponentIndicator key={c.id} time={moment(components[0])} component={c} />)
       }
     </Col>
     <Col md="auto">
@@ -173,16 +173,9 @@ async function estopModal(call: JmsWebsocket["call"], addError: (e: string) => v
   }
 }
 
-function ComponentIndicator({ component }: { component: JmsComponent }) {
-  let [ now, setNow ] = useState(moment());
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(moment()), 100);
-    return () => clearInterval(interval);
-  }, []);
-
+function ComponentIndicator({ time, component }: { time: moment.Moment, component: JmsComponent }) {
   return <SimpleTooltip id={ component.id } tip={component.name}>
-    <div className="jms-component" data-heartbeat={now.diff(moment(component.last_tick)) < component.timeout_ms}>
+    <div className="jms-component" data-heartbeat={time.diff(moment(component.last_tick)) <= component.timeout_ms}>
       { component.symbol }
     </div>
   </SimpleTooltip>

@@ -80,7 +80,6 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
     const mutate = type === "number" ? ((v: string | null) => v === null ? null : parseInt(v)) : (v: string | null) => (v === null ? null : v);
     
     return <BufferedFormControl
-      autofocus
       type={type}
       size="sm"
       // @ts-ignore
@@ -149,7 +148,7 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
       </thead>
       <tbody>
         <tr>
-          <td> <NewTeamField field="team_number" name="9999" type="number" /> </td>
+          <td> <NewTeamField autoFocus field="team_number" name="9999" type="number" /> </td>
           <td> <NewTeamField field="display_number" name="9999a" /> </td>
           <td> <NewTeamField field="name" name="Team Name" /> </td>
           <td> <NewTeamField field="affiliation" name="Affiliation..." /> </td>
@@ -159,7 +158,7 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
           <td></td>
         </tr>
         {
-          teams.sort(t => t.number).map((t, i) => {
+          teams.sort((a, b) => a.number - b.number).map((t, i) => {
             return <tr key={t.number}>
               <td> {t.number} </td>
               <td> <EditTeamField i={i} field="display_number" /> </td>

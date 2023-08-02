@@ -155,8 +155,24 @@ export type UserUpdate =
  */
 export type WebsocketPublish =
   | {
-      data: JmsComponent[];
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      data: [string, JmsComponent[]];
       path: "components/components";
+    }
+  | {
+      data: EventDetails;
+      path: "event/details";
+    }
+  | {
+      data: string;
+      path: "debug/test_publish";
+    }
+  | {
+      data: Team[];
+      path: "team/teams";
     }
   | {
       data: ArenaState;
@@ -173,36 +189,12 @@ export type WebsocketPublish =
   | {
       data: DriverStationReport[];
       path: "arena/ds";
-    }
-  | {
-      data: string;
-      path: "debug/test_publish";
-    }
-  | {
-      data: EventDetails;
-      path: "event/details";
-    }
-  | {
-      data: Team[];
-      path: "team/teams";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcRequest".
  */
 export type WebsocketRpcRequest =
-  | {
-      data: {
-        signal: ArenaSignal;
-      };
-      path: "arena/signal";
-    }
-  | {
-      data: {
-        in_text: string;
-      };
-      path: "debug/test_endpoint";
-    }
   | {
       data: {
         details: EventDetails;
@@ -261,6 +253,12 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
+    }
+  | {
+      data: {
         affiliation: string | null;
         display_number: string;
         location: string | null;
@@ -281,20 +279,18 @@ export type WebsocketRpcRequest =
         team_number: number;
       };
       path: "team/delete";
+    }
+  | {
+      data: {
+        signal: ArenaSignal;
+      };
+      path: "arena/signal";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcResponse".
  */
 export type WebsocketRpcResponse =
-  | {
-      data: null;
-      path: "arena/signal";
-    }
-  | {
-      data: string;
-      path: "debug/test_endpoint";
-    }
   | {
       data: EventDetails;
       path: "event/update";
@@ -336,6 +332,10 @@ export type WebsocketRpcResponse =
       path: "user/delete";
     }
   | {
+      data: string;
+      path: "debug/test_endpoint";
+    }
+  | {
       data: Team;
       path: "team/new_team";
     }
@@ -346,6 +346,10 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "team/delete";
+    }
+  | {
+      data: null;
+      path: "arena/signal";
     };
 
 export interface TempWebsocketRootSchema {
