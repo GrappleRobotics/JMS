@@ -1,6 +1,6 @@
 "use client";
 import { useWebsocket } from "./support/ws-component";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import { Alert, Button, Col, Container, Nav, Navbar, Row } from "react-bootstrap";
@@ -22,17 +22,41 @@ interface UserPageProps {
 
 export default function UserPage(props: UserPageProps) {
   const { error, removeError } = useErrors();
+  const topRef = useRef<HTMLElement>(null);
+  const bottomRef = useRef<HTMLElement>(null);
+
+  const [ viewportPos, setViewportPos ] = useState({ top_height: 0, bottom_top: 0 });
 
   const alert = error !== null && <Alert className="m-3" variant="danger" dismissible onClose={() => removeError()}>{ error }</Alert>
 
+  useEffect(() => {
+    const ob = new ResizeObserver(() => {
+      setViewportPos({
+        top_height: topRef?.current?.clientHeight || 0,
+        bottom_top: bottomRef?.current?.getBoundingClientRect()?.y || 0
+      })
+    });
+    ob.observe(topRef?.current!);
+    ob.observe(bottomRef?.current!);
+    return () => ob.disconnect();
+  })
+
   return <React.Fragment>
-    <TopNavbar />
-    {
-      props.container ? 
-        <Container className={props.space ? "mt-3" : ""}> { alert } { props.children } </Container> 
-        : <React.Fragment> { alert } { props.children } </React.Fragment>
-    }
-    <BottomNavbar />
+    <TopNavbar ref={topRef} />
+    <div className="viewport" style={{
+      position: 'fixed',
+      top: viewportPos.top_height,
+      height: viewportPos.bottom_top - viewportPos.top_height,
+      width: '100vw',
+      overflowY: "auto"
+    }}>
+      {
+        props.container ? 
+          <Container className={props.space ? "mt-3" : ""}> { alert } { props.children } </Container> 
+          : <React.Fragment> { alert } { props.children } </React.Fragment>
+      }
+    </div>
+    <BottomNavbar ref={bottomRef} />
   </React.Fragment>
 };
 
@@ -47,7 +71,7 @@ const ARENA_STATE_MAP: { [k in ArenaState["state"]]: string } = {
   "Reset": "Resetting..."
 };
 
-export function TopNavbar() {
+const TopNavbar = React.forwardRef<HTMLElement>(function TopNavbar(props: {}, ref) {
   const { user, connected, logout, subscribe, unsubscribe, call } = useWebsocket();
   const { addError } = useErrors();
 
@@ -68,7 +92,7 @@ export function TopNavbar() {
       state_comment = `${currentMatch.state} (T-${currentMatch.remaining.toFixed(0)})`;
   }
 
-  return <Navbar className="navbar-top" data-connected={connected} data-arena-state={arenaState?.state} data-match-state={currentMatch?.state} variant="dark">
+  return <Navbar ref={ref} className="navbar-top" data-connected={connected} data-arena-state={arenaState?.state} data-match-state={currentMatch?.state} variant="dark">
     <Container>
       <PermissionGate permissions={["Estop"]}>
         { arenaState?.state === "Estop" ? <PermissionGate permissions={["FTA"]}>
@@ -94,9 +118,9 @@ export function TopNavbar() {
       </Navbar.Collapse>
     </Container>
   </Navbar>;
-}
+});
 
-export function BottomNavbar() {
+const BottomNavbar = React.forwardRef<HTMLElement>(function(props: {}, ref) {
   const { subscribe, unsubscribe, call } = useWebsocket();
   const [ components, setComponents ] = useState<JmsComponent[]>([]);
 
@@ -107,10 +131,10 @@ export function BottomNavbar() {
     return () => unsubscribe(cbs);
   }, []);
 
-  return <Row className="navbar-bottom">
+  return <Row ref={ref} className="navbar-bottom">
     <Col>
       {
-        components.sort((a, b) => a.symbol.localeCompare(b.symbol)).map(c => <ComponentIndicator component={c} />)
+        components.sort((a, b) => a.symbol.localeCompare(b.symbol)).map(c => <ComponentIndicator key={c.id} component={c} />)
       }
     </Col>
     <Col md="auto">
@@ -119,7 +143,7 @@ export function BottomNavbar() {
     <Col>
     </Col>
   </Row>
-}
+})
 
 async function estopModal(call: JmsWebsocket["call"], addError: (e: string) => void) {
   const subtitle = <p className="estop-subtitle text-muted">
