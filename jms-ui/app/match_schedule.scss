@@ -1,0 +1,41 @@
+@import "./variables.scss";
+
+.table-striped > * > tr:nth-child(odd) {
+  &:not([data-played]) {
+    > td, th {
+      @each $alliance in $alliances {
+        &[data-alliance=#{$alliance}] {
+          background-color: lighten(theme-color($alliance), 5%);
+          color: white;
+        }
+      }
+    }
+  }
+
+  &[data-played] {
+    > td, th {
+      background-color: rgb(70, 70, 70);
+      font-style: italic;
+    }
+  }
+}
+
+.table-striped > * > tr:nth-child(even) {
+  &:not([data-played]) {
+    > td, th {
+      @each $alliance in $alliances {
+        &[data-alliance=#{$alliance}] {
+          background-color: lighten(theme-color($alliance), 15%);
+          color: white;
+        }
+      }
+    }
+  }
+
+  &[data-played] {
+    > td, th {
+      background-color: rgb(82, 82, 82);
+      font-style: italic;
+    }
+  }
+}

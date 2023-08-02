@@ -52,13 +52,22 @@ impl ScheduleBlock {
     }
   }
 
-  pub fn num_qual_matches(&self) -> usize {
-    let duration = self.end_time - self.start_time;
-    match &self.block_type {
-      ScheduleBlockType::Qualification { cycle_time } => {
-        (duration.num_seconds() / cycle_time.0.num_seconds()) as usize
-      },
-      _ => 0,
+  pub fn num_qual_matches(&self, last_generated_qual_match_time: Option<chrono::DateTime<chrono::Local>>) -> usize {
+    let mut start = self.start_time;
+    if let Some(last) = last_generated_qual_match_time {
+      start = start.max(last);
+    }
+    let duration = self.end_time - start;
+
+    if duration < chrono::Duration::zero() {
+      return 0;
+    } else {
+      match &self.block_type {
+        ScheduleBlockType::Qualification { cycle_time } => {
+          (duration.num_seconds() / cycle_time.0.num_seconds()) as usize
+        },
+        _ => 0,
+      }
     }
   }
 

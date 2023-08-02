@@ -400,6 +400,110 @@
         }
       }
     },
+    "Match": {
+      "type": "object",
+      "required": [
+        "blue_teams",
+        "id",
+        "match_number",
+        "match_type",
+        "name",
+        "played",
+        "ready",
+        "red_teams",
+        "set_number",
+        "start_time"
+      ],
+      "properties": {
+        "blue_alliance": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "blue_teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        },
+        "id": {
+          "type": "string"
+        },
+        "match_number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "match_subtype": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/MatchSubtype"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "match_type": {
+          "$ref": "#/definitions/MatchType"
+        },
+        "name": {
+          "type": "string"
+        },
+        "played": {
+          "type": "boolean"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "red_alliance": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "red_teams": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "uint",
+            "minimum": 0.0
+          }
+        },
+        "set_number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "start_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "winner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Alliance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
     "MatchPlayState": {
       "type": "string",
       "enum": [
@@ -411,6 +515,22 @@
         "Cooldown",
         "Complete",
         "Fault"
+      ]
+    },
+    "MatchSubtype": {
+      "type": "string",
+      "enum": [
+        "Quarterfinal",
+        "Semifinal",
+        "Final"
+      ]
+    },
+    "MatchType": {
+      "type": "string",
+      "enum": [
+        "Test",
+        "Qualification",
+        "Playoff"
       ]
     },
     "Permission": {
@@ -426,6 +546,25 @@
         "MatchFlow",
         "Estop"
       ]
+    },
+    "QualsMatchGeneratorParams": {
+      "type": "object",
+      "required": [
+        "station_anneal_steps",
+        "team_anneal_steps"
+      ],
+      "properties": {
+        "station_anneal_steps": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "team_anneal_steps": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
     },
     "RobotState": {
       "type": "string",
@@ -973,10 +1112,24 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "type": "array",
+              "items": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/JmsComponent"
+                  }
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
             },
             "path": {
-              "const": "debug/test_publish"
+              "const": "components/components"
             }
           }
         },
@@ -987,10 +1140,65 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/EventDetails"
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Match"
+              }
             },
             "path": {
-              "const": "event/details"
+              "const": "matches/matches"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Match"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "path": {
+              "const": "matches/next"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "boolean"
+            },
+            "path": {
+              "const": "matches/generator_busy"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
+            },
+            "path": {
+              "const": "team/teams"
             }
           }
         },
@@ -1070,24 +1278,10 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/JmsComponent"
-                  }
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2
+              "$ref": "#/definitions/EventDetails"
             },
             "path": {
-              "const": "components/components"
+              "const": "event/details"
             }
           }
         },
@@ -1098,13 +1292,10 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
+              "type": "string"
             },
             "path": {
-              "const": "team/teams"
+              "const": "debug/test_publish"
             }
           }
         }
@@ -1121,16 +1312,37 @@
           "properties": {
             "data": {
               "required": [
-                "in_text"
+                "match_id"
               ],
               "properties": {
-                "in_text": {
+                "match_id": {
                   "type": "string"
                 }
               }
             },
             "path": {
-              "const": "debug/test_endpoint"
+              "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "params"
+              ],
+              "properties": {
+                "params": {
+                  "$ref": "#/definitions/QualsMatchGeneratorParams"
+                }
+              }
+            },
+            "path": {
+              "const": "matches/gen_quals"
             }
           }
         },
@@ -1311,6 +1523,128 @@
           "properties": {
             "data": {
               "required": [
+                "affiliation",
+                "display_number",
+                "location",
+                "name",
+                "team_number"
+              ],
+              "properties": {
+                "affiliation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "display_number": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "team_number",
+                "updates"
+              ],
+              "properties": {
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                },
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/TeamUpdate"
+                  }
+                }
+              }
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "team_number"
+              ],
+              "properties": {
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "path": {
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "signal"
+              ],
+              "properties": {
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/signal"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
                 "details"
               ],
               "properties": {
@@ -1430,117 +1764,16 @@
           "properties": {
             "data": {
               "required": [
-                "signal"
+                "in_text"
               ],
               "properties": {
-                "signal": {
-                  "$ref": "#/definitions/ArenaSignal"
-                }
-              }
-            },
-            "path": {
-              "const": "arena/signal"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "affiliation",
-                "display_number",
-                "location",
-                "name",
-                "team_number"
-              ],
-              "properties": {
-                "affiliation": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "display_number": {
+                "in_text": {
                   "type": "string"
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
                 }
               }
             },
             "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "team_number",
-                "updates"
-              ],
-              "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                },
-                "updates": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/TeamUpdate"
-                  }
-                }
-              }
-            },
-            "path": {
-              "const": "team/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "team_number"
-              ],
-              "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "path": {
-              "const": "team/delete"
+              "const": "debug/test_endpoint"
             }
           }
         }
@@ -1556,10 +1789,24 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "type": "null"
             },
             "path": {
-              "const": "debug/test_endpoint"
+              "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "matches/gen_quals"
             }
           }
         },
@@ -1685,6 +1932,62 @@
           ],
           "properties": {
             "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "arena/signal"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "$ref": "#/definitions/EventDetails"
             },
             "path": {
@@ -1758,52 +2061,10 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "type": "string"
             },
             "path": {
-              "const": "arena/signal"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "team/delete"
+              "const": "debug/test_endpoint"
             }
           }
         }

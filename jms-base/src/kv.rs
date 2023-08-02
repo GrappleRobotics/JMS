@@ -54,6 +54,19 @@ impl KVConnection {
     Ok(self.redis.lock().unwrap().hget(key, field)?)
   }
 
+  pub fn set<V: ToRedisArgs>(&self, key: &str, value: V) -> anyhow::Result<()> {
+    self.redis.lock().unwrap().set(key, value)?;
+    Ok(())
+  }
+
+  pub fn get<RV: FromRedisValue>(&self, key: &str) -> anyhow::Result<RV> {
+    Ok(self.redis.lock().unwrap().get(key)?)
+  }
+
+  pub fn exists(&self, key: &str) -> anyhow::Result<bool> {
+    Ok(self.redis.lock().unwrap().exists(key)?)
+  }
+
   pub fn del(&self, key: &str) -> anyhow::Result<()> {
     self.redis.lock().unwrap().del(key)?;
     Ok(())
