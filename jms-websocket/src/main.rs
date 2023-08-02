@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use arena::ArenaWebsocket;
 use clap::{Command, Arg};
+use components::ComponentWebsocket;
 use debug::DebugWebsocket;
 use event::EventWebsocket;
 use jms_base::{mq::MessageQueue, kv::KVConnection};
@@ -10,6 +11,7 @@ use user::UserWebsocket;
 use ws::{Websockets, WebsocketContext};
 
 pub mod arena;
+pub mod components;
 pub mod debug;
 pub mod event;
 pub mod handler;
@@ -43,6 +45,7 @@ async fn main() -> anyhow::Result<()> {
   let mut ws = Websockets::new();
   ws.register(Duration::from_millis(1000), "debug", DebugWebsocket::new()).await;
   ws.register(Duration::from_millis(50), "arena", ArenaWebsocket::new()).await;
+  ws.register(Duration::from_millis(500), "components", ComponentWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "user", UserWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "event", EventWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "team", TeamWebsocket::new()).await;

@@ -4,7 +4,7 @@ use std::{time::Duration, collections::HashMap};
 
 use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY};
 use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue}};
-use jms_core_lib::{models::{AllianceStationId, self}, db::Table};
+use jms_core_lib::{models::{AllianceStationId, self, JmsComponent}, db::Table};
 use log::info;
 use matches::LoadedMatch;
 
@@ -17,7 +17,8 @@ struct Arena {
 
   current_match: Option<LoadedMatch>,
 
-  stations: HashMap<AllianceStationId, AllianceStation>
+  stations: HashMap<AllianceStationId, AllianceStation>,
+  component: JmsComponent
 }
 
 impl Arena {
@@ -29,7 +30,8 @@ impl Arena {
 
       current_match: None,
 
-      stations: HashMap::new()
+      stations: HashMap::new(),
+      component: JmsComponent::new("jms.arena", "JMS-Arena", "A", 500)
     }
   }
 
@@ -208,11 +210,14 @@ impl Arena {
     let mut interval = tokio::time::interval(Duration::from_millis(1000 / 50));
     let mut rpc = self.rpc_handle().await?;
 
+    self.component.insert(&self.kv)?;
+
     loop {
       tokio::select! {
         msg = rpc.next() => self.rpc_process(msg).await?,
         _ = interval.tick() => {
           self.spin_once(None).await?;
+          self.component.tick(&self.kv)?;
         }
       }
     }

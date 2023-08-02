@@ -240,6 +240,8 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
     }
   }
 
+  rpc_body.push(quote!{ _ => unreachable!() });
+
   Ok(quote! {
     #vis struct #ident {
       #(#last_published),*
@@ -304,10 +306,9 @@ fn gen_websocket_handler_impl(t: &ItemTrait) -> syn::Result<proc_macro2::TokenSt
         Ok(to_publish)
       }
 
-      async fn process_rpc_call(&self, ctx: &WebsocketContext, token: &MaybeToken, path: String, msg: Option<serde_json::Value>) -> anyhow::Result<(String, serde_json::Value)> {
+      async fn process_rpc_call(&self, ctx: &WebsocketContext, token: &jms_core_lib::models::MaybeToken, path: String, msg: Option<serde_json::Value>) -> anyhow::Result<(String, serde_json::Value)> {
         match path.as_str() {
-          #(#rpc_body),*,
-          _ => unreachable!()
+          #(#rpc_body),*
         }
       }
     }

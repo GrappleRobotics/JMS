@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY, AllianceStation, SerialisedLoadedMatch, ARENA_MATCH_KEY};
-use jms_core_lib::models::{MaybeToken, AllianceStationId, Permission};
-use jms_driverstation_lib::{DriverStationReport, DS_PREFIX};
+use jms_core_lib::{models::{MaybeToken, Permission}, db::Table};
+use jms_driverstation_lib::DriverStationReport;
 
 use crate::ws::WebsocketContext;
 
@@ -40,14 +40,14 @@ pub trait ArenaWebsocket {
 
   #[publish]
   async fn stations(&self, ctx: &WebsocketContext) -> anyhow::Result<Vec<AllianceStation>> {
-    AllianceStationId::all().iter().map(|id| ctx.kv.json_get(&id.to_kv_key(), "$")).collect()
+    AllianceStation::all(&ctx.kv)
   }
 
   /* Driver Station */
 
   #[publish]
   async fn ds(&self, ctx: &WebsocketContext) -> anyhow::Result<Vec<DriverStationReport>> {
-    ctx.kv.keys(&format!("{}:*", DS_PREFIX))?.iter().map(|x| ctx.kv.json_get(&x, "$")).collect()
+    DriverStationReport::all(&ctx.kv)
   }
 }
 

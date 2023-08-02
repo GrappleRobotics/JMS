@@ -266,7 +266,7 @@ pub fn derive_db_partial_update(input: TokenStream) -> TokenStream {
         _ => panic!("Partials are only derived for structs.")
     };
 
-    let field_updates = fields.map(|(field_vis, field_ident, field_type)| {
+    let field_updates = fields.clone().map(|(field_vis, field_ident, field_type)| {
         let fn_ident = syn::Ident::new(&format!("set_{}", field_ident), field_ident.span());
         let json_path = format!("$.{}", field_ident);
         quote! {
@@ -277,9 +277,21 @@ pub fn derive_db_partial_update(input: TokenStream) -> TokenStream {
         }
     });
 
+    let field_gets = fields.map(|(field_vis, field_ident, field_type)| {
+        let fn_ident = syn::Ident::new(&format!("get_{}", field_ident), field_ident.span());
+        let json_path = format!("$.{}", field_ident);
+
+        quote! {
+            #field_vis fn #fn_ident(id: <Self as Table>::Id, kv: &jms_base::kv::KVConnection) -> anyhow::Result<#field_type> {
+                kv.json_get(&format!("{}:{}", Self::PREFIX, id.to_string()), #json_path)
+            }
+        }
+    });
+
     let out = quote! {
         impl #impl_generics #ident #where_clause {
             #(#field_updates)*
+            #(#field_gets)*
         }
     };
 
