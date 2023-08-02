@@ -67,7 +67,6 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
       ids.push(FromStr::from_str(&key[Self::PREFIX.len() + 1..]).map_err(|e| anyhow::anyhow!("{}", e))?);
     }
     Ok(ids)
-    // Ok(keys.iter().map(|x| x[Self::PREFIX.len() + 1..].to_owned()).collect())
   }
 
   fn all(db: &kv::KVConnection) -> anyhow::Result<Vec<Self>> {
@@ -86,6 +85,10 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
       db.del(&format!("{}:{}", Self::PREFIX, id.to_string())).ok();
     }
     Ok(())
+  }
+
+  fn expire(&self, seconds: usize, db: &kv::KVConnection) -> anyhow::Result<()> {
+    db.expire(&self.key(), seconds)
   }
 }
 

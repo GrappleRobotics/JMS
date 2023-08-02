@@ -1,6 +1,6 @@
-use jms_core_lib::models::AllianceStationId;
+use std::num::ParseIntError;
 
-pub const DS_PREFIX: &'static str = "ds";
+use jms_core_lib::{models::AllianceStationId, db::Table};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum RobotState {
@@ -31,6 +31,16 @@ pub struct DriverStationReport {
   pub rtt: u8,
 
   pub actual_station: Option<AllianceStationId>
+}
+
+impl Table for DriverStationReport {
+  const PREFIX: &'static str = "ds";
+  type Id = u16;
+  type Err = ParseIntError;
+
+  fn id(&self) -> Self::Id {
+    self.team
+  }
 }
 
 #[derive(Debug)]

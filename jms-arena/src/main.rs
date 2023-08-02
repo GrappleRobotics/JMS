@@ -1,6 +1,6 @@
 pub mod matches;
 
-use std::time::Duration;
+use std::{time::Duration, collections::HashMap};
 
 use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY};
 use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue}};
@@ -15,7 +15,9 @@ struct Arena {
   last_state: Option<ArenaState>,
   state: ArenaState,
 
-  current_match: Option<LoadedMatch>
+  current_match: Option<LoadedMatch>,
+
+  stations: HashMap<AllianceStationId, AllianceStation>
 }
 
 impl Arena {
@@ -26,6 +28,8 @@ impl Arena {
       last_state: None,
 
       current_match: None,
+
+      stations: HashMap::new()
     }
   }
 
@@ -48,8 +52,11 @@ impl Arena {
 
   pub async fn reset_stations(&mut self) -> anyhow::Result<()> {
     info!("Resetting Alliance Stations");
+    self.stations.clear();
     for stn in AllianceStationId::all() {
-      self.kv.json_set(&stn.to_kv_key(), "$", &AllianceStation::default(stn))?;
+      let stn_inst = AllianceStation::default(stn);
+      stn_inst.insert(&self.kv)?;
+      self.stations.insert(stn, stn_inst);
     }
     Ok(())
   }
@@ -160,12 +167,12 @@ impl ArenaRPC for Arena {
         // Set teams
         for (i, team) in m.blue_teams.into_iter().enumerate() {
           let id = AllianceStationId::new(models::Alliance::Blue, i + 1);
-          self.kv.json_set(&id.to_kv_key(), "$.team", &team).map_err(|e| e.to_string())?;
+          self.stations.get_mut(&id).ok_or("No Station Available".to_string())?.set_team(team, &self.kv).map_err(|e| e.to_string())?;
         }
 
         for (i, team) in m.red_teams.into_iter().enumerate() {
           let id = AllianceStationId::new(models::Alliance::Red, i + 1);
-          self.kv.json_set(&id.to_kv_key(), "$.team", &team).map_err(|e| e.to_string())?;
+          self.stations.get_mut(&id).ok_or("No Station Available".to_string())?.set_team(team, &self.kv).map_err(|e| e.to_string())?;
         }
         Ok(())
       },

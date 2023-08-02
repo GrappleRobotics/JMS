@@ -210,6 +210,7 @@ pub fn service(_attr: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 /* PARTIALS */
+
 #[proc_macro_derive(Updateable)]
 pub fn derive_updateable(input: TokenStream) -> TokenStream {
     let DeriveInput {
@@ -252,56 +253,35 @@ pub fn derive_updateable(input: TokenStream) -> TokenStream {
     out.into()
 }
 
-// #[proc_macro_derive(Partial)]
-// pub fn derive_partial(input: TokenStream) -> TokenStream {
-//   let DeriveInput {
-//     attrs, vis, ident, generics, data
-//   } = parse_macro_input!(input as DeriveInput);
+#[proc_macro_derive(DbPartialUpdate)]
+pub fn derive_db_partial_update(input: TokenStream) -> TokenStream {
+    let DeriveInput {
+        attrs: _, vis: _, ident, generics, data
+    } = parse_macro_input!(input as DeriveInput);
 
-//   let partial_ident = syn::Ident::new(&format!("{}Partial", ident), ident.span());
+    let (impl_generics, _ty_generics, where_clause) = generics.split_for_impl();
 
-//   let fields = match data {
-//     syn::Data::Struct(ref s) => s.fields.iter().filter_map(|field| field.ident.as_ref().map(|ident| ( field.vis.clone(), ident.clone(), field.ty.clone() ))),
-//     _ => panic!("Partials are only derived for structs.")
-//   };
+    let fields = match data {
+        syn::Data::Struct(ref s) => s.fields.iter().filter_map(|field| field.ident.as_ref().map(|ident| ( field.vis.clone(), ident.clone(), field.ty.clone() ))),
+        _ => panic!("Partials are only derived for structs.")
+    };
 
-//   let mapped_fields = fields.clone().map(|(vis, ident, ty)| quote! {
-//     #vis #ident: core::option::Option<#ty>
-//   });
+    let field_updates = fields.map(|(field_vis, field_ident, field_type)| {
+        let fn_ident = syn::Ident::new(&format!("set_{}", field_ident), field_ident.span());
+        let json_path = format!("$.{}", field_ident);
+        quote! {
+            #field_vis fn #fn_ident(&mut self, #field_ident: #field_type, kv: &jms_base::kv::KVConnection) -> anyhow::Result<()> {
+                self.#field_ident = #field_ident;
+                kv.json_set(&self.key(), #json_path, &self.#field_ident)
+            }
+        }
+    });
 
-//   let update_inner = fields.clone().map(|(_, ident, _)| quote! {
-//     if let Some(#ident) = self.#ident {
-//       full.#ident = #ident;
-//     }
-//   });
+    let out = quote! {
+        impl #impl_generics #ident #where_clause {
+            #(#field_updates)*
+        }
+    };
 
-//   let materialise_inner = fields.clone().map(|(_, ident, _)| {
-//     let ident_str = ident.to_string();
-//     quote! {
-//       #ident: self.#ident.ok_or(anyhow::anyhow!("Missing field: {}", #ident_str))?
-//     }
-//   });
-
-//   let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-//   let out = quote! {
-//     #(#attrs)*
-//     #vis struct #partial_ident #ty_generics #where_clause {
-//       #(#mapped_fields),*
-//     }
-
-//     impl #impl_generics #partial_ident #ty_generics #where_clause {
-//       pub fn apply(self, full: &mut #ident) {
-//         #(#update_inner)*
-//       }
-
-//       pub fn materialise(self) -> anyhow::Result<#ident> {
-//         Ok(#ident {
-//           #(#materialise_inner),*
-//         })
-//       }
-//     }
-//   };
-
-//   out.into()
-// }
+    out.into()
+}

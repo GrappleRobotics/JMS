@@ -1,4 +1,4 @@
-use std::convert::Infallible;
+use std::{convert::Infallible, str::FromStr, num::ParseIntError, path::Display};
 
 use chrono::Local;
 
@@ -12,6 +12,21 @@ use crate::db::Table;
 #[serde(rename_all="snake_case")]
 pub enum Alliance {
   Blue, Red
+}
+
+#[derive(Debug, Clone)]
+pub enum AllianceParseError {
+  InvalidAlliance(String),
+  InvalidStation(ParseIntError)
+}
+
+impl std::fmt::Display for AllianceParseError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      AllianceParseError::InvalidAlliance(s) => write!(f, "Invalid Alliance: {}", s),
+      AllianceParseError::InvalidStation(e) => write!(f, "Could not parse station int: {}", e),
+    }
+  }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Hash, schemars::JsonSchema)]
@@ -51,15 +66,37 @@ impl AllianceStationId {
     format!("{}{}", self.alliance.to_string().to_lowercase(), self.station)
   }
 
-  pub fn to_kv_key(&self) -> String {
-    format!("arena:station:{}", self.to_id())
-  }
-
   pub fn all() -> Vec<AllianceStationId> {
     vec![
       Self::new(Alliance::Blue, 1), Self::new(Alliance::Blue, 2), Self::new(Alliance::Blue, 3),
       Self::new(Alliance::Red, 1), Self::new(Alliance::Red, 2), Self::new(Alliance::Red, 3),
     ]
+  }
+}
+
+impl ToString for AllianceStationId {
+  fn to_string(&self) -> String {
+    self.to_id()
+  }
+}
+
+impl FromStr for AllianceStationId {
+  type Err = AllianceParseError;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    if s.len() < 4 {
+      return Err(AllianceParseError::InvalidAlliance(s.to_owned()))
+    }
+
+    if &s[0..=2] == "red" && s.len() > 3 {
+      let n: usize = s[3..].parse().map_err(|e| AllianceParseError::InvalidStation(e))?;
+      Ok(AllianceStationId { alliance: Alliance::Red, station: n })
+    } else if &s[0..=3] == "blue" && s.len() > 4 {
+      let n: usize = s[4..].parse().map_err(|e| AllianceParseError::InvalidStation(e))?;
+      Ok(AllianceStationId { alliance: Alliance::Blue, station: n })
+    } else {
+      Err(AllianceParseError::InvalidAlliance(s.to_owned()))
+    }
   }
 }
 

@@ -44,7 +44,7 @@ const ARENA_STATE_MAP: { [k in ArenaState["state"]]: string } = {
   "Reset": "Resetting..."
 };
 
-function TopNavbar() {
+export function TopNavbar() {
   const { user, connected, logout, subscribe, unsubscribe, call } = useWebsocket();
   const { addError } = useErrors();
 

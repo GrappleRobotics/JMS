@@ -4,9 +4,9 @@ use chrono::Local;
 use futures::{StreamExt, SinkExt};
 use jms_arena_lib::{AllianceStation, ARENA_STATE_KEY, ArenaState, SerialisedLoadedMatch, ARENA_MATCH_KEY, MatchPlayState};
 use jms_base::kv::KVConnection;
-use jms_core_lib::models::{AllianceStationId, Alliance, MatchType};
-use jms_driverstation_lib::{RobotState, TournamentLevel, DriverStationReport, DS_PREFIX};
-use log::{error, info};
+use jms_core_lib::{models::{AllianceStationId, Alliance}, db::Table};
+use jms_driverstation_lib::{RobotState, TournamentLevel, DriverStationReport};
+use log::error;
 use tokio::{net::{TcpStream, UdpSocket}, sync::broadcast, time::{Instant, self}};
 use tokio_util::{codec::Framed, udp::UdpFramed};
 
@@ -28,7 +28,7 @@ pub enum DSConnectionState {
 }
 
 pub struct DSConnection {
-  pub team: Option<u16>,
+  pub team: Option<usize>,
   pub state: DSConnectionState,
   pub addr_tcp: SocketAddr,
   addr_udp: SocketAddr, // UDP Outgoing
@@ -74,7 +74,7 @@ impl DSConnection {
   // a mismatch here. If the IP is static, the DS packets will never
   // make it to the FMS as the interface will not accept the packets
   // (outside the appropriate subnet).
-  pub fn team_by_ip(&self) -> Option<u16> {
+  pub fn team_by_ip(&self) -> Option<usize> {
     match self.addr_tcp {
       SocketAddr::V4(v4) => {
         let ip = v4.ip();
@@ -84,7 +84,7 @@ impl DSConnection {
           None
         } else {
           // We're on a team network
-          Some((hi as u16) * 100 + (lo as u16))
+          Some((hi as usize) * 100 + (lo as usize))
         }
       }
       invalid => {
@@ -149,7 +149,7 @@ impl DSConnection {
         // UDP Data
         udp_frame = self.udp_rx.recv() => {
           match udp_frame {
-            Ok(pkt) if Some(pkt.team) == self.team => {
+            Ok(pkt) if Some(pkt.team as usize) == self.team => {
               self.last_packet_time = Instant::now();
               self._decode_udp_update(pkt).await;
             },
@@ -197,7 +197,7 @@ impl DSConnection {
     // Connection closed, it'll age off.
   }
 
-  async fn _encode_udp_update(&self, _team: u16) -> Option<Fms2DsUDP> {
+  async fn _encode_udp_update(&self, _team: usize) -> Option<Fms2DsUDP> {
     if let Some(station) = self._get_desired_alliance_station().await {
       if let Ok(arena_state) = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$") {
         let (command_enable, command_state, remaining) = match self.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$") {
@@ -281,15 +281,14 @@ impl DSConnection {
       }
     }
 
-    let key = format!("{}:{}", DS_PREFIX, pkt.team);
-    self.kv.json_set(&key, "$", &report).ok();
-    self.kv.expire(&key, 2).ok();
+    report.insert(&self.kv).ok();
+    report.expire(2, &self.kv).ok();
   }
 
   fn _process_tcp_tag(&mut self, tag: &Ds2FmsTCPTags) {
     match tag {
       Ds2FmsTCPTags::TeamNumber(team) => {
-        self.team = Some(*team);
+        self.team = Some(*team as usize);
       }
       _ => (), // Other, don't worry about it for now
     }
@@ -337,13 +336,13 @@ impl DSConnection {
     self._get_alliance_station(self.team_by_ip()).await
   }
 
-  async fn _get_alliance_station(&self, team: Option<u16>) -> Option<AllianceStation> {
+  async fn _get_alliance_station(&self, team: Option<usize>) -> Option<AllianceStation> {
     if team.is_none() {
       return None;
     }
 
     for stn_id in AllianceStationId::all() {
-      let stn: anyhow::Result<AllianceStation> = self.kv.json_get(&stn_id.to_kv_key(), "$");
+      let stn = AllianceStation::get(&stn_id, &self.kv);
       match stn {
         Ok(s) if s.team == team => return Some(s),
         _ => ()

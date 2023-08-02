@@ -1,3 +1,6 @@
+mod components;
+pub use components::*;
+
 mod team;
 pub use team::*;
 

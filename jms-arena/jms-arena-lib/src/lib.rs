@@ -1,4 +1,4 @@
-use jms_core_lib::{models::AllianceStationId, db::DBDuration};
+use jms_core_lib::{models::{AllianceStationId, AllianceParseError}, db::{DBDuration, Table}};
 
 pub const ARENA_STATE_KEY: &'static str = "arena:state";
 pub const ARENA_MATCH_KEY: &'static str = "arena:match";
@@ -52,10 +52,10 @@ pub struct SerialisedLoadedMatch {
 }
 
 /* ALLIANCE STATIONS */
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(jms_macros::DbPartialUpdate, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct AllianceStation {
   pub id: AllianceStationId,
-  pub team: Option<u16>,
+  pub team: Option<usize>,
   pub bypass: bool,
   pub estop: bool,
   pub astop: bool
@@ -70,6 +70,16 @@ impl AllianceStation {
       estop: false,
       astop: false
     }
+  }
+}
+
+impl Table for AllianceStation {
+  const PREFIX: &'static str = "arena:station";
+  type Id = AllianceStationId;
+  type Err = AllianceParseError;
+
+  fn id(&self) -> Self::Id {
+    self.id.clone()
   }
 }
 
