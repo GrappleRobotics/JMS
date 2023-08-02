@@ -30,7 +30,6 @@ export default class BufferedFormControl extends React.Component<BufferedProps, 
     instant: false,
     enter: true,
     updateOnDefocus: true,
-    resetOnEnter: false
   };
 
   private controlRef = React.createRef<HTMLInputElement>();

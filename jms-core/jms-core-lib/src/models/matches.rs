@@ -286,7 +286,7 @@ where
   SerializedMatch::from(m.clone()).serialize(s)
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum PlayoffMode {
   Bracket,
   DoubleBracket,
