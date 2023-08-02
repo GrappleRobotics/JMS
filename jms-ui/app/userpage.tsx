@@ -3,14 +3,16 @@ import { useWebsocket } from "./support/ws-component";
 import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
-import { Alert, Button, Container, Nav, Navbar } from "react-bootstrap";
+import { Alert, Button, Col, Container, Nav, Navbar, Row } from "react-bootstrap";
 import "./userpage.scss";
 import Link from "next/link";
 import { useErrors } from "./support/errors";
-import { ArenaState, SerialisedLoadedMatch } from "./ws-schema";
+import { ArenaState, JmsComponent, SerialisedLoadedMatch } from "./ws-schema";
 import { PermissionGate } from "./support/permissions";
 import confirmBool from "./components/Confirm";
 import JmsWebsocket from "./support/ws";
+import moment from "moment";
+import SimpleTooltip from "./components/SimpleTooltip";
 
 interface UserPageProps {
   container?: boolean,
@@ -30,6 +32,7 @@ export default function UserPage(props: UserPageProps) {
         <Container className={props.space ? "mt-3" : ""}> { alert } { props.children } </Container> 
         : <React.Fragment> { alert } { props.children } </React.Fragment>
     }
+    <BottomNavbar />
   </React.Fragment>
 };
 
@@ -93,6 +96,31 @@ export function TopNavbar() {
   </Navbar>;
 }
 
+export function BottomNavbar() {
+  const { subscribe, unsubscribe, call } = useWebsocket();
+  const [ components, setComponents ] = useState<JmsComponent[]>([]);
+
+  useEffect(() => {
+    let cbs = [
+      subscribe<"components/components">("components/components", setComponents)
+    ];
+    return () => unsubscribe(cbs);
+  }, []);
+
+  return <Row className="navbar-bottom">
+    <Col>
+      {
+        components.sort((a, b) => a.symbol.localeCompare(b.symbol)).map(c => <ComponentIndicator component={c} />)
+      }
+    </Col>
+    <Col md="auto">
+      1h 53m BEHIND
+    </Col>
+    <Col>
+    </Col>
+  </Row>
+}
+
 async function estopModal(call: JmsWebsocket["call"], addError: (e: string) => void) {
   const subtitle = <p className="estop-subtitle text-muted">
     Anyone can E-Stop the match. <br />
@@ -119,4 +147,19 @@ async function estopModal(call: JmsWebsocket["call"], addError: (e: string) => v
   if (result) {
     call<"arena/signal">("arena/signal", { signal: "Estop" }).catch(addError);
   }
+}
+
+function ComponentIndicator({ component }: { component: JmsComponent }) {
+  let [ now, setNow ] = useState(moment());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(moment()), 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <SimpleTooltip id={ component.id } tip={component.name}>
+    <div className="jms-component" data-heartbeat={now.diff(moment(component.last_tick)) < component.timeout_ms}>
+      { component.symbol }
+    </div>
+  </SimpleTooltip>
 }

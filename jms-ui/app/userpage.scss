@@ -45,3 +45,30 @@
   font-size: 1.25rem;
   text-align: center;
 }
+
+.navbar-bottom {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  margin: 0;
+  background-color: theme-color("dark");
+  padding: 0.5em;
+}
+
+.jms-component {
+  display: inline-block;
+  margin-right: 0.25em;
+  font-size: 0.8em;
+  
+  padding-left: 0.4em;
+  padding-right: 0.4em;
+  border-radius: 0.5em;
+
+  background-color: theme-color("bad");
+  border: 2px solid darken(theme-color("bad"), 20%);
+
+  &[data-heartbeat="true"] {
+    background-color: theme-color("good");
+    border: 2px solid darken(theme-color("good"), 20%);
+  }
+}

@@ -155,16 +155,8 @@ export type UserUpdate =
  */
 export type WebsocketPublish =
   | {
-      data: Team[];
-      path: "team/teams";
-    }
-  | {
-      data: string;
-      path: "debug/test_publish";
-    }
-  | {
-      data: EventDetails;
-      path: "event/details";
+      data: JmsComponent[];
+      path: "components/components";
     }
   | {
       data: ArenaState;
@@ -181,6 +173,18 @@ export type WebsocketPublish =
   | {
       data: DriverStationReport[];
       path: "arena/ds";
+    }
+  | {
+      data: string;
+      path: "debug/test_publish";
+    }
+  | {
+      data: EventDetails;
+      path: "event/details";
+    }
+  | {
+      data: Team[];
+      path: "team/teams";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -189,32 +193,25 @@ export type WebsocketPublish =
 export type WebsocketRpcRequest =
   | {
       data: {
-        affiliation: string | null;
-        display_number: string;
-        location: string | null;
-        name: string | null;
-        team_number: number;
+        signal: ArenaSignal;
       };
-      path: "team/new_team";
-    }
-  | {
-      data: {
-        team_number: number;
-        updates: TeamUpdate[];
-      };
-      path: "team/update";
-    }
-  | {
-      data: {
-        team_number: number;
-      };
-      path: "team/delete";
+      path: "arena/signal";
     }
   | {
       data: {
         in_text: string;
       };
       path: "debug/test_endpoint";
+    }
+  | {
+      data: {
+        details: EventDetails;
+      };
+      path: "event/update";
+    }
+  | {
+      data: null;
+      path: "event/schedule_get";
     }
   | {
       data: null;
@@ -264,19 +261,26 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        details: EventDetails;
+        affiliation: string | null;
+        display_number: string;
+        location: string | null;
+        name: string | null;
+        team_number: number;
       };
-      path: "event/update";
-    }
-  | {
-      data: null;
-      path: "event/schedule_get";
+      path: "team/new_team";
     }
   | {
       data: {
-        signal: ArenaSignal;
+        team_number: number;
+        updates: TeamUpdate[];
       };
-      path: "arena/signal";
+      path: "team/update";
+    }
+  | {
+      data: {
+        team_number: number;
+      };
+      path: "team/delete";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -284,20 +288,20 @@ export type WebsocketRpcRequest =
  */
 export type WebsocketRpcResponse =
   | {
-      data: Team;
-      path: "team/new_team";
-    }
-  | {
-      data: Team;
-      path: "team/update";
-    }
-  | {
       data: null;
-      path: "team/delete";
+      path: "arena/signal";
     }
   | {
       data: string;
       path: "debug/test_endpoint";
+    }
+  | {
+      data: EventDetails;
+      path: "event/update";
+    }
+  | {
+      data: ScheduleBlock[];
+      path: "event/schedule_get";
     }
   | {
       data: AuthResult;
@@ -332,16 +336,16 @@ export type WebsocketRpcResponse =
       path: "user/delete";
     }
   | {
-      data: EventDetails;
-      path: "event/update";
+      data: Team;
+      path: "team/new_team";
     }
   | {
-      data: ScheduleBlock[];
-      path: "event/schedule_get";
+      data: Team;
+      path: "team/update";
     }
   | {
       data: null;
-      path: "arena/signal";
+      path: "team/delete";
     };
 
 export interface TempWebsocketRootSchema {
@@ -413,6 +417,17 @@ export interface EventDetails {
   code?: string | null;
   event_name?: string | null;
   webcasts: string[];
+}
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "JmsComponent".
+ */
+export interface JmsComponent {
+  id: string;
+  last_tick: string;
+  name: string;
+  symbol: string;
+  timeout_ms: number;
 }
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
