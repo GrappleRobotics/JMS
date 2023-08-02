@@ -207,30 +207,6 @@ export type UserUpdate =
  */
 export type WebsocketPublish =
   | {
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      data: [string, JmsComponent[]];
-      path: "components/components";
-    }
-  | {
-      data: Match[];
-      path: "matches/matches";
-    }
-  | {
-      data: Match | null;
-      path: "matches/next";
-    }
-  | {
-      data: boolean;
-      path: "matches/generator_busy";
-    }
-  | {
-      data: Team[];
-      path: "team/teams";
-    }
-  | {
       data: ArenaState;
       path: "arena/state";
     }
@@ -247,12 +223,36 @@ export type WebsocketPublish =
       path: "arena/ds";
     }
   | {
+      data: Team[];
+      path: "team/teams";
+    }
+  | {
       data: EventDetails;
       path: "event/details";
     }
   | {
+      data: Match[];
+      path: "matches/matches";
+    }
+  | {
+      data: Match | null;
+      path: "matches/next";
+    }
+  | {
+      data: boolean;
+      path: "matches/generator_busy";
+    }
+  | {
       data: string;
       path: "debug/test_publish";
+    }
+  | {
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      data: [string, JmsComponent[]];
+      path: "components/components";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -261,15 +261,32 @@ export type WebsocketPublish =
 export type WebsocketRpcRequest =
   | {
       data: {
-        match_id: string;
+        signal: ArenaSignal;
       };
-      path: "matches/delete";
+      path: "arena/signal";
     }
   | {
       data: {
-        params: QualsMatchGeneratorParams;
+        affiliation: string | null;
+        display_number: string;
+        location: string | null;
+        name: string | null;
+        team_number: number;
       };
-      path: "matches/gen_quals";
+      path: "team/new_team";
+    }
+  | {
+      data: {
+        team_number: number;
+        updates: TeamUpdate[];
+      };
+      path: "team/update";
+    }
+  | {
+      data: {
+        team_number: number;
+      };
+      path: "team/delete";
     }
   | {
       data: null;
@@ -319,35 +336,6 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        affiliation: string | null;
-        display_number: string;
-        location: string | null;
-        name: string | null;
-        team_number: number;
-      };
-      path: "team/new_team";
-    }
-  | {
-      data: {
-        team_number: number;
-        updates: TeamUpdate[];
-      };
-      path: "team/update";
-    }
-  | {
-      data: {
-        team_number: number;
-      };
-      path: "team/delete";
-    }
-  | {
-      data: {
-        signal: ArenaSignal;
-      };
-      path: "arena/signal";
-    }
-  | {
-      data: {
         details: EventDetails;
       };
       path: "event/update";
@@ -380,6 +368,18 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
+        match_id: string;
+      };
+      path: "matches/delete";
+    }
+  | {
+      data: {
+        params: QualsMatchGeneratorParams;
+      };
+      path: "matches/gen_quals";
+    }
+  | {
+      data: {
         in_text: string;
       };
       path: "debug/test_endpoint";
@@ -391,11 +391,19 @@ export type WebsocketRpcRequest =
 export type WebsocketRpcResponse =
   | {
       data: null;
-      path: "matches/delete";
+      path: "arena/signal";
+    }
+  | {
+      data: Team;
+      path: "team/new_team";
+    }
+  | {
+      data: Team;
+      path: "team/update";
     }
   | {
       data: null;
-      path: "matches/gen_quals";
+      path: "team/delete";
     }
   | {
       data: AuthResult;
@@ -430,22 +438,6 @@ export type WebsocketRpcResponse =
       path: "user/delete";
     }
   | {
-      data: Team;
-      path: "team/new_team";
-    }
-  | {
-      data: Team;
-      path: "team/update";
-    }
-  | {
-      data: null;
-      path: "team/delete";
-    }
-  | {
-      data: null;
-      path: "arena/signal";
-    }
-  | {
       data: EventDetails;
       path: "event/update";
     }
@@ -464,6 +456,14 @@ export type WebsocketRpcResponse =
   | {
       data: ScheduleBlock;
       path: "event/schedule_edit";
+    }
+  | {
+      data: null;
+      path: "matches/delete";
+    }
+  | {
+      data: null;
+      path: "matches/gen_quals";
     }
   | {
       data: string;

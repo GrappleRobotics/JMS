@@ -35,6 +35,7 @@
     "eslint-config-next": "13.4.12",
     "immutability-helper": "^3.1.1",
     "moment": "^2.29.4",
+    "moment-duration-format": "^2.3.2",
     "next": "13.4.12",
     "react": "18.2.0",
     "react-bootstrap": "^2.8.0",

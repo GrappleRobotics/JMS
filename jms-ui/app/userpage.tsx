@@ -7,11 +7,12 @@ import { Alert, Button, Col, Container, Nav, Navbar, Row } from "react-bootstrap
 import "./userpage.scss";
 import Link from "next/link";
 import { useErrors } from "./support/errors";
-import { ArenaState, JmsComponent, SerialisedLoadedMatch } from "./ws-schema";
+import { ArenaState, JmsComponent, Match, SerialisedLoadedMatch } from "./ws-schema";
 import { PermissionGate } from "./support/permissions";
 import confirmBool from "./components/Confirm";
 import JmsWebsocket from "./support/ws";
 import moment from "moment";
+import "moment-duration-format";
 import SimpleTooltip from "./components/SimpleTooltip";
 
 interface UserPageProps {
@@ -122,14 +123,34 @@ const TopNavbar = React.forwardRef<HTMLElement>(function TopNavbar(props: {}, re
 
 const BottomNavbar = React.forwardRef<HTMLElement>(function(props: {}, ref) {
   const { subscribe, unsubscribe, call } = useWebsocket();
-  const [ components, setComponents ] = useState<[string, JmsComponent[]]>([]);
+  const [ components, setComponents ] = useState<[string, JmsComponent[]]>();
+  const [ nextMatch, setNextMatch ] = useState<Match | null>(null);
+  const [ now, setNow ] = useState<moment.Moment>(moment());
 
   useEffect(() => {
     let cbs = [
-      subscribe<"components/components">("components/components", setComponents)
+      subscribe<"components/components">("components/components", setComponents),
+      subscribe<"matches/next">("matches/next", setNextMatch),
     ];
     return () => unsubscribe(cbs);
   }, []);
+
+  const time_diff = nextMatch && moment(nextMatch.start_time).diff(now);
+  let rendered_time = <React.Fragment />;
+  // @ts-ignore
+  let format = (d: moment.Duration) => d.format("d[d] h[h] m[m]", { trim: "both" });
+
+  if (time_diff !== null && time_diff >= 0) {
+    // @ts-ignore
+    // rendered_time = `${moment.duration(time_diff).format("d[d] h[h] m[m]", { trim: "both" })} AHEAD`;
+    rendered_time = <strong className="text-good">
+      { format(moment.duration(time_diff)) } AHEAD
+    </strong>
+  } else if (time_diff !== null) {
+    rendered_time = <strong className="text-bad">
+      { format(moment.duration(-time_diff)) } BEHIND
+    </strong>
+  }
 
   return <Row ref={ref} className="navbar-bottom">
     <Col>
@@ -138,7 +159,7 @@ const BottomNavbar = React.forwardRef<HTMLElement>(function(props: {}, ref) {
       }
     </Col>
     <Col md="auto">
-      1h 53m BEHIND
+      { rendered_time }
     </Col>
     <Col>
     </Col>
