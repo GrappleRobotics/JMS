@@ -121,11 +121,20 @@ fn define_service_trait(svc: &Service) -> proc_macro2::TokenStream {
         async fn rpc_process(&mut self, msg: Option<Result<jms_base::mq::TypedDelivery<#request_enum_ident>, anyhow::Error>>) -> Result<(), anyhow::Error> {
             match msg {
                 Some(Ok(msg)) => {
+                    // Ack the message
+                    let mq = self.mq();
+                    match mq.rpc_reply(&msg.properties, ()).await {
+                        Ok(()) => (),
+                        Err(e) => log::error!("Error in RPC ACK: {}", e)
+                    }
+
+                    drop(mq);
                     let response = match msg.data {
                         #(#rpc_call_body),*
                     };
-
                     let mq = self.mq();
+                    
+                    // Send through our reply
                     match mq.rpc_reply(&msg.properties, response).await {
                         Ok(()) => (),
                         Err(e) => log::error!("Error in RPC Response: {}", e)

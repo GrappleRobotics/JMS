@@ -128,11 +128,15 @@ const BottomNavbar = React.forwardRef<HTMLElement>(function(props: {}, ref) {
   const [ now, setNow ] = useState<moment.Moment>(moment());
 
   useEffect(() => {
+    let interval = setInterval(() => setNow(moment()), 1000);
     let cbs = [
       subscribe<"components/components">("components/components", setComponents),
       subscribe<"matches/next">("matches/next", setNextMatch),
     ];
-    return () => unsubscribe(cbs);
+    return () => {
+      unsubscribe(cbs);
+      clearInterval(interval);
+    }
   }, []);
 
   const time_diff = nextMatch && moment(nextMatch.start_time).diff(now);

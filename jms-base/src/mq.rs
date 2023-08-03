@@ -1,12 +1,19 @@
-use std::{sync::{atomic::AtomicUsize, Arc}, collections::HashMap, marker::PhantomData};
+use std::{sync::{atomic::AtomicUsize, Arc}, collections::HashMap, marker::PhantomData, time::Duration};
 
 use futures::StreamExt;
 use lapin::{options::{QueueDeleteOptions, QueueDeclareOptions, ExchangeDeclareOptions, BasicPublishOptions, QueueBindOptions, BasicConsumeOptions}, types::{FieldTable, DeliveryTag}, BasicProperties, Consumer, acker::Acker, message::Delivery};
-use log::error;
-use tokio::sync::{RwLock, oneshot, Mutex};
+use log::{error, info};
+use tokio::sync::{RwLock, oneshot, Mutex, mpsc};
 
 const JMS_EXCHANGE: &'static str = "JMS";
 const RPC_EXCHANGE: &'static str = "JMS-RPC";
+
+/* TODO: Integrate a 3-way RPC call */
+/* client -[ARGS]-> server */
+/* client <-[ACK]- server */
+/* client <-[RETURN]- server */
+/* This should enable us to detect whether the remote client is online or not (from the first ack),
+   and then we can return a future for the return value. */
 
 pub struct MessageQueue {
   #[allow(dead_code)]
@@ -14,7 +21,7 @@ pub struct MessageQueue {
 
   reply_queue: String,
   correlation_index: Arc<AtomicUsize>,
-  correlation_map: Arc<RwLock<HashMap<String, oneshot::Sender<Delivery>>>>,
+  correlation_map: Arc<RwLock<HashMap<String, mpsc::Sender<Delivery>>>>,
   rpc_recv_mutex: Arc<Mutex<()>>
 }
 
@@ -62,7 +69,7 @@ pub struct MessageQueueChannel {
 
   reply_queue: String,
   correlation_index: Arc<AtomicUsize>,
-  correlation_map: Arc<RwLock<HashMap<String, oneshot::Sender<Delivery>>>>,
+  correlation_map: Arc<RwLock<HashMap<String, mpsc::Sender<Delivery>>>>,
   rpc_recv_mutex: Arc<Mutex<()>>
 }
 
@@ -137,7 +144,7 @@ impl MessageQueueChannel {
         self.reply_queue.clone().into()
       );
     
-    let (tx, rx) = oneshot::channel();
+    let (tx, mut rx) = mpsc::channel(2);
     let our_correlation = props.correlation_id().as_ref().unwrap().to_string();
     self.correlation_map.write().await.insert(our_correlation.clone(), tx);
 
@@ -149,33 +156,50 @@ impl MessageQueueChannel {
       props
     ).await?;
 
-    tokio::select! {
-      response = rx => { return Ok(serde_json::from_slice(&response?.data[..])?) },
-      _ = self.rpc_recv_mutex.lock() => {
-        // The responsibility for keeping track of RPC messages is ours
-        let mut reply_consumer = self.channel.basic_consume(&self.reply_queue, &self.reply_queue, BasicConsumeOptions::default(), FieldTable::default()).await?;
-        loop {
-          let next = reply_consumer.next().await;
-          match next {
-            None => anyhow::bail!("RPC closed"),
-            Some(Ok(delivery)) => {
-              if let Some(correlation) = delivery.properties.correlation_id() {
-                let mut map = self.correlation_map.write().await;
-                let callback = map.remove(&correlation.to_string());
 
-                if correlation.to_string() == our_correlation {
-                  // We found the one belonging to us, return it
-                  return Ok(serde_json::from_slice(&delivery.data[..])?);
-                }
+    let mut acked = false;
 
-                if let Some(callback) = callback {
-                  // It's not for us - maybe it's for someone else
-                  callback.send(delivery).ok();
+    let mut timeout = tokio::time::interval(Duration::from_millis(500));
+    timeout.reset();
+
+    loop {
+      tokio::select! {
+        _ = timeout.tick() => { if !acked { anyhow::bail!("RPC Call Timed Out - no ACK") } },
+        response = rx.recv() => { return Ok(serde_json::from_slice(&response.ok_or(anyhow::anyhow!("Channel Closed"))?.data[..])?) },
+        _ = self.rpc_recv_mutex.lock() => {
+          // The responsibility for keeping track of RPC messages is ours
+          let mut reply_consumer = self.channel.basic_consume(&self.reply_queue, &self.reply_queue, BasicConsumeOptions::default(), FieldTable::default()).await?;
+          loop {
+            tokio::select! {
+              _ = timeout.tick() => { if !acked { anyhow::bail!("RPC Call Timed Out - no ACK") } },
+              next = reply_consumer.next() => {
+                match next {
+                  None => anyhow::bail!("RPC closed"),
+                  Some(Ok(delivery)) => {
+                    if let Some(correlation) = delivery.properties.correlation_id() {
+                      let mut map = self.correlation_map.write().await;
+                      let callback = map.remove(&correlation.to_string());
+
+                      if correlation.to_string() == our_correlation {
+                        // We found the one belonging to us, return it or say that we've been acked
+                        if acked {
+                          return Ok(serde_json::from_slice(&delivery.data[..])?);
+                        } else {
+                          acked = true;
+                        }
+                      }
+
+                      if let Some(callback) = callback {
+                        // It's not for us - maybe it's for someone else
+                        callback.send(delivery).await.ok();
+                      }
+                    }
+                    
+                  },
+                  Some(Err(e)) => error!("RPC listen error: {}", e)
                 }
-              }
-              
-            },
-            Some(Err(e)) => error!("RPC listen error: {}", e)
+              },
+            }
           }
         }
       }

@@ -30,8 +30,9 @@ pub trait MatchesWebsocket {
   #[endpoint]
   async fn gen_quals(&self, ctx: &WebsocketContext, token: &MaybeToken, params: QualsMatchGeneratorParams) -> anyhow::Result<()> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::ManageSchedule])?;
-    let fut = MatchGeneratorRPCClient::start_qual_gen(&ctx.mq, params);
-    tokio::time::timeout(Duration::from_millis(1000), fut).await??.map_err(|e| anyhow::anyhow!("{}", e))?;
+    // let fut = MatchGeneratorRPCClient::start_qual_gen(&ctx.mq, params);
+    // tokio::time::timeout(Duration::from_millis(1000), fut).await??.map_err(|e| anyhow::anyhow!("{}", e))?;
+    MatchGeneratorRPCClient::start_qual_gen(&ctx.mq, params).await?.map_err(|e| anyhow::anyhow!(e))?;
     Ok(())
   }
 }
