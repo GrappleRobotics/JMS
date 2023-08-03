@@ -12,6 +12,26 @@
 export type Alliance = "blue" | "red";
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "AllianceStationUpdate".
+ */
+export type AllianceStationUpdate =
+  | {
+      id: AllianceStationId;
+    }
+  | {
+      team: number | null;
+    }
+  | {
+      bypass: boolean;
+    }
+  | {
+      estop: boolean;
+    }
+  | {
+      astop: boolean;
+    };
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "ArenaSignal".
  */
 export type ArenaSignal =
@@ -207,6 +227,10 @@ export type UserUpdate =
  */
 export type WebsocketPublish =
   | {
+      data: Team[];
+      path: "team/teams";
+    }
+  | {
       data: ArenaState;
       path: "arena/state";
     }
@@ -221,10 +245,6 @@ export type WebsocketPublish =
   | {
       data: DriverStationReport[];
       path: "arena/ds";
-    }
-  | {
-      data: Team[];
-      path: "team/teams";
     }
   | {
       data: EventDetails;
@@ -243,28 +263,22 @@ export type WebsocketPublish =
       path: "matches/generator_busy";
     }
   | {
-      data: string;
-      path: "debug/test_publish";
-    }
-  | {
       /**
        * @minItems 2
        * @maxItems 2
        */
       data: [string, JmsComponent[]];
       path: "components/components";
+    }
+  | {
+      data: string;
+      path: "debug/test_publish";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "WebsocketRpcRequest".
  */
 export type WebsocketRpcRequest =
-  | {
-      data: {
-        signal: ArenaSignal;
-      };
-      path: "arena/signal";
-    }
   | {
       data: {
         affiliation: string | null;
@@ -287,6 +301,63 @@ export type WebsocketRpcRequest =
         team_number: number;
       };
       path: "team/delete";
+    }
+  | {
+      data: {
+        signal: ArenaSignal;
+      };
+      path: "arena/signal";
+    }
+  | {
+      data: {
+        station_id: AllianceStationId;
+        updates: AllianceStationUpdate[];
+      };
+      path: "arena/update_station";
+    }
+  | {
+      data: {
+        details: EventDetails;
+      };
+      path: "event/update";
+    }
+  | {
+      data: null;
+      path: "event/schedule_get";
+    }
+  | {
+      data: {
+        block_type: ScheduleBlockType;
+        end: string;
+        name: string;
+        start: string;
+      };
+      path: "event/schedule_new_block";
+    }
+  | {
+      data: {
+        block_id: string;
+      };
+      path: "event/schedule_delete";
+    }
+  | {
+      data: {
+        block_id: string;
+        updates: ScheduleBlockUpdate[];
+      };
+      path: "event/schedule_edit";
+    }
+  | {
+      data: {
+        match_id: string;
+      };
+      path: "matches/delete";
+    }
+  | {
+      data: {
+        params: QualsMatchGeneratorParams;
+      };
+      path: "matches/gen_quals";
     }
   | {
       data: null;
@@ -336,50 +407,6 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        details: EventDetails;
-      };
-      path: "event/update";
-    }
-  | {
-      data: null;
-      path: "event/schedule_get";
-    }
-  | {
-      data: {
-        block_type: ScheduleBlockType;
-        end: string;
-        name: string;
-        start: string;
-      };
-      path: "event/schedule_new_block";
-    }
-  | {
-      data: {
-        block_id: string;
-      };
-      path: "event/schedule_delete";
-    }
-  | {
-      data: {
-        block_id: string;
-        updates: ScheduleBlockUpdate[];
-      };
-      path: "event/schedule_edit";
-    }
-  | {
-      data: {
-        match_id: string;
-      };
-      path: "matches/delete";
-    }
-  | {
-      data: {
-        params: QualsMatchGeneratorParams;
-      };
-      path: "matches/gen_quals";
-    }
-  | {
-      data: {
         in_text: string;
       };
       path: "debug/test_endpoint";
@@ -389,10 +416,6 @@ export type WebsocketRpcRequest =
  * via the `definition` "WebsocketRpcResponse".
  */
 export type WebsocketRpcResponse =
-  | {
-      data: null;
-      path: "arena/signal";
-    }
   | {
       data: Team;
       path: "team/new_team";
@@ -404,6 +427,42 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "team/delete";
+    }
+  | {
+      data: null;
+      path: "arena/signal";
+    }
+  | {
+      data: null;
+      path: "arena/update_station";
+    }
+  | {
+      data: EventDetails;
+      path: "event/update";
+    }
+  | {
+      data: ScheduleBlock[];
+      path: "event/schedule_get";
+    }
+  | {
+      data: ScheduleBlock;
+      path: "event/schedule_new_block";
+    }
+  | {
+      data: null;
+      path: "event/schedule_delete";
+    }
+  | {
+      data: ScheduleBlock;
+      path: "event/schedule_edit";
+    }
+  | {
+      data: null;
+      path: "matches/delete";
+    }
+  | {
+      data: null;
+      path: "matches/gen_quals";
     }
   | {
       data: AuthResult;
@@ -436,34 +495,6 @@ export type WebsocketRpcResponse =
   | {
       data: null;
       path: "user/delete";
-    }
-  | {
-      data: EventDetails;
-      path: "event/update";
-    }
-  | {
-      data: ScheduleBlock[];
-      path: "event/schedule_get";
-    }
-  | {
-      data: ScheduleBlock;
-      path: "event/schedule_new_block";
-    }
-  | {
-      data: null;
-      path: "event/schedule_delete";
-    }
-  | {
-      data: ScheduleBlock;
-      path: "event/schedule_edit";
-    }
-  | {
-      data: null;
-      path: "matches/delete";
-    }
-  | {
-      data: null;
-      path: "matches/gen_quals";
     }
   | {
       data: string;

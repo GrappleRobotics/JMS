@@ -57,6 +57,75 @@
         }
       }
     },
+    "AllianceStationUpdate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "$ref": "#/definitions/AllianceStationId"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "team"
+          ],
+          "properties": {
+            "team": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "bypass"
+          ],
+          "properties": {
+            "bypass": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "estop"
+          ],
+          "properties": {
+            "estop": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "astop"
+          ],
+          "properties": {
+            "astop": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "ArenaSignal": {
       "oneOf": [
         {
@@ -1112,6 +1181,23 @@
           ],
           "properties": {
             "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
+            },
+            "path": {
+              "const": "team/teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "$ref": "#/definitions/ArenaState"
             },
             "path": {
@@ -1171,23 +1257,6 @@
             },
             "path": {
               "const": "arena/ds"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
-            },
-            "path": {
-              "const": "team/teams"
             }
           }
         },
@@ -1264,20 +1333,6 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "debug/test_publish"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
               "type": "array",
               "items": [
                 {
@@ -1298,12 +1353,7 @@
               "const": "components/components"
             }
           }
-        }
-      ]
-    },
-    "WebsocketRpcRequest": {
-      "title": "WebsocketRpcRequest",
-      "oneOf": [
+        },
         {
           "required": [
             "data",
@@ -1311,20 +1361,18 @@
           ],
           "properties": {
             "data": {
-              "required": [
-                "signal"
-              ],
-              "properties": {
-                "signal": {
-                  "$ref": "#/definitions/ArenaSignal"
-                }
-              }
+              "type": "string"
             },
             "path": {
-              "const": "arena/signal"
+              "const": "debug/test_publish"
             }
           }
-        },
+        }
+      ]
+    },
+    "WebsocketRpcRequest": {
+      "title": "WebsocketRpcRequest",
+      "oneOf": [
         {
           "required": [
             "data",
@@ -1423,6 +1471,216 @@
             },
             "path": {
               "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "signal"
+              ],
+              "properties": {
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/signal"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "station_id",
+                "updates"
+              ],
+              "properties": {
+                "station_id": {
+                  "$ref": "#/definitions/AllianceStationId"
+                },
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/AllianceStationUpdate"
+                  }
+                }
+              }
+            },
+            "path": {
+              "const": "arena/update_station"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "details"
+              ],
+              "properties": {
+                "details": {
+                  "$ref": "#/definitions/EventDetails"
+                }
+              }
+            },
+            "path": {
+              "const": "event/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "event/schedule_get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "block_type",
+                "end",
+                "name",
+                "start"
+              ],
+              "properties": {
+                "block_type": {
+                  "$ref": "#/definitions/ScheduleBlockType"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            "path": {
+              "const": "event/schedule_new_block"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "block_id"
+              ],
+              "properties": {
+                "block_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "event/schedule_delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "block_id",
+                "updates"
+              ],
+              "properties": {
+                "block_id": {
+                  "type": "string"
+                },
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ScheduleBlockUpdate"
+                  }
+                }
+              }
+            },
+            "path": {
+              "const": "event/schedule_edit"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "match_id"
+              ],
+              "properties": {
+                "match_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "params"
+              ],
+              "properties": {
+                "params": {
+                  "$ref": "#/definitions/QualsMatchGeneratorParams"
+                }
+              }
+            },
+            "path": {
+              "const": "matches/gen_quals"
             }
           }
         },
@@ -1603,167 +1861,6 @@
           "properties": {
             "data": {
               "required": [
-                "details"
-              ],
-              "properties": {
-                "details": {
-                  "$ref": "#/definitions/EventDetails"
-                }
-              }
-            },
-            "path": {
-              "const": "event/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "event/schedule_get"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "block_type",
-                "end",
-                "name",
-                "start"
-              ],
-              "properties": {
-                "block_type": {
-                  "$ref": "#/definitions/ScheduleBlockType"
-                },
-                "end": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "start": {
-                  "type": "string",
-                  "format": "date-time"
-                }
-              }
-            },
-            "path": {
-              "const": "event/schedule_new_block"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "block_id"
-              ],
-              "properties": {
-                "block_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "event/schedule_delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "block_id",
-                "updates"
-              ],
-              "properties": {
-                "block_id": {
-                  "type": "string"
-                },
-                "updates": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/ScheduleBlockUpdate"
-                  }
-                }
-              }
-            },
-            "path": {
-              "const": "event/schedule_edit"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "match_id"
-              ],
-              "properties": {
-                "match_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "matches/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "params"
-              ],
-              "properties": {
-                "params": {
-                  "$ref": "#/definitions/QualsMatchGeneratorParams"
-                }
-              }
-            },
-            "path": {
-              "const": "matches/gen_quals"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
                 "in_text"
               ],
               "properties": {
@@ -1782,20 +1879,6 @@
     "WebsocketRpcResponse": {
       "title": "WebsocketRpcResponse",
       "oneOf": [
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "arena/signal"
-            }
-          }
-        },
         {
           "required": [
             "data",
@@ -1835,6 +1918,135 @@
             },
             "path": {
               "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "arena/signal"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "arena/update_station"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/EventDetails"
+            },
+            "path": {
+              "const": "event/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ScheduleBlock"
+              }
+            },
+            "path": {
+              "const": "event/schedule_get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ScheduleBlock"
+            },
+            "path": {
+              "const": "event/schedule_new_block"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "event/schedule_delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ScheduleBlock"
+            },
+            "path": {
+              "const": "event/schedule_edit"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "matches/gen_quals"
             }
           }
         },
@@ -1950,107 +2162,6 @@
             },
             "path": {
               "const": "user/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/EventDetails"
-            },
-            "path": {
-              "const": "event/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/ScheduleBlock"
-              }
-            },
-            "path": {
-              "const": "event/schedule_get"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/ScheduleBlock"
-            },
-            "path": {
-              "const": "event/schedule_new_block"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "event/schedule_delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/ScheduleBlock"
-            },
-            "path": {
-              "const": "event/schedule_edit"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "matches/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "matches/gen_quals"
             }
           }
         },

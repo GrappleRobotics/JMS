@@ -1,0 +1,55 @@
+@import "../../variables.scss";
+
+.fta-alliance-station-col {
+  margin: 0.05em;
+
+  font-size: 2vw;
+  padding-left: 0.3vw;
+  padding-right: 0.3vw;
+
+  text-align: center;
+  align-items: center;
+
+  .fta-alliance-station-nstats {
+    font-size: 0.6em;
+  }
+
+  @each $alliance in $alliances {
+    $tc: theme-color($alliance);
+    &[data-alliance=#{$alliance}] {
+      background-color: desaturate(darken($tc, 45%), 25%);
+      border: 2px solid $tc;
+    }
+  }
+
+  &[data-bypass="true"] {
+    background-color: $gray-900;
+
+    .fta-alliance-station-team {
+      color: $gray-600;
+    }
+  }
+
+  &[data-estop="true"] {
+    @include hazard(theme-color("hazard-red"));
+  }
+
+  &[data-astop="true"] {
+    @include hazard(theme-color("hazard-yellow"));
+  }
+}
+
+.fta-team-indicator {
+  font-size: 0.75em;
+  padding: 0.2em 0em;
+
+  color: theme-color("bad");
+  &[data-ok="true"] {
+    color: theme-color("good")
+  }
+}
+
+.fta-diagnosis {
+  font-size: 0.75em;
+  font-weight: bold;
+}

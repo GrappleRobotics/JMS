@@ -1,4 +1,5 @@
-use jms_core_lib::{models::{AllianceStationId, AllianceParseError}, db::{DBDuration, Table}};
+use jms_base::kv;
+use jms_core_lib::{models::{AllianceStationId, AllianceParseError, Alliance}, db::{DBDuration, Table}};
 
 pub const ARENA_STATE_KEY: &'static str = "arena:state";
 pub const ARENA_MATCH_KEY: &'static str = "arena:match";
@@ -52,7 +53,8 @@ pub struct SerialisedLoadedMatch {
 }
 
 /* ALLIANCE STATIONS */
-#[derive(jms_macros::DbPartialUpdate, Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(jms_macros::DbPartialUpdate, jms_macros::Updateable)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct AllianceStation {
   pub id: AllianceStationId,
   pub team: Option<usize>,
@@ -80,6 +82,29 @@ impl Table for AllianceStation {
 
   fn id(&self) -> Self::Id {
     self.id.clone()
+  }
+}
+
+impl AllianceStation {
+  pub fn sorted(db: &kv::KVConnection) -> anyhow::Result<Vec<AllianceStation>> {
+    let mut v = Self::all(db)?;
+    v.sort();
+    Ok(v)
+  }
+}
+
+impl PartialOrd for AllianceStation {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    match (self.id, other.id) {
+      (a, b) if a.alliance == b.alliance => a.station.partial_cmp(&b.station),
+      (a, _) => if a.alliance == Alliance::Blue { Some(std::cmp::Ordering::Less) } else { Some(std::cmp::Ordering::Greater) }
+    }
+  }
+}
+
+impl Ord for AllianceStation {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
   }
 }
 

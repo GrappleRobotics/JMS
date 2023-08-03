@@ -3,6 +3,7 @@ import "./index.scss";
 import { Button, Card, Col, Row } from "react-bootstrap";
 import UserPage from "./userpage";
 import Link from "next/link";
+import { PermissionGate } from "./support/permissions";
 
 type HomeTileProps = {
   href: string,
@@ -39,9 +40,12 @@ export default function Home() {
       <HomeTileSep> At the Scoring Table </HomeTileSep>
       <HomeTileRow>
         <HomeTile name="Event Wizard" href="/wizard" img="wizard.jpg"> Configure your event, generate schedules, and give out awards. </HomeTile>
-        <HomeTileSep> On the Field </HomeTileSep>
-        <HomeTileSep> In the Stands </HomeTileSep>
+        <PermissionGate permissions={["FTA", "FTAA"]}>
+          <HomeTile name="FTA" href="/field-control/fta"> Monitor teams, run matches. </HomeTile>
+        </PermissionGate>
       </HomeTileRow>
+      <HomeTileSep> On the Field </HomeTileSep>
+      <HomeTileSep> In the Stands </HomeTileSep>
     </UserPage>
   )
 }

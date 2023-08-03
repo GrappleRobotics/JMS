@@ -230,7 +230,7 @@ pub fn derive_updateable(input: TokenStream) -> TokenStream {
 
     let fields = match data {
         syn::Data::Struct(ref s) => s.fields.iter().filter_map(|field| field.ident.as_ref().map(|ident| ( field.vis.clone(), ident.clone(), field.ty.clone() ))),
-        _ => panic!("Partials are only derived for structs.")
+        _ => panic!("Updatables are only derived for structs.")
     };
 
     let enum_fields = fields.clone().map(|(_field_vis, field_ident, field_type)| quote! {
@@ -265,7 +265,7 @@ pub fn derive_updateable(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(DbPartialUpdate)]
 pub fn derive_db_partial_update(input: TokenStream) -> TokenStream {
     let DeriveInput {
-        attrs: _, vis: _, ident, generics, data
+        attrs: _, vis, ident, generics, data
     } = parse_macro_input!(input as DeriveInput);
 
     let (impl_generics, _ty_generics, where_clause) = generics.split_for_impl();
