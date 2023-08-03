@@ -1,0 +1,19 @@
+@import "../variables.scss";
+
+.match-flow-btn {
+  @extend .btn-lg !optional;
+  display: block;
+  width: 100%;
+
+  border: 0;
+
+  &.active {
+    background: darken(theme-color("good"), 10%) !important;
+  }
+  &:disabled {
+    background: theme-color("dark");
+    color: #fff;
+  }
+  
+  padding: 1em;
+}

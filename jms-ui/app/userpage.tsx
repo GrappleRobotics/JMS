@@ -89,8 +89,7 @@ const TopNavbar = React.forwardRef<HTMLElement>(function TopNavbar(props: {}, re
 
   let state_comment = arenaState ? ARENA_STATE_MAP[arenaState.state] : "Waiting...";
   if (currentMatch) {
-    if (currentMatch.state in ["Auto", "Pause", "Teleop"]) 
-      state_comment = `${currentMatch.state} (T-${currentMatch.remaining.toFixed(0)})`;
+    state_comment = `${currentMatch.state} (T-${(currentMatch.remaining / 1000).toFixed(0)})`;
   }
 
   return <Navbar ref={ref} className="navbar-top" data-connected={connected} data-arena-state={arenaState?.state} data-match-state={currentMatch?.state} variant="dark">

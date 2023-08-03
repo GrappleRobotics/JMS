@@ -6,18 +6,16 @@ import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Match, QualsMatchGeneratorParams } from "@/app/ws-schema";
 import React, { useEffect, useState } from "react";
-import { Button, InputGroup, Table } from "react-bootstrap";
+import { Button, InputGroup } from "react-bootstrap";
 import update from "immutability-helper";
 import JmsWebsocket from "@/app/support/ws";
 import { useErrors } from "@/app/support/errors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSpinner, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { ALLIANCE_STATIONS } from "@/app/support/alliances";
-import { capitalise } from "@/app/support/strings";
-import moment from "moment";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import MatchSchedule from "@/app/match_schedule";
 
 export default withPermission(["ManageSchedule"], function EventWizardQuals() {
-  const [ matches, setMatches ] = useState<Match[]>();
+  const [ matches, setMatches ] = useState<Match[]>([]);
   const [ generationInProgress, setGenerationInProgress ] = useState<boolean>(false);
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useErrors();
@@ -45,37 +43,7 @@ export default withPermission(["ManageSchedule"], function EventWizardQuals() {
       Delete Unplayed
     </Button>
     <br /><br />
-    <Table striped bordered size="sm">
-      <thead>
-        <tr className="schedule-row">
-          <th> Time </th>
-          <th> Match </th>
-          {
-            ALLIANCE_STATIONS.map(stn => <th data-alliance={stn[0]}> { capitalise(stn[0] as string) } { stn[1] } </th>)
-          }
-          <th> Actions </th>
-        </tr>
-      </thead>
-      <tbody>
-        {
-          matches?.sort((a, b) => moment(a.start_time).unix() - moment(b.start_time).unix())?.map(match => <tr>
-            <td> { moment(match.start_time).format("ddd HH:mm:ss") } </td>
-            <td> { match.name } </td>
-            {
-              match.blue_teams.map(t => <td data-alliance="blue">{ t }</td>)
-            }
-            {
-              match.red_teams.map(t => <td data-alliance="red">{ t }</td>)
-            }
-            <td>
-              <Button variant="danger" size="sm" disabled={match.played} onClick={() => withConfirm(() => call<"matches/delete">("matches/delete", { match_id: match.id }).catch(addError))}>
-                <FontAwesomeIcon icon={faTrash} />
-              </Button>
-            </td>
-          </tr>)
-        }
-      </tbody>
-    </Table>
+    <MatchSchedule matches={matches} canDelete />
   </React.Fragment>
 });
 

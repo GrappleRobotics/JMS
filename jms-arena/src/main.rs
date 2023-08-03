@@ -90,6 +90,14 @@ impl Arena {
         self.set_state(ArenaState::Idle).await?;
       },
       ArenaState::Idle => {
+        if first {
+          for stn in self.stations.values_mut() {
+            stn.set_estop(false, &self.kv)?;
+            stn.set_astop(false, &self.kv)?;
+            stn.set_bypass(false, &self.kv)?;
+          }
+        }
+
         if signal == Some(ArenaSignal::Prestart) {
           match &self.current_match {
             Some(m) if m.state == MatchPlayState::Waiting => {
@@ -135,6 +143,7 @@ impl Arena {
         if signal == Some(ArenaSignal::MatchCommit) {
           self.commit_scores().await?;
           self.set_state(ArenaState::Reset).await?;
+          self.current_match = None;
         }
       },
     }
@@ -187,6 +196,11 @@ impl ArenaRPC for Arena {
     match self.state {
       ArenaState::Idle { .. } => {
         self.current_match = Some(LoadedMatch::new("test".to_owned()));
+
+        for stn in self.stations.values_mut() {
+          stn.set_team(None, &self.kv).ok();
+        }
+
         Ok(())
       },
       _ => Err(format!("Can't load match in state: {:?}", self.state))
@@ -198,6 +212,11 @@ impl ArenaRPC for Arena {
     match self.state {
       ArenaState::Idle { .. } => {
         self.current_match = None;
+
+        for stn in self.stations.values_mut() {
+          stn.set_team(None, &self.kv).ok();
+        }
+
         Ok(())
       },
       _ => Err(format!("Can't unload match in state: {:?}", self.state))

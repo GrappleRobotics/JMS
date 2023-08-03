@@ -53,3 +53,11 @@
   font-size: 0.75em;
   font-weight: bold;
 }
+
+.fta-remaining-ds-report {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  background-color: darken(theme-color("orange"), 20%);
+  color: lighten(theme-color("orange"), 40%);
+}

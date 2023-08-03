@@ -35,6 +35,24 @@ pub trait ArenaWebsocket {
   async fn current_match(&self, ctx: &WebsocketContext) -> anyhow::Result<Option<SerialisedLoadedMatch>> {
     Ok(ctx.kv.json_get(ARENA_MATCH_KEY, "$").ok())
   }
+
+  #[endpoint]
+  async fn load_match(&self, ctx: &WebsocketContext, token: &MaybeToken, match_id: String) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA, Permission::FTAA, Permission::Scorekeeper])?;
+    ArenaRPCClient::load_match(&ctx.mq, match_id).await.map_err(|e| anyhow::anyhow!(e))?.map_err(|e| anyhow::anyhow!(e))
+  }
+
+  #[endpoint]
+  async fn load_test_match(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA, Permission::FTAA, Permission::Scorekeeper])?;
+    ArenaRPCClient::load_test_match(&ctx.mq).await.map_err(|e| anyhow::anyhow!(e))?.map_err(|e| anyhow::anyhow!(e))
+  }
+
+  #[endpoint]
+  async fn unload_match(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA, Permission::FTAA, Permission::Scorekeeper])?;
+    ArenaRPCClient::unload_match(&ctx.mq).await.map_err(|e| anyhow::anyhow!(e))?.map_err(|e| anyhow::anyhow!(e))
+  }
   
   /* Alliance Stations */
 

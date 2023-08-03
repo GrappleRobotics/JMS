@@ -1,10 +1,10 @@
 "use client"
 import { confirmModal } from "@/app/components/Confirm";
 import "./fta.scss";
-import { withPermission } from "@/app/support/permissions"
+import { PermissionGate, withPermission } from "@/app/support/permissions"
 import JmsWebsocket from "@/app/support/ws";
 import { useWebsocket } from "@/app/support/ws-component";
-import { AllianceStation, AllianceStationUpdate, DriverStationReport } from "@/app/ws-schema";
+import { AllianceStation, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch } from "@/app/ws-schema";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBattery, faCheck, faCode, faRobot, faTimes, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -15,10 +15,15 @@ import { capitalise } from "@/app/support/strings";
 import { useErrors } from "@/app/support/errors";
 import update from "immutability-helper";
 import BufferedFormControl from "@/app/components/BufferedFormControl";
+import { MatchFlow } from "../match_flow";
+import MatchScheduleControl from "../../match_schedule";
 
 export default withPermission(["FTA", "FTAA"], function FTAView() {
   const [ allianceStations, setAllianceStations ] = useState<AllianceStation[]>([]);
   const [ dsReports, setDsReports ] = useState<{ [k: number]: DriverStationReport }>({});
+  const [ state, setState ] = useState<ArenaState>({ state: "Init" });
+  const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null);
+  const [ matches, setMatches ] = useState<Match[]>([]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useErrors();
@@ -26,7 +31,10 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   useEffect(() => {
     let cb = [
       subscribe<"arena/stations">("arena/stations", setAllianceStations),
-      subscribe<"arena/ds">("arena/ds", (reports) => setDsReports(_.keyBy(reports, "team")))
+      subscribe<"arena/ds">("arena/ds", (reports) => setDsReports(_.keyBy(reports, "team"))),
+      subscribe<"arena/state">("arena/state", setState),
+      subscribe<"arena/current_match">("arena/current_match", setCurrentMatch),
+      subscribe<"matches/matches">("matches/matches", setMatches)
     ];
     return () => unsubscribe(cb);
   }, []);
@@ -50,9 +58,23 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
         _.zip(allianceStations, stationReports).map(([stn, report]) => <FTAAllianceStation station={stn!} report={report || null} call={call} addError={addError} />)
       }
     </Row>
-    <Row>
-
-    </Row>
+    {
+      Object.keys(remainingDsReports).map(t => {
+        const report = remainingDsReports[t as any];
+        return <Row className="fta-remaining-ds-report">
+          <Col>
+            Team Connected but not in Match: { report.team } { report.actual_station && `(${capitalise(report.actual_station.alliance)} ${report.actual_station.station})` }
+          </Col>
+        </Row>
+      })
+    }
+    <PermissionGate permissions={["FTA", "Scorekeeper"]}>
+      <Row className="mt-3">
+        <MatchFlow state={state} current_match={currentMatch} />
+      </Row>
+    </PermissionGate>
+    <br />
+    <MatchScheduleControl currentMatch={currentMatch || undefined} matches={matches} isLoadDisabled={state.state !== "Idle"} canLoad />
   </div>
 });
 
