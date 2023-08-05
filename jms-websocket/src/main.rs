@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use arena::ArenaWebsocket;
+use awards::AwardsWebsocket;
 use clap::{Command, Arg};
 use components::ComponentWebsocket;
 use debug::DebugWebsocket;
@@ -12,6 +13,7 @@ use user::UserWebsocket;
 use ws::{Websockets, WebsocketContext};
 
 pub mod arena;
+pub mod awards;
 pub mod components;
 pub mod debug;
 pub mod event;
@@ -51,6 +53,7 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(1000), "event", EventWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "team", TeamWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "matches", MatchesWebsocket::new()).await;
+  ws.register(Duration::from_millis(3000), "awards", AwardsWebsocket::new()).await;
 
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {

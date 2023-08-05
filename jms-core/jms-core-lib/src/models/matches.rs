@@ -3,9 +3,8 @@ use std::{convert::Infallible, str::FromStr, num::ParseIntError};
 use chrono::Local;
 
 use jms_base::kv;
-use serde::Serialize;
 
-use crate::db::Table;
+use crate::db::{Table, DBDuration, Singleton};
 
 #[derive(Debug, strum::EnumString, strum::Display, strum::EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all="snake_case")]
@@ -210,13 +209,6 @@ impl Table for Match {
   }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub enum PlayoffMode {
-  Bracket,
-  DoubleBracket,
-  RoundRobin,
-}
-
 pub fn n_sets(level: MatchSubtype) -> usize {
   match level {
     MatchSubtype::Quarterfinal => 4,
@@ -264,3 +256,22 @@ impl PartialEq for Match {
     self.match_type == other.match_type && self.match_subtype == other.match_subtype && self.match_number == other.match_number && self.set_number == other.match_number
   }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(tag = "mode")]
+pub enum PlayoffMode {
+  Bracket { n_alliances: usize },
+  DoubleBracket { n_alliances: usize, awards: Vec<String>, time_per_award: DBDuration },
+  RoundRobin { n_alliances: usize },
+}
+
+impl Default for PlayoffMode {
+  fn default() -> Self {
+    Self::DoubleBracket { n_alliances: 8, awards: vec![], time_per_award: DBDuration(chrono::Duration::minutes(5)) }
+  }
+}
+
+impl Singleton for PlayoffMode {
+  const KEY: &'static str = "db:playoff_mode";
+}
+

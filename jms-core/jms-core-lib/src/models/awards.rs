@@ -2,13 +2,13 @@ use std::convert::Infallible;
 
 use crate::db;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct AwardRecipient {
-  pub team: Option<usize>,
+  pub team: Option<String>,
   pub awardee: Option<String>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Award {
   pub id: String,
   pub name: String,

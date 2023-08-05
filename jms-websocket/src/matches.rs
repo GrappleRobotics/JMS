@@ -1,11 +1,13 @@
 use std::time::Duration;
 
-use jms_core_lib::{models::{Match, MaybeToken, Permission}, db::Table, schedule::generators::{QualsMatchGeneratorParams, MatchGeneratorRPCClient, MATCH_GENERATOR_JOB_KEY}};
+use jms_core_lib::{models::{Match, MaybeToken, Permission, PlayoffMode}, db::{Table, Singleton}, schedule::generators::{QualsMatchGeneratorParams, MatchGeneratorRPCClient, MATCH_GENERATOR_JOB_KEY}};
 
 use crate::ws::WebsocketContext;
 
 #[jms_websocket_macros::websocket_handler]
 pub trait MatchesWebsocket {
+  // Matches
+
   #[publish]
   async fn matches(&self, ctx: &WebsocketContext) -> anyhow::Result<Vec<Match>> {
     Match::sorted(&ctx.kv)
@@ -27,13 +29,28 @@ pub trait MatchesWebsocket {
     Match::delete_by(&match_id, &ctx.kv)
   }
 
+  // Quals
+
   #[endpoint]
   async fn gen_quals(&self, ctx: &WebsocketContext, token: &MaybeToken, params: QualsMatchGeneratorParams) -> anyhow::Result<()> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::ManageSchedule])?;
-    // let fut = MatchGeneratorRPCClient::start_qual_gen(&ctx.mq, params);
-    // tokio::time::timeout(Duration::from_millis(1000), fut).await??.map_err(|e| anyhow::anyhow!("{}", e))?;
     MatchGeneratorRPCClient::start_qual_gen(&ctx.mq, params).await?.map_err(|e| anyhow::anyhow!(e))?;
     Ok(())
+  }
+
+  // Playoffs
+
+  #[endpoint]
+  async fn get_playoff_mode(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<PlayoffMode> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::ManagePlayoffs])?;
+    Ok(PlayoffMode::get(&ctx.kv)?)
+  }
+
+  #[endpoint]
+  async fn set_playoff_mode(&self, ctx: &WebsocketContext, token: &MaybeToken, mode: PlayoffMode) -> anyhow::Result<PlayoffMode> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::ManagePlayoffs])?;
+    mode.update(&ctx.kv)?;
+    Ok(mode)
   }
 }
 
