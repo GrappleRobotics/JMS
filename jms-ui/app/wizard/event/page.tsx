@@ -5,12 +5,13 @@ import { useErrors } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
-import { EventDetails, PlayoffMode } from "@/app/ws-schema";
+import { Award, EventDetails, PlayoffMode } from "@/app/ws-schema";
 import React, { useEffect, useState } from "react";
 import { Card, Col, Form, InputGroup, Row } from "react-bootstrap";
 import update, { Spec } from "immutability-helper";
 import { SketchPicker } from 'react-color';
 import EnumToggleGroup from "@/app/components/EnumToggleGroup";
+import { Typeahead } from "react-bootstrap-typeahead";
 
 const PLAYOFF_MODES: { [k in PlayoffMode["mode"]]: string } = {
   Bracket: "Bracket",
@@ -27,6 +28,7 @@ const DEFAULT_PLAYOFF_MODES: { [k in PlayoffMode["mode"]]: PlayoffMode } = {
 export default withPermission(["ManageEvent"], function EventWizardUsers() {
   const [ details, setDetails ] = useState<EventDetails | null>(null);
   const [ playoffMode, setPlayoffMode ] = useState<PlayoffMode | null>(null);
+  const [ awards, setAwards ] = useState<Award[]>([]);
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useErrors();
 
@@ -37,6 +39,7 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
     
     let cbs = [
       subscribe<"event/details">("event/details", setDetails),
+      subscribe<"awards/awards">("awards/awards", setAwards)
     ];
     return () => unsubscribe(cbs)
   }, []);
@@ -105,7 +108,18 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
 
         {
           playoffMode.mode == "DoubleBracket" && <React.Fragment>
-            {/* TODO: Awards Typeahead */}
+            <InputGroup className="mt-2">
+              <InputGroup.Text>Awards</InputGroup.Text>
+              <Typeahead
+                id={`award-typeahead`}
+                multiple
+                options={awards.map(x => x.name)}
+                selected={playoffMode.awards}
+                onChange={(awards) => call<"matches/set_playoff_mode">("matches/set_playoff_mode", {
+                  mode: { ...playoffMode, awards: awards as string[] }
+                }).then(setPlayoffMode).catch(addError)}
+              />
+            </InputGroup>
 
             <InputGroup className="mt-2">
               <InputGroup.Text>Time per Award</InputGroup.Text>
