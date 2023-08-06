@@ -15,7 +15,8 @@ export const PERMISSIONS: { [k in Permission]: string } = {
   "ManagePlayoffs": "Manage Playoffs",
   "MatchFlow": "Match Flow",
   "ManageAwards": "Manage Awards",
-  "Estop": "E-Stop"
+  "Estop": "E-Stop",
+  "Scoring": "Scoring"
 }
 
 // See user.rs in jms-core-lib, this should echo Permission::has
@@ -23,7 +24,7 @@ export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
   "Admin": Object.keys(PERMISSIONS) as Permission[],
   "FTA": [ "ManageEvent", "ManageTeams", "ManageSchedule", "ManagePlayoffs", "ManageAwards", "MatchFlow", "Estop" ],
   "FTAA": [ "Estop" ],
-  "Scorekeeper": [ "ManageAwards", "MatchFlow", "Estop" ],
+  "Scorekeeper": [ "ManageAwards", "MatchFlow", "Estop", "Scoring" ],
 
   /* Implications are not transient, so individual permissions get no implications */
   "ManageEvent": [],
@@ -32,7 +33,8 @@ export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
   "ManagePlayoffs": [],
   "ManageAwards": [],
   "MatchFlow": [],
-  "Estop": []
+  "Estop": [],
+  "Scoring": []
 }
 
 export function has_permission(required: Permission, permission: Permission) {
@@ -53,15 +55,15 @@ export function user_has_permission(required: Permission[], user: User) {
   return false;
 }
 
-export function withPermission<F extends React.ComponentType>(permissions: Permission[], component: F) : React.ComponentType {
-  function WithPermissionsFunc() {
+export function withPermission<P, F extends React.ComponentType<P>>(permissions: Permission[], component: F) : React.ComponentType<P> {
+  function WithPermissionsFunc(props: P) {
     const { user } = useWebsocket();
 
     if (!user || !user_has_permission(permissions, user)) {
       return <Alert variant="danger"> You don't have permission to access this page! </Alert>
     }
 
-    return React.createElement(component, {}, null);
+    return React.createElement(component as any, props as any, null);
   }
 
   return WithPermissionsFunc;

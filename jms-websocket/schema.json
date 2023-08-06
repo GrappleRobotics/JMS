@@ -378,6 +378,98 @@
         }
       }
     },
+    "DerivedScore": {
+      "type": "object",
+      "required": [
+        "activation_rp",
+        "auto_docked_points",
+        "community_points",
+        "endgame_points",
+        "link_count",
+        "link_points",
+        "meets_coopertition",
+        "mobility_points",
+        "mode_score",
+        "penalty_score",
+        "sustainability_rp",
+        "sustainability_threshold",
+        "total_bonus_rp",
+        "total_rp",
+        "total_score",
+        "win_rp",
+        "win_status"
+      ],
+      "properties": {
+        "activation_rp": {
+          "type": "boolean"
+        },
+        "auto_docked_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "community_points": {
+          "$ref": "#/definitions/ModeScore_for_int"
+        },
+        "endgame_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "link_count": {
+          "type": "integer",
+          "format": "int"
+        },
+        "link_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "meets_coopertition": {
+          "type": "boolean"
+        },
+        "mobility_points": {
+          "type": "integer",
+          "format": "int"
+        },
+        "mode_score": {
+          "$ref": "#/definitions/ModeScore_for_int"
+        },
+        "penalty_score": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "sustainability_rp": {
+          "type": "boolean"
+        },
+        "sustainability_threshold": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "total_bonus_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "total_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "total_score": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "win_rp": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "win_status": {
+          "$ref": "#/definitions/WinStatus"
+        }
+      }
+    },
     "DriverStationReport": {
       "type": "object",
       "required": [
@@ -444,6 +536,14 @@
         }
       }
     },
+    "EndgameType": {
+      "type": "string",
+      "enum": [
+        "None",
+        "Parked",
+        "Docked"
+      ]
+    },
     "EventDetails": {
       "type": "object",
       "required": [
@@ -478,6 +578,14 @@
         }
       }
     },
+    "GamepieceType": {
+      "type": "string",
+      "enum": [
+        "None",
+        "Cone",
+        "Cube"
+      ]
+    },
     "JmsComponent": {
       "type": "object",
       "required": [
@@ -505,6 +613,43 @@
           "type": "integer",
           "format": "uint",
           "minimum": 0.0
+        }
+      }
+    },
+    "LiveScore": {
+      "type": "object",
+      "required": [
+        "auto_docked",
+        "charge_station_level",
+        "community",
+        "endgame",
+        "mobility",
+        "penalties"
+      ],
+      "properties": {
+        "auto_docked": {
+          "type": "boolean"
+        },
+        "charge_station_level": {
+          "$ref": "#/definitions/ModeScore_for_Boolean"
+        },
+        "community": {
+          "$ref": "#/definitions/ModeScore_for_Array_of_Array_of_GamepieceType"
+        },
+        "endgame": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EndgameType"
+          }
+        },
+        "mobility": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "penalties": {
+          "$ref": "#/definitions/Penalties"
         }
       }
     },
@@ -625,6 +770,21 @@
         "Fault"
       ]
     },
+    "MatchScoreSnapshot": {
+      "type": "object",
+      "required": [
+        "blue",
+        "red"
+      ],
+      "properties": {
+        "blue": {
+          "$ref": "#/definitions/SnapshotScore"
+        },
+        "red": {
+          "$ref": "#/definitions/SnapshotScore"
+        }
+      }
+    },
     "MatchSubtype": {
       "type": "string",
       "enum": [
@@ -641,6 +801,84 @@
         "Playoff"
       ]
     },
+    "ModeScore_for_Array_of_Array_of_GamepieceType": {
+      "type": "object",
+      "required": [
+        "auto",
+        "teleop"
+      ],
+      "properties": {
+        "auto": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/GamepieceType"
+            }
+          }
+        },
+        "teleop": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/GamepieceType"
+            }
+          }
+        }
+      }
+    },
+    "ModeScore_for_Boolean": {
+      "type": "object",
+      "required": [
+        "auto",
+        "teleop"
+      ],
+      "properties": {
+        "auto": {
+          "type": "boolean"
+        },
+        "teleop": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ModeScore_for_int": {
+      "type": "object",
+      "required": [
+        "auto",
+        "teleop"
+      ],
+      "properties": {
+        "auto": {
+          "type": "integer",
+          "format": "int"
+        },
+        "teleop": {
+          "type": "integer",
+          "format": "int"
+        }
+      }
+    },
+    "Penalties": {
+      "type": "object",
+      "required": [
+        "fouls",
+        "tech_fouls"
+      ],
+      "properties": {
+        "fouls": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "tech_fouls": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "Permission": {
       "type": "string",
       "enum": [
@@ -654,7 +892,8 @@
         "ManagePlayoffs",
         "ManageAwards",
         "MatchFlow",
-        "Estop"
+        "Estop",
+        "Scoring"
       ]
     },
     "PlayoffMode": {
@@ -962,6 +1201,181 @@
         }
       ]
     },
+    "ScoreUpdate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Mobility"
+          ],
+          "properties": {
+            "Mobility": {
+              "type": "object",
+              "required": [
+                "crossed",
+                "station"
+              ],
+              "properties": {
+                "crossed": {
+                  "type": "boolean"
+                },
+                "station": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Community"
+          ],
+          "properties": {
+            "Community": {
+              "type": "object",
+              "required": [
+                "auto",
+                "col",
+                "gamepiece",
+                "row"
+              ],
+              "properties": {
+                "auto": {
+                  "type": "boolean"
+                },
+                "col": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                },
+                "gamepiece": {
+                  "$ref": "#/definitions/GamepieceType"
+                },
+                "row": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "AutoDocked"
+          ],
+          "properties": {
+            "AutoDocked": {
+              "type": "object",
+              "required": [
+                "docked"
+              ],
+              "properties": {
+                "docked": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "ChargeStationLevel"
+          ],
+          "properties": {
+            "ChargeStationLevel": {
+              "type": "object",
+              "required": [
+                "auto",
+                "level"
+              ],
+              "properties": {
+                "auto": {
+                  "type": "boolean"
+                },
+                "level": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Endgame"
+          ],
+          "properties": {
+            "Endgame": {
+              "type": "object",
+              "required": [
+                "endgame",
+                "station"
+              ],
+              "properties": {
+                "endgame": {
+                  "$ref": "#/definitions/EndgameType"
+                },
+                "station": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Penalty"
+          ],
+          "properties": {
+            "Penalty": {
+              "type": "object",
+              "properties": {
+                "fouls": {
+                  "default": 0,
+                  "type": "integer",
+                  "format": "int"
+                },
+                "tech_fouls": {
+                  "default": 0,
+                  "type": "integer",
+                  "format": "int"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ScoreUpdateData": {
+      "type": "object",
+      "required": [
+        "alliance",
+        "update"
+      ],
+      "properties": {
+        "alliance": {
+          "$ref": "#/definitions/Alliance"
+        },
+        "update": {
+          "$ref": "#/definitions/ScoreUpdate"
+        }
+      }
+    },
     "SerialisedLoadedMatch": {
       "type": "object",
       "required": [
@@ -983,6 +1397,21 @@
         },
         "state": {
           "$ref": "#/definitions/MatchPlayState"
+        }
+      }
+    },
+    "SnapshotScore": {
+      "type": "object",
+      "required": [
+        "derived",
+        "live"
+      ],
+      "properties": {
+        "derived": {
+          "$ref": "#/definitions/DerivedScore"
+        },
+        "live": {
+          "$ref": "#/definitions/LiveScore"
         }
       }
     },
@@ -1298,10 +1727,31 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "$ref": "#/definitions/ArenaState"
             },
             "path": {
-              "const": "debug/test_publish"
+              "const": "arena/state"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/SerialisedLoadedMatch"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "path": {
+              "const": "arena/current_match"
             }
           }
         },
@@ -1314,11 +1764,11 @@
             "data": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Award"
+                "$ref": "#/definitions/AllianceStation"
               }
             },
             "path": {
-              "const": "awards/awards"
+              "const": "arena/stations"
             }
           }
         },
@@ -1330,23 +1780,12 @@
           "properties": {
             "data": {
               "type": "array",
-              "items": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/JmsComponent"
-                  }
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2
+              "items": {
+                "$ref": "#/definitions/DriverStationReport"
+              }
             },
             "path": {
-              "const": "components/components"
+              "const": "arena/ds"
             }
           }
         },
@@ -1409,6 +1848,34 @@
           ],
           "properties": {
             "data": {
+              "$ref": "#/definitions/EventDetails"
+            },
+            "path": {
+              "const": "event/details"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MatchScoreSnapshot"
+            },
+            "path": {
+              "const": "scoring/current"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/Team"
@@ -1426,10 +1893,13 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/EventDetails"
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Award"
+              }
             },
             "path": {
-              "const": "event/details"
+              "const": "awards/awards"
             }
           }
         },
@@ -1440,10 +1910,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/ArenaState"
+              "type": "string"
             },
             "path": {
-              "const": "arena/state"
+              "const": "debug/test_publish"
             }
           }
         },
@@ -1454,51 +1924,24 @@
           ],
           "properties": {
             "data": {
-              "anyOf": [
+              "type": "array",
+              "items": [
                 {
-                  "$ref": "#/definitions/SerialisedLoadedMatch"
+                  "type": "string",
+                  "format": "date-time"
                 },
                 {
-                  "type": "null"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/JmsComponent"
+                  }
                 }
-              ]
+              ],
+              "maxItems": 2,
+              "minItems": 2
             },
             "path": {
-              "const": "arena/current_match"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/AllianceStation"
-              }
-            },
-            "path": {
-              "const": "arena/stations"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/DriverStationReport"
-              }
-            },
-            "path": {
-              "const": "arena/ds"
+              "const": "components/components"
             }
           }
         }
@@ -1515,58 +1958,16 @@
           "properties": {
             "data": {
               "required": [
-                "in_text"
+                "signal"
               ],
               "properties": {
-                "in_text": {
-                  "type": "string"
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
                 }
               }
             },
             "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "award"
-              ],
-              "properties": {
-                "award": {
-                  "$ref": "#/definitions/Award"
-                }
-              }
-            },
-            "path": {
-              "const": "awards/set_award"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "award_id"
-              ],
-              "properties": {
-                "award_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "awards/delete_award"
+              "const": "arena/signal"
             }
           }
         },
@@ -1587,28 +1988,7 @@
               }
             },
             "path": {
-              "const": "matches/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "params"
-              ],
-              "properties": {
-                "params": {
-                  "$ref": "#/definitions/QualsMatchGeneratorParams"
-                }
-              }
-            },
-            "path": {
-              "const": "matches/gen_quals"
+              "const": "arena/load_match"
             }
           }
         },
@@ -1622,7 +2002,7 @@
               "const": null
             },
             "path": {
-              "const": "matches/get_playoff_mode"
+              "const": "arena/load_test_match"
             }
           }
         },
@@ -1633,17 +2013,10 @@
           ],
           "properties": {
             "data": {
-              "required": [
-                "mode"
-              ],
-              "properties": {
-                "mode": {
-                  "$ref": "#/definitions/PlayoffMode"
-                }
-              }
+              "const": null
             },
             "path": {
-              "const": "matches/set_playoff_mode"
+              "const": "arena/unload_match"
             }
           }
         },
@@ -1655,96 +2028,23 @@
           "properties": {
             "data": {
               "required": [
-                "affiliation",
-                "display_number",
-                "location",
-                "name",
-                "team_number"
-              ],
-              "properties": {
-                "affiliation": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "display_number": {
-                  "type": "string"
-                },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "team_number",
+                "station_id",
                 "updates"
               ],
               "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
+                "station_id": {
+                  "$ref": "#/definitions/AllianceStationId"
                 },
                 "updates": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/TeamUpdate"
+                    "$ref": "#/definitions/AllianceStationUpdate"
                   }
                 }
               }
             },
             "path": {
-              "const": "team/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "team_number"
-              ],
-              "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "path": {
-              "const": "team/delete"
+              "const": "arena/update_station"
             }
           }
         },
@@ -1925,6 +2225,83 @@
           "properties": {
             "data": {
               "required": [
+                "match_id"
+              ],
+              "properties": {
+                "match_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "params"
+              ],
+              "properties": {
+                "params": {
+                  "$ref": "#/definitions/QualsMatchGeneratorParams"
+                }
+              }
+            },
+            "path": {
+              "const": "matches/gen_quals"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "matches/get_playoff_mode"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "mode"
+              ],
+              "properties": {
+                "mode": {
+                  "$ref": "#/definitions/PlayoffMode"
+                }
+              }
+            },
+            "path": {
+              "const": "matches/set_playoff_mode"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
                 "details"
               ],
               "properties": {
@@ -2044,16 +2421,16 @@
           "properties": {
             "data": {
               "required": [
-                "signal"
+                "update"
               ],
               "properties": {
-                "signal": {
-                  "$ref": "#/definitions/ArenaSignal"
+                "update": {
+                  "$ref": "#/definitions/ScoreUpdateData"
                 }
               }
             },
             "path": {
-              "const": "arena/signal"
+              "const": "scoring/score_update"
             }
           }
         },
@@ -2065,44 +2442,43 @@
           "properties": {
             "data": {
               "required": [
-                "match_id"
+                "affiliation",
+                "display_number",
+                "location",
+                "name",
+                "team_number"
               ],
               "properties": {
-                "match_id": {
+                "affiliation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "display_number": {
                   "type": "string"
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
                 }
               }
             },
             "path": {
-              "const": "arena/load_match"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "arena/load_test_match"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "arena/unload_match"
+              "const": "team/new_team"
             }
           }
         },
@@ -2114,23 +2490,111 @@
           "properties": {
             "data": {
               "required": [
-                "station_id",
+                "team_number",
                 "updates"
               ],
               "properties": {
-                "station_id": {
-                  "$ref": "#/definitions/AllianceStationId"
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
                 },
                 "updates": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/AllianceStationUpdate"
+                    "$ref": "#/definitions/TeamUpdate"
                   }
                 }
               }
             },
             "path": {
-              "const": "arena/update_station"
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "team_number"
+              ],
+              "properties": {
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "path": {
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "award"
+              ],
+              "properties": {
+                "award": {
+                  "$ref": "#/definitions/Award"
+                }
+              }
+            },
+            "path": {
+              "const": "awards/set_award"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "award_id"
+              ],
+              "properties": {
+                "award_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "awards/delete_award"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
             }
           }
         }
@@ -2146,24 +2610,10 @@
           ],
           "properties": {
             "data": {
-              "type": "string"
+              "type": "null"
             },
             "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Award"
-            },
-            "path": {
-              "const": "awards/set_award"
+              "const": "arena/signal"
             }
           }
         },
@@ -2177,7 +2627,7 @@
               "type": "null"
             },
             "path": {
-              "const": "awards/delete_award"
+              "const": "arena/load_match"
             }
           }
         },
@@ -2191,7 +2641,7 @@
               "type": "null"
             },
             "path": {
-              "const": "matches/delete"
+              "const": "arena/load_test_match"
             }
           }
         },
@@ -2205,63 +2655,7 @@
               "type": "null"
             },
             "path": {
-              "const": "matches/gen_quals"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/PlayoffMode"
-            },
-            "path": {
-              "const": "matches/get_playoff_mode"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/PlayoffMode"
-            },
-            "path": {
-              "const": "matches/set_playoff_mode"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/update"
+              "const": "arena/unload_match"
             }
           }
         },
@@ -2275,7 +2669,7 @@
               "type": "null"
             },
             "path": {
-              "const": "team/delete"
+              "const": "arena/update_station"
             }
           }
         },
@@ -2401,6 +2795,62 @@
           ],
           "properties": {
             "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "matches/gen_quals"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/PlayoffMode"
+            },
+            "path": {
+              "const": "matches/get_playoff_mode"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/PlayoffMode"
+            },
+            "path": {
+              "const": "matches/set_playoff_mode"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "$ref": "#/definitions/EventDetails"
             },
             "path": {
@@ -2474,10 +2924,38 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "$ref": "#/definitions/MatchScoreSnapshot"
             },
             "path": {
-              "const": "arena/signal"
+              "const": "scoring/score_update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/update"
             }
           }
         },
@@ -2491,7 +2969,21 @@
               "type": "null"
             },
             "path": {
-              "const": "arena/load_match"
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Award"
+            },
+            "path": {
+              "const": "awards/set_award"
             }
           }
         },
@@ -2505,7 +2997,7 @@
               "type": "null"
             },
             "path": {
-              "const": "arena/load_test_match"
+              "const": "awards/delete_award"
             }
           }
         },
@@ -2516,27 +3008,21 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "type": "string"
             },
             "path": {
-              "const": "arena/unload_match"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "arena/update_station"
+              "const": "debug/test_endpoint"
             }
           }
         }
+      ]
+    },
+    "WinStatus": {
+      "type": "string",
+      "enum": [
+        "WIN",
+        "LOSS",
+        "TIE"
       ]
     }
   }

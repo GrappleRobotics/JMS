@@ -8,6 +8,7 @@ use debug::DebugWebsocket;
 use event::EventWebsocket;
 use jms_base::{mq::MessageQueue, kv::KVConnection};
 use matches::MatchesWebsocket;
+use scoring::ScoringWebsocket;
 use teams::TeamWebsocket;
 use user::UserWebsocket;
 use ws::{Websockets, WebsocketContext};
@@ -19,6 +20,7 @@ pub mod debug;
 pub mod event;
 pub mod handler;
 pub mod matches;
+pub mod scoring;
 pub mod teams;
 pub mod ws;
 pub mod user;
@@ -54,6 +56,7 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(1000), "team", TeamWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "matches", MatchesWebsocket::new()).await;
   ws.register(Duration::from_millis(3000), "awards", AwardsWebsocket::new()).await;
+  ws.register(Duration::from_millis(500), "scoring", ScoringWebsocket::new()).await;
 
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {

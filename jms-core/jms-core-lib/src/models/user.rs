@@ -20,6 +20,7 @@ pub enum Permission {
   ManageAwards,
   MatchFlow,
   Estop,
+  Scoring
 }
 
 impl Permission {
@@ -32,7 +33,7 @@ impl Permission {
                         Permission::ManageAwards | Permission::MatchFlow | Permission::Estop) => true,
 
       (Permission::FTAA, Permission::Estop) => true, 
-      (Permission::Scorekeeper, Permission::ManageAwards | Permission::MatchFlow | Permission::Estop) => true,
+      (Permission::Scorekeeper, Permission::ManageAwards | Permission::MatchFlow | Permission::Estop | Permission::Scoring) => true,
 
       _ => false
     }

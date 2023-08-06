@@ -59,6 +59,11 @@ impl KVConnection {
     Ok(())
   }
 
+  pub fn setnx<V: ToRedisArgs>(&self, key: &str, value: V) -> anyhow::Result<()> {
+    self.redis.lock().unwrap().set_nx(key, value)?;
+    Ok(())
+  }
+
   pub fn get<RV: FromRedisValue>(&self, key: &str) -> anyhow::Result<RV> {
     Ok(self.redis.lock().unwrap().get(key)?)
   }
