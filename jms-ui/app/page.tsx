@@ -48,6 +48,7 @@ export default function Home() {
       <HomeTileRow>
         <PermissionGate permissions={["Scoring"]}>
           <HomeTile name="Scoring" href="/scoring" img="scorers.jpg"> Score Matches </HomeTile>
+          <HomeTile name="Referee" href="/scoring/referee" img="referee.jpg"> Referee Matches, Assign Fouls </HomeTile>
         </PermissionGate>
       </HomeTileRow>
       <HomeTileSep> In the Stands </HomeTileSep>
