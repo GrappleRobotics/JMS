@@ -45,6 +45,11 @@ export default function Home() {
         </PermissionGate>
       </HomeTileRow>
       <HomeTileSep> On the Field </HomeTileSep>
+      <HomeTileRow>
+        <PermissionGate permissions={["Scoring"]}>
+          <HomeTile name="Scoring" href="/scoring" img="scorers.jpg"> Score Matches </HomeTile>
+        </PermissionGate>
+      </HomeTileRow>
       <HomeTileSep> In the Stands </HomeTileSep>
     </UserPage>
   )
