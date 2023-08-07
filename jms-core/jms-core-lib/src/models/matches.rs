@@ -4,7 +4,7 @@ use chrono::Local;
 
 use jms_base::kv;
 
-use crate::db::{Table, DBDuration, Singleton};
+use crate::{db::{Table, DBDuration, Singleton}, scoring::scores::MatchScore};
 
 #[derive(Debug, strum::EnumString, strum::Display, strum::EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all="snake_case")]
@@ -124,9 +124,7 @@ pub struct Match {
   pub red_teams: Vec<Option<usize>>,
   pub red_alliance: Option<usize>,
 
-  pub winner: Option<Alliance>, // Will be None if tie, but means nothing if the match isn't played yet
   pub played: bool,
-  pub ready: bool,
 }
 
 impl Match {
@@ -143,9 +141,7 @@ impl Match {
       blue_alliance: None,
       red_teams: vec![None, None, None],
       red_alliance: None,
-      winner: None,
       played: false,
-      ready: true,
     }
   }
 
@@ -179,7 +175,6 @@ impl Match {
 
   pub fn reset(&mut self) {
     self.played = false;
-    self.winner = None;
   }
 
   pub fn subtype_idx(&self) -> usize {
@@ -275,3 +270,18 @@ impl Singleton for PlayoffMode {
   const KEY: &'static str = "db:playoff_mode";
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct CommittedMatchScores {
+  pub match_id: String,
+  pub scores: Vec<MatchScore>
+}
+
+impl Table for CommittedMatchScores {
+  const PREFIX: &'static str = "db:scores";
+  type Err = Infallible;
+  type Id = String;
+
+  fn id(&self) -> Self::Id {
+    self.match_id.clone()
+  }
+}

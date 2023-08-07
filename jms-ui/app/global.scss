@@ -25,3 +25,14 @@
   width: 100%;
   display: block;
 }
+
+// Cards
+.card {
+  @each $alliance in $alliances {
+    $tc: theme-color($alliance);
+    &[data-alliance=#{$alliance}] {
+      background-color: desaturate(darken($tc, 25%), 30%);
+      border-color: $tc;
+    }
+  }
+}

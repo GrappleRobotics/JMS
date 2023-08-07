@@ -63,7 +63,7 @@
     }
   }
 
-  &[data-score-type=auto_docked] {
+  &[data-score-type=auto_docked], &[data-score-type=charge_station_level] {
     @extend .btn-bad;
     &[data-score-value=true] {
       @extend .btn-good;
@@ -148,5 +148,18 @@
         }
       }
     }
+  }
+}
+
+.edit-scores-version-link {
+  background-color: theme-color("dark");
+
+  &[data-active="true"] {
+    background-color: theme-color("primary");
+  }
+
+  &:hover {
+    cursor: pointer;
+    opacity: 80%;
   }
 }

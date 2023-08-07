@@ -83,9 +83,7 @@ impl QualsMatchGenerator {
         blue_alliance: None,
         red_teams: red.iter().map(|&t| Some(t)).collect(),
         red_alliance: None,
-        winner: None,
         played: false,
-        ready: true,
       };
 
       m.insert(kv)?;

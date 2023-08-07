@@ -4,8 +4,9 @@ import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Match, MatchScoreSnapshot, SerialisedLoadedMatch } from "@/app/ws-schema";
 import { useEffect, useState } from "react";
-import { Col, Row } from "react-bootstrap";
+import { Button, Col, Row } from "react-bootstrap";
 import { RefereePanelFouls } from "../referee";
+import { ALLIANCES } from "@/app/support/alliances";
 
 export default withPermission(["Scoring"], function HeadReferee() {
   const [ score, setScore ] = useState<MatchScoreSnapshot>();
@@ -36,5 +37,28 @@ export default withPermission(["Scoring"], function HeadReferee() {
       onUpdate={update => call<"scoring/score_update">("scoring/score_update", { update: update }).then(setScore).catch(addError)}
       flipped={false}
     /> }
+    <Row>
+      {
+        score && ALLIANCES.map(alliance => <Col>
+          <Button
+            className="btn-block referee-station-score"
+            data-score-type="charge_station_level"
+            data-score-value={score[alliance].live.charge_station_level.auto}
+            onClick={() => call<"scoring/score_update">("scoring/score_update", { update: { alliance, update: { ChargeStationLevel: { auto: true, level: !score[alliance].live.charge_station_level.auto } } } })}
+          >
+            { score[alliance].live.charge_station_level.auto ? "CS LEVEL AUTO" : "CS NOT LEVEL AUTO" }
+          </Button>
+
+          <Button
+            className="mt-2 btn-block referee-station-score"
+            data-score-type="charge_station_level"
+            data-score-value={score[alliance].live.charge_station_level.teleop}
+            onClick={() => call<"scoring/score_update">("scoring/score_update", { update: { alliance, update: { ChargeStationLevel: { auto: false, level: !score[alliance].live.charge_station_level.teleop } } } })}
+          >
+            { score[alliance].live.charge_station_level.teleop ? "CS LEVEL TELEOP" : "CS NOT LEVEL TELEOP" }
+          </Button>
+        </Col>)
+      }
+    </Row>
   </div>
 })

@@ -80,6 +80,10 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
     Ok(v)
   }
 
+  fn exists(id: &Self::Id, db: &kv::KVConnection) -> anyhow::Result<bool> {
+    db.exists(&format!("{}:{}", Self::PREFIX, id.to_string()))
+  }
+
   fn clear(db: &kv::KVConnection) -> anyhow::Result<()> {
     for id in Self::ids(db)? {
       db.del(&format!("{}:{}", Self::PREFIX, id.to_string())).ok();

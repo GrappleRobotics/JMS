@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use jms_base::kv;
-use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData}, db::Singleton, models::{MaybeToken, Alliance, Permission}};
+use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match}};
 use uuid::Uuid;
 
 use crate::ws::WebsocketContext;
@@ -23,9 +23,6 @@ pub trait ScoringWebsocket {
     Ok(live_score.into())
   }
 
-  // TODO: Use something like immutability-helper but in Rust so we're not taking the entire object, as it may fail to register
-  // some calls if two score_updates get queued at the same time. This function should be atomic.
-  // TODO: Implement redlock for this.
   #[endpoint]
   async fn score_update(&self, ctx: &WebsocketContext, token: &MaybeToken, update: ScoreUpdateData) -> anyhow::Result<MatchScoreSnapshot> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::Scoring])?;
@@ -43,5 +40,48 @@ pub trait ScoringWebsocket {
     let r = Self::do_score_update(&ctx.kv, update).await;
     ctx.kv.del("__score_update_lock")?;
     r
+  }
+
+  // Historical Scores
+
+  #[endpoint]
+  async fn get_committed(&self, ctx: &WebsocketContext, _token: &MaybeToken, match_id: String) -> anyhow::Result<CommittedMatchScores> {
+    CommittedMatchScores::get(&match_id, &ctx.kv)
+  }
+
+  #[endpoint]
+  async fn new_committed_record(&self, ctx: &WebsocketContext, token: &MaybeToken, match_id: String) -> anyhow::Result<CommittedMatchScores> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::EditScores])?;
+    if CommittedMatchScores::exists(&match_id, &ctx.kv)? {
+      anyhow::bail!("There already exists a record for that match!");
+    } else {
+      let c = CommittedMatchScores { match_id, scores: vec![] };
+      c.insert(&ctx.kv)?;
+      Ok(c)
+    }
+  }
+
+  #[endpoint]
+  async fn push_committed_score(&self, ctx: &WebsocketContext, token: &MaybeToken, match_id: String, score: MatchScore) -> anyhow::Result<CommittedMatchScores> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::EditScores])?;
+    let mut c = CommittedMatchScores::get(&match_id, &ctx.kv)?;
+    c.scores.push(score);
+    c.insert(&ctx.kv)?;
+
+    let mut m = Match::get(&match_id, &ctx.kv)?;
+    m.played = true;
+    m.insert(&ctx.kv)?;
+
+    Ok(c)
+  }
+
+  #[endpoint]
+  async fn get_default_scores(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<MatchScore> {
+    Ok(MatchScore::default())
+  }
+
+  #[endpoint]
+  async fn derive_score(&self, ctx: &WebsocketContext, token: &MaybeToken, score: MatchScore) -> anyhow::Result<MatchScoreSnapshot> {
+    Ok(score.into())
   }
 }

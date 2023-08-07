@@ -44,9 +44,6 @@ async fn main() -> anyhow::Result<()> {
         )
     ).get_matches();
 
-  let mq = MessageQueue::new("websocket-reply").await?;
-  let kv = KVConnection::new()?;
-
   let mut ws = Websockets::new();
   ws.register(Duration::from_millis(1000), "debug", DebugWebsocket::new()).await;
   ws.register(Duration::from_millis(50), "arena", ArenaWebsocket::new()).await;
@@ -66,6 +63,9 @@ async fn main() -> anyhow::Result<()> {
       std::fs::write(file, serde_json::to_string_pretty(&schema)?)?;
     },
     _ => {
+      let mq = MessageQueue::new("websocket-reply").await?;
+      let kv = KVConnection::new()?;
+      
       ws.begin(WebsocketContext::new(mq.channel().await?, kv)).await?;
     }
   }
