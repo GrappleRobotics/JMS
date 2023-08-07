@@ -69,7 +69,7 @@ export default withPermission(["Scoring"], function RefereePanel({ params }: { p
   </div>
 })
 
-const ENDGAME_MAP: { [K in EndgameType]: string } = {
+export const ENDGAME_MAP: { [K in EndgameType]: string } = {
   None: "None",
   Parked: "ENDGAME Park",
   Docked: "ENDGAME Docked"

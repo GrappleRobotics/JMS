@@ -4,14 +4,15 @@ import { useErrors } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { withValU } from "@/app/support/util";
 import { useWebsocket } from "@/app/support/ws-component";
-import { Alliance, GamepieceType, Match, MatchScoreSnapshot, SerialisedLoadedMatch, SnapshotScore } from "@/app/ws-schema";
+import { Alliance, GamepieceType, LiveScore, Match, MatchScoreSnapshot, SerialisedLoadedMatch, SnapshotScore } from "@/app/ws-schema";
+import { Spec } from "immutability-helper";
 import React, { useEffect, useState } from "react"
 import { Button, Col, Row } from "react-bootstrap";
 
 const ALLOWED_GAMEPIECE_MAP = [
   Array(9).fill(["None", "Cube", "Cone"]),
-  [ ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["Cone"], ["None", "Cube"], ["None", "Cone"] ],
-  [ ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["Cone"], ["None", "Cube"], ["None", "Cone"] ],
+  [ ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"] ],
+  [ ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"] ],
 ];
 
 export default withPermission(["Scoring"], function ScorerPanel({ params }: { params: { alliance: Alliance } }) {
@@ -57,48 +58,55 @@ export default withPermission(["Scoring"], function ScorerPanel({ params }: { pa
     </Row>
 
     {
-      withValU(score, s => {
-        let auto = s.live.community.auto;
-        let teleop = s.live.community.teleop;
-
-        let merged_community: GamepieceType[][] = [ Array(9).fill("None"), Array(9).fill("None"), Array(9).fill("None") ];
-        for (let i = 0; i < 3; i++) {
-          for (let j = 0; j < 9; j++) {
-            if (auto[i][j] != "None") merged_community[i][j] = auto[i][j];
-            if (teleop[i][j] != "None") merged_community[i][j] = teleop[i][j];
-          }
-        }
-
-        return <Row className="scorer-community">
-          <Col>
-            {
-              merged_community.map((row, i) => <Row className="scorer-community-row">
-                {
-                  row.map((gamepiece, j) => (
-                    <Col
-                      className="scorer-community-col"
-                      data-alliance={params.alliance}
-                      data-column={j}
-                      data-has-auto={auto[i][j] != "None"}
-                      onClick={() => {
-                        let allowed: GamepieceType[] = ALLOWED_GAMEPIECE_MAP[i][j];
-                        let current_idx = allowed.findIndex(g => g == gamepiece);
-                        let next = (current_idx + 1) % allowed.length;
-                        call<"scoring/score_update">("scoring/score_update", { update: {
-                          alliance: params.alliance,
-                          update: { Community: { auto: !autoFinalised, row: i, col: j, gamepiece: allowed[next] } }
-                        } }).then(s => setScore(s[params.alliance])).catch(addError)
-                      }}
-                    >
-                      <div className="scorer-gamepiece" data-gamepiece={gamepiece} />
-                    </Col>
-                  ))
-                }
-              </Row>).reverse()
-            }
-          </Col>
-        </Row>
-      })
+      score && <Community2023
+        score={score.live}
+        alliance={params.alliance}
+        onUpdate={(row, col, type) => call<"scoring/score_update">("scoring/score_update", {
+          update: { alliance: params.alliance, update: {
+            Community: { auto: !autoFinalised, row, col, gamepiece: type }
+          } }
+        })}
+      />
     }
   </div>
 })
+
+export function Community2023({ score, alliance, onUpdate }: { score: LiveScore, alliance: Alliance, onUpdate: (row: number, col: number, type: GamepieceType) => void }) {
+  let auto = score.community.auto;
+  let teleop = score.community.teleop;
+
+  let merged_community: GamepieceType[][] = [ Array(9).fill("None"), Array(9).fill("None"), Array(9).fill("None") ];
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 9; j++) {
+      if (auto[i][j] != "None") merged_community[i][j] = auto[i][j];
+      if (teleop[i][j] != "None") merged_community[i][j] = teleop[i][j];
+    }
+  }
+
+  return <Row className="scorer-community">
+    <Col>
+      {
+        merged_community.map((row, i) => <Row className="scorer-community-row">
+          {
+            row.map((gamepiece, j) => (
+              <Col
+                className="scorer-community-col"
+                data-alliance={alliance}
+                data-column={j}
+                data-has-auto={auto[i][j] != "None"}
+                onClick={() => {
+                  let allowed: GamepieceType[] = ALLOWED_GAMEPIECE_MAP[i][j];
+                  let current_idx = allowed.findIndex(g => g == gamepiece);
+                  let next = (current_idx + 1) % allowed.length;
+                  onUpdate(i, j, allowed[next])
+                }}
+              >
+                <div className="scorer-gamepiece" data-gamepiece={gamepiece} />
+              </Col>
+            ))
+          }
+        </Row>).reverse()
+      }
+    </Col>
+  </Row>
+}

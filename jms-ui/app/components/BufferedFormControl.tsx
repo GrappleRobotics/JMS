@@ -73,7 +73,7 @@ export default class BufferedFormControl extends React.Component<BufferedProps, 
 
     let value = event.target.value;
 
-    if (this.props.type === "number" && nullIfEmpty(String(value)) != null && Number(value) != null) {
+    if (this.props.type === "number" && nullIfEmpty(String(value)) !== null && Number(value) !== null) {
       let n = Number(value);
       value = Math.min(Math.max(n, Number(this.props.min || Number.NEGATIVE_INFINITY)), Number(this.props.max || Number.POSITIVE_INFINITY));
     }
