@@ -28,6 +28,7 @@
     "@types/react-color": "^3.0.6",
     "@types/react-confirm": "^0.2.0",
     "@types/react-dom": "18.2.7",
+    "@types/react-scroll": "^1.8.7",
     "@types/uuid": "^9.0.2",
     "bootstrap": "^5.3.1",
     "bootswatch": "^5.3.1",
@@ -45,6 +46,7 @@
     "react-confirm": "^0.3.0-2",
     "react-datetime": "^3.2.0",
     "react-dom": "18.2.0",
+    "react-scroll": "^1.8.9",
     "typescript": "5.1.6",
     "uuid": "^9.0.0"
   },

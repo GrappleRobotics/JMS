@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, str::FromStr, collections::HashMap, hash::Hash};
 
 use jms_base::kv;
 use uuid::Uuid;
@@ -39,7 +39,7 @@ pub trait Singleton: serde::Serialize + serde::de::DeserializeOwned + Default + 
 pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
   const PREFIX: &'static str;
   type Err: Display;
-  type Id: ToString + FromStr<Err = Self::Err>;
+  type Id: ToString + FromStr<Err = Self::Err> + PartialEq + Eq + Hash;
   
   fn id(&self) -> Self::Id;
   fn key(&self) -> String { format!("{}:{}", Self::PREFIX, self.id().to_string()) }
@@ -74,6 +74,17 @@ pub trait Table: serde::Serialize + serde::de::DeserializeOwned {
     for id in Self::ids(db)? {
       match Self::get(&id, db) {
         Ok(value) => v.push(value),
+        _ => ()     // It's since been deleted
+      }
+    }
+    Ok(v)
+  }
+
+  fn all_map(db: &kv::KVConnection) -> anyhow::Result<HashMap<Self::Id, Self>> {
+    let mut v = HashMap::new();
+    for id in Self::ids(db)? {
+      match Self::get(&id, db) {
+        Ok(value) => { v.insert(id, value); },
         _ => ()     // It's since been deleted
       }
     }

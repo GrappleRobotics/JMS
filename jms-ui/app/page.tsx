@@ -55,6 +55,9 @@ export default function Home() {
         </PermissionGate>
       </HomeTileRow>
       <HomeTileSep> In the Stands </HomeTileSep>
+      <HomeTileRow>
+        <HomeTile name="Rankings" href="/rankings" img="rankings.png"> View Team Standings and the Playoff Bracket </HomeTile>
+      </HomeTileRow>
     </UserPage>
   )
 }

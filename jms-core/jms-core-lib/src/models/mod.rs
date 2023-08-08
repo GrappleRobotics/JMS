@@ -19,5 +19,8 @@ pub use alliances::*;
 mod awards;
 pub use awards::*;
 
+mod rankings;
+pub use rankings::*;
+
 mod user;
 pub use user::*;

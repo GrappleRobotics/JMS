@@ -1,0 +1,74 @@
+@import "../variables.scss";
+
+::-webkit-scrollbar {
+  width: 3px;  /* Remove scrollbar space */
+  background: transparent;  /* Optional: just make scrollbar invisible */
+}
+
+::-webkit-scrollbar-thumb {
+  background: $gray-700;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.rankings-root {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#rankings-container {
+  flex-grow: 1;
+  padding-bottom: 20px;
+  overflow: scroll;
+  position: relative;
+}
+
+.rankings {
+  border-collapse: separate;
+
+  thead > tr {
+    th {
+      text-align: center;
+      color: $gray-900;
+      font-size: 20px;
+      background-color: $gray-100;
+      position: sticky;
+      top: 1px;
+    }
+  }
+  tbody > tr {
+    td {
+      font-weight: bold;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    &:nth-child(even) {
+      background-color: $gray-800;
+    }
+    &:nth-child(odd) {
+      background-color: $gray-700;
+    }
+
+    &[data-rank="1"] {
+      > td {
+        background-color: theme-color("gold");
+      }
+    }
+    &[data-rank="2"] {
+      > td {
+        background-color: theme-color("silver");
+      }
+    }
+    &[data-rank="3"] {
+      > td {
+        background-color: theme-color("bronze");
+      }
+    }
+  }
+}

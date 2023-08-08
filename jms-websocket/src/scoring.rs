@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use jms_base::kv;
-use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match}};
+use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match, TeamRanking}};
 use uuid::Uuid;
 
 use crate::ws::WebsocketContext;
@@ -72,16 +72,31 @@ pub trait ScoringWebsocket {
     m.played = true;
     m.insert(&ctx.kv)?;
 
+    TeamRanking::update(&ctx.kv)?;
+
     Ok(c)
   }
 
   #[endpoint]
-  async fn get_default_scores(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<MatchScore> {
+  async fn get_default_scores(&self, _ctx: &WebsocketContext, _token: &MaybeToken) -> anyhow::Result<MatchScore> {
     Ok(MatchScore::default())
   }
 
   #[endpoint]
-  async fn derive_score(&self, ctx: &WebsocketContext, token: &MaybeToken, score: MatchScore) -> anyhow::Result<MatchScoreSnapshot> {
+  async fn derive_score(&self, _ctx: &WebsocketContext, _token: &MaybeToken, score: MatchScore) -> anyhow::Result<MatchScoreSnapshot> {
     Ok(score.into())
+  }
+
+  // Rankings
+
+  #[publish]
+  async fn rankings(&self, ctx: &WebsocketContext) -> anyhow::Result<Vec<TeamRanking>> {
+    Ok(TeamRanking::sorted(&ctx.kv)?)
+  }
+
+  #[endpoint]
+  async fn update_rankings(&self, ctx: &WebsocketContext, _token: &MaybeToken) -> anyhow::Result<Vec<TeamRanking>> {
+    TeamRanking::update(&ctx.kv)?;
+    Ok(TeamRanking::sorted(&ctx.kv)?)
   }
 }
