@@ -46,9 +46,9 @@ impl Arena {
     Ok(())
   }
 
-  pub async fn commit_scores(&mut self) -> anyhow::Result<()> {
+  pub async fn commit_scores(&mut self, match_id: String) -> anyhow::Result<()> {
     info!("Committing Scores");
-    self.mq.publish("arena.scores.publish", ()).await?;
+    self.mq.publish("arena.scores.publish", match_id).await?;
     Ok(())
   }
 
@@ -141,7 +141,7 @@ impl Arena {
       },
       ArenaState::MatchComplete => {
         if signal == Some(ArenaSignal::MatchCommit) {
-          self.commit_scores().await?;
+          self.commit_scores(self.current_match.as_ref().ok_or(anyhow::anyhow!("No Match Present!"))?.match_id.clone()).await?;
           self.set_state(ArenaState::Reset).await?;
           self.current_match = None;
         }
