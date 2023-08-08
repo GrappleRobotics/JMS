@@ -42,6 +42,7 @@ export default function Home() {
         <HomeTile name="Event Wizard" href="/wizard" img="wizard.jpg"> Configure your event, generate schedules, and give out awards. </HomeTile>
         <PermissionGate permissions={["FTA", "FTAA"]}>
           <HomeTile name="FTA" href="/field-control/fta"> Monitor teams, run matches. </HomeTile>
+          <HomeTile name="DEBUG" href="/debug"> Debug Controls </HomeTile>
         </PermissionGate>
         <PermissionGate permissions={["EditScores"]}>
           <HomeTile name="Edit Scores" href="/scoring/edit">Edit Scores</HomeTile>

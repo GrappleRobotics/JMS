@@ -30,7 +30,7 @@ JMS_BACKUPS
 
 target/
 old/
-debug/
+/debug/
 Cargo.lock
 **/*.rs.bk
 
