@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use jms_base::kv;
-use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match, TeamRanking}};
+use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData, LiveScore}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match, TeamRanking}};
 use uuid::Uuid;
 
 use crate::ws::WebsocketContext;
@@ -65,14 +65,7 @@ pub trait ScoringWebsocket {
   async fn push_committed_score(&self, ctx: &WebsocketContext, token: &MaybeToken, match_id: String, score: MatchScore) -> anyhow::Result<CommittedMatchScores> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::EditScores])?;
     let mut c = CommittedMatchScores::get(&match_id, &ctx.kv)?;
-    c.scores.push(score);
-    c.insert(&ctx.kv)?;
-
-    let mut m = Match::get(&match_id, &ctx.kv)?;
-    m.played = true;
-    m.insert(&ctx.kv)?;
-
-    TeamRanking::update(&ctx.kv)?;
+    c.push_and_insert(score, &ctx.kv)?;
 
     Ok(c)
   }
@@ -85,6 +78,25 @@ pub trait ScoringWebsocket {
   #[endpoint]
   async fn derive_score(&self, _ctx: &WebsocketContext, _token: &MaybeToken, score: MatchScore) -> anyhow::Result<MatchScoreSnapshot> {
     Ok(score.into())
+  }
+
+  #[endpoint]
+  async fn debug_random_fill(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA])?;
+    for match_id in Match::ids(&ctx.kv)? {
+      match CommittedMatchScores::get(&match_id, &ctx.kv) {
+        Ok(mut cms) => {
+          if cms.scores.len() == 0 {
+            cms.push_and_insert(MatchScore { red: LiveScore::randomise(), blue: LiveScore::randomise() }, &ctx.kv)?;
+          }
+        },
+        Err(_) => {
+          let mut c = CommittedMatchScores { match_id: match_id, scores: vec![] };
+          c.push_and_insert(MatchScore { red: LiveScore::randomise(), blue: LiveScore::randomise() }, &ctx.kv)?;
+        }
+      }
+    }
+    Ok(())
   }
 
   // Rankings

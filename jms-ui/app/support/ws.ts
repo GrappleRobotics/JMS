@@ -6,7 +6,7 @@ import { KeysOfUnion } from './util';
 export type ConnectCallback = (isOpen: boolean) => void;
 
 export function jmsAuthToken(): UserToken | null {
-  let token = sessionStorage.getItem("jmsAuthToken");
+  let token = localStorage.getItem("jmsAuthToken");
   if (token !== null) {
     return JSON.parse(token);
   } else {
@@ -15,11 +15,11 @@ export function jmsAuthToken(): UserToken | null {
 }
 
 export function clearJmsAuthToken() {
-  sessionStorage.removeItem("jmsAuthToken");
+  localStorage.removeItem("jmsAuthToken");
 }
 
 export function setJmsAuthToken(token: UserToken) {
-  sessionStorage.setItem("jmsAuthToken", JSON.stringify(token));
+  localStorage.setItem("jmsAuthToken", JSON.stringify(token));
 }
 
 export default class JmsWebsocket {

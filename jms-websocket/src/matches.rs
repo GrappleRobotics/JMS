@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use jms_core_lib::{models::{Match, MaybeToken, Permission, PlayoffMode}, db::{Table, Singleton}, schedule::generators::{QualsMatchGeneratorParams, MatchGeneratorRPCClient, MATCH_GENERATOR_JOB_KEY}};
+use jms_core_lib::{models::{Match, MaybeToken, Permission, PlayoffMode, CommittedMatchScores, TeamRanking}, db::{Table, Singleton}, schedule::generators::{QualsMatchGeneratorParams, MatchGeneratorRPCClient, MATCH_GENERATOR_JOB_KEY}};
 
 use crate::ws::WebsocketContext;
 
@@ -26,7 +26,23 @@ pub trait MatchesWebsocket {
   #[endpoint]
   async fn delete(&self, ctx: &WebsocketContext, token: &MaybeToken, match_id: String) -> anyhow::Result<()> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::ManageSchedule])?;
-    Match::delete_by(&match_id, &ctx.kv)
+    let m = Match::get(&match_id, &ctx.kv)?;
+    if m.played {
+      anyhow::bail!("Can't delete a match that's already been played!")
+    } else {
+      m.delete(&ctx.kv)?;
+    }
+    Ok(())
+  }
+
+  #[endpoint]
+  async fn debug_delete_all(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA])?;
+    Match::clear(&ctx.kv)?;
+    CommittedMatchScores::clear(&ctx.kv)?;
+
+    TeamRanking::update(&ctx.kv)?;
+    Ok(())
   }
 
   // Quals

@@ -4,7 +4,7 @@ import { Match, SerialisedLoadedMatch } from "./ws-schema";
 import React from "react";
 import moment from "moment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { withConfirm } from "./components/Confirm";
 import { useWebsocket } from "./support/ws-component";
 import { useErrors } from "./support/errors";
@@ -52,9 +52,9 @@ export default function MatchSchedule({ matches, currentMatch, canLoad, isLoadDi
           </thead>
           <tbody>
             {
-              matches.filter(filter || ((m: Match) => true)).map(match => <tr className="schedule-row">
+              matches.filter(filter || ((m: Match) => true)).map(match => <tr className="schedule-row" data-played={match.played}>
                 <td> { moment(match.start_time).format("ddd HH:mm:ss") } </td>
-                <td> { match.name } </td>
+                <td> { match.name } { match.played && <span className="text-success">&nbsp;<FontAwesomeIcon icon={faCheck} /></span> } </td>
                 {
                   match.blue_teams.map(t => <td data-alliance="blue">{ t }</td>)
                 }

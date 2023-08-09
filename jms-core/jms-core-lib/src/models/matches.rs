@@ -6,6 +6,8 @@ use jms_base::kv;
 
 use crate::{db::{Table, DBDuration, Singleton}, scoring::scores::MatchScore};
 
+use super::TeamRanking;
+
 #[derive(Debug, strum::EnumString, strum::Display, strum::EnumIter, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(rename_all="snake_case")]
 pub enum Alliance {
@@ -283,5 +285,22 @@ impl Table for CommittedMatchScores {
 
   fn id(&self) -> Self::Id {
     self.match_id.clone()
+  }
+}
+
+impl CommittedMatchScores {
+  pub fn push_and_insert(&mut self, score: MatchScore, kv: &kv::KVConnection) -> anyhow::Result<()> {
+    self.scores.push(score);
+    self.insert(kv)?;
+
+    // Update match played status
+    let mut m = Match::get(&self.match_id, kv)?;
+    m.played = true;
+    m.insert(kv)?;
+
+    // Update team rankings
+    TeamRanking::update(kv)?;
+
+    Ok(())
   }
 }

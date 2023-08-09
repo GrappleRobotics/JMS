@@ -26,11 +26,8 @@ impl ScoringService {
               Ok(c) => c,
               Err(_) => models::CommittedMatchScores { match_id: td.data, scores: vec![] }
             };
-            c.scores.push(MatchScore::get(&self.kv)?);
-            c.insert(&self.kv)?;
+            c.push_and_insert(MatchScore::get(&self.kv)?, &self.kv)?;
             MatchScore::delete(&self.kv)?;    // Reset the scores once they're committed
-
-            TeamRanking::update(&self.kv)?;
           },
           Some(Err(e)) => error!("Error: {}", e),
           None => ()

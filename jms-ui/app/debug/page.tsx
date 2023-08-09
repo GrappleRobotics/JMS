@@ -7,6 +7,7 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { useWebsocket } from "../support/ws-component";
 import { useErrors } from "../support/errors";
 import { Button } from "react-bootstrap";
+import { withConfirm } from "../components/Confirm";
 
 export default withPermission(["FTA"], function DebugPage() {
   const { call } = useWebsocket();
@@ -19,6 +20,15 @@ export default withPermission(["FTA"], function DebugPage() {
     <h4> Trigger Events </h4>
     <Button variant="success" onClick={() => call<"scoring/update_rankings">("scoring/update_rankings", null).catch(addError)}>
       Recalculate Team Rankings
+    </Button>
+
+    <br /> <br />
+    <h4> Matches </h4>
+    <Button variant="danger" onClick={() => withConfirm(() => call<"scoring/debug_random_fill">("scoring/debug_random_fill", null).catch(addError))}>
+      Random Fill Matches
+    </Button> &nbsp;
+    <Button variant="danger" onClick={() => withConfirm(() => call<"matches/debug_delete_all">("matches/debug_delete_all", null).catch(addError))}>
+      DELETE ALL
     </Button>
   </div>
 });

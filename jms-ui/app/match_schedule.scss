@@ -1,7 +1,7 @@
 @import "./variables.scss";
 
 .table-striped > * > tr:nth-child(odd) {
-  &:not([data-played]) {
+  &:not([data-played=true]) {
     > td, th {
       @each $alliance in $alliances {
         &[data-alliance=#{$alliance}] {
@@ -12,7 +12,7 @@
     }
   }
 
-  &[data-played] {
+  &[data-played=true] {
     > td, th {
       background-color: rgb(70, 70, 70);
       font-style: italic;
@@ -21,7 +21,7 @@
 }
 
 .table-striped > * > tr:nth-child(even) {
-  &:not([data-played]) {
+  &:not([data-played=true]) {
     > td, th {
       @each $alliance in $alliances {
         &[data-alliance=#{$alliance}] {
@@ -32,7 +32,7 @@
     }
   }
 
-  &[data-played] {
+  &[data-played=true] {
     > td, th {
       background-color: rgb(82, 82, 82);
       font-style: italic;
