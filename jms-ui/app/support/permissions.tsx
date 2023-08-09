@@ -17,15 +17,16 @@ export const PERMISSIONS: { [k in Permission]: string } = {
   "ManageAwards": "Manage Awards",
   "Estop": "E-Stop",
   "Scoring": "Scoring",
-  "EditScores": "Edit Scores"
+  "EditScores": "Edit Scores",
+  "ManageAlliances": "Manage Alliances"
 }
 
 // See user.rs in jms-core-lib, this should echo Permission::has
 export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
   "Admin": Object.keys(PERMISSIONS) as Permission[],
-  "FTA": [ "ManageEvent", "ManageTeams", "ManageSchedule", "ManagePlayoffs", "ManageAwards", "MatchFlow", "Estop" ],
+  "FTA": [ "ManageEvent", "ManageTeams", "ManageSchedule", "ManagePlayoffs", "ManageAwards", "MatchFlow", "Estop", "ManageAlliances" ],
   "FTAA": [ "Estop" ],
-  "Scorekeeper": [ "ManageAwards", "MatchFlow", "Estop", "Scoring", "EditScores" ],
+  "Scorekeeper": [ "ManageAwards", "MatchFlow", "Estop", "Scoring", "EditScores", "ManageAlliances" ],
 
   /* Implications are not transient, so individual permissions get no implications */
   "ManageEvent": [],
@@ -36,7 +37,8 @@ export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
   "MatchFlow": [],
   "Estop": [],
   "Scoring": [],
-  "EditScores": []
+  "EditScores": [],
+  "ManageAlliances": []
 }
 
 export function has_permission(required: Permission, permission: Permission) {
