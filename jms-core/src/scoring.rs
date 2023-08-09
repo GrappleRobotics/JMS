@@ -4,6 +4,8 @@ use jms_base::{mq, kv};
 use jms_core_lib::{models::{self, TeamRanking}, db::{Table, Singleton}, scoring::scores::MatchScore};
 use log::error;
 
+use crate::schedule::playoffs::PlayoffMatchGenerator;
+
 pub struct ScoringService {
   pub kv: kv::KVConnection,
   pub mq: mq::MessageQueueChannel
@@ -19,6 +21,7 @@ impl ScoringService {
       tokio::select! {
         _ = ranking_update_interval.tick() => {
           TeamRanking::update(&self.kv)?;
+          PlayoffMatchGenerator::update(&self.kv)?;
         },
         msg = publish_sub.next() => match msg {
           Some(Ok(td)) => {
@@ -28,6 +31,9 @@ impl ScoringService {
             };
             c.push_and_insert(MatchScore::get(&self.kv)?, &self.kv)?;
             MatchScore::delete(&self.kv)?;    // Reset the scores once they're committed
+
+            // Update the playoffs bracket
+            PlayoffMatchGenerator::update(&self.kv)?;
           },
           Some(Err(e)) => error!("Error: {}", e),
           None => ()

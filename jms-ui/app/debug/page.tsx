@@ -24,8 +24,11 @@ export default withPermission(["FTA"], function DebugPage() {
 
     <br /> <br />
     <h4> Matches </h4>
-    <Button variant="danger" onClick={() => withConfirm(() => call<"scoring/debug_random_fill">("scoring/debug_random_fill", null).catch(addError))}>
-      Random Fill Matches
+    <Button variant="danger" onClick={() => withConfirm(() => call<"scoring/debug_random_fill">("scoring/debug_random_fill", { ty: "Qualification" }).catch(addError))}>
+      Random Fill Matches (Quals)
+    </Button> &nbsp;
+    <Button variant="danger" onClick={() => withConfirm(() => call<"scoring/debug_random_fill">("scoring/debug_random_fill", { ty: "Playoff" }).catch(addError))}>
+      Random Fill Matches (Playoffs)
     </Button> &nbsp;
     <Button variant="danger" onClick={() => withConfirm(() => call<"matches/debug_delete_all">("matches/debug_delete_all", null).catch(addError))}>
       DELETE ALL

@@ -12,17 +12,16 @@ import update, { Spec } from "immutability-helper";
 import { SketchPicker } from 'react-color';
 import EnumToggleGroup from "@/app/components/EnumToggleGroup";
 import { Typeahead } from "react-bootstrap-typeahead";
+import Link from "next/link";
 
 const PLAYOFF_MODES: { [k in PlayoffMode["mode"]]: string } = {
   Bracket: "Bracket",
   DoubleBracket: "Double Bracket",
-  RoundRobin: "Round Robin"
 };
 
 const DEFAULT_PLAYOFF_MODES: { [k in PlayoffMode["mode"]]: PlayoffMode } = {
-  Bracket: { mode: "Bracket", n_alliances: 8 },
-  DoubleBracket: { mode: "DoubleBracket", n_alliances: 8, awards: [], time_per_award: 5*60*1000 },
-  RoundRobin: { mode: "RoundRobin", n_alliances: 8 }
+  Bracket: { mode: "Bracket", n_alliances: 8, awards: [], time_per_award: 5*60*1000, minimum_round_break: 8*60*1000 },
+  DoubleBracket: { mode: "DoubleBracket", n_alliances: 8, awards: [], time_per_award: 5*60*1000, minimum_round_break: 8*60*1000 },
 };
 
 export default withPermission(["ManageEvent"], function EventWizardUsers() {
@@ -82,7 +81,7 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
 
     {
       playoffMode && <React.Fragment>
-        <h5>Playoff Type</h5>
+        <h5>Playoff Settings</h5>
         <EnumToggleGroup
           name="playoff_mode"
           values={Object.keys(PLAYOFF_MODES)}
@@ -106,38 +105,56 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
           />
         </InputGroup>
 
-        {
-          playoffMode.mode == "DoubleBracket" && <React.Fragment>
-            <InputGroup className="mt-2">
-              <InputGroup.Text>Awards</InputGroup.Text>
-              <Typeahead
-                id={`award-typeahead`}
-                multiple
-                options={awards.map(x => x.name)}
-                selected={playoffMode.awards}
-                onChange={(awards) => call<"matches/set_playoff_mode">("matches/set_playoff_mode", {
-                  mode: { ...playoffMode, awards: awards as string[] }
-                }).then(setPlayoffMode).catch(addError)}
-              />
-            </InputGroup>
+        <InputGroup className="mt-2">
+          <InputGroup.Text>Awards</InputGroup.Text>
+          <Typeahead
+            id={`award-typeahead`}
+            multiple
+            options={awards.map(x => x.name)}
+            selected={playoffMode.awards}
+            onChange={(awards) => call<"matches/set_playoff_mode">("matches/set_playoff_mode", {
+              mode: { ...playoffMode, awards: awards as string[] }
+            }).then(setPlayoffMode).catch(addError)}
+          />
+        </InputGroup>
+        <Form.Text>
+          <i>These awards will be given during playoff breaks. Make sure you create the awards first in the <Link href="/wizard/awards">Awards tab</Link>.</i>
+        </Form.Text>
 
-            <InputGroup className="mt-2">
-              <InputGroup.Text>Time per Award</InputGroup.Text>
-              <BufferedFormControl
-                auto
-                style={{ maxWidth: '12em' }}
-                type="number"
-                min={0.5}
-                step={0.5}
-                value={(playoffMode.time_per_award / 1000 / 60).toFixed(1)}
-                onUpdate={v => call<"matches/set_playoff_mode">("matches/set_playoff_mode", {
-                  mode: { ...playoffMode, time_per_award: Math.max(0.5, (v as number)) * 1000 * 60 }
-                }).then(setPlayoffMode).catch(addError)}
-              />
-              <InputGroup.Text>mins</InputGroup.Text>
-            </InputGroup>
-          </React.Fragment>
-        }
+        <InputGroup className="mt-2">
+          <InputGroup.Text>Time per Award</InputGroup.Text>
+          <BufferedFormControl
+            auto
+            style={{ maxWidth: '12em' }}
+            type="number"
+            min={0.5}
+            step={0.5}
+            value={(playoffMode.time_per_award / 1000 / 60).toFixed(1)}
+            onUpdate={v => call<"matches/set_playoff_mode">("matches/set_playoff_mode", {
+              mode: { ...playoffMode, time_per_award: Math.max(0.5, (v as number)) * 1000 * 60 }
+            }).then(setPlayoffMode).catch(addError)}
+          />
+          <InputGroup.Text>mins</InputGroup.Text>
+        </InputGroup>
+
+        <InputGroup className="mt-2">
+          <InputGroup.Text>Minimum Round Break</InputGroup.Text>
+          <BufferedFormControl
+            auto
+            style={{ maxWidth: '12em' }}
+            type="number"
+            min={0.5}
+            step={0.5}
+            value={(playoffMode.minimum_round_break / 1000 / 60).toFixed(1)}
+            onUpdate={v => call<"matches/set_playoff_mode">("matches/set_playoff_mode", {
+              mode: { ...playoffMode, minimum_round_break: Math.max(0.5, (v as number)) * 1000 * 60 }
+            }).then(setPlayoffMode).catch(addError)}
+          />
+          <InputGroup.Text>mins</InputGroup.Text>
+        </InputGroup>
+        <Form.Text>
+          <i>The amount of time between rounds, not matches.</i>
+        </Form.Text>
       </React.Fragment>
     }
 

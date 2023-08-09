@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use jms_base::kv;
-use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData, LiveScore}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match, TeamRanking}};
+use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData, LiveScore}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match, TeamRanking, MatchType}, schedule::generators::MatchGeneratorRPCClient};
 use uuid::Uuid;
 
 use crate::ws::WebsocketContext;
@@ -66,6 +66,7 @@ pub trait ScoringWebsocket {
     token.auth(&ctx.kv)?.require_permission(&[Permission::EditScores])?;
     let mut c = CommittedMatchScores::get(&match_id, &ctx.kv)?;
     c.push_and_insert(score, &ctx.kv)?;
+    MatchGeneratorRPCClient::update_playoffs(&ctx.mq).await?.map_err(|e| anyhow::anyhow!(e))?;
 
     Ok(c)
   }
@@ -81,21 +82,25 @@ pub trait ScoringWebsocket {
   }
 
   #[endpoint]
-  async fn debug_random_fill(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
+  async fn debug_random_fill(&self, ctx: &WebsocketContext, token: &MaybeToken, ty: MatchType) -> anyhow::Result<()> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::FTA])?;
-    for match_id in Match::ids(&ctx.kv)? {
-      match CommittedMatchScores::get(&match_id, &ctx.kv) {
-        Ok(mut cms) => {
-          if cms.scores.len() == 0 {
-            cms.push_and_insert(MatchScore { red: LiveScore::randomise(), blue: LiveScore::randomise() }, &ctx.kv)?;
+    for m in Match::all(&ctx.kv)? {
+      let match_id = m.id;
+      if m.match_type == ty && m.ready {
+        match CommittedMatchScores::get(&match_id, &ctx.kv) {
+          Ok(mut cms) => {
+            if cms.scores.len() == 0 {
+              cms.push_and_insert(MatchScore { red: LiveScore::randomise(), blue: LiveScore::randomise() }, &ctx.kv)?;
+            }
+          },
+          Err(_) => {
+            let mut c = CommittedMatchScores { match_id: match_id, scores: vec![] };
+            c.push_and_insert(MatchScore { red: LiveScore::randomise(), blue: LiveScore::randomise() }, &ctx.kv)?;
           }
-        },
-        Err(_) => {
-          let mut c = CommittedMatchScores { match_id: match_id, scores: vec![] };
-          c.push_and_insert(MatchScore { red: LiveScore::randomise(), blue: LiveScore::randomise() }, &ctx.kv)?;
         }
       }
     }
+    MatchGeneratorRPCClient::update_playoffs(&ctx.mq).await?.map_err(|e| anyhow::anyhow!(e))?;
     Ok(())
   }
 

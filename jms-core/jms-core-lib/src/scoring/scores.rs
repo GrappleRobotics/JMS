@@ -106,6 +106,19 @@ impl MatchScore {
       blue: LiveScore::new(blue_teams),
     }
   }
+
+  pub fn winner(&self) -> Option<Alliance> {
+    let red_derived = self.red.derive(&self.blue);
+    let blue_derived = self.blue.derive(&self.red);
+
+    if red_derived.total_score == blue_derived.total_score {
+      None
+    } else if red_derived.total_score > blue_derived.total_score {
+      Some(Alliance::Red)
+    } else {
+      Some(Alliance::Blue)
+    }
+  }
 }
 
 impl Singleton for MatchScore {

@@ -12,11 +12,7 @@ pub trait AlliancesWebsocket {
   #[endpoint]
   async fn create(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<Vec<PlayoffAlliance>> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::ManageAlliances])?;
-    let n = match PlayoffMode::get(&ctx.kv)? {
-      PlayoffMode::Bracket { n_alliances } => n_alliances,
-      PlayoffMode::DoubleBracket { n_alliances, .. } => n_alliances,
-      PlayoffMode::RoundRobin { n_alliances } => n_alliances
-    };
+    let n = PlayoffMode::get(&ctx.kv)?.n_alliances;
     PlayoffAlliance::create_all(n, &ctx.kv)?;
     PlayoffAlliance::sorted(&ctx.kv)
   }

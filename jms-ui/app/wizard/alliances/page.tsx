@@ -31,9 +31,9 @@ export default withPermission(["ManageAlliances"], function EventWizardAlliances
 
   const has_quals = matches.filter(x => x.match_type === "Qualification").length > 0;
   const quals_finished = matches.filter(x => x.match_type === "Qualification").every(x => x.played);
-  const has_playoffs = matches.filter(x => x.match_type === "Playoff").length > 0;
+  const playoffs_started = matches.filter(x => x.match_type === "Playoff" && x.played).length > 0;
 
-  const disabled = has_playoffs;
+  const disabled = playoffs_started;
   const has_alliances = alliances.length > 0;
 
   const not_chosen = rankings?.filter(t => alliances.filter(a => a.teams.includes(t.team)).length == 0 );

@@ -69,21 +69,22 @@ impl QualsMatchGenerator {
       let blue = teams[0..3].to_vec();
       let red = teams[3..6].to_vec();
 
-      let match_num = (match_n_offset + i + 1);
+      let set = match_n_offset + i + 1;
 
       let m = models::Match {
-        id: models::Match::gen_id(models::MatchType::Qualification, None, 1, match_num),
-        name: models::Match::gen_name(models::MatchType::Qualification, None, 1, match_num),
+        id: models::Match::gen_id(models::MatchType::Qualification, 1, set, 1),
+        name: models::Match::gen_name(models::MatchType::Qualification, 1, set, 1),
         start_time: slots[i].0,
         match_type: models::MatchType::Qualification,
-        match_subtype: None,
-        set_number: 1,
-        match_number: (match_n_offset + i + 1),
+        round: 1,
+        set_number: set,
+        match_number: 1,
         blue_teams: blue.iter().map(|&t| Some(t)).collect(),
         blue_alliance: None,
         red_teams: red.iter().map(|&t| Some(t)).collect(),
         red_alliance: None,
         played: false,
+        ready: true
       };
 
       m.insert(kv)?;

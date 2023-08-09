@@ -2,10 +2,12 @@ use jms_base::{kv::KVConnection, mq::MessageQueueChannel};
 use jms_core_lib::schedule::generators::{MatchGeneratorRPC, QualsMatchGeneratorParams, MATCH_GENERATOR_JOB_KEY};
 use log::{info, error};
 
-use self::quals::QualsMatchGenerator;
+use self::{quals::QualsMatchGenerator, playoffs::PlayoffMatchGenerator};
 
+pub mod bracket;
 pub mod quals_randomiser;
 pub mod quals;
+pub mod playoffs;
 
 pub struct GeneratorService {
   pub kv: KVConnection,
@@ -36,6 +38,14 @@ impl MatchGeneratorRPC for GeneratorService {
       kv.del(MATCH_GENERATOR_JOB_KEY).ok();
     });
     Ok(())
+  }
+
+  async fn reset_playoffs(&mut self) -> Result<(), String> {
+    PlayoffMatchGenerator::reset(&self.kv).map_err(|e| e.to_string())
+  }
+
+  async fn update_playoffs(&mut self) -> Result<(), String> {
+    PlayoffMatchGenerator::update(&self.kv).map_err(|e| e.to_string())
   }
 }
 

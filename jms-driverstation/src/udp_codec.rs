@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut};
 use chrono::{DateTime, Local, Timelike, Datelike};
-use jms_core_lib::models::{AllianceStationId, MatchSubtype};
+use jms_core_lib::models::AllianceStationId;
 use jms_driverstation_lib::{TournamentLevel, RobotState};
 use tokio_util::codec::{Decoder, Encoder};
 

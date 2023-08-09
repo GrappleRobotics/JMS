@@ -102,12 +102,7 @@ impl FromStr for AllianceStationId {
 
 #[derive(Debug, strum::EnumString, strum::Display, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum MatchType {
-  Test, Qualification, Playoff
-}
-
-#[derive(Debug, strum::EnumString, strum::Display, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub enum MatchSubtype {
-  Quarterfinal, Semifinal, Final
+  Test, Qualification, Playoff, Final
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -116,8 +111,8 @@ pub struct Match {
   pub name: String,
   pub start_time: chrono::DateTime<Local>,
   pub match_type: MatchType,
-  pub match_subtype: Option<MatchSubtype>,
 
+  pub round: usize,
   pub set_number: usize,
   pub match_number: usize,
   
@@ -127,6 +122,7 @@ pub struct Match {
   pub red_alliance: Option<usize>,
 
   pub played: bool,
+  pub ready: bool,
 }
 
 impl Match {
@@ -136,7 +132,7 @@ impl Match {
       name: "Test Match".to_owned(),
       start_time: chrono::Local::now().into(),
       match_type: MatchType::Test,
-      match_subtype: None,
+      round: 1,
       set_number: 1,
       match_number: 1,
       blue_teams: vec![None, None, None],
@@ -144,30 +140,34 @@ impl Match {
       red_teams: vec![None, None, None],
       red_alliance: None,
       played: false,
+      ready: false
     }
   }
 
-  pub fn gen_id(ty: MatchType, st: Option<MatchSubtype>, set: usize, match_n: usize) -> String {
+  // We work a little differently to TBA and the official FMS. We mark Qualification matches with set number since they may be replayed, 
+  // in which case the match number increases. You can think of it as if the teams on each alliance are the same, the set number is the same, otherwise
+  // it is different. The match number increments for each 'replay'.
+  // We also have a generic "Playoff" type, that covers Bracket, Double Bracket, and Round-Robin through the use of a 'round' number as opposed
+  // to the qf, sf marking that you may be used to. We separate finals into their own type since they may be different to the playoff type (finals are bracket, 
+  // where playoffs may be a bracket, double bracket, or round robin). 
+  // TODO: Implement Qualification replay elsewhere, only include the latest replay (match) number in rankings.
+
+  pub fn gen_id(ty: MatchType, round: usize, set: usize, match_n: usize) -> String {
     match ty {
       MatchType::Test => format!("test"),
-      MatchType::Qualification => format!("qm{}", match_n),
-      MatchType::Playoff => match st.unwrap() {
-        MatchSubtype::Quarterfinal => format!("qf{}m{}", set, match_n),
-        MatchSubtype::Semifinal => format!("sf{}m{}", set, match_n),
-        MatchSubtype::Final => format!("f{}m{}", set, match_n),
-      },
+      MatchType::Qualification => format!("qm{}m{}", set, match_n),
+      MatchType::Playoff => format!("el{}s{}m{}", round, set, match_n),
+      MatchType::Final => format!("f{}", match_n)
     }
   }
 
-  pub fn gen_name(ty: MatchType, st: Option<MatchSubtype>, set: usize, match_n: usize) -> String {
+  pub fn gen_name(ty: MatchType, round: usize, set: usize, match_n: usize) -> String {
     match ty {
       MatchType::Test => format!("Test Match"),
-      MatchType::Qualification => format!("Qualification {}", match_n),
-      MatchType::Playoff => match st.unwrap() {
-        MatchSubtype::Quarterfinal => format!("Quarterfinal {}-{}", set, match_n),
-        MatchSubtype::Semifinal => format!("Semifinal {}-{}", set, match_n),
-        MatchSubtype::Final => format!("Final {}-{}", set, match_n),
-      },
+      MatchType::Qualification if match_n == 1 => format!("Qualification {}", set),
+      MatchType::Qualification => format!("Qualification {} (replay {})", set, match_n - 1),
+      MatchType::Playoff => format!("Elimination Round {} - {}-{}", round, set, match_n),
+      MatchType::Final => format!("Final {}", match_n)
     }
   }
 
@@ -177,15 +177,6 @@ impl Match {
 
   pub fn reset(&mut self) {
     self.played = false;
-  }
-
-  pub fn subtype_idx(&self) -> usize {
-    match self.match_subtype {
-      None => 0,
-      Some(MatchSubtype::Quarterfinal) => 1,
-      Some(MatchSubtype::Semifinal) => 2,
-      Some(MatchSubtype::Final) => 3,
-    }
   }
 
   pub fn sorted(db: &kv::KVConnection) -> anyhow::Result<Vec<Self>> {
@@ -206,35 +197,12 @@ impl Table for Match {
   }
 }
 
-pub fn n_sets(level: MatchSubtype) -> usize {
-  match level {
-    MatchSubtype::Quarterfinal => 4,
-    MatchSubtype::Semifinal => 2,
-    MatchSubtype::Final => 1,
-  }
-}
-
-impl Ord for MatchSubtype {
-  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    let us_n = n_sets(*self);
-    let them_n = n_sets(*other);
-
-    them_n.cmp(&us_n)
-  }
-}
-
-impl PartialOrd for MatchSubtype {
-  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    Some(self.cmp(other))
-  }
-}
-
 impl Ord for Match {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     self
       .start_time
       .cmp(&other.start_time)
-      .then(self.match_subtype.cmp(&other.match_subtype))
+      .then(self.round.cmp(&other.round))
       .then(self.match_number.cmp(&other.match_number))
       .then(self.set_number.cmp(&other.set_number))
   }
@@ -250,21 +218,34 @@ impl Eq for Match {}
 
 impl PartialEq for Match {
   fn eq(&self, other: &Self) -> bool {
-    self.match_type == other.match_type && self.match_subtype == other.match_subtype && self.match_number == other.match_number && self.set_number == other.match_number
+    self.match_type == other.match_type && self.round == other.round && self.match_number == other.match_number && self.set_number == other.match_number
   }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-#[serde(tag = "mode")]
-pub enum PlayoffMode {
-  Bracket { n_alliances: usize },
-  DoubleBracket { n_alliances: usize, awards: Vec<String>, time_per_award: DBDuration },
-  RoundRobin { n_alliances: usize },
+pub struct PlayoffMode {
+  pub mode: PlayoffModeType,
+  pub n_alliances: usize,
+  pub awards: Vec<String>,
+  pub time_per_award: DBDuration,
+  pub minimum_round_break: DBDuration
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub enum PlayoffModeType {
+  Bracket,
+  DoubleBracket
 }
 
 impl Default for PlayoffMode {
   fn default() -> Self {
-    Self::DoubleBracket { n_alliances: 8, awards: vec![], time_per_award: DBDuration(chrono::Duration::minutes(5)) }
+    Self {
+      mode: PlayoffModeType::DoubleBracket,
+      n_alliances: 8,
+      awards: vec![],
+      time_per_award: DBDuration(chrono::Duration::minutes(5)),
+      minimum_round_break: DBDuration(chrono::Duration::minutes(8))
+    }
   }
 }
 

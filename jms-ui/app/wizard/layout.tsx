@@ -31,6 +31,7 @@ export default function WizardLayout({ children }: { children: React.ReactNode }
           <WizardTabLink link="quals">Qualification Schedule</WizardTabLink>
           <br /> <h6 className="text-muted"> Playoffs </h6>
           <WizardTabLink link="alliances">Alliance Selections</WizardTabLink>
+          <WizardTabLink link="playoffs">Playoff Schedule</WizardTabLink>
           <br /> <h6 className="text-muted"> Awards </h6>
           <WizardTabLink link="awards">Manage Awards</WizardTabLink>
         </Nav>
