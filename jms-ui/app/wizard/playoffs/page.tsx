@@ -1,10 +1,11 @@
 "use client"
 import { withConfirm } from "@/app/components/Confirm";
+import PlayoffBracketGraph from "@/app/components/playoff-graphs/PlayoffBracket";
 import MatchSchedule from "@/app/match_schedule";
 import { useErrors } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
-import { Match } from "@/app/ws-schema";
+import { Match, PlayoffMode } from "@/app/ws-schema";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
@@ -14,13 +15,17 @@ import { Button } from "react-bootstrap";
 
 export default withPermission(["ManagePlayoffs"], function EventWizardPlayoffs() {
   const [ matches, setMatches ] = useState<Match[]>([]);
+  const [ nextMatch, setNextMatch ] = useState<Match | null>(null);
+  const [ playoffMode, setPlayoffMode ] = useState<PlayoffMode>();
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useErrors();
 
   useEffect(() => {
     const cb = [
       subscribe<"matches/matches">("matches/matches", m => setMatches(m.filter(x => x.match_type === "Playoff" || x.match_type === "Final"))),
+      subscribe<"matches/next">("matches/next", setNextMatch)
     ];
+    call<"matches/get_playoff_mode">("matches/get_playoff_mode", null).then(setPlayoffMode).catch(addError);
     return () => unsubscribe(cb);
   }, []);
 
@@ -36,5 +41,16 @@ export default withPermission(["ManagePlayoffs"], function EventWizardPlayoffs()
     </Button>
     <br /> <br />
     <MatchSchedule matches={matches} />
+
+    {
+      playoffMode && <div style={{ width: '100%', height: '500px' }}>
+        <PlayoffBracketGraph
+          matches={matches}
+          dark_mode
+          next_match={nextMatch || undefined}
+          playoff_mode={playoffMode.mode}
+        />
+      </div>
+    }
   </React.Fragment>
 });

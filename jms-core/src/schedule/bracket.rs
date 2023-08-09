@@ -77,8 +77,6 @@ pub const SINGLE_BRACKET_TEMPLATE: [PlayoffScheduleItem; 19] = [
   PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Final, round: 1, set: 1, match_num: 2, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 2, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 2, 2) }),
 ];
 
-// TODO: Single Bracket
-
 pub fn bracket_update(playoff_mode: &PlayoffMode, matches: &Vec<Match>, scores: &HashMap<String, CommittedMatchScores>) -> anyhow::Result<GenerationUpdate> {
   if playoff_mode.n_alliances > 8 {
     anyhow::bail!("Brackets do not currently support >8 alliances!");
@@ -161,6 +159,7 @@ pub fn bracket_update(playoff_mode: &PlayoffMode, matches: &Vec<Match>, scores: 
         if played.clone().count() > 0 && winner_loser.is_none() && (set_matches.clone().count() - played.clone().count()) == 0 {
           // We don't have a winner yet, and there are no outstanding matches - queue a tiebreaker
           let max_match_num = played.clone().map(|x| x.match_number).max().unwrap_or(0);
+          // TODO: Defer this to the end of the round.
           refined_bracket.push(PlayoffScheduleItem::Match(IncompleteMatch { 
             ty: incomplete_match.ty, round: incomplete_match.round, set: incomplete_match.set, match_num: max_match_num + 1, 
             red: incomplete_match.red, blue: incomplete_match.blue

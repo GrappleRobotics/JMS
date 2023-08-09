@@ -105,7 +105,7 @@ pub enum MatchType {
   Test, Qualification, Playoff, Final
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct Match {
   pub id: String,
   pub name: String,
@@ -211,14 +211,6 @@ impl Ord for Match {
 impl PartialOrd for Match {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
     Some(self.cmp(&other))
-  }
-}
-
-impl Eq for Match {}
-
-impl PartialEq for Match {
-  fn eq(&self, other: &Self) -> bool {
-    self.match_type == other.match_type && self.round == other.round && self.match_number == other.match_number && self.set_number == other.match_number
   }
 }
 
