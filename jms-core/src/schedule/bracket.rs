@@ -48,6 +48,35 @@ pub const DOUBLE_BRACKET_TEMPLATE: [PlayoffScheduleItem; 21] = [
   PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Final, round: 1, set: 1, match_num: 2, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 4, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 5, 1) }),
 ];
 
+pub const SINGLE_BRACKET_TEMPLATE: [PlayoffScheduleItem; 19] = [
+  // Round 1 - Quarters
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 1, match_num: 1, red: PlayoffAllianceDescriptor::Alliance(1), blue: PlayoffAllianceDescriptor::Alliance(8) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 2, match_num: 1, red: PlayoffAllianceDescriptor::Alliance(4), blue: PlayoffAllianceDescriptor::Alliance(5) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 3, match_num: 1, red: PlayoffAllianceDescriptor::Alliance(2), blue: PlayoffAllianceDescriptor::Alliance(7) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 4, match_num: 1, red: PlayoffAllianceDescriptor::Alliance(3), blue: PlayoffAllianceDescriptor::Alliance(6) }),
+  PlayoffScheduleItem::AwardsBreak,
+
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 1, match_num: 2, red: PlayoffAllianceDescriptor::Alliance(1), blue: PlayoffAllianceDescriptor::Alliance(8) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 2, match_num: 2, red: PlayoffAllianceDescriptor::Alliance(4), blue: PlayoffAllianceDescriptor::Alliance(5) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 3, match_num: 2, red: PlayoffAllianceDescriptor::Alliance(2), blue: PlayoffAllianceDescriptor::Alliance(7) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 1, set: 4, match_num: 2, red: PlayoffAllianceDescriptor::Alliance(3), blue: PlayoffAllianceDescriptor::Alliance(6) }),
+  PlayoffScheduleItem::AwardsBreak,
+
+  // Round 2 - Semis
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 2, set: 1, match_num: 1, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 2) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 2, set: 2, match_num: 1, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 3), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 4) }),
+  PlayoffScheduleItem::AwardsBreak,
+
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 2, set: 1, match_num: 2, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 2) }),
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Playoff, round: 2, set: 2, match_num: 2, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 3), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 1, 4) }),
+  PlayoffScheduleItem::AwardsBreak,
+
+  // Finals
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Final, round: 1, set: 1, match_num: 1, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 2, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 2, 2) }),
+  PlayoffScheduleItem::AwardsBreak,
+  PlayoffScheduleItem::Match(IncompleteMatch { ty: MatchType::Final, round: 1, set: 1, match_num: 2, red: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 2, 1), blue: PlayoffAllianceDescriptor::WinnerOf(MatchType::Playoff, 2, 2) }),
+];
+
 // TODO: Single Bracket
 
 pub fn bracket_update(playoff_mode: &PlayoffMode, matches: &Vec<Match>, scores: &HashMap<String, CommittedMatchScores>) -> anyhow::Result<GenerationUpdate> {
@@ -55,7 +84,10 @@ pub fn bracket_update(playoff_mode: &PlayoffMode, matches: &Vec<Match>, scores: 
     anyhow::bail!("Brackets do not currently support >8 alliances!");
   }
 
-  let bracket: &[PlayoffScheduleItem] = &DOUBLE_BRACKET_TEMPLATE;
+  let bracket: &[PlayoffScheduleItem] = match playoff_mode.mode {
+    PlayoffModeType::Bracket => &SINGLE_BRACKET_TEMPLATE,
+    PlayoffModeType::DoubleBracket => &DOUBLE_BRACKET_TEMPLATE,
+  };
   let mut refined_bracket = vec![];   /* Contains tiebreakers, removes byes */
 
   let mut winners: HashMap<(MatchType, /* round */ usize, /* set */ usize), PlayoffAllianceDescriptor> = HashMap::new();
