@@ -22,6 +22,19 @@
     }
   }
 
+  .fta-alliance-station-team {
+    &[data-has-administrative=true] {
+      > :first-child {
+        font-size: 0.7em;
+      }
+      > :last-child {
+        margin-top: -0.4em;
+        font-size: 0.4em;
+        color: $gray-600;
+      }
+    }
+  }
+
   &[data-bypass="true"] {
     background-color: $gray-900;
 

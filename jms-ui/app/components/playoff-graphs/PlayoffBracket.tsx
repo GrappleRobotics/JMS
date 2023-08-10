@@ -2,7 +2,7 @@
 import "./playoffs.scss";
 import { ALLIANCES } from "@/app/support/alliances";
 import { withValU } from "@/app/support/util";
-import { Alliance, Match, MatchType, PlayoffMode, PlayoffModeType } from "@/app/ws-schema";
+import { Alliance, Match, MatchType, PlayoffMode, PlayoffModeType, Team } from "@/app/ws-schema";
 import React from "react";
 import { Col, Row } from "react-bootstrap";
 import _ from "lodash";
@@ -103,7 +103,7 @@ const EDGES: { [k in PlayoffModeType]: { src: [MatchType, number, number], dst: 
   ]
 }
 
-export default function PlayoffBracketGraph({ matches, next_match, dark_mode, playoff_mode }: { matches: Match[], next_match?: Match, dark_mode?: boolean, playoff_mode: PlayoffModeType }) {
+export default function PlayoffBracketGraph({ matches, next_match, dark_mode, playoff_mode, teams }: { matches: Match[], next_match?: Match, dark_mode?: boolean, playoff_mode: PlayoffModeType, teams?: Team[] }) {
   const filt_matches = matches.filter(m => m.match_type === "Playoff" || m.match_type === "Final");
   const grouped = Object.values(_.groupBy(filt_matches, m => `${m.match_type}-${m.round}-${m.set_number}`));
   const elements = grouped.sort(ms => ms[0].set_number).flatMap(ms => {
@@ -123,6 +123,7 @@ export default function PlayoffBracketGraph({ matches, next_match, dark_mode, pl
           round: round,
           set: set,
           matches: ms,
+          teams: teams,
           next: is_next,
           played: played,
           ready: ready
@@ -167,13 +168,14 @@ type EliminationSetProps = {
     matches: Match[],
     next: boolean,
     played: boolean,
-    ready: boolean
+    ready: boolean,
+    teams?: Team[]
   }
 };
 
 class EliminationSet extends React.PureComponent<EliminationSetProps> {
   render() {
-    const { matches, next, played, ready } = this.props.data;
+    const { matches, next, played, ready, teams } = this.props.data;
 
     if (matches.length === 0)
       return <React.Fragment />;
@@ -204,7 +206,7 @@ class EliminationSet extends React.PureComponent<EliminationSetProps> {
                 <Col className="bracket-alliance"> { matches[0][`${alliance}_alliance`] || <React.Fragment>?</React.Fragment> } </Col>
                 {
                   matches[0][`${alliance}_teams`].filter(t => t != null).map(t => <Col>
-                    {t}
+                    { teams?.find(x => x.number === t)?.display_number || t}
                   </Col>)
                 }
                 <Col className="spacer" />

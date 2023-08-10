@@ -5,7 +5,7 @@ import MatchSchedule from "@/app/match_schedule";
 import { useErrors } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
-import { Match, PlayoffMode } from "@/app/ws-schema";
+import { Match, PlayoffMode, Team } from "@/app/ws-schema";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Link from "next/link";
@@ -17,13 +17,15 @@ export default withPermission(["ManagePlayoffs"], function EventWizardPlayoffs()
   const [ matches, setMatches ] = useState<Match[]>([]);
   const [ nextMatch, setNextMatch ] = useState<Match | null>(null);
   const [ playoffMode, setPlayoffMode ] = useState<PlayoffMode>();
+  const [ teams, setTeams ] = useState<Team[]>([]);
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useErrors();
 
   useEffect(() => {
     const cb = [
       subscribe<"matches/matches">("matches/matches", m => setMatches(m.filter(x => x.match_type === "Playoff" || x.match_type === "Final"))),
-      subscribe<"matches/next">("matches/next", setNextMatch)
+      subscribe<"matches/next">("matches/next", setNextMatch),
+      subscribe<"team/teams">("team/teams", setTeams)
     ];
     call<"matches/get_playoff_mode">("matches/get_playoff_mode", null).then(setPlayoffMode).catch(addError);
     return () => unsubscribe(cb);
@@ -40,7 +42,7 @@ export default withPermission(["ManagePlayoffs"], function EventWizardPlayoffs()
       Reset Playoffs
     </Button>
     <br /> <br />
-    <MatchSchedule matches={matches} />
+    <MatchSchedule matches={matches} teams={teams} />
 
     {
       playoffMode && <div style={{ width: '100%', height: '500px' }}>
@@ -49,6 +51,7 @@ export default withPermission(["ManagePlayoffs"], function EventWizardPlayoffs()
           dark_mode
           next_match={nextMatch || undefined}
           playoff_mode={playoffMode.mode}
+          teams={teams}
         />
       </div>
     }

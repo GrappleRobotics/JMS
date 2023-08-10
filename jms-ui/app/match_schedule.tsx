@@ -1,6 +1,6 @@
 import "./match_schedule.scss";
 import { Button, Col, Row, Table } from "react-bootstrap";
-import { Match, SerialisedLoadedMatch } from "./ws-schema";
+import { Match, SerialisedLoadedMatch, Team } from "./ws-schema";
 import React from "react";
 import moment from "moment";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -15,10 +15,11 @@ interface MatchScheduleProps {
   canLoad?: boolean,
   isLoadDisabled?: boolean,
   canDelete?: boolean,
-  filter?: (m: Match) => boolean
+  filter?: (m: Match) => boolean,
+  teams?: Team[]
 }
 
-export default function MatchSchedule({ matches, currentMatch, canLoad, isLoadDisabled, canDelete, filter }: MatchScheduleProps) {
+export default function MatchSchedule({ matches, currentMatch, canLoad, isLoadDisabled, canDelete, filter, teams }: MatchScheduleProps) {
   const { call } = useWebsocket();
   const { addError } = useErrors();
 
@@ -57,11 +58,11 @@ export default function MatchSchedule({ matches, currentMatch, canLoad, isLoadDi
                 <td> { match.name } { match.played && <span className="text-success">&nbsp;<FontAwesomeIcon icon={faCheck} /></span> } </td>
                 <td data-alliance="blue"> <strong>{ match.blue_alliance ? `#${match.blue_alliance}` : "" }</strong> </td>
                 {
-                  match.blue_teams.map(t => <td data-alliance="blue">{ t }</td>)
+                  match.blue_teams.map(t => <td data-alliance="blue">{ teams?.find(x => x.number === t)?.display_number || t }</td>)
                 }
                 <td data-alliance="red"> <strong>{ match.red_alliance ? `#${match.red_alliance}` : "" }</strong> </td>
                 {
-                  match.red_teams.map(t => <td data-alliance="red">{ t }</td>)
+                  match.red_teams.map(t => <td data-alliance="red">{ teams?.find(x => x.number === t)?.display_number || t }</td>)
                 }
                 <td>
                   { canDelete && <Button variant="danger" size="sm" disabled={match.played} onClick={() => withConfirm(() => call<"matches/delete">("matches/delete", { match_id: match.id }).catch(addError))}>

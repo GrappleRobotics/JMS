@@ -4,7 +4,7 @@ import "./fta.scss";
 import { PermissionGate, withPermission } from "@/app/support/permissions"
 import JmsWebsocket from "@/app/support/ws";
 import { useWebsocket } from "@/app/support/ws-component";
-import { AllianceStation, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch } from "@/app/ws-schema";
+import { AllianceStation, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch, Team } from "@/app/ws-schema";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBattery, faCheck, faCode, faRobot, faTimes, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -24,6 +24,7 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   const [ state, setState ] = useState<ArenaState>({ state: "Init" });
   const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null);
   const [ matches, setMatches ] = useState<Match[]>([]);
+  const [ teams, setTeams ] = useState<Team[]>([]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useErrors();
@@ -34,7 +35,8 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
       subscribe<"arena/ds">("arena/ds", (reports) => setDsReports(_.keyBy(reports, "team"))),
       subscribe<"arena/state">("arena/state", setState),
       subscribe<"arena/current_match">("arena/current_match", setCurrentMatch),
-      subscribe<"matches/matches">("matches/matches", setMatches)
+      subscribe<"matches/matches">("matches/matches", setMatches),
+      subscribe<"team/teams">("team/teams", setTeams)
     ];
     return () => unsubscribe(cb);
   }, []);
@@ -55,7 +57,7 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   return <div style={{ marginLeft: '1em', marginRight: '1em' }}>
     <Row>
       {
-        _.zip(allianceStations, stationReports).map(([stn, report]) => <FTAAllianceStation station={stn!} report={report || null} call={call} addError={addError} />)
+        _.zip(allianceStations, stationReports).map(([stn, report]) => <FTAAllianceStation station={stn!} report={report || null} call={call} addError={addError} teams={teams} />)
       }
     </Row>
     {
@@ -74,17 +76,28 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
       </Row>
     </PermissionGate>
     <br />
-    <MatchScheduleControl currentMatch={currentMatch || undefined} matches={matches} isLoadDisabled={state.state !== "Idle"} canLoad />
+    <MatchScheduleControl currentMatch={currentMatch || undefined} matches={matches} isLoadDisabled={state.state !== "Idle"} canLoad teams={teams} />
   </div>
 });
 
-function FTAAllianceStation({ station, report, call, addError }: { station: AllianceStation, report: DriverStationReport | null, call: JmsWebsocket["call"], addError: (e: string) => void }) {
+function FTAAllianceStation({ station, report, call, addError, teams }: { station: AllianceStation, report: DriverStationReport | null, call: JmsWebsocket["call"], addError: (e: string) => void , teams?: Team[] }) {
   const diagnosis = ftaDiagnosis(station, report);
+
+  const display_team = teams?.find(x => x.number === station.team)?.display_number;
 
   return <Col onClick={() => editStationModal(station, call, addError)} className="fta-alliance-station-col" data-alliance={station.id.alliance} data-bypass={station.bypass} data-estop={station.estop} data-astop={station.astop}>
     <Row>
       <Col md="auto"> <FTATeamIndicator ok={report?.rio_ping} icon={faRobot} /> </Col>
-      <Col className="fta-alliance-station-team"> { station.team || "----" } </Col>
+      <Col className="fta-alliance-station-team" data-has-administrative={station.team && display_team !== ("" + station.team)}>
+        <Row>
+          <Col> { display_team || station.team || "----" } </Col>
+        </Row>
+        {
+          station.team && display_team !== ("" + station.team) && <Row>
+            <Col> { station.team } </Col>
+          </Row>
+        }
+      </Col>
       <Col md="auto"> <FTATeamIndicator ok={report?.robot_ping} icon={faCode} /> </Col>
     </Row>
     <Row>
