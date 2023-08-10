@@ -8,7 +8,7 @@ import { nullIfEmpty } from "@/app/support/strings";
 import { withVal } from "@/app/support/util";
 import { useWebsocket } from "@/app/support/ws-component";
 import UserPage from "@/app/userpage";
-import { AudienceDisplay, AudienceDisplayScene, AudienceDisplaySound, Award, CommittedMatchScores, Match } from "@/app/ws-schema";
+import { AudienceDisplayScene, AudienceDisplaySound, Award, CommittedMatchScores, Match } from "@/app/ws-schema";
 import React, { useEffect, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 

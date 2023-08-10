@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 export function withVal<T,R>(val: T|null|undefined, fn: (v: T) => R|null) {
   if (val !== null && val !== undefined)
     return fn(val)
@@ -47,3 +49,11 @@ export function flattenObj(obj: any, prefix?: string): { [k: string]: any } {
 }
 
 export type KeysOfUnion<T> = T extends T ? keyof T: never;
+
+export function usePrevious<T>(value: T) {
+  const ref = useRef<T>();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
