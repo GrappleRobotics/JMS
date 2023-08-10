@@ -1,0 +1,13 @@
+@import "../variables.scss";
+
+.paginate {
+  .paginate-footer {
+    > * {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      color: $gray-400;
+    }
+  }
+}

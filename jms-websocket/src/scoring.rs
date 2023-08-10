@@ -52,6 +52,13 @@ pub trait ScoringWebsocket {
   }
 
   #[endpoint]
+  async fn get_matches_with_scores(&self, ctx: &WebsocketContext, _token: &MaybeToken) -> anyhow::Result<Vec<String>> {
+    let mut scores = CommittedMatchScores::all(&ctx.kv)?.into_iter().filter(|s| s.scores.len() > 0).collect::<Vec<_>>();
+    scores.sort_by(|a, b| b.last_update.cmp(&a.last_update));
+    Ok(scores.into_iter().map(|x| x.match_id).collect())
+  }
+
+  #[endpoint]
   async fn get_committed(&self, ctx: &WebsocketContext, _token: &MaybeToken, match_id: String) -> anyhow::Result<CommittedMatchScores> {
     CommittedMatchScores::get(&match_id, &ctx.kv)
   }
