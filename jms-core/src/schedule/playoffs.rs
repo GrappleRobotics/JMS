@@ -25,6 +25,7 @@ pub enum PlayoffAllianceDescriptor {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PlayoffScheduleItem {
   Match(IncompleteMatch),
+  TiebreakerSlot,
   AwardsBreak,
 }
 
@@ -181,7 +182,7 @@ impl PlayoffMatchGenerator {
                 real_match.insert(kv)?;
               }
             },
-            PlayoffScheduleItem::AwardsBreak => { }
+            PlayoffScheduleItem::AwardsBreak | PlayoffScheduleItem::TiebreakerSlot => { }
           }
           offset += item.duration.unwrap();
         }

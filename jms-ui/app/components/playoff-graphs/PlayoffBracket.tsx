@@ -78,7 +78,28 @@ const EDGES: { [k in PlayoffModeType]: { src: [MatchType, number, number], dst: 
     { src: ["Playoff", 2, 2], dst: ["Final", 1, 1, "blue"] },
   ],
   "DoubleBracket": [
-    // TODO:
+    // Round 1
+    { src: [ "Playoff", 1, 1 ], dst: [ "Playoff", 2, 3, "red" ] },
+    { src: [ "Playoff", 1, 2 ], dst: [ "Playoff", 2, 3, "blue" ] },
+    { src: [ "Playoff", 1, 3 ], dst: [ "Playoff", 2, 4, "red" ] },
+    { src: [ "Playoff", 1, 4 ], dst: [ "Playoff", 2, 4, "blue" ] },
+    
+    // Round 2
+    { src: [ "Playoff", 2, 3 ], dst: [ "Playoff", 4, 1, "red" ] },
+    { src: [ "Playoff", 2, 4 ], dst: [ "Playoff", 4, 1, "blue" ] },
+    { src: [ "Playoff", 2, 1 ], dst: [ "Playoff", 3, 2, "blue" ] },
+    { src: [ "Playoff", 2, 2 ], dst: [ "Playoff", 3, 1, "blue" ] },
+
+    // Round 3
+    { src: [ "Playoff", 3, 2 ], dst: [ "Playoff", 4, 2, "red" ] },
+    { src: [ "Playoff", 3, 1 ], dst: [ "Playoff", 4, 2, "blue" ] },
+
+    // Round 4
+    { src: ["Playoff", 4, 1], dst: [ "Final", 1, 1, "red" ] },
+    { src: ["Playoff", 4, 2], dst: [ "Playoff", 5, 1, "blue" ] },
+
+    // Round 5
+    { src: ["Playoff", 5, 1], dst: [ "Final", 1, 1, "blue" ] },
   ]
 }
 
