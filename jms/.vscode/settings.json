@@ -1,8 +1,0 @@
-{
-  "files.watcherExclude": {
-    "**/target/**": true
-  },
-  "rust-analyzer.diagnostics.disabled": [
-    "mismatched-arg-count"
-  ]
-}

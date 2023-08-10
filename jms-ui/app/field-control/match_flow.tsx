@@ -43,7 +43,7 @@ export function MatchFlow({ state, current_match }: { state: ArenaState, current
         data-target="MatchPreview"
         variant="warning"
         disabled={!current_match}
-        // onClick={() => this.props.onAudienceDisplay("MatchPreview")}     // TODO:
+        onClick={() => call<"audience/set">("audience/set", { scene: { scene: "MatchPreview" } }).catch(addError)}
       >
         Match Preview
       </Button>

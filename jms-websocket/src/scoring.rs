@@ -44,6 +44,13 @@ pub trait ScoringWebsocket {
 
   // Historical Scores
 
+  #[publish]
+  async fn latest_scores(&self, ctx: &WebsocketContext) -> anyhow::Result<Option<CommittedMatchScores>> {
+    let mut scores = CommittedMatchScores::all(&ctx.kv)?.into_iter().filter(|s| s.scores.len() > 0).collect::<Vec<_>>();
+    scores.sort_by(|a, b| a.last_update.cmp(&b.last_update));
+    Ok(scores.last().cloned())
+  }
+
   #[endpoint]
   async fn get_committed(&self, ctx: &WebsocketContext, _token: &MaybeToken, match_id: String) -> anyhow::Result<CommittedMatchScores> {
     CommittedMatchScores::get(&match_id, &ctx.kv)
@@ -55,7 +62,7 @@ pub trait ScoringWebsocket {
     if CommittedMatchScores::exists(&match_id, &ctx.kv)? {
       anyhow::bail!("There already exists a record for that match!");
     } else {
-      let c = CommittedMatchScores { match_id, scores: vec![] };
+      let c = CommittedMatchScores { match_id, scores: vec![], last_update: chrono::Local::now() };
       c.insert(&ctx.kv)?;
       Ok(c)
     }
@@ -94,7 +101,7 @@ pub trait ScoringWebsocket {
             }
           },
           Err(_) => {
-            let mut c = CommittedMatchScores { match_id: match_id, scores: vec![] };
+            let mut c = CommittedMatchScores { match_id: match_id, scores: vec![], last_update: chrono::Local::now() };
             c.push_and_insert(MatchScore { red: LiveScore::randomise(), blue: LiveScore::randomise() }, &ctx.kv)?;
           }
         }

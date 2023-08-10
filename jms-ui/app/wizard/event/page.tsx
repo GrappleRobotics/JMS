@@ -13,6 +13,8 @@ import { SketchPicker } from 'react-color';
 import EnumToggleGroup from "@/app/components/EnumToggleGroup";
 import { Typeahead } from "react-bootstrap-typeahead";
 import Link from "next/link";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 
 const PLAYOFF_MODES: { [k in PlayoffMode["mode"]]: string } = {
   Bracket: "Bracket",
@@ -182,5 +184,14 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
         />
       </Col>
     </Row>
+    <br />
+    <p className="text-muted"> 
+      <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; 
+      If you're using OBS, you can use a "Browser Source" with the following custom CSS to make the window transparent instead of relying 
+      on a chroma key. This will also improve the look of fade transitions.
+      <pre>
+        {`.audience-root { --chroma-key-colour: rgba(0,0,0,0) !important; }\nbody { background: rgba(0,0,0,0); }`}
+      </pre>
+    </p>
   </React.Fragment>
 });

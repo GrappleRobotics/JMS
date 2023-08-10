@@ -24,3 +24,6 @@ pub use rankings::*;
 
 mod user;
 pub use user::*;
+
+mod audience;
+pub use audience::*;

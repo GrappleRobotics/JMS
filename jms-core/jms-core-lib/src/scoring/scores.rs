@@ -92,7 +92,7 @@ pub struct DerivedScore {
   pub win_status: WinStatus,
 }
 
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 // #[serde(into = "MatchScoreSnapshot", from = "MatchScoreSnapshot")]
 pub struct MatchScore {
   pub red: LiveScore,

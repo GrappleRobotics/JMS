@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { useWebsocket } from "../support/ws-component";
 import { useErrors } from "../support/errors";
-import { Match, Team, TeamRanking } from "@/app/ws-schema";
+import { Match, PlayoffMode, Team, TeamRanking } from "@/app/ws-schema";
 import { Col, Row, Table } from "react-bootstrap";
 import { Element, scroller } from "react-scroll";
 import moment from "moment";
 import _ from "lodash";
+import PlayoffBracketGraph from "../components/playoff-graphs/PlayoffBracket";
 
 const SCROLL_TIME = 20000;
 const SCROLL_RESET_TIME = 2500;
@@ -14,9 +15,11 @@ const SCROLL_RESET_TIME = 2500;
 export default function TeamRankings() {
   const [ rankings, setRankings ] = useState<TeamRanking[]>([]);
   const [ teams, setTeams ] = useState<Team[]>([]);
+  const [ matches, setMatches ] = useState<Match[]>([]);
   const [ nextMatch, setNextMatch ] = useState<Match | null>(null);
+  const [ playoffMode, setPlayoffMode ] = useState<PlayoffMode>();
 
-  const { subscribe, unsubscribe } = useWebsocket();
+  const { call, subscribe, unsubscribe } = useWebsocket();
 
   const scrollDown = () => {
     scroller.scrollTo("bottom", {
@@ -35,12 +38,22 @@ export default function TeamRankings() {
     }, SCROLL_TIME + SCROLL_RESET_TIME);
   }
 
+  const refreshPlayoffMode = () => {
+    call<"matches/get_playoff_mode">("matches/get_playoff_mode", null)
+      .then(setPlayoffMode)
+  }
+
   useEffect(() => {
     let cbs = [
       subscribe<"scoring/rankings">("scoring/rankings", setRankings),
       subscribe<"matches/next">("matches/next", setNextMatch),
+      subscribe<"matches/matches">("matches/matches", m => {
+        setMatches(m);
+        refreshPlayoffMode();
+      }),
       subscribe<"team/teams">("team/teams", setTeams)
     ];
+    refreshPlayoffMode();
     scrollDown();
     return () => unsubscribe(cbs);
   }, []);
@@ -61,7 +74,7 @@ export default function TeamRankings() {
         <Element name="top" />
           { 
             nextMatch?.match_type === "Playoff" ? 
-              <React.Fragment />      /* TODO: Playoff Bracket */
+              (playoffMode && <PlayoffBracketGraph matches={matches} dark_mode next_match={nextMatch} teams={teams} playoff_mode={playoffMode.mode} />)
               : <QualificationTeamRankings rankings={rankings} teams={teams} /> 
           }
         <Element name="bottom" />

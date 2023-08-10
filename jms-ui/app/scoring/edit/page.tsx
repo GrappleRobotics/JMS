@@ -134,7 +134,7 @@ function EditScoresInner({ score, onUpdate, disabled, match }: { score: MatchSco
   return <React.Fragment>
     { score && derivedScore && ALLIANCES.map(alliance => <Row className="mt-2">
       <Col>
-        <Card data-alliance={alliance}>
+        <Card className="card-dark" data-alliance={alliance}>
           <Card.Body>
             <YearSpecificAllianceScoreEdit
               alliance={alliance}

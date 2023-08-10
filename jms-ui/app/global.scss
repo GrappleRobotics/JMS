@@ -31,8 +31,22 @@
   @each $alliance in $alliances {
     $tc: theme-color($alliance);
     &[data-alliance=#{$alliance}] {
-      background-color: desaturate(darken($tc, 25%), 30%);
-      border-color: $tc;
+      background-color: $tc;
+      > .card-header {
+        background-color: desaturate(darken($tc, 15%), 10%);
+      }
+    }
+  }
+
+  .card-dark {
+    @each $alliance in $alliances {
+      $tc: theme-color($alliance);
+      &[data-alliance=#{$alliance}] {
+        background-color: desaturate(darken($tc, 25%), 30%);
+        > .card-header {
+          background-color: desaturate(darken($tc, 25%), 30%);
+        }
+      }
     }
   }
 }

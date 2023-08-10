@@ -245,10 +245,11 @@ impl Singleton for PlayoffMode {
   const KEY: &'static str = "db:playoff_mode";
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct CommittedMatchScores {
   pub match_id: String,
-  pub scores: Vec<MatchScore>
+  pub scores: Vec<MatchScore>,
+  pub last_update: chrono::DateTime<chrono::Local>
 }
 
 impl Table for CommittedMatchScores {
@@ -264,6 +265,7 @@ impl Table for CommittedMatchScores {
 impl CommittedMatchScores {
   pub fn push_and_insert(&mut self, score: MatchScore, kv: &kv::KVConnection) -> anyhow::Result<()> {
     self.scores.push(score);
+    self.last_update = Local::now();
     self.insert(kv)?;
 
     // Update match played status

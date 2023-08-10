@@ -23,6 +23,7 @@ pub enum Permission {
   Scoring,
   EditScores,
   ManageAlliances,
+  ManageAudience,
 }
 
 impl Permission {
@@ -32,11 +33,11 @@ impl Permission {
       (a, b) if a == b => true,
 
       (Permission::FTA, Permission::ManageEvent | Permission::ManageTeams | Permission::ManageSchedule | Permission::ManagePlayoffs |
-                        Permission::ManageAwards | Permission::ManageAlliances | Permission::MatchFlow | Permission::Estop) => true,
+                        Permission::ManageAwards | Permission::ManageAlliances | Permission::MatchFlow | Permission::Estop | Permission::ManageAudience) => true,
 
       (Permission::FTAA, Permission::Estop) => true, 
       (Permission::Scorekeeper, Permission::ManageAwards | Permission::MatchFlow | Permission::Estop | Permission::Scoring | Permission::EditScores
-                                | Permission::ManageAlliances) => true,
+                                | Permission::ManageAlliances | Permission::ManageAudience) => true,
 
       _ => false
     }
