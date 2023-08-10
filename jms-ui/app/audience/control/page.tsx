@@ -12,14 +12,6 @@ import { AudienceDisplay, AudienceDisplayScene, AudienceDisplaySound, Award, Com
 import React, { useEffect, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 
-const SOUNDS: { id: AudienceDisplaySound, name: string }[] = [
-  { id: "AutoStart",    name: "Match Start" },
-  { id: "TeleopStart",  name: "Teleop Start" },
-  { id: "Endgame",      name: "Endgame Start" },
-  { id: "MatchStop",    name: "Match End" },
-  { id: "Estop",        name: "E-Stop" },
-];
-
 export default withPermission(["ManageAudience"], function AudienceDisplayControl() {
   const [ matches, setMatches ] = useState<Match[]>([]);
   const [ lastScores, setLastScores ] = useState<CommittedMatchScores | null>(null);
