@@ -7,14 +7,15 @@ import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Award, EventDetails, PlayoffMode } from "@/app/ws-schema";
 import React, { useEffect, useState } from "react";
-import { Card, Col, Form, InputGroup, Row } from "react-bootstrap";
+import { Button, Card, Col, Form, InputGroup, Row } from "react-bootstrap";
 import update, { Spec } from "immutability-helper";
 import { SketchPicker } from 'react-color';
 import EnumToggleGroup from "@/app/components/EnumToggleGroup";
 import { Typeahead } from "react-bootstrap-typeahead";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { withConfirm } from "@/app/components/Confirm";
 
 const PLAYOFF_MODES: { [k in PlayoffMode["mode"]]: string } = {
   Bracket: "Bracket",
@@ -76,6 +77,42 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
             onUpdate={v => updateDetails({ event_name: { $set: nullIfEmpty(String(v)) } })}
           />
         </InputGroup>
+      </Col>
+    </Row>
+
+    <hr />
+
+    <Row className="mt-2">
+      <Col>
+        <h5> Webcast URLs </h5>
+        <InputGroup>
+          <InputGroup.Text>Webcast URL</InputGroup.Text>
+          <BufferedFormControl
+            type="text"
+            placeholder="New Webcast URL, e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            value=""
+            onUpdate={v => nullIfEmpty(v as string) ? updateDetails({ webcasts: { $push: [ v as string ] } }) : {}}
+            updateOnDefocus={false}
+            resetOnUpdate
+          />
+        </InputGroup>
+
+        {
+          details?.webcasts?.map((wc, i) => <Row key={i} className="my-1">
+            <Col md="auto">
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => withConfirm(() => updateDetails({ webcasts: { $splice: [[i, 1]] } }))}
+              >
+                <FontAwesomeIcon icon={faTimes} /> &nbsp; Delete
+              </Button>
+            </Col>
+            <Col>
+              <a href={wc} target="_blank"> { wc } </a>
+            </Col>
+          </Row>)
+        }
       </Col>
     </Row>
 
@@ -188,7 +225,7 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
     <p className="text-muted"> 
       <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; 
       If you're using OBS, you can use a "Browser Source" with the following custom CSS to make the window transparent instead of relying 
-      on a chroma key. This will also improve the look of fade transitions.
+      on a chroma key.
       <pre>
         {`.audience-root { --chroma-key-colour: rgba(0,0,0,0) !important; }\nbody { background: rgba(0,0,0,0); }`}
       </pre>
