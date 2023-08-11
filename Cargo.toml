@@ -10,5 +10,7 @@ members = [
   "jms-util",
   "jms-radio-config",
   "jms-websocket",
-  "jms-websocket/jms-websocket-macros"
+  "jms-websocket/jms-websocket-macros",
+  "jms-tba",
+  "jms-tba/jms-tba-lib"
 ]

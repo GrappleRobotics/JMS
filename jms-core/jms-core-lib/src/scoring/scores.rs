@@ -71,8 +71,15 @@ impl Default for LiveScore {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct Link {
+  pub nodes: [usize; 3],
+  pub row: usize,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DerivedScore {
   pub mobility_points: isize,
+  pub links: Vec<Link>,
   pub link_count: isize,
   pub link_points: isize,
   pub community_points: ModeScore<isize>,
@@ -245,9 +252,12 @@ impl LiveScore {
       _ => ( WinStatus::TIE, 1 )
     };
 
+    let links = self.links();
+
     DerivedScore {
       mobility_points: self.mobility_points(),
-      link_count: self.link_count(),
+      link_count: links.len() as isize,
+      links,
       link_points: self.link_points(),
       community_points: self.community_points(),
       auto_docked_points: self.auto_docked_points(),
@@ -340,7 +350,7 @@ impl LiveScore {
     ms
   }
 
-  fn link_count(&self) -> isize {
+  fn links(&self) -> Vec<Link> {
     let mut occupancy_grid = vec![vec![false; 9]; 3];
     for (row, cols) in self.community.auto.iter().enumerate() {
       for (col, gptype) in cols.iter().enumerate() {
@@ -358,7 +368,7 @@ impl LiveScore {
       }
     }
 
-    let mut n_links = 0;
+    let mut links = vec![];
 
     // Scan each row left to right
     for row in 0..occupancy_grid.len() {
@@ -370,17 +380,21 @@ impl LiveScore {
         }
         if count == 3 {
           count = 0;
-          n_links += 1;
+          // n_links += 1;
+          links.push(Link {
+            row,
+            nodes: [ col - 2, col - 1, col ]
+          })
         }
         col += 1;
       }
     }
 
-    n_links
+    links
   }
 
   fn link_points(&self) -> isize {
-    self.link_count() * 5
+    self.links().len() as isize * 5
   }
 
   fn meets_coopertition(&self) -> bool {
@@ -405,7 +419,7 @@ impl LiveScore {
   }
 
   fn sustainability_rp(&self, other_alliance: &Self) -> bool {
-    self.link_count() >= self.sustainability_threshold(other_alliance) as isize
+    self.links().len() as isize >= self.sustainability_threshold(other_alliance) as isize
   }
   
   fn activation_rp(&self) -> bool {

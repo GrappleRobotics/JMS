@@ -22,6 +22,8 @@ async fn component_svc(kv: &kv::KVConnection, mq: mq::MessageQueueChannel) -> an
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+  jms_base::logging::configure(false);
+  
   let kv = kv::KVConnection::new()?;
   let mq = MessageQueue::new("arena-reply").await?;
 
