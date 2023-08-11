@@ -22,7 +22,9 @@ export function MatchFlow({ state, current_match }: { state: ArenaState, current
           arenaState={state}
           variant="estop-reset"
           onClick={() => signal("EstopReset")}
-        />
+        >
+          ESTOP RESET
+        </MatchFlowButton>
       </Col>
     </Row>
 
@@ -64,7 +66,10 @@ export function MatchFlow({ state, current_match }: { state: ArenaState, current
         arenaState={state}
         targetState="MatchPlay"
         variant="hazard-yellow"
-        onClick={() => signal("MatchPlay")}
+        onClick={() => {
+          call<"audience/set">("audience/set", { scene: { scene: "MatchPlay" } });
+          signal("MatchPlay");
+        }}
         disabled={state?.state !== "MatchArmed"}
       >
         Match Play

@@ -78,7 +78,7 @@ impl LoadedMatch {
         }
       }
       MatchPlayState::Pause => {
-        remaining = Duration::seconds(1) - elapsed;
+        remaining = Duration::seconds(3) - elapsed;
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Teleop);
         }

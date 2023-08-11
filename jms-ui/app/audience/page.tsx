@@ -3,7 +3,7 @@ import "./audience.scss";
 
 import { useEffect, useState } from "react";
 import { useWebsocket } from "../support/ws-component"
-import { AllianceStation, AudienceDisplay, AudienceDisplaySound, Award, EventDetails, Match, PlayoffAlliance, PlayoffMode, SerialisedLoadedMatch, Team, TeamRanking } from "../ws-schema";
+import { AllianceStation, ArenaState, AudienceDisplay, AudienceDisplaySound, Award, EventDetails, Match, MatchScoreSnapshot, PlayoffAlliance, PlayoffMode, SerialisedLoadedMatch, Team, TeamRanking } from "../ws-schema";
 import React from "react";
 import { CSSTransition, SwitchTransition, TransitionGroup } from "react-transition-group";
 import FieldScene from "./scenes/field";
@@ -14,6 +14,7 @@ import AllianceSelectionScene from "./scenes/alliance-selections";
 import MatchResultsScene from "./scenes/match-results";
 import AwardScene from "./scenes/award";
 import { usePrevious } from "../support/util";
+import MatchPlayScene from "./scenes/match-play";
 
 export function withDefaultTransition(key: string, children: React.ReactNode) {
   return <CSSTransition key={key} timeout={500} classNames="audience-scene-anim">
@@ -21,7 +22,7 @@ export function withDefaultTransition(key: string, children: React.ReactNode) {
   </CSSTransition>
 }
 
-const playSound = async (sound: AudienceDisplaySound) => {
+export const playSound = async (sound: AudienceDisplaySound) => {
   console.log("Playing Sound: " + sound);
   const audio = new Audio(`/sounds/${sound}.wav`);
   audio.play().catch((e: DOMException) => {
@@ -44,6 +45,9 @@ export default function AudienceDisplay() {
   const [ nextMatch, setNextMatch ] = useState<Match | null>(null);
   const [ alliances, setAlliances ] = useState<PlayoffAlliance[]>([]);
   const [ awards, setAwards ] = useState<Award[]>([]);
+  const [ currentScore, setCurrentScore ] = useState<MatchScoreSnapshot>();
+  const [ arenaState, setArenaState ] = useState<ArenaState>();
+  const lastState = usePrevious(arenaState);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
 
@@ -67,12 +71,22 @@ export default function AudienceDisplay() {
       subscribe<"arena/stations">("arena/stations", setStations),
       subscribe<"alliances/alliances">("alliances/alliances", setAlliances),
       subscribe<"awards/awards">("awards/awards", setAwards),
+      subscribe<"scoring/current">("scoring/current", setCurrentScore),
+      subscribe<"arena/state">("arena/state", setArenaState),
     ];
 
     refreshPlayoffMode();
 
     return () => unsubscribe(cbs)
-  }, [])
+  }, []);
+
+  useEffect(() => {
+    if (arenaState && lastState && arenaState.state !== lastState.state) {
+      if (arenaState.state === "Estop") {
+        playSound("Estop");
+      }
+    }
+  }, [ arenaState ]);
 
   useEffect(() => {
     if (audienceDisplay.queued_sound) {
@@ -92,6 +106,7 @@ export default function AudienceDisplay() {
         scene.scene === "Blank" ? withDefaultTransition("Blank", <FieldScene />)
         : scene.scene === "CustomMessage" ? withDefaultTransition("CustomMessage", <MessageScene eventDetails={eventDetails} message={scene.params} />)
         : scene.scene === "MatchPreview" ? withDefaultTransition("MatchPreview", <MatchPreviewScene eventDetails={eventDetails} currentMatch={currentMatch} matches={matches} teams={teams} rankings={rankings} stations={stations} />)
+        : scene.scene === "MatchPlay" ? withDefaultTransition("MatchPlay", <MatchPlayScene eventDetails={eventDetails} currentMatch={currentMatch} matches={matches} teams={teams} stations={stations} currentScore={currentScore} arenaState={arenaState} />)
         : scene.scene === "MatchResults" ? withDefaultTransition("MatchResults", <MatchResultsScene match_id={scene.params} eventDetails={eventDetails} teams={teams} matches={matches} />)
         : scene.scene === "PlayoffBracket" ? withDefaultTransition("PlayoffBracket", <PlayoffBracketScene eventDetails={eventDetails} matches={matches} teams={teams} playoff_mode={playoffMode?.mode} next_match={nextMatch || undefined} />)
         : scene.scene === "AllianceSelection" ? withDefaultTransition("AllianceSelection", <AllianceSelectionScene eventDetails={eventDetails} alliances={alliances} teams={teams} rankings={rankings} />)
