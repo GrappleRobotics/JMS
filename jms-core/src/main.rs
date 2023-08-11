@@ -1,5 +1,6 @@
 mod schedule;
 mod scoring;
+mod reports;
 
 use std::time::Duration;
 
@@ -27,10 +28,13 @@ async fn main() -> anyhow::Result<()> {
   let mut mgsvc = schedule::GeneratorService { kv: kv.clone()?, mq: mq.channel().await? };
   let mgfut = mgsvc.run();
 
+  let mut rgsvc = reports::service::ReportGeneratorService { kv: kv.clone()?, mq: mq.channel().await? };
+  let rgfut = rgsvc.run();
+
   let ssvc = scoring::ScoringService { kv: kv.clone()?, mq: mq.channel().await? };
   let sfut = ssvc.run();
 
-  try_join!(mgfut, sfut, component_svc(&kv, mq.channel().await?))?;
+  try_join!(mgfut, rgfut, sfut, component_svc(&kv, mq.channel().await?))?;
 
   Ok(())
 }

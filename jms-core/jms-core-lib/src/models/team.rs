@@ -1,6 +1,8 @@
 use std::num::ParseIntError;
 
-use crate::db;
+use jms_base::kv;
+
+use crate::db::{self, Table};
 
 #[derive(jms_macros::Updateable)]
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -41,6 +43,26 @@ impl Team {
       number, display_number,
       name, affiliation, location,
       notes: None, wpakey, schedule: true
+    }
+  }
+
+  pub fn sorted(kv: &kv::KVConnection) -> anyhow::Result<Vec<Team>> {
+    let mut teams = Self::all(kv)?;
+    teams.sort_by(|a, b| a.number.cmp(&b.number));
+    Ok(teams)
+  }
+
+  pub fn display_number(team_number: usize, kv: &kv::KVConnection) -> String {
+    match Self::get(&team_number, kv) {
+      Ok(t) => t.display_number,
+      Err(_) => format!("{}", team_number)
+    }
+  }
+
+  pub fn display_number_for(team: &String, kv: &kv::KVConnection) -> String {
+    match team.parse() {
+      Ok(team_number) => Self::display_number(team_number, kv),
+      Err(_) => team.clone()
     }
   }
 }
