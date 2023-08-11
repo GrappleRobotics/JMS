@@ -126,24 +126,6 @@ pub struct Match {
 }
 
 impl Match {
-  pub fn new_test() -> Self {
-    Match {
-      id: "test".to_owned(),
-      name: "Test Match".to_owned(),
-      start_time: chrono::Local::now().into(),
-      match_type: MatchType::Test,
-      round: 1,
-      set_number: 1,
-      match_number: 1,
-      blue_teams: vec![None, None, None],
-      blue_alliance: None,
-      red_teams: vec![None, None, None],
-      red_alliance: None,
-      played: false,
-      ready: false
-    }
-  }
-
   // We work a little differently to TBA and the official FMS. We mark Qualification matches with set number since they may be replayed, 
   // in which case the match number increases. You can think of it as if the teams on each alliance are the same, the set number is the same, otherwise
   // it is different. The match number increments for each 'replay'.
@@ -154,7 +136,7 @@ impl Match {
 
   pub fn gen_id(ty: MatchType, round: usize, set: usize, match_n: usize) -> String {
     match ty {
-      MatchType::Test => format!("test"),
+      MatchType::Test => format!("test{}m{}", set, match_n),
       MatchType::Qualification => format!("qm{}m{}", set, match_n),
       MatchType::Playoff => format!("el{}s{}m{}", round, set, match_n),
       MatchType::Final => format!("f{}", match_n)
@@ -163,7 +145,7 @@ impl Match {
 
   pub fn gen_name(ty: MatchType, round: usize, set: usize, match_n: usize) -> String {
     match ty {
-      MatchType::Test => format!("Test Match"),
+      MatchType::Test => format!("Test Match {}-{}", set, match_n),
       MatchType::Qualification if match_n == 1 => format!("Qualification {}", set),
       MatchType::Qualification => format!("Qualification {} (replay {})", set, match_n - 1),
       MatchType::Playoff => format!("Elimination Round {} - {}-{}", round, set, match_n),

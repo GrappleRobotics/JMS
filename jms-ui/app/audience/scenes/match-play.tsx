@@ -21,7 +21,7 @@ interface MatchPreviewProps {
 export default function MatchPlayScene({ eventDetails, currentMatch, matches, teams, stations, currentScore, arenaState }: MatchPreviewProps) {
   const match = matches.find(m => m.id === currentMatch?.match_id);
   const lastMatchState = usePrevious(currentMatch?.state);
-  const endgame = currentMatch?.state === "Teleop" && currentMatch?.remaining <= 30000;
+  const endgame = currentMatch?.endgame;
   const lastEndgame = usePrevious(endgame);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function MatchPlayScene({ eventDetails, currentMatch, matches, te
                       { derived?.total_score || 0 }
                     </Col>
                   </Row>
-                  { withValU(derived?.total_bonus_rp, brp => brp > 0 && <Row className="audience-play-score-bonus-rp">
+                  { match?.match_type === "Qualification" && withValU(derived?.total_bonus_rp, brp => brp > 0 && <Row className="audience-play-score-bonus-rp">
                     <Col>
                       +{ brp } RP
                     </Col>

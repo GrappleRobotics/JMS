@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY, AllianceStation, SerialisedLoadedMatch, ARENA_MATCH_KEY, AllianceStationUpdate};
-use jms_core_lib::{models::{MaybeToken, Permission, AllianceStationId}, db::Table};
+use jms_core_lib::{models::{MaybeToken, Permission, AllianceStationId, Match, MatchType}, db::Table};
 use jms_driverstation_lib::DriverStationReport;
 
 use crate::ws::WebsocketContext;
@@ -45,7 +45,24 @@ pub trait ArenaWebsocket {
   #[endpoint]
   async fn load_test_match(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
     token.auth(&ctx.kv)?.require_permission(&[Permission::FTA, Permission::FTAA, Permission::Scorekeeper])?;
-    ArenaRPCClient::load_test_match(&ctx.mq).await.map_err(|e| anyhow::anyhow!(e))?.map_err(|e| anyhow::anyhow!(e))
+    let max_test_match = Match::all(&ctx.kv)?.iter().filter(|m| m.match_type == MatchType::Test).map(|x| x.set_number).max().unwrap_or(0);
+    let m = Match {
+      id: Match::gen_id(MatchType::Test, 1, max_test_match + 1, 1),
+      name: Match::gen_name(MatchType::Test, 1, max_test_match + 1, 1),
+      start_time: chrono::Local::now(),
+      match_type: MatchType::Test,
+      round: 1,
+      set_number: max_test_match + 1,
+      match_number: 1,
+      blue_teams: vec![None, None, None],
+      red_teams: vec![None, None, None],
+      blue_alliance: None,
+      red_alliance: None,
+      played: false,
+      ready: true
+    };
+    m.insert(&ctx.kv)?;
+    ArenaRPCClient::load_match(&ctx.mq, m.id.clone()).await.map_err(|e| anyhow::anyhow!(e))?.map_err(|e| anyhow::anyhow!(e))
   }
 
   #[endpoint]

@@ -4,7 +4,7 @@ use std::{time::Duration, collections::HashMap};
 
 use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY};
 use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue}};
-use jms_core_lib::{models::{AllianceStationId, self, JmsComponent}, db::Table};
+use jms_core_lib::{models::{AllianceStationId, self, JmsComponent, Match, Alliance}, db::Table};
 use log::info;
 use matches::LoadedMatch;
 
@@ -48,6 +48,17 @@ impl Arena {
 
   pub async fn commit_scores(&mut self, match_id: String) -> anyhow::Result<()> {
     info!("Committing Scores");
+    // Save stations into the match so we get an accurate record of who competed
+    if let Ok(mut m) = Match::get(&match_id, &self.kv) {
+      // We have to load AllianceStation from the DB since the ones stored in the arena aren't hydrated with team number
+      let stns = AllianceStation::sorted(&self.kv)?;
+
+      m.red_teams = stns.iter().filter(|x| x.id.alliance == Alliance::Red).map(|x| x.team).collect();
+      m.blue_teams = stns.iter().filter(|x| x.id.alliance == Alliance::Blue).map(|x| x.team).collect();
+
+      m.insert(&self.kv)?;
+    }
+    // Notify scoring, etc
     self.mq.publish("arena.scores.publish", match_id).await?;
     Ok(())
   }
@@ -185,22 +196,6 @@ impl ArenaRPC for Arena {
           let id = AllianceStationId::new(models::Alliance::Red, i + 1);
           self.stations.get_mut(&id).ok_or("No Station Available".to_string())?.set_team(team, &self.kv).map_err(|e| e.to_string())?;
         }
-        Ok(())
-      },
-      _ => Err(format!("Can't load match in state: {:?}", self.state))
-    }
-  }
-
-  async fn load_test_match(&mut self) -> Result<(), String> {
-    info!("Loading Test Match...");
-    match self.state {
-      ArenaState::Idle { .. } => {
-        self.current_match = Some(LoadedMatch::new("test".to_owned()));
-
-        for stn in self.stations.values_mut() {
-          stn.set_team(None, &self.kv).ok();
-        }
-
         Ok(())
       },
       _ => Err(format!("Can't load match in state: {:?}", self.state))

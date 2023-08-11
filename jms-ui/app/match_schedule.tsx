@@ -30,8 +30,8 @@ export default function MatchSchedule({ matches, currentMatch, canLoad, isLoadDi
           <h4><i>{ currentMatch && currentMatch.match_id === "test" ? "Test Match" : matches.find(m => m.id === currentMatch?.match_id)?.name || currentMatch?.match_id }</i></h4>
         </Col>
         <Col md="auto">
-          <Button variant="primary" disabled={isLoadDisabled} onClick={() => call<"arena/load_test_match">("arena/load_test_match", null).catch(addError)}>
-            LOAD TEST MATCH
+          <Button variant="primary" disabled={isLoadDisabled} onClick={() => withConfirm(() => call<"arena/load_test_match">("arena/load_test_match", null).catch(addError), "Create Test Match", { okVariant: "success" })}>
+            NEW TEST MATCH
           </Button> &nbsp; 
           <Button variant="danger" disabled={isLoadDisabled} onClick={() => call<"arena/unload_match">("arena/unload_match", null).catch(addError)}>
             UNLOAD MATCH

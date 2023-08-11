@@ -115,6 +115,5 @@ pub trait ArenaRPC {
   async fn signal(signal: ArenaSignal, source: String) -> Result<(), String>;
 
   async fn load_match(id: String) -> Result<(), String>;
-  async fn load_test_match() -> Result<(), String>;
   async fn unload_match() -> Result<(), String>;
 }
