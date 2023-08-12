@@ -16,6 +16,7 @@ jms-core-lib = { path = "../jms-core/jms-core-lib" }
 jms-driverstation-lib = { path = "../jms-driverstation/jms-driverstation-lib" }
 jms-macros = { path = "../jms-macros" }
 jms-websocket-macros = { path = "./jms-websocket-macros" }
+jms-tba-lib = { path = "../jms-tba/jms-tba-lib" }
 log = "0.4.19"
 regex = "1.9.1"
 schemars = "0.8.12"

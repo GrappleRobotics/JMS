@@ -271,6 +271,17 @@ export type ScoreUpdate =
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "TBASettingsUpdate".
+ */
+export type TBASettingsUpdate =
+  | {
+      auth_id: string | null;
+    }
+  | {
+      auth_key: string | null;
+    };
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
  * via the `definition` "TeamUpdate".
  */
 export type TeamUpdate =
@@ -327,58 +338,6 @@ export type UserUpdate =
  */
 export type WebsocketPublish =
   | {
-      data: Team[];
-      path: "team/teams";
-    }
-  | {
-      /**
-       * @minItems 2
-       * @maxItems 2
-       */
-      data: [string, JmsComponent[]];
-      path: "components/components";
-    }
-  | {
-      data: PlayoffAlliance[];
-      path: "alliances/alliances";
-    }
-  | {
-      data: string;
-      path: "debug/test_publish";
-    }
-  | {
-      data: EventDetails;
-      path: "event/details";
-    }
-  | {
-      data: Match[];
-      path: "matches/matches";
-    }
-  | {
-      data: Match | null;
-      path: "matches/next";
-    }
-  | {
-      data: boolean;
-      path: "matches/generator_busy";
-    }
-  | {
-      data: Award[];
-      path: "awards/awards";
-    }
-  | {
-      data: MatchScoreSnapshot;
-      path: "scoring/current";
-    }
-  | {
-      data: CommittedMatchScores | null;
-      path: "scoring/latest_scores";
-    }
-  | {
-      data: TeamRanking[];
-      path: "scoring/rankings";
-    }
-  | {
       data: ArenaState;
       path: "arena/state";
     }
@@ -395,8 +354,60 @@ export type WebsocketPublish =
       path: "arena/ds";
     }
   | {
+      data: Award[];
+      path: "awards/awards";
+    }
+  | {
+      data: PlayoffAlliance[];
+      path: "alliances/alliances";
+    }
+  | {
       data: AudienceDisplay;
       path: "audience/current";
+    }
+  | {
+      data: Team[];
+      path: "team/teams";
+    }
+  | {
+      data: MatchScoreSnapshot;
+      path: "scoring/current";
+    }
+  | {
+      data: CommittedMatchScores | null;
+      path: "scoring/latest_scores";
+    }
+  | {
+      data: TeamRanking[];
+      path: "scoring/rankings";
+    }
+  | {
+      data: string;
+      path: "debug/test_publish";
+    }
+  | {
+      data: Match[];
+      path: "matches/matches";
+    }
+  | {
+      data: Match | null;
+      path: "matches/next";
+    }
+  | {
+      data: boolean;
+      path: "matches/generator_busy";
+    }
+  | {
+      /**
+       * @minItems 2
+       * @maxItems 2
+       */
+      data: [string, JmsComponent[]];
+      path: "components/components";
+    }
+  | {
+      data: EventDetails;
+      path: "event/details";
     };
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -405,26 +416,42 @@ export type WebsocketPublish =
 export type WebsocketRpcRequest =
   | {
       data: {
-        affiliation: string | null;
-        display_number: string;
-        location: string | null;
-        name: string | null;
-        team_number: number;
+        signal: ArenaSignal;
       };
-      path: "team/new_team";
+      path: "arena/signal";
     }
   | {
       data: {
-        team_number: number;
-        updates: TeamUpdate[];
+        match_id: string;
       };
-      path: "team/update";
+      path: "arena/load_match";
+    }
+  | {
+      data: null;
+      path: "arena/load_test_match";
+    }
+  | {
+      data: null;
+      path: "arena/unload_match";
     }
   | {
       data: {
-        team_number: number;
+        station_id: AllianceStationId;
+        updates: AllianceStationUpdate[];
       };
-      path: "team/delete";
+      path: "arena/update_station";
+    }
+  | {
+      data: {
+        award: Award;
+      };
+      path: "awards/set_award";
+    }
+  | {
+      data: {
+        award_id: string;
+      };
+      path: "awards/delete_award";
     }
   | {
       data: null;
@@ -447,87 +474,48 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        in_text: string;
+        scene: AudienceDisplayScene;
       };
-      path: "debug/test_endpoint";
+      path: "audience/set";
     }
   | {
       data: {
-        details: EventDetails;
+        sound: AudienceDisplaySound;
       };
-      path: "event/update";
+      path: "audience/play_sound";
     }
   | {
       data: null;
-      path: "event/schedule_get";
+      path: "tba/get_settings";
     }
   | {
       data: {
-        block_type: ScheduleBlockType;
-        end: string;
-        name: string;
-        start: string;
+        update: TBASettingsUpdate;
       };
-      path: "event/schedule_new_block";
+      path: "tba/update_settings";
     }
   | {
       data: {
-        block_id: string;
+        affiliation: string | null;
+        display_number: string;
+        location: string | null;
+        name: string | null;
+        team_number: number;
       };
-      path: "event/schedule_delete";
+      path: "team/new_team";
     }
   | {
       data: {
-        block_id: string;
-        updates: ScheduleBlockUpdate[];
+        team_number: number;
+        updates: TeamUpdate[];
       };
-      path: "event/schedule_edit";
+      path: "team/update";
     }
   | {
       data: {
-        match_id: string;
+        team_number: number;
       };
-      path: "matches/delete";
-    }
-  | {
-      data: null;
-      path: "matches/debug_delete_all";
-    }
-  | {
-      data: {
-        params: QualsMatchGeneratorParams;
-      };
-      path: "matches/gen_quals";
-    }
-  | {
-      data: null;
-      path: "matches/get_playoff_mode";
-    }
-  | {
-      data: {
-        mode: PlayoffMode;
-      };
-      path: "matches/set_playoff_mode";
-    }
-  | {
-      data: null;
-      path: "matches/reset_playoffs";
-    }
-  | {
-      data: null;
-      path: "matches/update_playoffs";
-    }
-  | {
-      data: {
-        award: Award;
-      };
-      path: "awards/set_award";
-    }
-  | {
-      data: {
-        award_id: string;
-      };
-      path: "awards/delete_award";
+      path: "team/delete";
     }
   | {
       data: {
@@ -579,6 +567,46 @@ export type WebsocketRpcRequest =
       path: "scoring/update_rankings";
     }
   | {
+      data: {
+        in_text: string;
+      };
+      path: "debug/test_endpoint";
+    }
+  | {
+      data: {
+        match_id: string;
+      };
+      path: "matches/delete";
+    }
+  | {
+      data: null;
+      path: "matches/debug_delete_all";
+    }
+  | {
+      data: {
+        params: QualsMatchGeneratorParams;
+      };
+      path: "matches/gen_quals";
+    }
+  | {
+      data: null;
+      path: "matches/get_playoff_mode";
+    }
+  | {
+      data: {
+        mode: PlayoffMode;
+      };
+      path: "matches/set_playoff_mode";
+    }
+  | {
+      data: null;
+      path: "matches/reset_playoffs";
+    }
+  | {
+      data: null;
+      path: "matches/update_playoffs";
+    }
+  | {
       data: null;
       path: "reports/awards";
     }
@@ -605,42 +633,35 @@ export type WebsocketRpcRequest =
     }
   | {
       data: {
-        signal: ArenaSignal;
+        details: EventDetails;
       };
-      path: "arena/signal";
-    }
-  | {
-      data: {
-        match_id: string;
-      };
-      path: "arena/load_match";
+      path: "event/update";
     }
   | {
       data: null;
-      path: "arena/load_test_match";
-    }
-  | {
-      data: null;
-      path: "arena/unload_match";
+      path: "event/schedule_get";
     }
   | {
       data: {
-        station_id: AllianceStationId;
-        updates: AllianceStationUpdate[];
+        block_type: ScheduleBlockType;
+        end: string;
+        name: string;
+        start: string;
       };
-      path: "arena/update_station";
+      path: "event/schedule_new_block";
     }
   | {
       data: {
-        scene: AudienceDisplayScene;
+        block_id: string;
       };
-      path: "audience/set";
+      path: "event/schedule_delete";
     }
   | {
       data: {
-        sound: AudienceDisplaySound;
+        block_id: string;
+        updates: ScheduleBlockUpdate[];
       };
-      path: "audience/play_sound";
+      path: "event/schedule_edit";
     }
   | {
       data: null;
@@ -694,16 +715,32 @@ export type WebsocketRpcRequest =
  */
 export type WebsocketRpcResponse =
   | {
-      data: Team;
-      path: "team/new_team";
-    }
-  | {
-      data: Team;
-      path: "team/update";
+      data: null;
+      path: "arena/signal";
     }
   | {
       data: null;
-      path: "team/delete";
+      path: "arena/load_match";
+    }
+  | {
+      data: null;
+      path: "arena/load_test_match";
+    }
+  | {
+      data: null;
+      path: "arena/unload_match";
+    }
+  | {
+      data: null;
+      path: "arena/update_station";
+    }
+  | {
+      data: Award;
+      path: "awards/set_award";
+    }
+  | {
+      data: null;
+      path: "awards/delete_award";
     }
   | {
       data: PlayoffAlliance[];
@@ -722,64 +759,32 @@ export type WebsocketRpcResponse =
       path: "alliances/set_teams";
     }
   | {
-      data: string;
-      path: "debug/test_endpoint";
-    }
-  | {
-      data: EventDetails;
-      path: "event/update";
-    }
-  | {
-      data: ScheduleBlock[];
-      path: "event/schedule_get";
-    }
-  | {
-      data: ScheduleBlock;
-      path: "event/schedule_new_block";
+      data: null;
+      path: "audience/set";
     }
   | {
       data: null;
-      path: "event/schedule_delete";
+      path: "audience/play_sound";
     }
   | {
-      data: ScheduleBlock;
-      path: "event/schedule_edit";
+      data: TBASettings;
+      path: "tba/get_settings";
     }
   | {
-      data: null;
-      path: "matches/delete";
+      data: TBASettings;
+      path: "tba/update_settings";
     }
   | {
-      data: null;
-      path: "matches/debug_delete_all";
+      data: Team;
+      path: "team/new_team";
     }
   | {
-      data: null;
-      path: "matches/gen_quals";
-    }
-  | {
-      data: PlayoffMode;
-      path: "matches/get_playoff_mode";
-    }
-  | {
-      data: PlayoffMode;
-      path: "matches/set_playoff_mode";
+      data: Team;
+      path: "team/update";
     }
   | {
       data: null;
-      path: "matches/reset_playoffs";
-    }
-  | {
-      data: null;
-      path: "matches/update_playoffs";
-    }
-  | {
-      data: Award;
-      path: "awards/set_award";
-    }
-  | {
-      data: null;
-      path: "awards/delete_award";
+      path: "team/delete";
     }
   | {
       data: MatchScoreSnapshot;
@@ -818,6 +823,38 @@ export type WebsocketRpcResponse =
       path: "scoring/update_rankings";
     }
   | {
+      data: string;
+      path: "debug/test_endpoint";
+    }
+  | {
+      data: null;
+      path: "matches/delete";
+    }
+  | {
+      data: null;
+      path: "matches/debug_delete_all";
+    }
+  | {
+      data: null;
+      path: "matches/gen_quals";
+    }
+  | {
+      data: PlayoffMode;
+      path: "matches/get_playoff_mode";
+    }
+  | {
+      data: PlayoffMode;
+      path: "matches/set_playoff_mode";
+    }
+  | {
+      data: null;
+      path: "matches/reset_playoffs";
+    }
+  | {
+      data: null;
+      path: "matches/update_playoffs";
+    }
+  | {
       data: ReportData;
       path: "reports/awards";
     }
@@ -838,32 +875,24 @@ export type WebsocketRpcResponse =
       path: "reports/wpa_key";
     }
   | {
-      data: null;
-      path: "arena/signal";
+      data: EventDetails;
+      path: "event/update";
+    }
+  | {
+      data: ScheduleBlock[];
+      path: "event/schedule_get";
+    }
+  | {
+      data: ScheduleBlock;
+      path: "event/schedule_new_block";
     }
   | {
       data: null;
-      path: "arena/load_match";
+      path: "event/schedule_delete";
     }
   | {
-      data: null;
-      path: "arena/load_test_match";
-    }
-  | {
-      data: null;
-      path: "arena/unload_match";
-    }
-  | {
-      data: null;
-      path: "arena/update_station";
-    }
-  | {
-      data: null;
-      path: "audience/set";
-    }
-  | {
-      data: null;
-      path: "audience/play_sound";
+      data: ScheduleBlock;
+      path: "event/schedule_edit";
     }
   | {
       data: AuthResult;
@@ -1029,6 +1058,7 @@ export interface DerivedScore {
   endgame_points: number;
   link_count: number;
   link_points: number;
+  links: Link[];
   meets_coopertition: boolean;
   mobility_points: number;
   mode_score: ModeScoreForInt;
@@ -1048,6 +1078,18 @@ export interface DerivedScore {
 export interface ModeScoreForInt {
   auto: number;
   teleop: number;
+}
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "Link".
+ */
+export interface Link {
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  nodes: [number, number, number];
+  row: number;
 }
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
@@ -1186,6 +1228,14 @@ export interface SerialisedLoadedMatch {
   match_id: string;
   remaining: number;
   state: MatchPlayState;
+}
+/**
+ * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema
+ * via the `definition` "TBASettings".
+ */
+export interface TBASettings {
+  auth_id?: string | null;
+  auth_key?: string | null;
 }
 /**
  * This interface was referenced by `TempWebsocketRootSchema`'s JSON-Schema

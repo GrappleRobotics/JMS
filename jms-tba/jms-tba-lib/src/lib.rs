@@ -1,5 +1,6 @@
 use jms_core_lib::db::{Singleton, DBDuration};
 
+#[derive(jms_macros::Updateable)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TBASettings {
   pub auth_id: Option<String>,

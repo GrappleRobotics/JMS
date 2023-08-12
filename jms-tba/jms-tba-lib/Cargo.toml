@@ -9,5 +9,6 @@ edition = "2021"
 chrono = "0.4.26"
 jms-base = { path = "../../jms-base" }
 jms-core-lib = { path = "../../jms-core/jms-core-lib" }
+jms-macros = { path = "../../jms-macros" }
 schemars = "0.8.12"
 serde = "1.0.183"
