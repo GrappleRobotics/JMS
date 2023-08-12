@@ -15,6 +15,7 @@ jms-base = { path = "../jms-base" }
 jms-core-lib = { path = "../jms-core/jms-core-lib" }
 jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
 jms-networking-lib = { path = "./jms-networking-lib" }
+jms-util = { path = "../jms-util" }
 serde = "1.0.183"
 serde_json = "1.0.104"
 log = "0.4.19"

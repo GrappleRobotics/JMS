@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use imaging::ImagingKeyService;
 use jms_arena_lib::{ArenaState, AllianceStation};
 use jms_base::{kv, mq, logging::configure};
 use jms_core_lib::{models::{JmsComponent, self, Team, AllianceStationId, Alliance}, db::{Table, Singleton}};
@@ -7,6 +8,7 @@ use jms_networking_lib::{NetworkingSettings, JMSNetworkingRPC};
 use tokio::try_join;
 use log::{info, error};
 
+pub mod imaging;
 pub mod linksys_ap;
 pub mod pfsense;
 pub mod ssh;
@@ -130,8 +132,9 @@ async fn main() -> anyhow::Result<()> {
 
   let component_svc = component_svc(kv.clone()?);
 
-  let mut networking = NetworkingService { kv, mq: mq.channel().await? };
-  try_join!(component_svc, networking.run())?;
+  let mut networking = NetworkingService { kv: kv.clone()?, mq: mq.channel().await? };
+  let imaging = ImagingKeyService::new();
+  try_join!(component_svc, networking.run(), imaging.run(kv))?;
 
   Ok(())
 }

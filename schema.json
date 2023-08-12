@@ -277,6 +277,165 @@
         }
       ]
     },
+    "AudienceDisplay": {
+      "type": "object",
+      "required": [
+        "scene"
+      ],
+      "properties": {
+        "queued_sound": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AudienceDisplaySound"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scene": {
+          "$ref": "#/definitions/AudienceDisplayScene"
+        }
+      }
+    },
+    "AudienceDisplayScene": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "Blank"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "MatchPreview"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "MatchPlay"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "params",
+            "scene"
+          ],
+          "properties": {
+            "params": {
+              "type": "string"
+            },
+            "scene": {
+              "type": "string",
+              "enum": [
+                "MatchResults"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "AllianceSelection"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "scene"
+          ],
+          "properties": {
+            "scene": {
+              "type": "string",
+              "enum": [
+                "PlayoffBracket"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "params",
+            "scene"
+          ],
+          "properties": {
+            "params": {
+              "type": "string"
+            },
+            "scene": {
+              "type": "string",
+              "enum": [
+                "Award"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "params",
+            "scene"
+          ],
+          "properties": {
+            "params": {
+              "type": "string"
+            },
+            "scene": {
+              "type": "string",
+              "enum": [
+                "CustomMessage"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "AudienceDisplaySound": {
+      "type": "string",
+      "enum": [
+        "AutoStart",
+        "TeleopStart",
+        "Endgame",
+        "Estop",
+        "MatchStop"
+      ]
+    },
     "AuthResult": {
       "oneOf": [
         {
@@ -381,10 +540,15 @@
     "CommittedMatchScores": {
       "type": "object",
       "required": [
+        "last_update",
         "match_id",
         "scores"
       ],
       "properties": {
+        "last_update": {
+          "type": "string",
+          "format": "date-time"
+        },
         "match_id": {
           "type": "string"
         },
@@ -405,6 +569,7 @@
         "endgame_points",
         "link_count",
         "link_points",
+        "links",
         "meets_coopertition",
         "mobility_points",
         "mode_score",
@@ -439,6 +604,12 @@
         "link_points": {
           "type": "integer",
           "format": "int"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Link"
+          }
         },
         "meets_coopertition": {
           "type": "boolean"
@@ -634,6 +805,30 @@
         }
       }
     },
+    "Link": {
+      "type": "object",
+      "required": [
+        "nodes",
+        "row"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
+          },
+          "maxItems": 3,
+          "minItems": 3
+        },
+        "row": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
     "LiveScore": {
       "type": "object",
       "required": [
@@ -680,7 +875,9 @@
         "match_type",
         "name",
         "played",
+        "ready",
         "red_teams",
+        "round",
         "set_number",
         "start_time"
       ],
@@ -712,16 +909,6 @@
           "format": "uint",
           "minimum": 0.0
         },
-        "match_subtype": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/MatchSubtype"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "match_type": {
           "$ref": "#/definitions/MatchType"
         },
@@ -729,6 +916,9 @@
           "type": "string"
         },
         "played": {
+          "type": "boolean"
+        },
+        "ready": {
           "type": "boolean"
         },
         "red_alliance": {
@@ -749,6 +939,11 @@
             "format": "uint",
             "minimum": 0.0
           }
+        },
+        "round": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
         },
         "set_number": {
           "type": "integer",
@@ -804,20 +999,13 @@
         }
       }
     },
-    "MatchSubtype": {
-      "type": "string",
-      "enum": [
-        "Quarterfinal",
-        "Semifinal",
-        "Final"
-      ]
-    },
     "MatchType": {
       "type": "string",
       "enum": [
         "Test",
         "Qualification",
-        "Playoff"
+        "Playoff",
+        "Final"
       ]
     },
     "ModeScore_for_Array_of_Array_of_GamepieceType": {
@@ -879,6 +1067,173 @@
         }
       }
     },
+    "NetworkingSettings": {
+      "type": "object",
+      "required": [
+        "radio_password",
+        "radio_username",
+        "router_password",
+        "router_username"
+      ],
+      "properties": {
+        "admin_channel": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "admin_password": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "admin_ssid": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "radio_password": {
+          "type": "string"
+        },
+        "radio_username": {
+          "type": "string"
+        },
+        "router_password": {
+          "type": "string"
+        },
+        "router_username": {
+          "type": "string"
+        },
+        "team_channel": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0.0
+        }
+      }
+    },
+    "NetworkingSettingsUpdate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "router_username"
+          ],
+          "properties": {
+            "router_username": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "router_password"
+          ],
+          "properties": {
+            "router_password": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "radio_username"
+          ],
+          "properties": {
+            "radio_username": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "radio_password"
+          ],
+          "properties": {
+            "radio_password": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "team_channel"
+          ],
+          "properties": {
+            "team_channel": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "admin_channel"
+          ],
+          "properties": {
+            "admin_channel": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "admin_ssid"
+          ],
+          "properties": {
+            "admin_ssid": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "admin_password"
+          ],
+          "properties": {
+            "admin_password": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "Penalties": {
       "type": "object",
       "required": [
@@ -913,83 +1268,72 @@
         "MatchFlow",
         "Estop",
         "Scoring",
-        "EditScores"
+        "EditScores",
+        "ManageAlliances",
+        "ManageAudience"
       ]
     },
-    "PlayoffMode": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "mode",
-            "n_alliances"
-          ],
-          "properties": {
-            "mode": {
-              "type": "string",
-              "enum": [
-                "Bracket"
-              ]
-            },
-            "n_alliances": {
-              "type": "integer",
-              "format": "uint",
-              "minimum": 0.0
-            }
-          }
+    "PlayoffAlliance": {
+      "type": "object",
+      "required": [
+        "number",
+        "teams"
+      ],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
         },
-        {
-          "type": "object",
-          "required": [
-            "awards",
-            "mode",
-            "n_alliances",
-            "time_per_award"
-          ],
-          "properties": {
-            "awards": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "mode": {
-              "type": "string",
-              "enum": [
-                "DoubleBracket"
-              ]
-            },
-            "n_alliances": {
-              "type": "integer",
-              "format": "uint",
-              "minimum": 0.0
-            },
-            "time_per_award": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "mode",
-            "n_alliances"
-          ],
-          "properties": {
-            "mode": {
-              "type": "string",
-              "enum": [
-                "RoundRobin"
-              ]
-            },
-            "n_alliances": {
-              "type": "integer",
-              "format": "uint",
-              "minimum": 0.0
-            }
+        "teams": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint",
+            "minimum": 0.0
           }
         }
+      }
+    },
+    "PlayoffMode": {
+      "type": "object",
+      "required": [
+        "awards",
+        "minimum_round_break",
+        "mode",
+        "n_alliances",
+        "time_per_award"
+      ],
+      "properties": {
+        "awards": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "minimum_round_break": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "mode": {
+          "$ref": "#/definitions/PlayoffModeType"
+        },
+        "n_alliances": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "time_per_award": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "PlayoffModeType": {
+      "type": "string",
+      "enum": [
+        "Bracket",
+        "DoubleBracket"
       ]
     },
     "QualsMatchGeneratorParams": {
@@ -1008,6 +1352,26 @@
           "type": "integer",
           "format": "uint",
           "minimum": 0.0
+        }
+      }
+    },
+    "ReportData": {
+      "type": "object",
+      "required": [
+        "data",
+        "mime"
+      ],
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          }
+        },
+        "mime": {
+          "type": "string"
         }
       }
     },
@@ -1435,6 +1799,57 @@
         }
       }
     },
+    "TBASettings": {
+      "type": "object",
+      "properties": {
+        "auth_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "auth_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "TBASettingsUpdate": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "auth_id"
+          ],
+          "properties": {
+            "auth_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "auth_key"
+          ],
+          "properties": {
+            "auth_key": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "Team": {
       "type": "object",
       "required": [
@@ -1812,12 +2227,72 @@
           "properties": {
             "data": {
               "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
+              "items": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/JmsComponent"
+                  }
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
             },
             "path": {
-              "const": "team/teams"
+              "const": "components/components"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/AudienceDisplay"
+            },
+            "path": {
+              "const": "audience/current"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MatchScoreSnapshot"
+            },
+            "path": {
+              "const": "scoring/current"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/CommittedMatchScores"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "path": {
+              "const": "scoring/latest_scores"
             }
           }
         },
@@ -1830,11 +2305,11 @@
             "data": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Award"
+                "$ref": "#/definitions/TeamRanking"
               }
             },
             "path": {
-              "const": "awards/awards"
+              "const": "scoring/rankings"
             }
           }
         },
@@ -1887,65 +2362,6 @@
             },
             "path": {
               "const": "matches/generator_busy"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/MatchScoreSnapshot"
-            },
-            "path": {
-              "const": "scoring/current"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/TeamRanking"
-              }
-            },
-            "path": {
-              "const": "scoring/rankings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/EventDetails"
-            },
-            "path": {
-              "const": "event/details"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "debug/test_publish"
             }
           }
         },
@@ -2025,24 +2441,75 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/JmsComponent"
-                  }
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2
+              "$ref": "#/definitions/EventDetails"
             },
             "path": {
-              "const": "components/components"
+              "const": "event/details"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
+            },
+            "path": {
+              "const": "team/teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_publish"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Award"
+              }
+            },
+            "path": {
+              "const": "awards/awards"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PlayoffAlliance"
+              }
+            },
+            "path": {
+              "const": "alliances/alliances"
             }
           }
         }
@@ -2059,43 +2526,188 @@
           "properties": {
             "data": {
               "required": [
-                "affiliation",
-                "display_number",
-                "location",
-                "name",
-                "team_number"
+                "scene"
               ],
               "properties": {
-                "affiliation": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "display_number": {
+                "scene": {
+                  "$ref": "#/definitions/AudienceDisplayScene"
+                }
+              }
+            },
+            "path": {
+              "const": "audience/set"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "sound"
+              ],
+              "properties": {
+                "sound": {
+                  "$ref": "#/definitions/AudienceDisplaySound"
+                }
+              }
+            },
+            "path": {
+              "const": "audience/play_sound"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "tba/get_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "update"
+              ],
+              "properties": {
+                "update": {
+                  "$ref": "#/definitions/TBASettingsUpdate"
+                }
+              }
+            },
+            "path": {
+              "const": "tba/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "update"
+              ],
+              "properties": {
+                "update": {
+                  "$ref": "#/definitions/ScoreUpdateData"
+                }
+              }
+            },
+            "path": {
+              "const": "scoring/score_update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "scoring/get_matches_with_scores"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "match_id"
+              ],
+              "properties": {
+                "match_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "scoring/get_committed"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "match_id"
+              ],
+              "properties": {
+                "match_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "scoring/new_committed_record"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "match_id",
+                "score"
+              ],
+              "properties": {
+                "match_id": {
                   "type": "string"
                 },
-                "location": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "name": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
+                "score": {
+                  "$ref": "#/definitions/MatchScore"
                 }
               }
             },
             "path": {
-              "const": "team/new_team"
+              "const": "scoring/push_committed_score"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "scoring/get_default_scores"
             }
           }
         },
@@ -2107,25 +2719,16 @@
           "properties": {
             "data": {
               "required": [
-                "team_number",
-                "updates"
+                "score"
               ],
               "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                },
-                "updates": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/TeamUpdate"
-                  }
+                "score": {
+                  "$ref": "#/definitions/MatchScore"
                 }
               }
             },
             "path": {
-              "const": "team/update"
+              "const": "scoring/derive_score"
             }
           }
         },
@@ -2137,18 +2740,79 @@
           "properties": {
             "data": {
               "required": [
-                "team_number"
+                "ty"
               ],
               "properties": {
-                "team_number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
+                "ty": {
+                  "$ref": "#/definitions/MatchType"
                 }
               }
             },
             "path": {
-              "const": "team/delete"
+              "const": "scoring/debug_random_fill"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "scoring/update_rankings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "networking/settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "update"
+              ],
+              "properties": {
+                "update": {
+                  "$ref": "#/definitions/NetworkingSettingsUpdate"
+                }
+              }
+            },
+            "path": {
+              "const": "networking/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "networking/reload_admin"
             }
           }
         },
@@ -2329,48 +2993,6 @@
           "properties": {
             "data": {
               "required": [
-                "award"
-              ],
-              "properties": {
-                "award": {
-                  "$ref": "#/definitions/Award"
-                }
-              }
-            },
-            "path": {
-              "const": "awards/set_award"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "award_id"
-              ],
-              "properties": {
-                "award_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "awards/delete_award"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
                 "match_id"
               ],
               "properties": {
@@ -2381,6 +3003,20 @@
             },
             "path": {
               "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "matches/debug_delete_all"
             }
           }
         },
@@ -2447,17 +3083,45 @@
           ],
           "properties": {
             "data": {
+              "const": null
+            },
+            "path": {
+              "const": "matches/reset_playoffs"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "matches/update_playoffs"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "required": [
-                "update"
+                "signal"
               ],
               "properties": {
-                "update": {
-                  "$ref": "#/definitions/ScoreUpdateData"
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
                 }
               }
             },
             "path": {
-              "const": "scoring/score_update"
+              "const": "arena/signal"
             }
           }
         },
@@ -2478,7 +3142,7 @@
               }
             },
             "path": {
-              "const": "scoring/get_committed"
+              "const": "arena/load_match"
             }
           }
         },
@@ -2489,17 +3153,24 @@
           ],
           "properties": {
             "data": {
-              "required": [
-                "match_id"
-              ],
-              "properties": {
-                "match_id": {
-                  "type": "string"
-                }
-              }
+              "const": null
             },
             "path": {
-              "const": "scoring/new_committed_record"
+              "const": "arena/load_test_match"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "arena/unload_match"
             }
           }
         },
@@ -2511,69 +3182,23 @@
           "properties": {
             "data": {
               "required": [
-                "match_id",
-                "score"
+                "station_id",
+                "updates"
               ],
               "properties": {
-                "match_id": {
-                  "type": "string"
+                "station_id": {
+                  "$ref": "#/definitions/AllianceStationId"
                 },
-                "score": {
-                  "$ref": "#/definitions/MatchScore"
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/AllianceStationUpdate"
+                  }
                 }
               }
             },
             "path": {
-              "const": "scoring/push_committed_score"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "scoring/get_default_scores"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "score"
-              ],
-              "properties": {
-                "score": {
-                  "$ref": "#/definitions/MatchScore"
-                }
-              }
-            },
-            "path": {
-              "const": "scoring/derive_score"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "scoring/update_rankings"
+              "const": "arena/update_station"
             }
           }
         },
@@ -2704,6 +3329,107 @@
           "properties": {
             "data": {
               "required": [
+                "affiliation",
+                "display_number",
+                "location",
+                "name",
+                "team_number"
+              ],
+              "properties": {
+                "affiliation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "display_number": {
+                  "type": "string"
+                },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "team_number",
+                "updates"
+              ],
+              "properties": {
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                },
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/TeamUpdate"
+                  }
+                }
+              }
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "team_number"
+              ],
+              "properties": {
+                "team_number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "path": {
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
                 "in_text"
               ],
               "properties": {
@@ -2725,16 +3451,16 @@
           "properties": {
             "data": {
               "required": [
-                "signal"
+                "award"
               ],
               "properties": {
-                "signal": {
-                  "$ref": "#/definitions/ArenaSignal"
+                "award": {
+                  "$ref": "#/definitions/Award"
                 }
               }
             },
             "path": {
-              "const": "arena/signal"
+              "const": "awards/set_award"
             }
           }
         },
@@ -2746,16 +3472,16 @@
           "properties": {
             "data": {
               "required": [
-                "match_id"
+                "award_id"
               ],
               "properties": {
-                "match_id": {
+                "award_id": {
                   "type": "string"
                 }
               }
             },
             "path": {
-              "const": "arena/load_match"
+              "const": "awards/delete_award"
             }
           }
         },
@@ -2769,7 +3495,7 @@
               "const": null
             },
             "path": {
-              "const": "arena/load_test_match"
+              "const": "reports/awards"
             }
           }
         },
@@ -2783,7 +3509,21 @@
               "const": null
             },
             "path": {
-              "const": "arena/unload_match"
+              "const": "reports/teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "reports/rankings"
             }
           }
         },
@@ -2795,23 +3535,115 @@
           "properties": {
             "data": {
               "required": [
-                "station_id",
-                "updates"
+                "individual",
+                "match_type"
               ],
               "properties": {
-                "station_id": {
-                  "$ref": "#/definitions/AllianceStationId"
+                "individual": {
+                  "type": "boolean"
                 },
-                "updates": {
+                "match_type": {
+                  "$ref": "#/definitions/MatchType"
+                }
+              }
+            },
+            "path": {
+              "const": "reports/matches"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "csv"
+              ],
+              "properties": {
+                "csv": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "path": {
+              "const": "reports/wpa_key"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "alliances/create"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "alliances/delete_all"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "alliances/promote"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "number",
+                "teams"
+              ],
+              "properties": {
+                "number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                },
+                "teams": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/AllianceStationUpdate"
+                    "type": "integer",
+                    "format": "uint",
+                    "minimum": 0.0
                   }
                 }
               }
             },
             "path": {
-              "const": "arena/update_station"
+              "const": "alliances/set_teams"
             }
           }
         }
@@ -2827,24 +3659,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/Team"
+              "type": "null"
             },
             "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/update"
+              "const": "audience/set"
             }
           }
         },
@@ -2858,7 +3676,209 @@
               "type": "null"
             },
             "path": {
-              "const": "team/delete"
+              "const": "audience/play_sound"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/TBASettings"
+            },
+            "path": {
+              "const": "tba/get_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/TBASettings"
+            },
+            "path": {
+              "const": "tba/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MatchScoreSnapshot"
+            },
+            "path": {
+              "const": "scoring/score_update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "path": {
+              "const": "scoring/get_matches_with_scores"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/CommittedMatchScores"
+            },
+            "path": {
+              "const": "scoring/get_committed"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/CommittedMatchScores"
+            },
+            "path": {
+              "const": "scoring/new_committed_record"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/CommittedMatchScores"
+            },
+            "path": {
+              "const": "scoring/push_committed_score"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MatchScore"
+            },
+            "path": {
+              "const": "scoring/get_default_scores"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MatchScoreSnapshot"
+            },
+            "path": {
+              "const": "scoring/derive_score"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "scoring/debug_random_fill"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/TeamRanking"
+              }
+            },
+            "path": {
+              "const": "scoring/update_rankings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/NetworkingSettings"
+            },
+            "path": {
+              "const": "networking/settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/NetworkingSettings"
+            },
+            "path": {
+              "const": "networking/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "networking/reload_admin"
             }
           }
         },
@@ -2984,38 +4004,24 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/Award"
-            },
-            "path": {
-              "const": "awards/set_award"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "awards/delete_award"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
               "type": "null"
             },
             "path": {
               "const": "matches/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "matches/debug_delete_all"
             }
           }
         },
@@ -3068,10 +4074,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/MatchScoreSnapshot"
+              "type": "null"
             },
             "path": {
-              "const": "scoring/score_update"
+              "const": "matches/reset_playoffs"
             }
           }
         },
@@ -3082,10 +4088,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/CommittedMatchScores"
+              "type": "null"
             },
             "path": {
-              "const": "scoring/get_committed"
+              "const": "matches/update_playoffs"
             }
           }
         },
@@ -3096,10 +4102,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/CommittedMatchScores"
+              "type": "null"
             },
             "path": {
-              "const": "scoring/new_committed_record"
+              "const": "arena/signal"
             }
           }
         },
@@ -3110,10 +4116,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/CommittedMatchScores"
+              "type": "null"
             },
             "path": {
-              "const": "scoring/push_committed_score"
+              "const": "arena/load_match"
             }
           }
         },
@@ -3124,10 +4130,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/MatchScore"
+              "type": "null"
             },
             "path": {
-              "const": "scoring/get_default_scores"
+              "const": "arena/load_test_match"
             }
           }
         },
@@ -3138,10 +4144,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/MatchScoreSnapshot"
+              "type": "null"
             },
             "path": {
-              "const": "scoring/derive_score"
+              "const": "arena/unload_match"
             }
           }
         },
@@ -3152,13 +4158,10 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/TeamRanking"
-              }
+              "type": "null"
             },
             "path": {
-              "const": "scoring/update_rankings"
+              "const": "arena/update_station"
             }
           }
         },
@@ -3242,6 +4245,48 @@
           ],
           "properties": {
             "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "type": "string"
             },
             "path": {
@@ -3256,10 +4301,10 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "$ref": "#/definitions/Award"
             },
             "path": {
-              "const": "arena/signal"
+              "const": "awards/set_award"
             }
           }
         },
@@ -3273,7 +4318,94 @@
               "type": "null"
             },
             "path": {
-              "const": "arena/load_match"
+              "const": "awards/delete_award"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/awards"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/rankings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/matches"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/wpa_key"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PlayoffAlliance"
+              }
+            },
+            "path": {
+              "const": "alliances/create"
             }
           }
         },
@@ -3287,7 +4419,7 @@
               "type": "null"
             },
             "path": {
-              "const": "arena/load_test_match"
+              "const": "alliances/delete_all"
             }
           }
         },
@@ -3298,10 +4430,13 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PlayoffAlliance"
+              }
             },
             "path": {
-              "const": "arena/unload_match"
+              "const": "alliances/promote"
             }
           }
         },
@@ -3312,10 +4447,10 @@
           ],
           "properties": {
             "data": {
-              "type": "null"
+              "$ref": "#/definitions/PlayoffAlliance"
             },
             "path": {
-              "const": "arena/update_station"
+              "const": "alliances/set_teams"
             }
           }
         }

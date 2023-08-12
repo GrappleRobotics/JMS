@@ -10,6 +10,7 @@ use debug::DebugWebsocket;
 use event::EventWebsocket;
 use jms_base::{mq::MessageQueue, kv::KVConnection};
 use matches::MatchesWebsocket;
+use networking::NetworkingWebsocket;
 use reports::ReportWebsocket;
 use scoring::ScoringWebsocket;
 use tba::TBAWebsocket;
@@ -32,6 +33,7 @@ pub mod ws;
 pub mod user;
 pub mod reports;
 pub mod tba;
+pub mod networking;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -66,6 +68,7 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(200), "audience", AudienceWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "reports", ReportWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "tba", TBAWebsocket::new()).await;
+  ws.register(Duration::from_millis(100000), "networking", NetworkingWebsocket::new()).await;
 
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {

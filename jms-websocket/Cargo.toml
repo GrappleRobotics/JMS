@@ -14,6 +14,7 @@ jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
 jms-base = { path = "../jms-base" }
 jms-core-lib = { path = "../jms-core/jms-core-lib" }
 jms-driverstation-lib = { path = "../jms-driverstation/jms-driverstation-lib" }
+jms-networking-lib = { path = "../jms-networking/jms-networking-lib" }
 jms-macros = { path = "../jms-macros" }
 jms-websocket-macros = { path = "./jms-websocket-macros" }
 jms-tba-lib = { path = "../jms-tba/jms-tba-lib" }
