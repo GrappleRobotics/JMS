@@ -2,6 +2,7 @@
 
 import BufferedFormControl from "@/app/components/BufferedFormControl";
 import { useErrors } from "@/app/support/errors";
+import { withPermission } from "@/app/support/permissions";
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
 import { JmsComponent, NetworkingSettings, NetworkingSettingsUpdate } from "@/app/ws-schema";
@@ -9,7 +10,7 @@ import React from "react";
 import { useEffect, useState } from "react";
 import { Alert, Button, Col, Form, InputGroup, Row } from "react-bootstrap";
 
-export default function TBAIntegration() {
+export default withPermission(["FTA"], function AdvancedNetworking() {
   const [ settings, setSettings ] = useState<NetworkingSettings>();
   const [ components, setComponents ] = useState<[string, JmsComponent[]]>(["", []]);
 
@@ -150,4 +151,4 @@ export default function TBAIntegration() {
       </Col>
     </Row>}
   </React.Fragment>
-}
+});

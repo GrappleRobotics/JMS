@@ -7,7 +7,8 @@ use crate::ws::WebsocketContext;
 pub trait NetworkingWebsocket {
   
   #[endpoint]
-  async fn settings(&self, ctx: &WebsocketContext, _token: &MaybeToken) -> anyhow::Result<NetworkingSettings> {
+  async fn settings(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<NetworkingSettings> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA])?;
     NetworkingSettings::get(&ctx.kv)
   }
 
