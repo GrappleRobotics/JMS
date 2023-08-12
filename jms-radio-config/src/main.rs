@@ -23,7 +23,10 @@ struct Args {
   ssid: Option<String>,
   /// Set field mode
   #[clap(short, long, action)]
-  field: bool
+  field: bool,
+  /// Set basic field mode (no advanced networking)
+  #[clap(short, long, action)]
+  basic: bool
 }
 
 #[derive(serde::Deserialize)]
@@ -45,6 +48,8 @@ async fn main() -> anyhow::Result<()> {
   
   if args.field {
     field_mode(&args, iface).await?;
+  } else if args.basic {
+    basic_mode(&args, iface).await?;
   } else {
     home_mode(&args, iface).await?;
   }
@@ -100,6 +105,23 @@ async fn field_mode(args: &Args, iface: LinkMetadata) -> anyhow::Result<()> {
   Ok(())
 }
 
+async fn basic_mode(args: &Args, iface: LinkMetadata) -> anyhow::Result<()> {
+  match (args.ssid.clone(), args.team) {
+    (Some(ssid), Some(team)) => {
+      println!("Imaging Basic Mode: Team {}, Event SSID {}", team, ssid);
+      image(iface, ImagingProps {
+        team,
+        ssid,
+        key: args.key.clone().unwrap_or("".to_owned()),
+        home: false
+      }).await?;
+      println!("Radio imaged successfully!");
+    },
+    _ => interactive::run_interactive(iface, interactive::InteractiveProps::Basic)?
+  }
+  Ok(())
+}
+
 async fn home_mode(args: &Args, iface: LinkMetadata) -> anyhow::Result<()> {
   match args.team {
     Some(team) => {
@@ -134,6 +156,7 @@ mod interactive {
   #[derive(Clone)]
   pub enum InteractiveProps {
     Field(WPAKeys),
+    Basic,
     Home(Option<String>)
   }
   
@@ -146,6 +169,7 @@ mod interactive {
       props: props.clone(),
       home_key: match &props {
         InteractiveProps::Field(_) => "".to_owned(),
+        InteractiveProps::Basic => "".to_owned(),
         InteractiveProps::Home(key) => key.clone().unwrap_or("".to_owned()),
       }
     });
@@ -162,6 +186,7 @@ mod interactive {
           dat.team = number.parse().unwrap_or(0);
           match &dat.props {
             InteractiveProps::Field(keys) => ( dat.team, keys.contains_key(&dat.team) ),
+            InteractiveProps::Basic => ( dat.team, dat.team > 0 ),
             InteractiveProps::Home { .. } => ( dat.team, dat.team > 0 ),
           }
         };
@@ -200,6 +225,23 @@ mod interactive {
           }).fixed_width(24));
         layout.add_child(key_layout);
       },
+      InteractiveProps::Basic => {
+        let ssid_layout = LinearLayout::horizontal()
+          .child(TextView::new("Event SSID: "))
+          .child(EditView::new().on_edit(|s, ssid, _| {
+            let dat = s.user_data::<Data>().unwrap();
+            dat.ssid = ssid.to_owned();
+          }).fixed_width(27).with_name("ssid"));
+        layout.add_child(ssid_layout);
+
+        let key_layout = LinearLayout::horizontal()
+          .child(TextView::new("Event WPA Key: "))
+          .child(EditView::new().on_edit(|s, key, _| {
+            let dat = s.user_data::<Data>().unwrap();
+            dat.home_key = key.to_owned();
+          }).fixed_width(24));
+        layout.add_child(key_layout);
+      },
       InteractiveProps::Field(_) => ()
     }
     
@@ -224,12 +266,12 @@ mod interactive {
         let key = match &dat.props {
           _ if dat.team == 0 => None,   // Don't image radios without a team number set
           InteractiveProps::Field(keys) => keys.get(&dat.team).map(Clone::clone),
-          InteractiveProps::Home(_) => Some(dat.home_key.clone()),
+          InteractiveProps::Home(_) | InteractiveProps::Basic => Some(dat.home_key.clone()),
         };
 
         let ssid = match &dat.props {
           InteractiveProps::Field(_) => format!("{}", dat.team),
-          InteractiveProps::Home(_) => if dat.ssid.len() == 0 { format!("{}", dat.team) } else { dat.ssid }
+          InteractiveProps::Home(_) | InteractiveProps::Basic => if dat.ssid.len() == 0 { format!("{}", dat.team) } else { dat.ssid },
         };
 
         let home = matches!(dat.props, InteractiveProps::Home(_));
