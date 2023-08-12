@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, time::Duration};
+use std::{net::SocketAddr, time::Duration, sync::{atomic::AtomicBool, Arc}};
 
 use chrono::Local;
 use futures::{StreamExt, SinkExt};
@@ -38,6 +38,7 @@ pub struct DSConnection {
   last_packet_time: Instant,
   wrong_station_n: usize,
   kv: KVConnection,
+  arena_ok: Arc<AtomicBool>
 }
 
 impl DSConnection {
@@ -46,6 +47,7 @@ impl DSConnection {
     addr: SocketAddr,
     stream: TcpStream,
     udp_rx: broadcast::Receiver<Ds2FmsUDP>,
+    arena_ok: Arc<AtomicBool>
   ) -> DSConnection {
     let mut addr_udp = addr;
     addr_udp.set_port(1121);
@@ -62,7 +64,8 @@ impl DSConnection {
       state: DSConnectionState::Connected,
       last_packet_time: Instant::now(),
       wrong_station_n: 0,
-      kv
+      kv,
+      arena_ok
     }
   }
 
@@ -200,7 +203,7 @@ impl DSConnection {
   async fn _encode_udp_update(&self, _team: usize) -> Option<Fms2DsUDP> {
     if let Some(station) = self._get_desired_alliance_station().await {
       if let Ok(arena_state) = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$") {
-        let (command_enable, command_state, remaining) = match self.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$") {
+        let (mut command_enable, command_state, remaining) = match self.kv.json_get::<SerialisedLoadedMatch>(ARENA_MATCH_KEY, "$") {
           Ok(m) => match m.state {
             MatchPlayState::Auto => (true, RobotState::Auto, m.remaining.0),
             MatchPlayState::Pause => (false, RobotState::Teleop, m.remaining.0),
@@ -209,6 +212,11 @@ impl DSConnection {
           },
           _ => (false, RobotState::Auto, chrono::Duration::milliseconds(0))
         };
+
+        if !self.arena_ok.load(std::sync::atomic::Ordering::Relaxed) {
+          // If the arena isn't OK, robots should not be running
+          command_enable = false;
+        }
 
         let estop = station.estop || matches!(arena_state, ArenaState::Estop);
         let astop = station.astop && command_state == RobotState::Auto;
