@@ -1,0 +1,21 @@
+[package]
+name = "jms-networking"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.72"
+handlebars = "4.3.7"
+rust-embed = "6.8.1"
+ssh2 = "0.9.4"
+tokio = { version = "1.30.0", features = ['full'] }
+jms-base = { path = "../jms-base" }
+jms-core-lib = { path = "../jms-core/jms-core-lib" }
+jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
+jms-networking-lib = { path = "./jms-networking-lib" }
+serde = "1.0.183"
+serde_json = "1.0.104"
+log = "0.4.19"
+async-trait = "0.1.73"

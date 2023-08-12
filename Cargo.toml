@@ -12,5 +12,7 @@ members = [
   "jms-websocket",
   "jms-websocket/jms-websocket-macros",
   "jms-tba",
-  "jms-tba/jms-tba-lib"
+  "jms-tba/jms-tba-lib",
+  "jms-networking",
+  "jms-networking/jms-networking-lib",
 ]

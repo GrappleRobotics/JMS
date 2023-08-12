@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01. Setup/02. Setting up your JMS Server/04a. Installing JMS from Source.md",
+                "file": "01. Setup/01. First-time Hardware Setup/Setting up the Field Radio.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01. Setup/02. Setting up your JMS Server/04a. Installing JMS from Source.md",
+                "file": "01. Setup/01. First-time Hardware Setup/Setting up the Field Radio.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01. Setup/02. Setting up your JMS Server/04a. Installing JMS from Source.md",
+                "file": "01. Setup/01. First-time Hardware Setup/Setting up the Field Radio.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01. Setup/02. Setting up your JMS Server/04a. Installing JMS from Source.md"
+                "file": "01. Setup/01. First-time Hardware Setup/Setting up the Field Radio.md"
               }
             }
           }
@@ -148,34 +148,37 @@
   },
   "active": "d695a76fe5ff6f2d",
   "lastOpenFiles": [
-    "01. Setup/01. First-time Hardware Setup/Setting up the Field Radio.md",
-    "01. Setup/01. First-time Hardware Setup/attachments/radio.4.1.png",
-    "01. Setup/02. Setting up your JMS Server/04a. Installing JMS from Source.md",
-    "01. Setup/02. Setting up your JMS Server/04. Installing JMS.md",
+    "Scratch/Router Setup.md",
+    "Scratch/attachments/Pasted image 20230812151755.png",
+    "Scratch/attachments/Pasted image 20230812143932.png",
+    "Scratch/Hypervisor WAN Setup.md",
+    "Scratch/attachments/Pasted image 20230812142245.png",
+    "Scratch/attachments/Pasted image 20230812142147.png",
+    "Scratch/attachments/Pasted image 20230812134634.png",
+    "Scratch/attachments/Pasted image 20230812141530.png",
+    "Scratch/attachments/Pasted image 20230812141428.png",
+    "Scratch/attachments/Pasted image 20230812141219.png",
+    "Scratch/attachments/Pasted image 20230812141105.png",
+    "Scratch/attachments/Pasted image 20230812141049.png",
     "01. Setup/02. Setting up your JMS Server/02. Installing the JMS VM.md",
-    "01. Setup/02. Setting up your JMS Server/03. Setting up the JMS Network.md",
-    "01. Setup/02. Setting up your JMS Server/Untitled",
-    "01. Setup/02. Setting up your JMS Server/attachments/02.3.1.png",
-    "Setup/Setting up your JMS Server/attachments/Pasted image 20230702000235.png",
-    "01. Setup/02. Setting up your JMS Server/attachments/03.1.2.png",
-    "01. Setup/02. Setting up your JMS Server/attachments/03.1.2.png",
-    "01. Setup/02. Setting up your JMS Server/attachments/03.1.2.png",
-    "01. Setup/02. Setting up your JMS Server/attachments/03.5.2.png",
-    "01. Setup/02. Setting up your JMS Server/attachments/03.5.1.png",
-    "01. Setup/02. Setting up your JMS Server/attachments/03.1.1.png",
-    "01. Setup/01. First-time Hardware Setup/Setting up the Core Switch.md",
     "01. Setup/02. Setting up your JMS Server/01. Installing the Hypervisor.md",
-    "01. Setup/01. First-time Hardware Setup/attachments/switch.4.1.png",
+    "Scratch/attachments",
+    "01. Setup/02. Setting up your JMS Server/04a. Installing JMS from Source.md",
+    "01. Setup/02. Setting up your JMS Server/attachments",
+    "01. Setup/02. Setting up your JMS Server/03. Setting up the JMS Network.md",
+    "_01. Setup (New)/Hypervisor Network Setup.md",
+    "01. Setup/02. Setting up your JMS Server/00. Requirements.md",
+    "01. Setup/01. First-time Hardware Setup/Setting up the Core Switch.md",
+    "Scratch",
+    "01. Setup/01. First-time Hardware Setup/Setting up the Field Radio.md",
+    "01. Setup/02. Setting up your JMS Server/04. Installing JMS.md",
+    "01. Setup/02. Setting up your JMS Server/Untitled",
     "Setup/First-time Hardware Setup/attachments/core-switch-sg1016de 2.cfg",
     "Setup/First-time Hardware Setup/attachments/core-switch-sg1016de 1.cfg",
     "01. Setup/01. First-time Hardware Setup/attachments/core-switch-sg1016de.cfg",
     "01. Setup/01. First-time Hardware Setup/attachments",
     "Setup/Setting up the Switch/01. Connect to the Switch.md",
     "01. Setup/01. First-time Hardware Setup",
-    "01. Setup/02. Setting up your JMS Server/attachments",
-    "01. Setup/02. Setting up your JMS Server/00. Requirements.md",
-    "01. Setup/02. Setting up your JMS Server",
-    "Untitled",
-    "01. Setup"
+    "_01. Setup (New)/attachments"
   ]
 }

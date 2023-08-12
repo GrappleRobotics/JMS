@@ -128,7 +128,7 @@ function ftaDiagnosis(station: AllianceStation, report: DriverStationReport | nu
   if (station.team === null) return "NOTEAM";
 
   if (report === null) return "NODS";
-  if (report.actual_station !== null && station.id !== report.actual_station) return "MOVE";
+  if (report.actual_station !== null && station.id.alliance !== report.actual_station?.alliance && station.id.station != report.actual_station?.station) return "MOVE";
 
   if (!report.radio_ping) return "NORAD";
   if (!report.rio_ping) return "NORIO";
