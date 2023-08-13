@@ -37,6 +37,8 @@ services:
   jms-networking:
     <<: *jms-base
     command: jms-networking
+    ports:
+    - 6789:6789
 
   jms-tba:
     <<: *jms-base
