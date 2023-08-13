@@ -80,4 +80,10 @@ impl KVConnection {
   pub fn keys(&self, pattern: &str) -> anyhow::Result<Vec<String>> {
     Ok(self.redis.lock().unwrap().keys(pattern)?)
   }
+
+  pub fn bgsave(&self) -> anyhow::Result<()> {
+    // Will return an error if there's already a save running, so we use ok()
+    redis::cmd("BGSAVE").query::<()>(&mut self.redis.lock().unwrap()).ok();
+    Ok(())
+  }
 }

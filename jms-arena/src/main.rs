@@ -43,6 +43,8 @@ impl Arena {
     self.kv.json_set(ARENA_STATE_KEY, "$", &self.state)?;
     self.mq.publish("arena.state.new", new_state).await?;
 
+    self.kv.bgsave()?;
+
     Ok(())
   }
 

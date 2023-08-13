@@ -20,6 +20,14 @@ async fn component_svc(kv: &kv::KVConnection, mq: mq::MessageQueueChannel) -> an
   }
 }
 
+async fn save_db_svc(kv: &kv::KVConnection) -> anyhow::Result<()> {
+  let mut interval = tokio::time::interval(Duration::from_millis(1000*60));   // Every 1 minute
+  loop {
+    interval.tick().await;
+    kv.bgsave()?;
+  }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
   jms_base::logging::configure(false);
@@ -36,7 +44,9 @@ async fn main() -> anyhow::Result<()> {
   let ssvc = scoring::ScoringService { kv: kv.clone()?, mq: mq.channel().await? };
   let sfut = ssvc.run();
 
-  try_join!(mgfut, rgfut, sfut, component_svc(&kv, mq.channel().await?))?;
+  let dbfut = save_db_svc(&kv);
+
+  try_join!(mgfut, rgfut, sfut, dbfut, component_svc(&kv, mq.channel().await?))?;
 
   Ok(())
 }
