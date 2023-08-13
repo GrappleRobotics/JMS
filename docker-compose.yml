@@ -23,6 +23,7 @@ services:
 
   # Driver Station needs network_mode: host in order to see UDP packet addresses and reply to them
   # accordingly.
+  # On windows, you will need to run jms-driverstation outside of the container system (cargo run --bin jms-driverstation --release)
   jms-driverstation:
     <<: *jms-base
     command: jms-driverstation
@@ -60,12 +61,14 @@ services:
     volumes:
     - "./data/redis:/data"
     ports:
+      # Ports need to be forwarded for jms-driverstation
     - "6379:6379"
     - "8001:8001"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
+      # Ports need to be forwarded for jms-driverstation
     - "5672:5672"
     - "15672:15672"
   
