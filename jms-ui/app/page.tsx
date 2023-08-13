@@ -54,6 +54,9 @@ export default function Home() {
           <HomeTile name="Audience Display Control" href="/audience/control" img="audiencecontrol.jpg"> Control the Audience Display </HomeTile>
         </PermissionGate>
         <HomeTile name="Reports" href="/reports" img="reports.jpg">Generate Match, Team, and Award Reports</HomeTile>
+        <PermissionGate permissions={["Ticketing"]}>
+          <HomeTile name="CSA" href="/csa">View match reports, resolve tickets</HomeTile>
+        </PermissionGate>
       </HomeTileRow>
       <HomeTileSep> On the Field </HomeTileSep>
       <HomeTileRow>

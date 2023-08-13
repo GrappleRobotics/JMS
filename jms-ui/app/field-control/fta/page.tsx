@@ -17,6 +17,7 @@ import update from "immutability-helper";
 import BufferedFormControl from "@/app/components/BufferedFormControl";
 import { MatchFlow } from "../match_flow";
 import MatchScheduleControl from "../../match_schedule";
+import { newTicketModal } from "@/app/csa/tickets";
 
 export default withPermission(["FTA", "FTAA"], function FTAView() {
   const [ allianceStations, setAllianceStations ] = useState<AllianceStation[]>([]);
@@ -57,7 +58,7 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   return <div style={{ marginLeft: '1em', marginRight: '1em' }}>
     <Row>
       {
-        _.zip(allianceStations, stationReports).map(([stn, report], i) => <FTAAllianceStation key={i} station={stn!} report={report || null} call={call} addError={addError} teams={teams} />)
+        _.zip(allianceStations, stationReports).map(([stn, report], i) => <FTAAllianceStation key={i} station={stn!} match_id={currentMatch?.match_id} report={report || null} call={call} addError={addError} teams={teams} />)
       }
     </Row>
     {
@@ -80,12 +81,12 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   </div>
 });
 
-function FTAAllianceStation({ station, report, call, addError, teams }: { station: AllianceStation, report: DriverStationReport | null, call: JmsWebsocket["call"], addError: (e: string) => void , teams?: Team[] }) {
+function FTAAllianceStation({ station, report, match_id, call, addError, teams }: { station: AllianceStation, report: DriverStationReport | null, match_id?: string, call: JmsWebsocket["call"], addError: (e: string) => void , teams?: Team[] }) {
   const diagnosis = ftaDiagnosis(station, report);
 
   const display_team = teams?.find(x => x.number === station.team)?.display_number;
 
-  return <Col onClick={() => editStationModal(station, call, addError)} className="fta-alliance-station-col" data-alliance={station.id.alliance} data-bypass={station.bypass} data-estop={station.estop} data-astop={station.astop}>
+  return <Col onClick={() => editStationModal(station, match_id, call, addError)} className="fta-alliance-station-col" data-alliance={station.id.alliance} data-bypass={station.bypass} data-estop={station.estop} data-astop={station.astop}>
     <Row>
       <Col md="auto"> <FTATeamIndicator ok={report?.rio_ping} icon={faRobot} /> </Col>
       <Col className="fta-alliance-station-team" data-has-administrative={station.team && display_team !== ("" + station.team)}>
@@ -172,7 +173,7 @@ class FTATeamIndicator extends React.PureComponent<FTATeamIndicatorProps> {
   }
 }
 
-async function editStationModal(station: AllianceStation, call: JmsWebsocket["call"], addError: (e: string) => void) {
+async function editStationModal(station: AllianceStation, match_id: string | undefined, call: JmsWebsocket["call"], addError: (e: string) => void) {
   let new_station = await confirmModal("", {
     title: `Edit ${capitalise(station.id.alliance)} ${station.id.station}`,
     data: station,
@@ -184,6 +185,10 @@ async function editStationModal(station: AllianceStation, call: JmsWebsocket["ca
       <Button className="btn-block" size="lg" variant="estop" onClick={() => { call<"arena/update_station">("arena/update_station", { station_id: station.id, updates: [ { estop: true } ] }); cancel() }}>
         EMERGENCY STOP { station.team || `${station.id.alliance.toUpperCase()} ${station.id.station}` }
       </Button>
+      <hr />
+      { station.team && match_id && <Button className="btn-block" size="lg" variant="orange" onClick={() => { newTicketModal(station.team!, match_id, call, addError); cancel() }}>
+        Flag Issue for CSA
+      </Button> }
       <hr />
       <InputGroup>
         <InputGroup.Text>Team Number</InputGroup.Text>

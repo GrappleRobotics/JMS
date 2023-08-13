@@ -1,0 +1,30 @@
+@import "../variables.scss";
+
+.support-ticket-preview {
+  padding: 0.75em;
+
+  &[data-resolved=true] {
+    background-color: darken(theme-color("success"), 20%);
+  }
+}
+
+.ticket-header {
+  flex-grow: 0 !important;
+}
+
+.ticket-notes {
+  .card-body {
+    padding: 0.5em 1em;
+  }
+  .ticket-note {
+    margin-bottom: 4px;
+    padding: 0;
+
+    .ticket-note-time {
+      text-align: end;
+      margin: 0;
+      font-style: italic;
+      font-size: 0.8em;
+    }
+  }
+}

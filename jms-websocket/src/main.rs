@@ -15,6 +15,7 @@ use reports::ReportWebsocket;
 use scoring::ScoringWebsocket;
 use tba::TBAWebsocket;
 use teams::TeamWebsocket;
+use tickets::TicketWebsocket;
 use user::UserWebsocket;
 use ws::{Websockets, WebsocketContext};
 
@@ -70,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(100000), "reports", ReportWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "tba", TBAWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "networking", NetworkingWebsocket::new()).await;
+  ws.register(Duration::from_millis(5000), "tickets", TicketWebsocket::new()).await;
 
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {
