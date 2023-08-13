@@ -26,7 +26,7 @@ export default function AwardScene({ eventDetails, award_id, awards, teams }: Aw
     <Row className="recipients">
       <Col className="col-full">
         {
-          award.recipients.map(recip => <Row className="recipient">
+          award.recipients.map((recip, i) => <Row className="recipient" key={i}>
             <AwardRecipientComponent teams={teams} {...recip} />
           </Row>)
         }

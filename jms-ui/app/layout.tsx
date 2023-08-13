@@ -1,9 +1,7 @@
-"use client";
 import type { Metadata } from 'next'
 
-import { WebsocketManagerComponent } from './support/ws-component';
 import "./global.scss";
-import ErrorProvider from './support/errors';
+import RootLayoutInner from './layout_inner';
 
 export const metadata: Metadata = {
   title: 'JMS',
@@ -19,13 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <WebsocketManagerComponent>
-          <ErrorProvider>
-            <main>
-              { children }
-            </main>
-          </ErrorProvider>
-        </WebsocketManagerComponent>
+        <RootLayoutInner>
+          { children }
+        </RootLayoutInner>
       </body>
     </html>
   )

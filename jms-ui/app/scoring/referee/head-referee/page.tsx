@@ -39,7 +39,7 @@ export default withPermission(["Scoring"], function HeadReferee() {
     /> }
     <Row>
       {
-        score && ALLIANCES.map(alliance => <Col>
+        score && ALLIANCES.map(alliance => <Col key={alliance as string}>
           <Button
             className="btn-block referee-station-score"
             data-score-type="charge_station_level"

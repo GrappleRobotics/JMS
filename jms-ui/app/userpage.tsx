@@ -120,7 +120,7 @@ const TopNavbar = React.forwardRef<HTMLElement>(function TopNavbar(props: {}, re
   </Navbar>;
 });
 
-const BottomNavbar = React.forwardRef<HTMLElement>(function(props: {}, ref) {
+const BottomNavbar = React.forwardRef<HTMLElement>(function BottomNavbar(props: {}, ref) {
   const { subscribe, unsubscribe, call } = useWebsocket();
   const [ components, setComponents ] = useState<[string, JmsComponent[]]>();
   const [ nextMatch, setNextMatch ] = useState<Match | null>(null);

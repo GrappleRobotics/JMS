@@ -202,10 +202,10 @@ class EliminationSet extends React.PureComponent<EliminationSetProps> {
         <Col>
           {
             ALLIANCES.map(alliance => (
-              <Row className="bracket-alliance-row" data-alliance={alliance}>
+              <Row key={alliance as string} className="bracket-alliance-row" data-alliance={alliance}>
                 <Col className="bracket-alliance"> { matches[0][`${alliance}_alliance`] || <React.Fragment>?</React.Fragment> } </Col>
                 {
-                  matches[0][`${alliance}_teams`].filter(t => t != null).map(t => <Col>
+                  matches[0][`${alliance}_teams`].filter(t => t != null).map((t, i) => <Col key={i}>
                     { teams?.find(x => x.number === t)?.display_number || t}
                   </Col>)
                 }

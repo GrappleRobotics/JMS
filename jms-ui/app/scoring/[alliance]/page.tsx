@@ -86,10 +86,11 @@ export function Community2023({ score, alliance, onUpdate }: { score: LiveScore,
   return <Row className="scorer-community">
     <Col>
       {
-        merged_community.map((row, i) => <Row className="scorer-community-row">
+        merged_community.map((row, i) => <Row key={i} className="scorer-community-row">
           {
             row.map((gamepiece, j) => (
               <Col
+                key={j}
                 className="scorer-community-col"
                 data-alliance={alliance}
                 data-column={j}

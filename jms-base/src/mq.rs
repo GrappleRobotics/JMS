@@ -8,13 +8,6 @@ use tokio::sync::{RwLock, oneshot, Mutex, mpsc};
 const JMS_EXCHANGE: &'static str = "JMS";
 const RPC_EXCHANGE: &'static str = "JMS-RPC";
 
-/* TODO: Integrate a 3-way RPC call */
-/* client -[ARGS]-> server */
-/* client <-[ACK]- server */
-/* client <-[RETURN]- server */
-/* This should enable us to detect whether the remote client is online or not (from the first ack),
-   and then we can return a future for the return value. */
-
 pub struct MessageQueue {
   #[allow(dead_code)]
   connection: Arc<lapin::Connection>,

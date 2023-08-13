@@ -4,10 +4,10 @@ import { Button, Col, Row } from "react-bootstrap";
 
 export function RefereePanelFouls({ score, onUpdate, flipped }: { score: MatchScoreSnapshot, onUpdate: (u: ScoreUpdateData) => void, flipped: boolean }) {
   let foul_cards = [
-    <RefereeFoulCard score={score.blue} alliance="blue" type="fouls" onChange={by => onUpdate({ alliance: "blue", update: { Penalty: { fouls: by } } })} />,
-    <RefereeFoulCard score={score.blue} alliance="blue" type="tech_fouls" onChange={by => onUpdate({ alliance: "blue", update: { Penalty: { tech_fouls: by } } })} />,
-    <RefereeFoulCard score={score.red} alliance="red" type="tech_fouls" onChange={by => onUpdate({ alliance: "red", update: { Penalty: { tech_fouls: by } } })} />,
-    <RefereeFoulCard score={score.red} alliance="red" type="fouls" onChange={by => onUpdate({ alliance: "red", update: { Penalty: { fouls: by } } })} />,
+    <RefereeFoulCard key="bfoul" score={score.blue} alliance="blue" type="fouls" onChange={by => onUpdate({ alliance: "blue", update: { Penalty: { fouls: by } } })} />,
+    <RefereeFoulCard key="btech" score={score.blue} alliance="blue" type="tech_fouls" onChange={by => onUpdate({ alliance: "blue", update: { Penalty: { tech_fouls: by } } })} />,
+    <RefereeFoulCard key="rfoul" score={score.red} alliance="red" type="tech_fouls" onChange={by => onUpdate({ alliance: "red", update: { Penalty: { tech_fouls: by } } })} />,
+    <RefereeFoulCard key="rtech" score={score.red} alliance="red" type="fouls" onChange={by => onUpdate({ alliance: "red", update: { Penalty: { fouls: by } } })} />,
   ];
 
   return <Row>

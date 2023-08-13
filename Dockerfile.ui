@@ -1,0 +1,29 @@
+FROM node:alpine AS builder
+WORKDIR /app
+
+ADD jms-ui/package.json jms-ui/
+ADD jms-ui/yarn.lock jms-ui/
+RUN cd jms-ui && yarn install
+
+ADD jms-ui jms-ui
+COPY --from=jaci/jms:latest /jms/schema.json /app/jms-websocket/schema.json
+RUN cd jms-ui && yarn build
+
+FROM node:alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+USER nextjs
+
+COPY --from=builder /app/jms-ui/public ./public
+COPY --from=builder /app/jms-ui/.next/standalone ./
+COPY --from=builder /app/jms-ui/.next/static ./.next/static
+
+ENV PORT 3000
+ENV HOSTNAME localhost
+
+CMD [ "node", "server.js" ]

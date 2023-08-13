@@ -66,7 +66,7 @@ export function withPermission<P, F extends React.ComponentType<P>>(permissions:
     const { user } = useWebsocket();
 
     if (!user || !user_has_permission(permissions, user)) {
-      return <Alert variant="danger"> You don't have permission to access this page! </Alert>
+      return <Alert variant="danger"> You do not have permission to access this page! </Alert>
     }
 
     return React.createElement(component as any, props as any, null);

@@ -30,10 +30,10 @@ export default function AllianceSelectionScene({ eventDetails, alliances, rankin
           <Col> Pick 3 </Col>
         </Row>
         {
-          alliances.map(alliance => <Row>
+          alliances.map((alliance, i) => <Row key={i}>
             <Col md={1}> { alliance.number } </Col>
             {
-              [0, 1, 2, 3].map(i => <Col>
+              [0, 1, 2, 3].map(i => <Col key={i}>
                 { teams.find(t => t.number === alliance.teams[i])?.display_number || alliance.teams[i] }
               </Col>)
             }
@@ -43,7 +43,7 @@ export default function AllianceSelectionScene({ eventDetails, alliances, rankin
       <Col className="alliance-remaining">
         <Row className="flex-wrap">
           {
-            remaining.map(r => <Col md="auto">
+            remaining.map((r, i) => <Col md="auto" key={i}>
               <span className="rank">{ r.rank }</span>: { teams.find(t => t.number === r.team)?.display_number || r.team }
             </Col>)
           }

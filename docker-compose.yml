@@ -1,6 +1,59 @@
 version: '3'
 
+x-jms-base: &jms-base
+  image: jaci/jms:latest
+  restart: unless-stopped
+  environment:
+  - REDIS_URI=redis://redis:6379/0
+  - RABBITMQ_URI=amqp://rabbitmq:5672/%2f
+  depends_on:
+  - redis
+  - rabbitmq
+
 services:
+  jms-arena:
+    <<: *jms-base
+    command: jms-arena
+    depends_on:
+    - jms-networking
+
+  jms-core:
+    <<: *jms-base
+    command: jms-core
+
+  # Driver Station needs network_mode: host in order to see UDP packet addresses and reply to them
+  # accordingly.
+  jms-driverstation:
+    <<: *jms-base
+    command: jms-driverstation
+    depends_on:
+    - jms-arena
+    network_mode: host
+    environment:
+    - REDIS_URI=redis://localhost:6379/0
+    - RABBITMQ_URI=amqp://localhost:5672/%2f
+  
+  jms-networking:
+    <<: *jms-base
+    command: jms-networking
+
+  jms-tba:
+    <<: *jms-base
+    command: jms-tba
+
+  jms-websocket:
+    <<: *jms-base
+    command: jms-websocket
+    ports:
+    - 9000:9000
+
+  jms-ui:
+    image: jaci/jms-ui:latest
+    restart: unless-stopped
+    ports:
+    - 3000:3000
+
+  # Support
   redis:
     image: redis/redis-stack:latest
     restart: unless-stopped

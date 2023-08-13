@@ -47,7 +47,7 @@ export default withPermission(["ManageAwards"], function EventWizardAwards() {
     <Row className="mt-4 flex-wrap">
       {
         awards.map((award, i) => {
-          return <Col style={{ minWidth: '400px', maxWidth: '500px' }}>
+          return <Col key={i} style={{ minWidth: '400px', maxWidth: '500px' }}>
             <AwardCard
               award={award}
               onDelete={() => call<"awards/delete_award">("awards/delete_award", { award_id: award.id }).catch(addError)}
@@ -78,7 +78,7 @@ function AwardCard({ award, onDelete, onUpdate }: { award: Award, onDelete: () =
     </Card.Header>
     <Card.Body>
       <ListGroup>
-        {award.recipients.map((recipient, i) => <ListGroup.Item className="py-1">
+        {award.recipients.map((recipient, i) => <ListGroup.Item key={i} className="py-1">
           <Row>
             <Col>
               {[recipient.team, recipient.awardee].filter(x => x).join(" - ")}

@@ -224,8 +224,7 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
     <br />
     <p className="text-muted"> 
       <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; 
-      If you're using OBS, you can use a "Browser Source" with the following custom CSS to make the window transparent instead of relying 
-      on a chroma key.
+      { "If you're using OBS, you can use a \"Browser Source\" with the following custom CSS to make the window transparent instead of relying on a chroma key." }
       <pre>
         {`.audience-root { --chroma-key-colour: rgba(0,0,0,0) !important; }\nbody { background: rgba(0,0,0,0); }`}
       </pre>

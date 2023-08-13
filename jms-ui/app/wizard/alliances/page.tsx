@@ -42,7 +42,7 @@ export default withPermission(["ManageAlliances"], function EventWizardAlliances
     <h3> Alliance Selections </h3>
     { !has_quals && <Alert variant="warning"> There are no Qualification Matches in the schedule. Are you sure you want to edit alliances? </Alert> }
     { has_quals && !quals_finished && <Alert variant="warning"> Qualification Matches are still being played! Are you sure you want to edit alliances? </Alert> }
-    { disabled && <Alert variant="info"> Alliances can't be edited after Playoffs have begun! </Alert> }
+    { disabled && <Alert variant="info"> { "Alliances can't be edited after Playoffs have begun!" } </Alert> }
 
     {
       has_alliances && <Button variant="success" disabled={disabled} onClick={() => call<"alliances/promote">("alliances/promote", null).then(setAlliances).catch(addError)}>
@@ -67,7 +67,7 @@ export default withPermission(["ManageAlliances"], function EventWizardAlliances
       </thead>
       <tbody>
         {
-          teams.length > 0 && alliances.map((alliance, i) => <tr>
+          teams.length > 0 && alliances.map((alliance, i) => <tr key={i}>
             <td> { alliance.number } </td>
             <td>
               <Typeahead

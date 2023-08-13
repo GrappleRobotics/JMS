@@ -61,7 +61,7 @@ export default withPermission(["EditScores"], function EditScores() {
         <Form.Select value={targetMatch || ""} onChange={v => setMatch(v.target.value)}>
           <option value="">Select a Match</option>
           {
-            matches?.map(m => <option value={m.id}>{ m.name }</option>)
+            matches?.map(m => <option key={m.id} value={m.id}>{ m.name }</option>)
           }
         </Form.Select>
       </Col>
@@ -73,7 +73,7 @@ export default withPermission(["EditScores"], function EditScores() {
           <Nav variant="pills" className="flex-column">
             <h6 className="text-muted"> Select Version </h6>
             {
-              committedScore.scores.map((s, i) => <Nav.Item>
+              committedScore.scores.map((s, i) => <Nav.Item key={i}>
                 <Nav.Link className="edit-scores-version-link" data-active={activeVersion === i} onClick={() => setActiveVersion(i)}> Version { i + 1 } </Nav.Link>
               </Nav.Item>)
             }
@@ -107,7 +107,7 @@ export default withPermission(["EditScores"], function EditScores() {
           </Card>
         </Col>
       </Row> : <React.Fragment>
-        <h4>This match hasn't been played yet! Do you want to create a Score Record anyway?</h4>
+        <h4>This match has not been played yet! Do you want to create a Score Record anyway?</h4>
         <Button
           size="lg"
           variant="success"
@@ -132,7 +132,7 @@ function EditScoresInner({ score, onUpdate, disabled, match }: { score: MatchSco
   }, [ score ])
   
   return <React.Fragment>
-    { score && derivedScore && ALLIANCES.map(alliance => <Row className="mt-2">
+    { score && derivedScore && ALLIANCES.map(alliance => <Row key={alliance as string} className="mt-2">
       <Col>
         <Card className="card-dark" data-alliance={alliance}>
           <Card.Body>
@@ -231,12 +231,12 @@ function YearSpecificAllianceScoreEdit({ alliance, live, derived, onUpdate, disa
     {/* Teams */}
     <Row className="mt-2">
       {
-        match[`${alliance}_teams`].map((t, i) => <Col> <strong>{  t ? `TEAM ${t}` : `Station ${i + 1}` }</strong> </Col>)
+        match[`${alliance}_teams`].map((t, i) => <Col key={i}> <strong>{  t ? `TEAM ${t}` : `Station ${i + 1}` }</strong> </Col>)
       }
     </Row>
     <Row className="mt-2">
       {
-        live.mobility.map((mobility, i) => <Col>
+        live.mobility.map((mobility, i) => <Col key={i}>
           <Button className="btn-block" variant={mobility ? "success" : "danger"} onClick={() => onUpdate({ mobility: { [i]: { $set: !mobility } }})} disabled={disabled}>
             MOBILITY - { mobility ? "OK" : "NOT OK" }
           </Button>
@@ -245,10 +245,10 @@ function YearSpecificAllianceScoreEdit({ alliance, live, derived, onUpdate, disa
     </Row>
     <Row className="mt-2">
       {
-        live.endgame.map((eg, i) => <Col>
+        live.endgame.map((eg, i) => <Col key={i}>
           <Form.Select value={eg} onChange={v => onUpdate({ endgame: { [i]: { $set: v.target.value as EndgameType } } })} disabled={disabled}>
             {
-              Object.keys(ENDGAME_MAP).map(egt => <option value={egt}>{ (ENDGAME_MAP as any)[egt] }</option>)
+              Object.keys(ENDGAME_MAP).map(egt => <option key={egt} value={egt}>{ (ENDGAME_MAP as any)[egt] }</option>)
             }
           </Form.Select>
         </Col>)

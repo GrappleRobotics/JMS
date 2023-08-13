@@ -15,7 +15,7 @@ export default withPermission(["FTA"], function DebugPage() {
   
   return <div className="mt-3">
     <h3>Debug Controls</h3>
-    <p className="text-muted"> <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; These tools are provided for debugging purposes only. Don't use these unless you're certain you know what they do! </p>
+    <p className="text-muted"> <FontAwesomeIcon icon={faInfoCircle} /> &nbsp; { "These tools are provided for debugging purposes only. Don't use these unless you're certain you know what they do!" } </p>
 
     <h4> Trigger Events </h4>
     <Button variant="success" onClick={() => call<"scoring/update_rankings">("scoring/update_rankings", null).catch(addError)}>

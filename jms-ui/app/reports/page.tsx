@@ -57,7 +57,7 @@ export default function Reports() {
 
     <h4 className="mt-2"> Matches </h4>
     {
-      (["Qualification", "Playoff", "Final"] as MatchType[]).map(match_type => <React.Fragment>
+      (["Qualification", "Playoff", "Final"] as MatchType[]).map(match_type => <React.Fragment key={match_type as string}>
         <Button disabled={loading} className="mb-2" size="lg" variant={MATCH_TYPE_VARIANT[match_type]} onClick={() => report<"reports/matches">("reports/matches", { individual: false, match_type })}>
           { match_type }
         </Button> &nbsp;

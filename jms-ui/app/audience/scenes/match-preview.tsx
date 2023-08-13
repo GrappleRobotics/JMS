@@ -62,7 +62,7 @@ export default function MatchPreviewSceneInner({ eventDetails, currentMatch, mat
 
     <Row className="match-teams">
       {
-        ALLIANCES_FLIPPED.map(colour => <Col>
+        ALLIANCES_FLIPPED.map(colour => <Col key={colour as string}>
           <Card data-alliance={colour}>
             {
               withVal(match?.[`${colour}_alliance`], a => <Card.Header>

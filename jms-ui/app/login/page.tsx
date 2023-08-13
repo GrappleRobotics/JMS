@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   return <UserPage container space>
     {
-      user && <Alert variant="info">You're already logged in!</Alert>
+      user && <Alert variant="info">{ "You're already logged in! "}</Alert>
     }
     <Card className="login-card">
       <Card.Body>

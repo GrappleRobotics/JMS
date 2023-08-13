@@ -57,13 +57,13 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   return <div style={{ marginLeft: '1em', marginRight: '1em' }}>
     <Row>
       {
-        _.zip(allianceStations, stationReports).map(([stn, report]) => <FTAAllianceStation station={stn!} report={report || null} call={call} addError={addError} teams={teams} />)
+        _.zip(allianceStations, stationReports).map(([stn, report], i) => <FTAAllianceStation key={i} station={stn!} report={report || null} call={call} addError={addError} teams={teams} />)
       }
     </Row>
     {
-      Object.keys(remainingDsReports).map(t => {
+      Object.keys(remainingDsReports).map((t, i) => {
         const report = remainingDsReports[t as any];
-        return <Row className="fta-remaining-ds-report">
+        return <Row className="fta-remaining-ds-report" key={i}>
           <Col>
             Team Connected but not in Match: { report.team } { report.actual_station && `(${capitalise(report.actual_station.alliance)} ${report.actual_station.station})` }
           </Col>

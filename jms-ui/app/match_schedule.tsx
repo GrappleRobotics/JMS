@@ -53,16 +53,16 @@ export default function MatchSchedule({ matches, currentMatch, canLoad, isLoadDi
           </thead>
           <tbody>
             {
-              matches.filter(filter || ((m: Match) => true)).map(match => <tr className="schedule-row" data-played={match.played}>
+              matches.filter(filter || ((m: Match) => true)).map(match => <tr key={match.id} className="schedule-row" data-played={match.played}>
                 <td> { moment(match.start_time).format("ddd HH:mm:ss") } </td>
                 <td> { match.name } { match.played && <span className="text-success">&nbsp;<FontAwesomeIcon icon={faCheck} /></span> } </td>
                 <td data-alliance="blue"> <strong>{ match.blue_alliance ? `#${match.blue_alliance}` : "" }</strong> </td>
                 {
-                  match.blue_teams.map(t => <td data-alliance="blue">{ teams?.find(x => x.number === t)?.display_number || t }</td>)
+                  match.blue_teams.map((t, i) => <td key={i} data-alliance="blue">{ teams?.find(x => x.number === t)?.display_number || t }</td>)
                 }
                 <td data-alliance="red"> <strong>{ match.red_alliance ? `#${match.red_alliance}` : "" }</strong> </td>
                 {
-                  match.red_teams.map(t => <td data-alliance="red">{ teams?.find(x => x.number === t)?.display_number || t }</td>)
+                  match.red_teams.map((t, i) => <td key={i} data-alliance="red">{ teams?.find(x => x.number === t)?.display_number || t }</td>)
                 }
                 <td>
                   { canDelete && <Button variant="danger" size="sm" disabled={match.played} onClick={() => withConfirm(() => call<"matches/delete">("matches/delete", { match_id: match.id }).catch(addError))}>

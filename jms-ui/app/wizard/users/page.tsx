@@ -84,7 +84,7 @@ export default withPermission(["Admin"], function EventWizardUsers() {
       </thead>
       <tbody>
         {
-          users.map(user => <tr>
+          users.map(user => <tr key={user.username}>
             <td> { user.username } </td>
             <td> { user.realname } </td>
             <td>

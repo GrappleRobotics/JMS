@@ -42,8 +42,8 @@ pub struct NetworkConfig {
 
 async fn do_team_network_update(network: NetworkConfig, settings: NetworkingSettings) -> anyhow::Result<()> {
   info!("Starting Network Update...");
-  pfsense::configure_firewall(&network, &settings).await?;
-  linksys_ap::configure_ap_teams(&network, &settings).await?;
+  pfsense::configure_firewall(&network, &settings).await.map_err(|e| anyhow::anyhow!("PFSense Error: {}", e))?;
+  linksys_ap::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?;
   info!("Network Update Complete!");
   Ok(())
 }

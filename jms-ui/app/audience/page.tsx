@@ -15,21 +15,12 @@ import MatchResultsScene from "./scenes/match-results";
 import AwardScene from "./scenes/award";
 import { usePrevious } from "../support/util";
 import MatchPlayScene from "./scenes/match-play";
+import { playSound } from "./utils";
 
-export function withDefaultTransition(key: string, children: React.ReactNode) {
+function withDefaultTransition(key: string, children: React.ReactNode) {
   return <CSSTransition key={key} timeout={500} classNames="audience-scene-anim">
     { children }
   </CSSTransition>
-}
-
-export const playSound = async (sound: AudienceDisplaySound) => {
-  console.log("Playing Sound: " + sound);
-  const audio = new Audio(`/sounds/${sound}.wav`);
-  audio.play().catch((e: DOMException) => {
-    if (e.message.includes("interact")) {
-      alert("Can't play sound - autoplay policy. Interact with this page first!");
-    }
-  })
 }
 
 export default function AudienceDisplay() {

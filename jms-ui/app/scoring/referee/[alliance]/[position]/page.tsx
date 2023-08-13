@@ -46,6 +46,7 @@ export default withPermission(["Scoring"], function RefereePanel({ params }: { p
     { score && <Row>
       { stations.filter(s => s.id.alliance === params.alliance).map((stn, i) => (
         <RefereeTeamCard
+          key={i}
           idx={i}
           score={score[params.alliance]}
           station={stn}

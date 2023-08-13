@@ -100,7 +100,7 @@ function QualificationTeamRankings({ rankings, teams }: { rankings: TeamRanking[
     </thead>
     <tbody>
       {
-        rankings.map((r, i) => <tr data-rank={i + 1}>
+        rankings.map((r, i) => <tr key={i} data-rank={i + 1}>
           <td> {i + 1} </td>
           <td> { team_map[r.team] ? team_map[r.team].display_number : r.team } </td>
           <td> { r.played } </td>

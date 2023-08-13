@@ -1,2 +1,13 @@
-target/
+**/target
 /data
+**/node_modules
+**/.next
+
+Dockerfile
+docker-compose.yml
+README.md
+/electronics
+/documentation
+/images
+/docker-build.ps1
+/docker-build.sh

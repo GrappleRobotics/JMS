@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect } from "react";
 import { Col, Row } from "react-bootstrap";
 import { SwitchTransition, CSSTransition, TransitionGroup } from "react-transition-group";
-import { playSound } from "../page";
+import { playSound } from "../utils";
 
 interface MatchPreviewProps {
   eventDetails: EventDetails,
@@ -65,13 +65,13 @@ export default function MatchPlayScene({ eventDetails, currentMatch, matches, te
           </div>
 
           {
-            ALLIANCES.map(alliance => {
+            ALLIANCES.map((alliance, i) => {
               const derived = currentScore?.[alliance]?.derived;
               const other = currentScore?.[otherAlliance(alliance)]?.derived;
 
               const playoffAlliance = match?.[`${alliance}_alliance`];
 
-              return <React.Fragment>
+              return <React.Fragment key={i}>
                 <div className="audience-play-score" data-alliance={alliance}>
                   <Row>
                     <Col>
@@ -92,8 +92,8 @@ export default function MatchPlayScene({ eventDetails, currentMatch, matches, te
 
                 <div className="audience-play-teams" data-alliance={alliance}>
                   {
-                    stations.filter(s => s.id.alliance === alliance).map(stn => (
-                      <Row className="audience-play-team" data-alliance={stn.id.alliance} data-station={stn.id.station} data-estop={stn.estop} data-bypass={stn.bypass}>
+                    stations.filter(s => s.id.alliance === alliance).map((stn, j) => (
+                      <Row key={j} className="audience-play-team" data-alliance={stn.id.alliance} data-station={stn.id.station} data-estop={stn.estop} data-bypass={stn.bypass}>
                         <Col> { teams.find(t => t.number === stn.team)?.display_number || stn.team } </Col>
                       </Row>
                     ))

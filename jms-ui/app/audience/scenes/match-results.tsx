@@ -76,7 +76,7 @@ export default function MatchResultsScene({ eventDetails, match_id, matches, tea
 
     <Row className="results">
       {
-        ALLIANCES_FLIPPED.map(alliance => <Col>
+        ALLIANCES_FLIPPED.map(alliance => <Col key={alliance as string}>
           <Card data-alliance={alliance}>
             {
               match && withVal(match[`${alliance}_alliance`], a => <Card.Header>
@@ -118,16 +118,16 @@ class AllianceResult extends React.PureComponent<AllianceResultProps> {
     const { reverse, alliance, score, winner, teams, has_rp } = this.props;
 
     let top = [
-      <Col>
+      <Col key="top-teams">
         <Row className="teams flex-wrap">
           {
-            teams.map(t => <Col>
+            teams.map((t, i) => <Col key={i}>
               { t }
             </Col>)
           }
         </Row>
       </Col>,
-      <Col md="auto">
+      <Col md="auto" key="top-alliance-score">
         <div className="alliance-score">
           <Row>
             <Col className="total"> 
@@ -146,9 +146,9 @@ class AllianceResult extends React.PureComponent<AllianceResultProps> {
     ];
 
     let bottom = [
-      <Col className="breakdown" data-alliance={alliance}>
+      <Col key="bottom-breakdown" className="breakdown" data-alliance={alliance}>
         {
-          DERIVED_RENDER.map(dr => <Row className="grow">
+          DERIVED_RENDER.map((dr, i) => <Row className="grow" key={i}>
             <Col>
               { dr(dr => dr.name) }
             </Col>
@@ -158,7 +158,7 @@ class AllianceResult extends React.PureComponent<AllianceResultProps> {
           </Row>)
         }
       </Col>,
-      withVal((has_rp || undefined) && (score.derived.total_rp), (rp) => <Col md="auto">
+      withVal((has_rp || undefined) && (score.derived.total_rp), (rp) => <Col key="bottom-rp" md="auto">
         <div className="alliance-rp">
           { rp } RP
         </div>
