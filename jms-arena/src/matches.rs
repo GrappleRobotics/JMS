@@ -71,7 +71,9 @@ impl LoadedMatch {
         }
       }
       MatchPlayState::Auto => {
-        self.match_start_time = Some(Instant::now());
+        if first {
+          self.match_start_time = Some(Instant::now());
+        }
         remaining = Duration::seconds(15) - elapsed;
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Pause);
@@ -117,6 +119,7 @@ impl LoadedMatch {
     let serialised = SerialisedLoadedMatch {
       match_id: self.match_id.clone(),
       remaining: DBDuration(self.remaining),
+      match_time: self.match_start_time.map(|mt| DBDuration(Duration::from_std(Instant::now() - mt).unwrap())),
       endgame: self.endgame,
       state: self.state
     };

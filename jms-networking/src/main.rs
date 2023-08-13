@@ -72,7 +72,7 @@ impl NetworkingService {
         msg = event_subscriber.next() => match msg {
           Some(Ok(td)) => {
             match td.data {
-              ArenaState::Reset => {
+              ArenaState::Reset | ArenaState::MatchComplete => {
                 let config = NetworkConfig {
                   blue1: (1, None),
                   blue2: (2, None),
