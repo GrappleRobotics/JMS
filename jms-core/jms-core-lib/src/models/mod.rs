@@ -27,3 +27,6 @@ pub use user::*;
 
 mod audience;
 pub use audience::*;
+
+mod tickets;
+pub use tickets::*;

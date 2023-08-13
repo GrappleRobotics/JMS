@@ -34,6 +34,7 @@ pub mod user;
 pub mod reports;
 pub mod tba;
 pub mod networking;
+pub mod tickets;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -1,0 +1,15 @@
+[package]
+name = "jms-electronics"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.72"
+tokio = { version = "1.31.0", features = ["full"] }
+jms-base = { path = "../jms-base" }
+jms-core-lib = { path = "../jms-core/jms-core-lib" }
+jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
+tokio-serial = "5.4.4"
+log = "0.4.20"

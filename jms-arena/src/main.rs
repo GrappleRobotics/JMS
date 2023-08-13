@@ -80,7 +80,7 @@ impl Arena {
     let first = self.last_state != Some(self.state);
     self.last_state = Some(self.state);
 
-    if signal == Some(ArenaSignal::Estop) {
+    if signal == Some(ArenaSignal::Estop) && self.state != ArenaState::Estop {
       self.set_state(ArenaState::Estop).await?;
     }
 

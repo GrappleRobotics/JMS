@@ -15,4 +15,5 @@ members = [
   "jms-tba/jms-tba-lib",
   "jms-networking",
   "jms-networking/jms-networking-lib",
+  "jms-electronics"
 ]
