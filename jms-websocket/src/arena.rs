@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY, AllianceStation, SerialisedLoadedMatch, ARENA_MATCH_KEY, AllianceStationUpdate};
+use jms_base::kv;
 use jms_core_lib::{models::{MaybeToken, Permission, AllianceStationId, Match, MatchType}, db::Table};
 use jms_driverstation_lib::DriverStationReport;
 
@@ -86,6 +87,15 @@ pub trait ArenaWebsocket {
     for update in updates {
       update.apply(&mut stn);
     }
+    stn.insert(&ctx.kv)?;
+    Ok(())
+  }
+
+  #[endpoint]
+  async fn estop_station(&self, ctx: &WebsocketContext, token: &MaybeToken, station_id: AllianceStationId, astop: bool) -> anyhow::Result<()> {
+    let mut stn = AllianceStation::get(&station_id, &ctx.kv)?;
+    if astop { stn.set_astop(true, &ctx.kv)?; }
+    else     { stn.set_estop(true, &ctx.kv)?; }
     stn.insert(&ctx.kv)?;
     Ok(())
   }

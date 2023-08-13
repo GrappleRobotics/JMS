@@ -17,6 +17,15 @@
   @include hazard-btn(theme-color("hazard-red"));
 }
 
+.estop-big {
+  display: block;
+  width: 100%;
+  padding: 5rem;
+  font-size: 6vw;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
 .btn-estop-reset, .btn-astop, .btn-hazard-yellow {
   @include hazard-btn(theme-color("hazard-yellow"));
 }

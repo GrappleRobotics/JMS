@@ -61,6 +61,8 @@ export default function Home() {
           <HomeTile name="Scoring" href="/scoring" img="scorers.jpg"> Score Matches </HomeTile>
           <HomeTile name="Referee" href="/scoring/referee" img="referee.jpg"> Referee Matches, Assign Fouls </HomeTile>
         </PermissionGate>
+        <HomeTile name="Match Timer" href="/timer" img="timer.png"> On-Field Match Timers </HomeTile>
+        <HomeTile name="Team Estops" href="/estops" img="estop.png"> Team E-Stops </HomeTile>
       </HomeTileRow>
       <HomeTileSep> In the Stands </HomeTileSep>
       <HomeTileRow>

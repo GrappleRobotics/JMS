@@ -98,6 +98,7 @@ impl Arena {
       },
       ArenaState::Reset => {
         self.reset_stations().await?;
+        self.current_match = None;
         self.set_state(ArenaState::Idle).await?;
       },
       ArenaState::Idle => {
@@ -208,9 +209,7 @@ impl ArenaRPC for Arena {
       ArenaState::Idle { .. } => {
         self.current_match = None;
 
-        for stn in self.stations.values_mut() {
-          stn.set_team(None, &self.kv).ok();
-        }
+        self.reset_stations().await.map_err(|e| e.to_string())?;
 
         Ok(())
       },
