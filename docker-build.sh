@@ -3,3 +3,5 @@ docker tag jaci/jms:$(cat VERSION) jaci/jms:latest
 
 docker build -t jaci/jms-ui:$(cat VERSION) -f Dockerfile.ui .
 docker tag jaci/jms-ui:$(cat VERSION) jaci/jms-ui:latest
+
+docker-compose build

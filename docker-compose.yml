@@ -47,16 +47,31 @@ services:
   jms-websocket:
     <<: *jms-base
     command: jms-websocket
-    ports:
-    - 9000:9000
+    deploy:
+      replicas: 3
+    # ports:
+    # - 9000:9000
 
   jms-ui:
     image: jaci/jms-ui:latest
     restart: unless-stopped
-    ports:
-    - 3000:3000
+    deploy:
+      replicas: 2
+    # ports:
+    # - 3000:3000
 
   # Support
+  nginx:
+    build:
+      context: nginx
+    restart: unless-stopped
+    depends_on:
+    - jms-ui
+    - jms-websocket
+    ports:
+    - 80:80
+    - 9000:9000
+
   redis:
     image: redis/redis-stack:latest
     restart: unless-stopped

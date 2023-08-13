@@ -78,7 +78,8 @@ async fn main() -> anyhow::Result<()> {
       std::fs::write(file, serde_json::to_string_pretty(&schema)?)?;
     },
     _ => {
-      let mq = MessageQueue::new("websocket-reply").await?;
+      // Need to set hostname since we may be in a multi-node deployment
+      let mq = MessageQueue::new(&format!("websocket-reply-{}", gethostname::gethostname().to_str().unwrap())).await?;
       let kv = KVConnection::new()?;
       
       ws.begin(WebsocketContext::new(mq.channel().await?, kv)).await?;
