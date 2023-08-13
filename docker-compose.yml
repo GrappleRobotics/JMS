@@ -48,6 +48,10 @@ services:
     ports:
     - 6789:6789
 
+  jms-match-logs:
+    <<: *jms-base
+    command: jms-match-logs
+
   jms-tba:
     <<: *jms-base
     command: jms-tba
