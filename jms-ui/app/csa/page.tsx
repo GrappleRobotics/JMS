@@ -7,6 +7,10 @@ import { Match, SupportTicket, Team } from "../ws-schema";
 import { useErrors } from "../support/errors";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import JmsWebsocket from "../support/ws";
+import { confirmModal } from "../components/Confirm";
+import Paginate from "../components/Paginate";
+import { newTicketModal } from "./tickets";
 
 export default withPermission(["Ticketing"], function CSAView() {
   const { user, call, subscribe, unsubscribe } = useWebsocket();
@@ -38,7 +42,7 @@ export default withPermission(["Ticketing"], function CSAView() {
         <Button variant="success" onClick={() => refreshTickets()}>
           Refresh
         </Button> &nbsp;
-        <Button variant="orange">
+        <Button variant="orange" onClick={() => newTicketSelectTeamModal(teams, call, addError).then(refreshTickets)}>
           New Ticket
         </Button>
       </Col>
@@ -87,4 +91,19 @@ function TicketComponent({ ticket, matches, teams }: { ticket: SupportTicket, ma
       </Row>
     </ListGroup.Item>
   </Link>
+}
+
+async function newTicketSelectTeamModal(teams: Team[], call: JmsWebsocket["call"], addError: (e: string) => void) {
+  let team = await confirmModal("", {
+    data: 0,
+    title: "Select Team",
+    render: (ok, cancel) => <React.Fragment>
+      <Paginate itemsPerPage={10}>
+        {
+          teams.sort((a, b) => a.number - b.number).map(team => <Button key={team.number} className="btn-block m-1" onClick={() => ok(team.number)}> { team.display_number } { team.display_number !== ("" + team.number) && `(${team.number})`} </Button>)
+        }
+      </Paginate>
+    </React.Fragment>
+  });
+  await newTicketModal(team, undefined, call, addError);
 }
