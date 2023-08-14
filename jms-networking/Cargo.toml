@@ -20,3 +20,4 @@ serde = "1.0.183"
 serde_json = "1.0.104"
 log = "0.4.19"
 async-trait = "0.1.73"
+reqwest = { version = "0.11.18", features=['cookies', 'json'] }

@@ -26,4 +26,10 @@ pub trait NetworkingWebsocket {
     token.auth(&ctx.kv)?.require_permission(&[Permission::FTA])?;
     JMSNetworkingRPCClient::configure_admin(&ctx.mq).await?.map_err(|e| anyhow::anyhow!(e))
   }
+
+  #[endpoint]
+  async fn force_reprovision(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA])?;
+    JMSNetworkingRPCClient::force_reprovision(&ctx.mq).await?.map_err(|e| anyhow::anyhow!(e))
+  }
 }

@@ -1,5 +1,11 @@
 use jms_core_lib::db::Singleton;
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, PartialEq, Eq)]
+pub enum RadioType {
+  Linksys,
+  Unifi
+}
+
 #[derive(jms_macros::Updateable)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct NetworkingSettings {
@@ -8,10 +14,12 @@ pub struct NetworkingSettings {
   pub radio_username: String,
   pub radio_password: String,
 
+  pub radio_type: RadioType,
+
   pub team_channel: Option<usize>,
   pub admin_channel: Option<usize>,
   pub admin_ssid: Option<String>,
-  pub admin_password: Option<String>
+  pub admin_password: Option<String>,
 }
 
 impl Default for NetworkingSettings {
@@ -21,6 +29,8 @@ impl Default for NetworkingSettings {
       router_password: "jmsR0cks".to_owned(),
       radio_username: "root".to_owned(),
       radio_password: "root".to_owned(),
+
+      radio_type: RadioType::Unifi,
 
       team_channel: None,
       admin_channel: None,
@@ -37,4 +47,5 @@ impl Singleton for NetworkingSettings {
 #[jms_macros::service]
 pub trait JMSNetworkingRPC {
   async fn configure_admin() -> Result<(), String>;
+  async fn force_reprovision() -> Result<(), String>;
 }

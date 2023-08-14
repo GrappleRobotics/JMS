@@ -1,11 +1,12 @@
 "use client"
 
 import BufferedFormControl from "@/app/components/BufferedFormControl";
+import EnumToggleGroup from "@/app/components/EnumToggleGroup";
 import { useErrors } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
-import { JmsComponent, NetworkingSettings, NetworkingSettingsUpdate } from "@/app/ws-schema";
+import { JmsComponent, NetworkingSettings, NetworkingSettingsUpdate, RadioType } from "@/app/ws-schema";
 import React from "react";
 import { useEffect, useState } from "react";
 import { Alert, Button, Col, Form, InputGroup, Row } from "react-bootstrap";
@@ -72,6 +73,21 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
         <Row className="mt-2">
           <Col>
             <InputGroup>
+              <InputGroup.Text>Radio Type</InputGroup.Text> &nbsp;
+              <EnumToggleGroup
+                name="radio-type"
+                value={settings.radio_type}
+                values={[ "Linksys", "Unifi" ] as RadioType[]}
+                onChange={v => update({ radio_type: v })}
+                variant="secondary"
+              />
+            </InputGroup>
+          </Col>
+        </Row>
+
+        <Row className="mt-2">
+          <Col>
+            <InputGroup>
               <InputGroup.Text>Username</InputGroup.Text>
               <BufferedFormControl
                 type="text"
@@ -99,6 +115,7 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
               <BufferedFormControl
                 type="text"
                 value={settings.admin_ssid || ""}
+                disabled={settings.radio_type === "Unifi"}
                 onUpdate={v => update({ admin_ssid: nullIfEmpty(v as string) })}
               />
             </InputGroup>
@@ -109,6 +126,7 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
               <BufferedFormControl
                 type="text"
                 value={settings.admin_password || ""}
+                disabled={settings.radio_type === "Unifi"}
                 onUpdate={v => update({ admin_password: nullIfEmpty(v as string) })}
               />
             </InputGroup>
@@ -131,7 +149,7 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
           <Col md="auto">
             <InputGroup>
               <InputGroup.Text>Admin Channel</InputGroup.Text>
-              <Form.Select value={settings.admin_channel || "auto"} onChange={v => update({ admin_channel: v.target.value === "auto" ? null : parseInt(v.target.value) })}>
+              <Form.Select disabled={settings.radio_type === "Unifi"} value={settings.admin_channel || "auto"} onChange={v => update({ admin_channel: v.target.value === "auto" ? null : parseInt(v.target.value) })}>
                 {
                   ["auto", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
                     .map(channel => <option key={channel} value={channel}>{ channel }</option>)
@@ -143,8 +161,11 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
 
         <Row className="mt-2">
           <Col>
-            <Button size="lg" variant="success" onClick={() => call<"networking/reload_admin">("networking/reload_admin", null).catch(addError)}>
-              Reload Admin Network
+            <Button size="lg" variant="success" disabled={settings.radio_type !== "Linksys"} onClick={() => call<"networking/reload_admin">("networking/reload_admin", null).catch(addError)}>
+              Reload Admin Network (Linksys Only)
+            </Button> &nbsp;
+            <Button size="lg" variant="danger" disabled={settings.radio_type !== "Unifi"} onClick={() => call<"networking/force_reprovision">("networking/force_reprovision", null).catch(addError)}>
+              Force Reprovision (Unifi Only)
             </Button>
           </Col>
         </Row>

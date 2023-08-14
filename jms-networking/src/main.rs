@@ -4,7 +4,7 @@ use imaging::ImagingKeyService;
 use jms_arena_lib::{ArenaState, AllianceStation};
 use jms_base::{kv, mq, logging::configure};
 use jms_core_lib::{models::{JmsComponent, self, Team, AllianceStationId, Alliance}, db::{Table, Singleton}};
-use jms_networking_lib::{NetworkingSettings, JMSNetworkingRPC};
+use jms_networking_lib::{NetworkingSettings, JMSNetworkingRPC, RadioType};
 use tokio::try_join;
 use log::{info, error};
 
@@ -12,6 +12,7 @@ pub mod imaging;
 pub mod linksys_ap;
 pub mod pfsense;
 pub mod ssh;
+pub mod unifi;
 
 #[derive(rust_embed::RustEmbed)]
 #[folder = "resources"]
@@ -43,7 +44,10 @@ pub struct NetworkConfig {
 async fn do_team_network_update(network: NetworkConfig, settings: NetworkingSettings) -> anyhow::Result<()> {
   info!("Starting Network Update...");
   pfsense::configure_firewall(&network, &settings).await.map_err(|e| anyhow::anyhow!("PFSense Error: {}", e))?;
-  linksys_ap::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?;
+  match settings.radio_type {
+    RadioType::Linksys => linksys_ap::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?,
+    RadioType::Unifi => unifi::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?,
+  }
   info!("Network Update Complete!");
   Ok(())
 }
@@ -57,7 +61,21 @@ impl JMSNetworkingRPC for NetworkingService {
   fn mq(&self) ->  &jms_base::mq::MessageQueueChannel { &self.mq }
 
   async fn configure_admin(&mut self) -> Result<(),String> {
-    linksys_ap::configure_ap_admin(&NetworkingSettings::get(&self.kv).map_err(|e| e.to_string())?).await.map_err(|e| e.to_string())
+    let settings = NetworkingSettings::get(&self.kv).map_err(|e| e.to_string())?;
+    if settings.radio_type == RadioType::Linksys {
+      linksys_ap::configure_ap_admin(&settings).await.map_err(|e| e.to_string())
+    } else {
+      return Err("Not Supported".to_owned())
+    }
+  }
+
+  async fn force_reprovision(&mut self) -> Result<(), String> {
+    let settings = NetworkingSettings::get(&self.kv).map_err(|e| e.to_string())?;
+    if settings.radio_type == RadioType::Unifi {
+      unifi::force_reprovision(&settings).await.map_err(|e| e.to_string())
+    } else {
+      return Err("Not Supported".to_owned())
+    }
   }
 }
 
@@ -100,8 +118,8 @@ impl NetworkingService {
 
                 let config = NetworkConfig {
                   blue1: (blue1.unwrap_or(1), blue1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
-                  blue2: (blue2.unwrap_or(2), blue1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
-                  blue3: (blue3.unwrap_or(3), blue1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+                  blue2: (blue2.unwrap_or(2), blue2.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+                  blue3: (blue3.unwrap_or(3), blue3.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
                   red1: (red1.unwrap_or(4), red1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
                   red2: (red2.unwrap_or(5), red2.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
                   red3: (red3.unwrap_or(6), red3.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
@@ -134,7 +152,7 @@ async fn main() -> anyhow::Result<()> {
 
   let mut networking = NetworkingService { kv: kv.clone()?, mq: mq.channel().await? };
   let imaging = ImagingKeyService::new();
-  try_join!(component_svc, networking.run(), imaging.run(kv))?;
+  try_join!(component_svc, networking.run()/* , imaging.run(kv) */)?;
 
   Ok(())
 }
