@@ -35,7 +35,11 @@ async fn logs_svc(kv: kv::KVConnection) -> anyhow::Result<()> {
       let match_time = current_match.match_time.map(|mt| mt.0.num_milliseconds()).unwrap_or(0);
 
       if current_match.state == MatchPlayState::Auto || current_match.state == MatchPlayState::Pause || current_match.state == MatchPlayState::Teleop {
+        let mut waiting: Vec<usize> = logs.keys().cloned().collect::<Vec<_>>();
         for report in reports {
+          waiting.retain(|x| x != &(report.team as usize));
+          // waiting.remove(report.team as usize);
+
           let entry = match logs.entry(report.team as usize) {
             Entry::Occupied(o) => o.into_mut(),
             Entry::Vacant(v) => v.insert(MatchLog { match_id: current_match.match_id.clone(), team: report.team as usize, timeseries: vec![] })
@@ -43,8 +47,15 @@ async fn logs_svc(kv: kv::KVConnection) -> anyhow::Result<()> {
 
           entry.timeseries.push(TimeseriesDsReportEntry {
             time: match_time as usize,
-            report
+            report: Some(report)
           });
+        }
+
+        for wait in waiting {
+          // These teams haven't received an update - make their report as nil
+          if let Some(entry) = logs.get_mut(&wait) {
+            entry.timeseries.push(TimeseriesDsReportEntry { time: match_time as usize, report: None });
+          }
         }
       }
 

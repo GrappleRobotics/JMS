@@ -13,7 +13,7 @@ pub struct MatchLog {
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct TimeseriesDsReportEntry {
   pub time: usize,      // In ms
-  pub report: DriverStationReport
+  pub report: Option<DriverStationReport>
 }
 
 impl Table for MatchLog {

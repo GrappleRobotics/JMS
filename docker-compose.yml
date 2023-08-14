@@ -14,8 +14,8 @@ services:
   jms-arena:
     <<: *jms-base
     command: jms-arena
-    # depends_on:
-    # - jms-networking
+    depends_on:
+    - jms-networking
 
   jms-core:
     <<: *jms-base
@@ -42,11 +42,16 @@ services:
     - REDIS_URI=redis://localhost:6379/0
     - RABBITMQ_URI=amqp://localhost:5672/%2f
   
+  # For some reason, this requires network-mode host as well. 
   jms-networking:
     <<: *jms-base
     command: jms-networking
-    ports:
-    - 6789:6789
+    network_mode: host
+    environment:
+    - REDIS_URI=redis://localhost:6379/0
+    - RABBITMQ_URI=amqp://localhost:5672/%2f
+    depends_on:
+    - unifi
 
   jms-match-logs:
     <<: *jms-base

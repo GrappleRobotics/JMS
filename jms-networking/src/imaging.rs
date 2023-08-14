@@ -13,7 +13,7 @@ impl ImagingKeyService {
   }
 
   pub async fn run(self, kv: kv::KVConnection) -> Result<()> {
-    let server = TcpListener::bind(("0.0.0.0", 6789)).await?;
+    let server = TcpListener::bind(("0.0.0.0", 7171)).await?;
     
     loop {
       let (stream, addr) = server.accept().await?;

@@ -1,11 +1,12 @@
 "use client"
 
 import BufferedFormControl from "@/app/components/BufferedFormControl";
+import MatchLogView from "@/app/match-logs/view";
 import { useErrors } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
-import { Match, SupportTicket, Team } from "@/app/ws-schema";
+import { Match, MatchLog, SupportTicket, Team } from "@/app/ws-schema";
 import { faCheck, faChevronCircleLeft, faTimes, faUserCheck, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import moment from "moment";
@@ -21,12 +22,21 @@ export default withPermission(["Ticketing"], function CSATicket({ params }: { pa
   const [ teams, setTeams ] = useState<Team[]>([]);
   const [ matches, setMatches ] = useState<Match[]>([]);
 
+  const [ matchLog, setMatchLog ] = useState<MatchLog>();
+
   const refreshTicket = () => {
     let cbs = [
       subscribe<"team/teams">("team/teams", setTeams),
       subscribe<"matches/matches">("matches/matches", setMatches),
     ];
-    call<"tickets/get">("tickets/get", { id: params.id }).then(setTicket).catch(addError);
+    call<"tickets/get">("tickets/get", { id: params.id }).then(t => {
+      setTicket(t);
+      if (t.match_id) {
+        call<"tickets/get_match_log">("tickets/get_match_log", { match_id: t.match_id, team: t.team })
+          .then(setMatchLog)
+          .catch((e) => setMatchLog(undefined));
+      }
+    }).catch(addError);
     return () => unsubscribe(cbs);
   }
 
@@ -116,7 +126,9 @@ export default withPermission(["Ticketing"], function CSATicket({ params }: { pa
         }
       </Col>
       <Col md={9}>
-        
+        {
+          matchLog ? <MatchLogView matchLog={matchLog} /> : <h3>No Match Log Available</h3>
+        }
       </Col>
     </Row>
   </React.Fragment>

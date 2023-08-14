@@ -57,6 +57,7 @@ export default function Home() {
         <PermissionGate permissions={["Ticketing"]}>
           <HomeTile name="CSA" href="/csa">View match reports, resolve tickets</HomeTile>
         </PermissionGate>
+        <HomeTile name="Match Logs" href="/match-logs">View match logs</HomeTile>
       </HomeTileRow>
       <HomeTileSep> On the Field </HomeTileSep>
       <HomeTileRow>

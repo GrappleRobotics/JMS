@@ -71,7 +71,7 @@ async fn field_mode(args: &Args, iface: LinkMetadata) -> anyhow::Result<()> {
     },
     None => {
       // Load from JMS
-      let mut stream = TcpStream::connect("10.0.100.5:6789").await?;
+      let mut stream = TcpStream::connect("10.0.100.5:7171").await?;
       let len = stream.read_u32().await? as usize;
 
       let mut buf = vec![0; len];

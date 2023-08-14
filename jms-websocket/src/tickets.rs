@@ -1,5 +1,6 @@
 use chrono::Local;
 use jms_core_lib::{models::{MaybeToken, SupportTicket, TicketComment, Permission}, db::Table};
+use jms_match_logs_lib::MatchLog;
 use uuid::Uuid;
 
 use crate::ws::WebsocketContext;
@@ -76,5 +77,10 @@ pub trait TicketWebsocket {
     
     ticket.insert(&ctx.kv)?;
     Ok(ticket)
+  }
+
+  #[endpoint]
+  async fn get_match_log(&self, ctx: &WebsocketContext, _token: &MaybeToken, match_id: String, team: usize) -> anyhow::Result<MatchLog> {
+    MatchLog::get(&format!("{}:{}", match_id, team), &ctx.kv)
   }
 }

@@ -152,7 +152,7 @@ async fn main() -> anyhow::Result<()> {
 
   let mut networking = NetworkingService { kv: kv.clone()?, mq: mq.channel().await? };
   let imaging = ImagingKeyService::new();
-  try_join!(component_svc, networking.run()/* , imaging.run(kv) */)?;
+  try_join!(component_svc, networking.run(), imaging.run(kv))?;
 
   Ok(())
 }

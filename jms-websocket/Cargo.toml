@@ -17,6 +17,7 @@ jms-driverstation-lib = { path = "../jms-driverstation/jms-driverstation-lib" }
 jms-networking-lib = { path = "../jms-networking/jms-networking-lib" }
 jms-macros = { path = "../jms-macros" }
 jms-websocket-macros = { path = "./jms-websocket-macros" }
+jms-match-logs-lib = { path = "../jms-match-logs/jms-match-logs-lib" }
 jms-tba-lib = { path = "../jms-tba/jms-tba-lib" }
 log = "0.4.19"
 regex = "1.9.1"
