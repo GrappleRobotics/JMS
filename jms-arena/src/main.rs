@@ -1,11 +1,11 @@
 pub mod matches;
 
-use std::{time::Duration, collections::HashMap};
+use std::{time::{Duration, Instant}, collections::HashMap};
 
-use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY};
-use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue}};
+use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY, ArenaHookDB, HookReply};
+use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue, MessageQueueSubscriber}};
 use jms_core_lib::{models::{AllianceStationId, self, JmsComponent, Match, Alliance}, db::Table};
-use log::info;
+use log::{info, error};
 use matches::LoadedMatch;
 
 struct Arena {
@@ -14,11 +14,15 @@ struct Arena {
 
   last_state: Option<ArenaState>,
   state: ArenaState,
+  last_state_change: Instant,
 
   current_match: Option<LoadedMatch>,
 
   stations: HashMap<AllianceStationId, AllianceStation>,
-  component: JmsComponent
+  component: JmsComponent,
+
+  hook_cache: Vec<ArenaHookDB>,
+  hook_replies: HashMap<String, HookReply>
 }
 
 impl Arena {
@@ -29,21 +33,31 @@ impl Arena {
       last_state: None,
 
       current_match: None,
+      last_state_change: Instant::now(),
 
       stations: HashMap::new(),
-      component: JmsComponent::new("jms.arena", "JMS-Arena", "A", 500)
+      component: JmsComponent::new("jms.arena", "JMS-Arena", "A", 500),
+
+      hook_cache: vec![],
+      hook_replies: HashMap::new()
     }
   }
 
   pub async fn set_state(&mut self, new_state: ArenaState) -> anyhow::Result<()> {
-    info!("Arena State Change {:?} -> {:?}...", self.state, new_state);
-    self.last_state = Some(self.state);
-    self.state = new_state;
+    if new_state != self.state {
+      info!("Arena State Change {:?} -> {:?}...", self.state, new_state);
+      self.last_state = Some(self.state);
+      self.state = new_state;
 
-    self.kv.json_set(ARENA_STATE_KEY, "$", &self.state)?;
-    self.mq.publish("arena.state.new", new_state).await?;
+      self.hook_cache = ArenaHookDB::all(&self.kv)?;
+      self.hook_replies = HashMap::new();
+      self.last_state_change = Instant::now();
 
-    self.kv.bgsave()?;
+      self.kv.json_set(ARENA_STATE_KEY, "$", &self.state)?;
+      self.mq.publish("arena.state.new", new_state).await?;
+
+      self.kv.bgsave()?;
+    }
 
     Ok(())
   }
@@ -76,6 +90,25 @@ impl Arena {
     Ok(())
   }
 
+  pub async fn ready(&mut self) -> anyhow::Result<bool> {
+    for hook in &self.hook_cache {
+      if hook.state == self.state.into() {
+        if hook.timeout < (Instant::now() - self.last_state_change) {
+          anyhow::bail!("Hook Timed Out: {}", hook.id);
+        }
+
+        if let Some(hr) = self.hook_replies.get(&hook.id) {
+          if let Some(fail) = &hr.failure {
+            anyhow::bail!("Hook Failed: {} - {}", hook.id, fail)
+          }
+        } else {
+          return Ok(false);
+        }
+      }
+    }
+    Ok(true)
+  }
+
   pub async fn spin_once(&mut self, signal: Option<ArenaSignal>) -> anyhow::Result<()> {
     let first = self.last_state != Some(self.state);
     self.last_state = Some(self.state);
@@ -87,7 +120,7 @@ impl Arena {
     // Run through match logic
     match self.state.clone() {
       ArenaState::Init => {
-        self.set_state(ArenaState::Reset).await?;
+        self.set_state(ArenaState::Reset { ready: false }).await?;
       },
       ArenaState::Estop => {
         if let Some(m) = self.current_match.as_mut() {
@@ -95,14 +128,23 @@ impl Arena {
         }
 
         if signal == Some(ArenaSignal::EstopReset) {
-          self.set_state(ArenaState::Reset).await?;
+          self.set_state(ArenaState::Reset { ready: false }).await?;
         }
       },
-      ArenaState::Reset => {
-        self.reset_stations().await?;
-        self.current_match = None;
-        self.set_state(ArenaState::Idle).await?;
+      ArenaState::Reset { ready: false } => {
+        if first {
+          self.reset_stations().await?;
+          self.current_match = None;
+        }
+        match self.ready().await {
+          Ok(true) => { self.set_state(ArenaState::Reset { ready: true }).await? },
+          Ok(false) => (),
+          Err(e) => { error!("{}", e); self.set_state(ArenaState::Estop).await? }
+        }
       },
+      ArenaState::Reset { ready: true } => {
+        self.set_state(ArenaState::Idle).await?;
+      }
       ArenaState::Idle => {
         if first {
           for stn in self.stations.values_mut() {
@@ -115,18 +157,25 @@ impl Arena {
         if signal == Some(ArenaSignal::Prestart) {
           match &self.current_match {
             Some(m) if m.state == MatchPlayState::Waiting => {
-              self.set_state(ArenaState::Prestart).await?;
+              self.set_state(ArenaState::Prestart { ready: false }).await?;
             },
             Some(m) => anyhow::bail!("Cannot Prestart when Match is in state: {:?}", m.state),
             None => anyhow::bail!("Cannot prestart without a match loaded!")
           }
         }
       },
-      ArenaState::Prestart => {
+      ArenaState::Prestart { ready: false } => {
+        match self.ready().await {
+          Ok(true) => { self.set_state(ArenaState::Prestart { ready: true }).await? },
+          Ok(false) => (),
+          Err(e) => { error!("{}", e); self.set_state(ArenaState::Estop).await? }
+        }
+      },
+      ArenaState::Prestart { ready: true } => {
         match signal {
           Some(sig) => match sig {
             ArenaSignal::MatchArm { force } => {
-              // TODO: If consensus says ready (how to do that? maybe scan over a subnamespace?)
+              // TODO: Force
               self.set_state(ArenaState::MatchArmed).await?;
             },
             ArenaSignal::PrestartUndo => self.set_state(ArenaState::Idle).await?,
@@ -156,7 +205,7 @@ impl Arena {
       ArenaState::MatchComplete => {
         if signal == Some(ArenaSignal::MatchCommit) {
           self.commit_scores(self.current_match.as_ref().ok_or(anyhow::anyhow!("No Match Present!"))?.match_id.clone()).await?;
-          self.set_state(ArenaState::Reset).await?;
+          self.set_state(ArenaState::Reset { ready: false }).await?;
           self.current_match = None;
         }
       },
@@ -224,12 +273,18 @@ impl Arena {
   async fn run(&mut self) -> anyhow::Result<()> {
     let mut interval = tokio::time::interval(Duration::from_millis(1000 / 50));
     let mut rpc = self.rpc_handle().await?;
+    let mut hook_replies: MessageQueueSubscriber<HookReply> = self.mq.subscribe("arena.state.hook", "arena-hooks", "arena", false).await?;
 
     self.component.insert(&self.kv)?;
 
     loop {
       tokio::select! {
         msg = rpc.next() => self.rpc_process(msg).await?,
+        reply = hook_replies.next() => match reply {
+          Some(Ok(value)) => { self.hook_replies.insert(value.data.id.clone(), value.data); },
+          Some(Err(e)) => error!("Hook Error: {}", e),
+          None => ()
+        },
         _ = interval.tick() => {
           self.spin_once(None).await?;
           self.component.tick(&self.kv)?;

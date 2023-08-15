@@ -1,5 +1,7 @@
-use jms_base::kv;
-use jms_core_lib::{models::{AllianceStationId, AllianceParseError, Alliance}, db::{DBDuration, Table}};
+use std::{error::Error, convert::Infallible};
+
+use jms_base::{kv, mq::{MessageQueueSubscriber, MessageQueueChannel}};
+use jms_core_lib::{models::{AllianceStationId, AllianceParseError, Alliance, JmsComponent}, db::{DBDuration, Table}};
 
 pub const ARENA_STATE_KEY: &'static str = "arena:state";
 pub const ARENA_MATCH_KEY: &'static str = "arena:match";
@@ -8,10 +10,10 @@ pub const ARENA_MATCH_KEY: &'static str = "arena:match";
 #[serde(tag = "state")]
 pub enum ArenaState {
   Init,
-  Reset,
+  Reset { ready: bool },
   Idle,
   Estop,
-  Prestart,
+  Prestart { ready: bool },
   MatchArmed,
   MatchPlay,
   MatchComplete
@@ -117,4 +119,82 @@ pub trait ArenaRPC {
 
   async fn load_match(id: String) -> Result<(), String>;
   async fn unload_match() -> Result<(), String>;
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct HookReply {
+  pub id: String,
+  pub failure: Option<String>
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ArenaHookDB {
+  pub id: String,
+  pub component_id: String,
+  pub state: ArenaState,
+  pub timeout: std::time::Duration
+}
+
+impl Table for ArenaHookDB {
+  const PREFIX: &'static str = "db:arena_hook";
+  type Err = Infallible;
+  type Id = String;
+
+  fn id(&self) -> Self::Id {
+    self.id.clone()
+  }
+}
+
+pub struct ArenaStateHook {
+  pub id: String,
+  pub component_id: String,
+  pub state: ArenaState,
+  pub timeout: std::time::Duration,
+  sub: MessageQueueSubscriber<ArenaState>
+}
+
+impl ArenaStateHook {
+  pub async fn new(id: &str, component: &JmsComponent, state: ArenaState, timeout: std::time::Duration, kv: &kv::KVConnection, mq: &MessageQueueChannel) -> anyhow::Result<Self> {
+    let me = Self { 
+      id: id.to_owned(),
+      component_id: component.id.clone(),
+      state,
+      timeout,
+      sub: mq.subscribe("arena.state.new", &format!("hook-{}", id), &format!("hook-{}", id), false).await?
+    };
+    me.insert(&kv)?;
+    Ok(me)
+  }
+
+  pub fn insert(&self, kv: &kv::KVConnection) -> anyhow::Result<()> {
+    ArenaHookDB { id: self.id.clone(), component_id: self.component_id.clone(), state: self.state.clone(), timeout: self.timeout.clone() }.insert(kv)
+  }
+
+  pub async fn next(&mut self) -> anyhow::Result<ArenaState> {
+    loop {
+      let next = self.sub.next().await;
+      if let Some(next) = next {
+        let data = next?.data;
+        if data == self.state {
+          return Ok(data)
+        }
+      }
+    }
+  }
+
+  pub async fn success(&self, mq: &MessageQueueChannel) -> anyhow::Result<()> {
+    mq.publish("arena.state.hook", HookReply {
+      id: self.id.clone(),
+      failure: None
+    }).await?;
+    Ok(())
+  }
+
+  pub async fn failure<E: ToString>(&self, err: E, mq: &MessageQueueChannel) -> anyhow::Result<()> {
+    mq.publish("arena.state.hook", HookReply {
+      id: self.id.clone(),
+      failure: Some(err.to_string())
+    }).await?;
+    Ok(())
+  }
 }

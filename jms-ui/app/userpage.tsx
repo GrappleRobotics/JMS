@@ -88,11 +88,16 @@ const TopNavbar = React.forwardRef<HTMLElement>(function TopNavbar(props: {}, re
   }, []);
 
   let state_comment = arenaState ? ARENA_STATE_MAP[arenaState.state] : "Waiting...";
-  if (currentMatch) {
+  let ready = true;
+  if (arenaState && "ready" in arenaState) {
+    state_comment = `${state_comment} ${arenaState.ready ? "READY" : "Not Ready"}`
+    ready = !!arenaState.ready;
+  }
+  if (currentMatch && arenaState?.state === "MatchPlay") {
     state_comment = `${currentMatch.state} (T-${(currentMatch.remaining / 1000).toFixed(0)})`;
   }
 
-  return <Navbar ref={ref} className="navbar-top" data-connected={connected} data-arena-state={arenaState?.state} data-match-state={currentMatch?.state} variant="dark">
+  return <Navbar ref={ref} className="navbar-top" data-connected={connected} data-arena-state={arenaState?.state} data-arena-ready={ready} data-match-state={currentMatch?.state} variant="dark">
     <Container>
       <PermissionGate permissions={["Estop"]}>
         { arenaState?.state === "Estop" ? <PermissionGate permissions={["FTA"]}>

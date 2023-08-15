@@ -28,6 +28,10 @@
   &[data-arena-state="MatchArmed"] {
     @include hazard-active(theme-color("hazard-yellow"));
   }
+
+  &[data-arena-ready="false"] {
+    background-color: theme-color("red") !important;
+  }
 }
 
 .modal-xl {
