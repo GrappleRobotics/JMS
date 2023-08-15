@@ -117,7 +117,7 @@ export default withPermission(["Ticketing"], function CSATicket({ params }: { pa
         />
         <br />
         {
-          ticket.notes.slice(0).reverse().map(note => <Card className="ticket-note my-2">
+          ticket.notes.slice(0).reverse().map((note, i) => <Card className="ticket-note my-2" key={i}>
             <Card.Body>
               <p className="m-0"> { note.comment } </p>
               <p className="ticket-note-time text-muted my-0"> { note.author } @ { moment(note.time).calendar() } </p>

@@ -54,14 +54,14 @@ export default function MatchLogsIndex() {
     <Row className="mt-3">
       <Col>
         {
-          selectedMatch && selectedMatch.blue_teams.filter(t => t !== null).map(t => <React.Fragment>
+          selectedMatch && selectedMatch.blue_teams.filter(t => t !== null).map(t => <React.Fragment key={t}>
             <Button size="lg" variant="blue" key={t} onClick={() => setMatchTeam(selectedMatch.id, t!)}>
               { teams.find(team => team.number === t)?.display_number || t }
             </Button> &nbsp;
           </React.Fragment>)
         }
         {
-          selectedMatch && selectedMatch.red_teams.filter(t => t !== null).map(t => <React.Fragment>
+          selectedMatch && selectedMatch.red_teams.filter(t => t !== null).map(t => <React.Fragment key={t}>
             <Button size="lg" variant="red" key={t} onClick={() => setMatchTeam(selectedMatch.id, t!)}>
               { teams.find(team => team.number === t)?.display_number || t }
             </Button> &nbsp;
