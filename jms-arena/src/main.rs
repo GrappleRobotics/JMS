@@ -117,6 +117,26 @@ impl Arena {
       self.set_state(ArenaState::Estop).await?;
     }
 
+    // Process physical E-Stop button for each station
+    {
+      let mut physical_astop = false;
+      if let Some(current_match) = &self.current_match {
+        if current_match.state == MatchPlayState::Auto {
+          physical_astop = true;
+        }
+      }
+
+      for stn_id in self.stations.keys() {
+        if AllianceStation::get_physical_estop(stn_id.clone(), &self.kv)? {
+          if physical_astop {
+            AllianceStation::set_astop_by_id(stn_id.clone(), true, &self.kv)?;
+          } else {
+            AllianceStation::set_estop_by_id(stn_id.clone(), true, &self.kv)?;
+          }
+        }
+      }
+    }
+
     // Run through match logic
     match self.state.clone() {
       ArenaState::Init => {
@@ -150,6 +170,7 @@ impl Arena {
           for stn in self.stations.values_mut() {
             stn.set_estop(false, &self.kv)?;
             stn.set_astop(false, &self.kv)?;
+            stn.set_physical_estop(false, &self.kv)?;
             stn.set_bypass(false, &self.kv)?;
           }
         }
@@ -271,7 +292,7 @@ impl ArenaRPC for Arena {
 
 impl Arena {
   async fn run(&mut self) -> anyhow::Result<()> {
-    let mut interval = tokio::time::interval(Duration::from_millis(1000 / 50));
+    let mut interval = tokio::time::interval(Duration::from_millis(1000 / 20));
     let mut rpc = self.rpc_handle().await?;
     let mut hook_replies: MessageQueueSubscriber<HookReply> = self.mq.subscribe("arena.state.hook", "arena-hooks", "arena", false).await?;
 

@@ -276,13 +276,22 @@ pub fn derive_db_partial_update(input: TokenStream) -> TokenStream {
     };
 
     let field_updates = fields.clone().map(|(field_vis, field_ident, field_type)| {
-        let fn_ident = syn::Ident::new(&format!("set_{}", field_ident), field_ident.span());
-        let json_path = format!("$.{}", field_ident);
-        quote! {
-            #field_vis fn #fn_ident(&mut self, #field_ident: #field_type, kv: &jms_base::kv::KVConnection) -> anyhow::Result<()> {
-                self.#field_ident = #field_ident;
-                kv.json_set(&self.key(), #json_path, &self.#field_ident)
+        if field_ident.to_string() != "id" {
+            let fn_ident = syn::Ident::new(&format!("set_{}", field_ident), field_ident.span());
+            let fn_ident_class = syn::Ident::new(&format!("set_{}_by_id", field_ident), field_ident.span());
+            let json_path = format!("$.{}", field_ident);
+            quote! {
+                #field_vis fn #fn_ident(&mut self, #field_ident: #field_type, kv: &jms_base::kv::KVConnection) -> anyhow::Result<()> {
+                    self.#field_ident = #field_ident;
+                    kv.json_set(&self.key(), #json_path, &self.#field_ident)
+                }
+
+                #field_vis fn #fn_ident_class(id: <Self as Table>::Id, #field_ident: #field_type, kv: &jms_base::kv::KVConnection) -> anyhow::Result<()> {
+                    kv.json_set(&format!("{}:{}", Self::PREFIX, id.to_string()), #json_path, &#field_ident)
+                }
             }
+        } else {
+            quote! {} 
         }
     });
 

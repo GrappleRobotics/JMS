@@ -63,7 +63,9 @@ pub struct AllianceStation {
   pub team: Option<usize>,
   pub bypass: bool,
   pub estop: bool,
-  pub astop: bool
+  pub astop: bool,
+  pub physical_estop: bool, /* TODO: Implement */
+  pub ds_eth_ok: Option<bool>
 }
 
 impl AllianceStation {
@@ -73,7 +75,9 @@ impl AllianceStation {
       team: None,
       bypass: false,
       estop: false,
-      astop: false
+      astop: false,
+      physical_estop: false,
+      ds_eth_ok: None
     }
   }
 }
@@ -136,7 +140,7 @@ pub struct ArenaHookDB {
 }
 
 impl Table for ArenaHookDB {
-  const PREFIX: &'static str = "db:arena_hook";
+  const PREFIX: &'static str = "arena_hook";
   type Err = Infallible;
   type Id = String;
 

@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
 
   let mut ws = Websockets::new();
   ws.register(Duration::from_millis(1000), "debug", DebugWebsocket::new()).await;
-  ws.register(Duration::from_millis(50), "arena", ArenaWebsocket::new()).await;
+  ws.register(Duration::from_millis(100), "arena", ArenaWebsocket::new()).await;
   ws.register(Duration::from_millis(500), "components", ComponentWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "user", UserWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "event", EventWebsocket::new()).await;
@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(3000), "awards", AwardsWebsocket::new()).await;
   ws.register(Duration::from_millis(500), "scoring", ScoringWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "alliances", AlliancesWebsocket::new()).await;
-  ws.register(Duration::from_millis(200), "audience", AudienceWebsocket::new()).await;
+  ws.register(Duration::from_millis(500), "audience", AudienceWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "reports", ReportWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "tba", TBAWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "networking", NetworkingWebsocket::new()).await;

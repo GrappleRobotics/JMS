@@ -1,11 +1,15 @@
 use std::time::Duration;
 
-use jms_arena_lib::{ArenaRPC, ArenaRPCClient};
+pub mod ds_electronics;
+
+use ds_electronics::DriverStationElectronics;
+use jms_arena_lib::ArenaRPCClient;
 use jms_base::{kv, mq::{self, MessageQueueChannel}};
-use jms_core_lib::{models::JmsComponent, db::Table};
+use jms_core_lib::{models::{JmsComponent, Alliance}, db::Table};
 use log::{info, warn};
 use tokio::{io::{AsyncWriteExt, AsyncReadExt}, try_join};
 use tokio_serial::SerialPortBuilderExt;
+use futures_util::FutureExt;
 
 async fn component_svc(kv: kv::KVConnection) -> anyhow::Result<()> {
   let mut interval = tokio::time::interval(std::time::Duration::from_millis(500));
@@ -56,9 +60,24 @@ async fn main() -> anyhow::Result<()> {
   let kv = kv::KVConnection::new()?;
   let mq = mq::MessageQueue::new("jms.networking-reply").await?;
 
-  let component_fut = component_svc(kv);
-  let scoring_table_fut = run_scoring_table(mq.channel().await?);
-  try_join!(scoring_table_fut, component_fut)?;
+  let component_fut = component_svc(kv.clone()?);
+
+  let scoring_table_fut = if !std::env::var("NO_SCORING_TABLE").is_ok() {
+    run_scoring_table(mq.channel().await?).left_future()
+  } else {
+    futures::future::ok(()).right_future()
+  };
+
+  let ds_elec_futs = if std::env::var("DS_ELECTRONICS").is_ok() {
+    let blue = DriverStationElectronics::new(Alliance::Blue, None, kv.clone()?, mq.channel().await?);
+    let red = DriverStationElectronics::new(Alliance::Red, None, kv.clone()?, mq.channel().await?);
+
+    (blue.run().left_future(), futures::future::ok(()).left_future())
+  } else {
+    (futures::future::ok(()).right_future(), futures::future::ok(()).right_future())
+  };
+
+  try_join!(scoring_table_fut, component_fut, ds_elec_futs.0, ds_elec_futs.1)?;
 
   Ok(())
 }
