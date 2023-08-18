@@ -6,7 +6,7 @@ import JmsWebsocket from "@/app/support/ws";
 import { useWebsocket } from "@/app/support/ws-component";
 import { AllianceStation, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch, Team } from "@/app/ws-schema";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faBattery, faCheck, faCode, faRobot, faTimes, faWifi } from "@fortawesome/free-solid-svg-icons";
+import { faBattery, faCheck, faCode, faRobot, faSign, faTimes, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import _ from "lodash";
 import React, { useEffect, useState } from "react";
@@ -18,6 +18,7 @@ import BufferedFormControl from "@/app/components/BufferedFormControl";
 import { MatchFlow } from "../match_flow";
 import MatchScheduleControl from "../../match_schedule";
 import { newTicketModal } from "@/app/csa/tickets";
+import FloatingActionButton from "@/app/components/FloatingActionButton";
 
 export default withPermission(["FTA", "FTAA"], function FTAView() {
   const [ allianceStations, setAllianceStations ] = useState<AllianceStation[]>([]);
@@ -26,6 +27,7 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null);
   const [ matches, setMatches ] = useState<Match[]>([]);
   const [ teams, setTeams ] = useState<Team[]>([]);
+  const [ signboard, setSignboard ] = useState<string | null>(null);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useErrors();
@@ -78,6 +80,13 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
     </PermissionGate>
     <br />
     <MatchScheduleControl currentMatch={currentMatch || undefined} matches={matches} isLoadDisabled={state.state !== "Idle"} canLoad teams={teams} />
+
+    <FloatingActionButton icon={faSign} variant="purple" onClick={() => signboardModal().then(signboard => setSignboard(signboard))} />
+    {
+      signboard && <div className="fta-signboard" onClick={() => setSignboard(null)}>
+        { signboard }
+      </div>
+    }
   </div>
 });
 
@@ -212,4 +221,40 @@ async function editStationModal(station: AllianceStation, match_id: string | und
   }
   call<"arena/update_station">("arena/update_station", { station_id: station.id, updates })
     .catch(addError);
+}
+
+const SIGNBOARD_PRESETS = [
+  "Turn Your Robot On",
+  "Plug In Your Laptop",
+  "Turn Your Laptop On",
+  "Please Come Here",
+  "Plug In Your Radio",
+  "Plug In Your RoboRIO",
+  "Come Check Your Wires",
+]
+
+async function signboardModal() {
+  return confirmModal("", {
+    data: "",
+    size: "lg",
+    title: "Select Signboard Text",
+    okText: "Display",
+    renderInner: (text, setText, ok) => <React.Fragment>
+      {
+        SIGNBOARD_PRESETS.map((sbp, i) => <Button key={i} className="btn-block mb-2" size="lg" onClick={() => ok(sbp)}>
+          { sbp }
+        </Button>)
+      }
+      <InputGroup>
+        <InputGroup.Text>Custom</InputGroup.Text>
+        <BufferedFormControl
+          instant
+          value={text}
+          onUpdate={v => setText(v as string)}
+          placeholder={"Please Turn your Robot On"}
+          size="lg"
+        />
+      </InputGroup>
+    </React.Fragment>
+  })
 }
