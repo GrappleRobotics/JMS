@@ -12,6 +12,7 @@ clap = "4.3.19"
 futures = "0.3.28"
 jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
 jms-base = { path = "../jms-base" }
+jms-backup-lib = { path = "../jms-backup/jms-backup-lib" }
 jms-core-lib = { path = "../jms-core/jms-core-lib" }
 jms-driverstation-lib = { path = "../jms-driverstation/jms-driverstation-lib" }
 jms-networking-lib = { path = "../jms-networking/jms-networking-lib" }

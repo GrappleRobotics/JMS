@@ -18,4 +18,6 @@ members = [
   "jms-electronics",
   "jms-match-logs",
   "jms-match-logs/jms-match-logs-lib",
+  "jms-backup",
+  "jms-backup/jms-backup-lib"
 ]

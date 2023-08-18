@@ -4,6 +4,7 @@ use alliances::AlliancesWebsocket;
 use arena::ArenaWebsocket;
 use audience::AudienceWebsocket;
 use awards::AwardsWebsocket;
+use backups::BackupWebsocket;
 use clap::{Command, Arg};
 use components::ComponentWebsocket;
 use debug::DebugWebsocket;
@@ -23,6 +24,7 @@ pub mod alliances;
 pub mod arena;
 pub mod audience;
 pub mod awards;
+pub mod backups;
 pub mod components;
 pub mod debug;
 pub mod event;
@@ -67,10 +69,11 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(3000), "awards", AwardsWebsocket::new()).await;
   ws.register(Duration::from_millis(500), "scoring", ScoringWebsocket::new()).await;
   ws.register(Duration::from_millis(1000), "alliances", AlliancesWebsocket::new()).await;
-  ws.register(Duration::from_millis(500), "audience", AudienceWebsocket::new()).await;
+  ws.register(Duration::from_millis(250), "audience", AudienceWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "reports", ReportWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "tba", TBAWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "networking", NetworkingWebsocket::new()).await;
+  ws.register(Duration::from_millis(100000), "backup", BackupWebsocket::new()).await;
   ws.register(Duration::from_millis(5000), "tickets", TicketWebsocket::new()).await;
 
   match matches.subcommand() {

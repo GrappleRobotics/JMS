@@ -1,0 +1,19 @@
+[package]
+name = "jms-backup"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.75"
+async-trait = "0.1.73"
+jms-backup-lib = { path = "./jms-backup-lib" }
+jms-core-lib = { path = "../jms-core/jms-core-lib" }
+jms-macros = { path = "../jms-macros" }
+jms-base = { path = "../jms-base" }
+log = "0.4.20"
+schemars = "0.8.12"
+serde = "1.0.183"
+serde_json = "1.0.105"
+tokio = { version = "1.30.0", features = ['full'] }
