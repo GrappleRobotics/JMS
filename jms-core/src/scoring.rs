@@ -12,9 +12,6 @@ pub struct ScoringService {
 }
 
 impl ScoringService {
-  // TODO: Need to send something back to the arena to say that score publish was OK - maybe we generify it?
-  // i.e. for each state, each component reports whether it is ready or not (if required)
-  // TODO: Also figure out how to handle test matches - perhaps we make them auto-increment and actually store them in the database.
   pub async fn run(self) -> anyhow::Result<()> {
     let mut publish_sub: mq::MessageQueueSubscriber<String> = self.mq.subscribe("arena.scores.publish", "core-scoring-publish", "ScoringService", false).await?;
     let mut ranking_update_interval = tokio::time::interval(Duration::from_millis(10*60*1000)); // 10 mins, just in case it doesn't get triggered elsewhere

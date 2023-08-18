@@ -58,6 +58,7 @@ export default function Home() {
           <HomeTile name="CSA" href="/csa">View match reports, resolve tickets</HomeTile>
         </PermissionGate>
         <HomeTile name="Match Logs" href="/match-logs">View match logs</HomeTile>
+        <HomeTile name="Game Announcer" href="/game-announcer">View Current and Upcoming Matches</HomeTile>
       </HomeTileRow>
       <HomeTileSep> On the Field </HomeTileSep>
       <HomeTileRow>

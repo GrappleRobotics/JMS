@@ -4,7 +4,7 @@ use std::{time::{Duration, Instant}, collections::HashMap};
 
 use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY, ArenaHookDB, HookReply};
 use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue, MessageQueueSubscriber}};
-use jms_core_lib::{models::{AllianceStationId, self, JmsComponent, Match, Alliance}, db::Table};
+use jms_core_lib::{models::{AllianceStationId, self, JmsComponent, Match, Alliance}, db::{Table, Singleton}, scoring::scores::MatchScore};
 use log::{info, error};
 use matches::LoadedMatch;
 
@@ -269,6 +269,8 @@ impl ArenaRPC for Arena {
           let id = AllianceStationId::new(models::Alliance::Red, i + 1);
           self.stations.get_mut(&id).ok_or("No Station Available".to_string())?.set_team(team, &self.kv).map_err(|e| e.to_string())?;
         }
+        MatchScore::delete(&self.kv).map_err(|e| e.to_string())?;
+        
         Ok(())
       },
       _ => Err(format!("Can't load match in state: {:?}", self.state))
@@ -282,6 +284,7 @@ impl ArenaRPC for Arena {
         self.current_match = None;
 
         self.reset_stations().await.map_err(|e| e.to_string())?;
+        MatchScore::delete(&self.kv).map_err(|e| e.to_string())?;
 
         Ok(())
       },
