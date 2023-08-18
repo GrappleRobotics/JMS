@@ -7,8 +7,10 @@ x-jms-base: &jms-base
   - REDIS_URI=redis://redis:6379/0
   - RABBITMQ_URI=amqp://rabbitmq:5672/%2f
   depends_on:
-  - redis
-  - rabbitmq
+    redis:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
 
 services:
   jms-arena:
@@ -51,7 +53,8 @@ services:
     - REDIS_URI=redis://localhost:6379/0
     - RABBITMQ_URI=amqp://localhost:5672/%2f
     depends_on:
-    - unifi
+      unifi:
+        condition: service_healthy
 
   jms-match-logs:
     <<: *jms-base
@@ -98,6 +101,11 @@ services:
       - 6789:6789 #optional
       - 5514:5514/udp #optional
     restart: unless-stopped
+    healthcheck:
+      test: curl --max-time 5 -kILs --fail https://localhost:8443
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   # Support
   nginx:
@@ -116,6 +124,11 @@ services:
     restart: unless-stopped
     volumes:
     - "./data/redis:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
     ports:
       # Ports need to be forwarded for jms-driverstation
     - "6379:6379"
@@ -127,4 +140,8 @@ services:
       # Ports need to be forwarded for jms-driverstation
     - "5672:5672"
     - "15672:15672"
-  
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 10s
+      retries: 5
