@@ -6,7 +6,7 @@ import RootLayoutInner from './layout_inner';
 export const metadata: Metadata = {
   title: 'JMS',
   description: 'Another Alternative Field Management System for FRC',
-  viewport: { initialScale: 1, width: "device-width" }
+  viewport: { initialScale: 1, width: "device-width", maximumScale: 1, userScalable: false }
 }
 
 export default function RootLayout({
@@ -16,6 +16,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body>
         <RootLayoutInner>
           { children }
