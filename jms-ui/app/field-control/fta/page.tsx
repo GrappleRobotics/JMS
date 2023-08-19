@@ -4,13 +4,13 @@ import "./fta.scss";
 import { PermissionGate, withPermission } from "@/app/support/permissions"
 import JmsWebsocket from "@/app/support/ws";
 import { useWebsocket } from "@/app/support/ws-component";
-import { AllianceStation, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch, Team } from "@/app/ws-schema";
+import { AllianceStation, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch, SupportTicket, Team } from "@/app/ws-schema";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faBattery, faCheck, faCode, faRobot, faSign, faTimes, faWifi } from "@fortawesome/free-solid-svg-icons";
+import { faBattery, faCheck, faCode, faFlag, faNetworkWired, faRobot, faSign, faTimes, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import _ from "lodash";
 import React, { useEffect, useState } from "react";
-import { Button, Col, InputGroup, Row } from "react-bootstrap";
+import { Button, Card, Col, InputGroup, ListGroup, Row } from "react-bootstrap";
 import { capitalise } from "@/app/support/strings";
 import { useErrors } from "@/app/support/errors";
 import update from "immutability-helper";
@@ -19,6 +19,9 @@ import { MatchFlow } from "../match_flow";
 import MatchScheduleControl from "../../match_schedule";
 import { newTicketModal } from "@/app/csa/tickets";
 import FloatingActionButton from "@/app/components/FloatingActionButton";
+import Paginate from "@/app/components/Paginate";
+import Link from "next/link";
+import moment from "moment";
 
 export default withPermission(["FTA", "FTAA"], function FTAView() {
   const [ allianceStations, setAllianceStations ] = useState<AllianceStation[]>([]);
@@ -39,7 +42,7 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
       subscribe<"arena/state">("arena/state", setState),
       subscribe<"arena/current_match">("arena/current_match", setCurrentMatch),
       subscribe<"matches/matches">("matches/matches", setMatches),
-      subscribe<"team/teams">("team/teams", setTeams)
+      subscribe<"team/teams">("team/teams", setTeams),
     ];
     return () => unsubscribe(cb);
   }, []);
@@ -91,12 +94,23 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
 });
 
 function FTAAllianceStation({ station, report, match_id, call, addError, teams }: { station: AllianceStation, report: DriverStationReport | null, match_id?: string, call: JmsWebsocket["call"], addError: (e: string) => void , teams?: Team[] }) {
+  const [ tickets, setTickets ] = useState<SupportTicket[]>([]);
   const diagnosis = ftaDiagnosis(station, report);
 
   const display_team = teams?.find(x => x.number === station.team)?.display_number;
 
-  return <Col onClick={() => editStationModal(station, match_id, call, addError)} className="fta-alliance-station-col" data-alliance={station.id.alliance} data-bypass={station.bypass} data-estop={station.estop} data-astop={station.astop}>
-    <Row>
+  useEffect(() => {
+    if (station.team) {
+      call<"tickets/all">("tickets/all", null)
+        .then(ticks => setTickets(ticks.filter(t => t.team === station.team)))
+        .catch(addError)
+    } else {
+      setTickets([]);
+    }
+  }, [ station.team ]);
+
+  return <Col onClick={() => editStationModal(station, match_id, tickets, call, addError)} className="fta-alliance-station-col" data-alliance={station.id.alliance} data-bypass={station.bypass} data-estop={station.estop} data-astop={station.astop}>
+    <Row className="mx-0">
       <Col md="auto"> <FTATeamIndicator ok={report?.rio_ping} icon={faRobot} /> </Col>
       <Col className="fta-alliance-station-team" data-has-administrative={station.team && display_team !== ("" + station.team)}>
         <Row>
@@ -110,14 +124,20 @@ function FTAAllianceStation({ station, report, match_id, call, addError, teams }
       </Col>
       <Col md="auto"> <FTATeamIndicator ok={report?.robot_ping} icon={faCode} /> </Col>
     </Row>
-    <Row>
+    <Row className="mx-0">
+      <Col md="auto">
+        <FTATeamIndicator ok={station.ds_eth_ok === null ? undefined : station.ds_eth_ok} icon={faNetworkWired} />
+      </Col>
       <Col>
         { diagnosis ? <span className="fta-diagnosis text-bad"> { diagnosis } </span> : <span className="fta-diagnosis text-good"> OK </span> }
       </Col>
+      <Col md="auto">
+        <FTATeamIndicator ok={tickets.length === 0} icon={faFlag} okVariant="dark" badVariant="yellow" />
+      </Col>
     </Row>
-    <Row className="fta-alliance-station-nstats">
+    <Row className="fta-alliance-station-nstats mx-0">
       <Col>
-        <FTATeamIndicator ok={(report?.battery_voltage || 0) > 9} icon={faBattery} text={`${report?.battery_voltage?.toFixed(2) || "--.--"}`} />
+        <FTATeamIndicator ok={report?.battery_voltage ? report.battery_voltage > 9 : undefined} icon={faBattery} text={`${report?.battery_voltage?.toFixed(2) || "--.--"}`} />
       </Col>
       <Col md="auto" className="p-0">
         <FTATeamIndicator ok={lostPktPercent(report?.pkts_lost, report?.pkts_sent) < 10} text={`${renderSent(report?.pkts_lost, report?.pkts_sent)}%`} />
@@ -168,12 +188,15 @@ function renderSent(lost?: number, sent?: number) {
 type FTATeamIndicatorProps = {
   ok?: boolean,
   icon?: IconDefinition,
-  text?: string
+  text?: string,
+  okVariant?: string,
+  badVariant?: string,
+  unknownVariant?: string,
 };
 
 class FTATeamIndicator extends React.PureComponent<FTATeamIndicatorProps> {
   render() {
-    return <div className="fta-team-indicator" data-ok={this.props.ok}>
+    return <div className={`fta-team-indicator text-${this.props.ok === undefined ? (this.props.unknownVariant || "dark") : this.props.ok ? (this.props.okVariant || "good") : (this.props.badVariant || "bad")}`}>
       { this.props.icon && <span className="icon"><FontAwesomeIcon icon={this.props.icon} /></span> }
       { this.props.text && <React.Fragment>
         &nbsp; { this.props.text }
@@ -182,36 +205,62 @@ class FTATeamIndicator extends React.PureComponent<FTATeamIndicatorProps> {
   }
 }
 
-async function editStationModal(station: AllianceStation, match_id: string | undefined, call: JmsWebsocket["call"], addError: (e: string) => void) {
+async function editStationModal(station: AllianceStation, match_id: string | undefined, tickets: SupportTicket[], call: JmsWebsocket["call"], addError: (e: string) => void) {
   let new_station = await confirmModal("", {
     title: `Edit ${capitalise(station.id.alliance)} ${station.id.station}`,
     data: station,
-    renderInner: (data, onUpdate, ok, cancel) => <React.Fragment>
-      <Button className="btn-block" size="lg" variant={data.bypass ? "danger" : "success"} onClick={() => onUpdate(update(data, { bypass: { $set: !data.bypass } }))}>
-        { data.bypass ? "BYPASSED" : "Not Bypassed" }
-      </Button>
-      <hr />
-      <Button className="btn-block" size="lg" variant="estop" onClick={() => { call<"arena/update_station">("arena/update_station", { station_id: station.id, updates: [ { estop: true } ] }); cancel() }}>
-        EMERGENCY STOP { station.team || `${station.id.alliance.toUpperCase()} ${station.id.station}` }
-      </Button>
-      <hr />
-      { station.team && match_id && <Button className="btn-block" size="lg" variant="orange" onClick={() => { newTicketModal(station.team!, match_id, call, addError); cancel() }}>
-        Flag Issue for CSA
-      </Button> }
-      <hr />
-      <InputGroup>
-        <InputGroup.Text>Team Number</InputGroup.Text>
-        <BufferedFormControl
-          auto
-          autofocus
-          type="number"
-          min={0}
-          step={1}
-          value={data.team || 0}
-          onUpdate={v => onUpdate(update(data, { team: { $set: Math.floor(v as number) || null } }))}
-        />
-      </InputGroup>
-    </React.Fragment>
+    size: "xl",
+    renderInner: (data, onUpdate, ok, cancel) => <Row>
+      <Col md={4}>
+        <InputGroup>
+          <InputGroup.Text>Team Number</InputGroup.Text>
+          <BufferedFormControl
+            auto
+            autofocus
+            type="number"
+            min={0}
+            step={1}
+            value={data.team || 0}
+            onUpdate={v => onUpdate(update(data, { team: { $set: Math.floor(v as number) || null } }))}
+          />
+        </InputGroup>
+        <hr />
+        <Button className="btn-block" size="lg" variant={data.bypass ? "danger" : "success"} onClick={() => onUpdate(update(data, { bypass: { $set: !data.bypass } }))}>
+          { data.bypass ? "BYPASSED" : "Not Bypassed" }
+        </Button>
+        <hr />
+        <Button className="btn-block" size="lg" variant="estop" onClick={() => { call<"arena/update_station">("arena/update_station", { station_id: station.id, updates: [ { estop: true } ] }); cancel() }}>
+          EMERGENCY STOP { station.team || `${station.id.alliance.toUpperCase()} ${station.id.station}` }
+        </Button>
+        <hr />
+        { station.team && match_id && <Button className="btn-block" size="lg" variant="orange" onClick={() => { newTicketModal(station.team!, match_id, call, addError); cancel() }}>
+          Flag Issue for CSA
+        </Button> }
+      </Col>
+      <Col>
+        <h5> Previous Issues </h5>
+        { tickets.length > 0 ? <Paginate itemsPerPage={5}>
+          {
+            tickets.map(ticket => <Link className="no-text-decoration" key={ticket.id} href={`/csa/${ticket.id}`}>
+              <Row className="fta-ticket">
+                <Col md={3}>
+                  <strong>{ ticket.resolved && <FontAwesomeIcon className="text-success" icon={faCheck} /> }&nbsp; { ticket.issue_type } { ticket.match_id ? `in ${ticket.match_id}` : "" } </strong>
+                </Col>
+                <Col>
+                  { ticket.notes.map((note, i) => <Row 
+                    key={i}
+                    className="fta-ticket-note text-white mb-0"
+                  >
+                    <Col md={2} className="text-muted"> { moment(note.time).fromNow() } </Col>
+                    <Col> { note.comment } </Col>
+                  </Row>) }
+                </Col>
+              </Row>
+            </Link>)
+          }
+        </Paginate> : <p className="text-muted">The record is pretty clean...</p> }
+      </Col>
+    </Row>
   });
 
   let updates: AllianceStationUpdate[] = [];

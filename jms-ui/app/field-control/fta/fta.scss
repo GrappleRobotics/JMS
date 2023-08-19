@@ -55,11 +55,6 @@
 .fta-team-indicator {
   font-size: 0.75em;
   padding: 0.2em 0em;
-
-  color: theme-color("bad");
-  &[data-ok="true"] {
-    color: theme-color("good")
-  }
 }
 
 .fta-diagnosis {
@@ -90,4 +85,10 @@
   font-weight: bold;
   text-align: center;
   padding: 5rem;
+}
+
+.fta-ticket {
+  border-bottom: 1px solid #555;
+  border-top: 1px solid #555;
+  padding: 2px 2px;
 }

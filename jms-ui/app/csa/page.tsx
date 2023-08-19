@@ -76,7 +76,7 @@ export default withPermission(["Ticketing"], function CSAView() {
   </React.Fragment>
 });
 
-function TicketComponent({ ticket, matches, teams }: { ticket: SupportTicket, matches: Match[], teams: Team[] }) {
+export function TicketComponent({ ticket, matches, teams }: { ticket: SupportTicket, matches: Match[], teams: Team[] }) {
   return <Link href={`/csa/${ticket.id}`}>
     <ListGroup.Item
       action
