@@ -4,6 +4,7 @@ use jms_core_lib::db::Singleton;
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct BackupSettings {
   pub s3_endpoint: String,
+  pub s3_region: String,
   pub s3_access_key: Option<String>,
   pub s3_secret_access_key: Option<String>,
   pub s3_bucket: Option<String>,
@@ -15,6 +16,7 @@ impl Default for BackupSettings {
   fn default() -> Self {
     Self {
       s3_endpoint: "s3.ap-southeast-2.amazonaws.com".to_owned(),
+      s3_region: "ap-southeast-2".to_owned(),
       s3_access_key: None,
       s3_secret_access_key: None,
       s3_bucket: None,
