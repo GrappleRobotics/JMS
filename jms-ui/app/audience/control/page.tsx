@@ -47,7 +47,7 @@ export default withPermission(["ManageAudience"], function AudienceDisplayContro
           type="text"
           value={msg}
           onUpdate={(v) => onUpdate(String(v))}
-          onEnter={ok}
+          onEnter={() => ok()}
         />
       </React.Fragment>
     }).then(msg => {
