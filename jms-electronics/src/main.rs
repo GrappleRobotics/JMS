@@ -4,7 +4,7 @@ pub mod ds_electronics;
 
 use ds_electronics::DriverStationElectronics;
 use jms_arena_lib::ArenaRPCClient;
-use jms_base::{kv, mq::{self, MessageQueueChannel}};
+use jms_base::{kv, mq::{self, MessageQueueChannel}, logging::JMSLogger};
 use jms_core_lib::{models::{JmsComponent, Alliance}, db::Table};
 use log::{info, warn};
 use tokio::{io::{AsyncWriteExt, AsyncReadExt}, try_join};
@@ -56,7 +56,8 @@ async fn run_scoring_table(mq: MessageQueueChannel) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  jms_base::logging::configure(false);
+  JMSLogger::init()?;
+
   let kv = kv::KVConnection::new()?;
   let mq = mq::MessageQueue::new("jms.networking-reply").await?;
 
@@ -72,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
     let blue = DriverStationElectronics::new(Alliance::Blue, None, kv.clone()?, mq.channel().await?);
     let red = DriverStationElectronics::new(Alliance::Red, None, kv.clone()?, mq.channel().await?);
 
-    (blue.run().left_future(), futures::future::ok(()).left_future())
+    (blue.run().left_future(), red.run().left_future())
   } else {
     (futures::future::ok(()).right_future(), futures::future::ok(()).right_future())
   };

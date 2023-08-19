@@ -2,7 +2,7 @@ use jms_base::kv;
 use jms_core_lib::{models::{self, MatchType}, db::Table, schedule::generators::QualsMatchGeneratorParams};
 use log::info;
 
-use super::quals_randomiser::{Annealer, GenerationResult, ScheduleGenerator};
+use super::quals_randomiser::{Annealer, ScheduleGenerator};
 
 #[derive(Debug, Clone)]
 pub struct QualsMatchGenerator;

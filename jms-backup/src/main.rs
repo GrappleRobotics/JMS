@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs::File, path::Path, io::Write};
 
 use jms_backup_lib::{JMSBackupRPC, BackupSettings};
-use jms_base::{kv::{self, KVConnection}, mq::{self, MessageQueue}, logging};
+use jms_base::{kv::{self, KVConnection}, mq::{self, MessageQueue}, logging::JMSLogger};
 use jms_core_lib::{models::{JmsComponent, EventDetails}, db::{Table, Singleton}};
 use log::{info, warn, error};
 use s3::Bucket;
@@ -142,7 +142,8 @@ async fn component_svc(mut component: JmsComponent, kv: kv::KVConnection) -> any
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  logging::configure(false);
+  JMSLogger::init()?;
+
   let kv = KVConnection::new()?;
   let mq = MessageQueue::new("arena-reply").await?;
   info!("Connected!");

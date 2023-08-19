@@ -1,6 +1,5 @@
 use jms_base::kv;
 use jms_core_lib::{models::{self, PlayoffModeType}, db::Singleton};
-use jms_tba_lib::TBASettings;
 
 use crate::client::TBAClient;
 

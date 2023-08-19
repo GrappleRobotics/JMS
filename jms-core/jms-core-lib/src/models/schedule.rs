@@ -5,8 +5,6 @@ use uuid::Uuid;
 
 use crate::db::{Table, DBDuration};
 
-use super::PlayoffMode;
-
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 #[serde(tag = "type")]
 pub enum ScheduleBlockType {

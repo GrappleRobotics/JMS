@@ -3,7 +3,7 @@ pub mod matches;
 use std::{time::{Duration, Instant}, collections::HashMap};
 
 use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY, ArenaHookDB, HookReply};
-use jms_base::{logging, kv::KVConnection, mq::{MessageQueueChannel, MessageQueue, MessageQueueSubscriber}};
+use jms_base::{kv::KVConnection, mq::{MessageQueueChannel, MessageQueue, MessageQueueSubscriber}, logging::JMSLogger};
 use jms_core_lib::{models::{AllianceStationId, self, JmsComponent, Match, Alliance}, db::{Table, Singleton}, scoring::scores::MatchScore};
 use log::{info, error};
 use matches::LoadedMatch;
@@ -195,7 +195,7 @@ impl Arena {
       ArenaState::Prestart { ready: true } => {
         match signal {
           Some(sig) => match sig {
-            ArenaSignal::MatchArm { force } => {
+            ArenaSignal::MatchArm { force: _ } => {
               // TODO: Force
               self.set_state(ArenaState::MatchArmed).await?;
             },
@@ -320,7 +320,8 @@ impl Arena {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  logging::configure(false);
+  // _logging::configure(false);
+  JMSLogger::init()?;
   let kv = KVConnection::new()?;
   let mq = MessageQueue::new("arena-reply").await?;
   info!("Connected!");

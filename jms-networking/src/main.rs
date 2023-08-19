@@ -1,9 +1,7 @@
-use std::collections::HashMap;
-
 use imaging::ImagingKeyService;
 use jms_arena_lib::{ArenaState, AllianceStation, ArenaStateHook};
-use jms_base::{kv, mq, logging::configure};
-use jms_core_lib::{models::{JmsComponent, self, Team, AllianceStationId, Alliance}, db::{Table, Singleton}};
+use jms_base::{kv, mq, logging::JMSLogger};
+use jms_core_lib::{models::{JmsComponent, self, AllianceStationId, Alliance}, db::{Table, Singleton}};
 use jms_networking_lib::{NetworkingSettings, JMSNetworkingRPC, RadioType};
 use tokio::try_join;
 use log::{info, error};
@@ -136,7 +134,8 @@ impl NetworkingService {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  jms_base::logging::configure(false);
+  JMSLogger::init()?;
+
   let kv = kv::KVConnection::new()?;
   let mq = mq::MessageQueue::new("jms.networking-reply").await?;
 

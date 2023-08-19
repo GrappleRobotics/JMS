@@ -267,9 +267,9 @@ impl Annealer {
 }
 
 // Allow any storage - slice or vec
-fn shuffle<S>(mat: &na::Matrix<usize, na::Dynamic, na::U1, S>) -> na::DVector<usize>
+fn shuffle<S>(mat: &na::Matrix<usize, na::Dyn, na::U1, S>) -> na::DVector<usize>
 where
-  S: na::storage::Storage<usize, na::Dynamic, na::U1>,
+  S: na::storage::Storage<usize, na::Dyn, na::U1>,
 {
   let mut rng = rand::thread_rng();
   let mut x: Vec<usize> = mat.into_iter().map(|x| *x).collect();
@@ -277,9 +277,9 @@ where
   na::DVector::from_vec(x)
 }
 
-fn stddev<S>(mat: &na::Matrix<usize, na::Dynamic, na::U1, S>) -> f64
+fn stddev<S>(mat: &na::Matrix<usize, na::Dyn, na::U1, S>) -> f64
 where
-  S: na::storage::Storage<usize, na::Dynamic, na::U1>,
+  S: na::storage::Storage<usize, na::Dyn, na::U1>,
 {
   let floating = mat.map(|x| x as f64);
   let mean = floating.mean();

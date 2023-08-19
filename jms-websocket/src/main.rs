@@ -9,7 +9,7 @@ use clap::{Command, Arg};
 use components::ComponentWebsocket;
 use debug::DebugWebsocket;
 use event::EventWebsocket;
-use jms_base::{mq::MessageQueue, kv::KVConnection};
+use jms_base::{mq::MessageQueue, kv::KVConnection, logging::JMSLogger};
 use matches::MatchesWebsocket;
 use networking::NetworkingWebsocket;
 use reports::ReportWebsocket;
@@ -41,7 +41,7 @@ pub mod tickets;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  jms_base::logging::configure(false);
+  JMSLogger::init()?;
 
   let matches = Command::new("JMS-WebSocket")
     .about("JMS WebSocket Server")

@@ -1,9 +1,9 @@
 use std::{time::Duration, sync::{Arc, atomic::{AtomicBool, Ordering}}};
 
 use futures::StreamExt;
-use jms_base::{kv::KVConnection, logging};
+use jms_base::{kv::KVConnection, logging::JMSLogger};
 use jms_core_lib::{models::JmsComponent, db::Table};
-use log::{info, debug, error};
+use log::{info, error};
 use tokio::{sync::broadcast, net::{TcpListener, UdpSocket}, try_join};
 use tokio_util::udp::UdpFramed;
 use udp_codec::{Ds2FmsUDP, DSUDPCodec};
@@ -80,7 +80,7 @@ async fn arena_ok_worker(kv: KVConnection, ok: Arc<AtomicBool>) -> anyhow::Resul
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  logging::configure(false);
+  JMSLogger::init()?;
   let kv = KVConnection::new()?;
 
   let component = JmsComponent::new("jms.driverstation", "JMS-DriverStation", "D", 500);

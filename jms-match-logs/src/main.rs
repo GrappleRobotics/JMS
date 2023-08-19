@@ -1,7 +1,7 @@
 use std::collections::{HashMap, hash_map::Entry};
 
 use jms_arena_lib::{SerialisedLoadedMatch, ARENA_MATCH_KEY, MatchPlayState};
-use jms_base::{kv, mq};
+use jms_base::{kv, logging::JMSLogger};
 use jms_core_lib::{models::JmsComponent, db::Table};
 use jms_driverstation_lib::DriverStationReport;
 use jms_match_logs_lib::{MatchLog, TimeseriesDsReportEntry};
@@ -78,7 +78,8 @@ async fn logs_svc(kv: kv::KVConnection) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  jms_base::logging::configure(false);
+  JMSLogger::init()?;
+  
   let kv = kv::KVConnection::new()?;
 
   let component_fut = component_svc(kv.clone()?);

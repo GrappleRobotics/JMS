@@ -11,6 +11,8 @@ x-jms-base: &jms-base
       condition: service_healthy
     rabbitmq:
       condition: service_healthy
+    meilisearch:
+      condition: service_healthy
 
 services:
   jms-arena:
@@ -136,12 +138,26 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    restart: unless-stopped
     ports:
       # Ports need to be forwarded for jms-driverstation
     - "5672:5672"
     - "15672:15672"
     healthcheck:
       test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 10s
+      retries: 5
+   
+  meilisearch:
+    image: getmeili/meilisearch:v1.3
+    restart: unless-stopped
+    volumes:
+    - "./data/meilisearch:/meili_data"
+    ports:
+    - "7700:7700"
+    healthcheck:
+      test: curl --max-time 5 -kILs --fail https://localhost:7700/health
       interval: 10s
       timeout: 10s
       retries: 5

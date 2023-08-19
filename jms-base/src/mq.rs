@@ -2,8 +2,8 @@ use std::{sync::{atomic::AtomicUsize, Arc}, collections::HashMap, marker::Phanto
 
 use futures::StreamExt;
 use lapin::{options::{QueueDeleteOptions, QueueDeclareOptions, ExchangeDeclareOptions, BasicPublishOptions, QueueBindOptions, BasicConsumeOptions}, types::{FieldTable, DeliveryTag}, BasicProperties, Consumer, acker::Acker, message::Delivery};
-use log::{error, info};
-use tokio::sync::{RwLock, oneshot, Mutex, mpsc};
+use log::error;
+use tokio::sync::{RwLock, Mutex, mpsc};
 
 const JMS_EXCHANGE: &'static str = "JMS";
 const RPC_EXCHANGE: &'static str = "JMS-RPC";

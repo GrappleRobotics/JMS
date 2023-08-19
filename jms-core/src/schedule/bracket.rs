@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use jms_core_lib::{models::{PlayoffAlliance, Match, CommittedMatchScores, Alliance, MatchType, PlayoffMode, PlayoffModeType}, db::Table};
+use jms_core_lib::{models::{Match, CommittedMatchScores, Alliance, MatchType, PlayoffMode, PlayoffModeType}, db::Table};
 
 use crate::schedule::playoffs::PlayoffAllianceDescriptor;
 

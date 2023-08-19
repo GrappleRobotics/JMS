@@ -60,7 +60,7 @@ impl TeamRanking {
     }
 
     Self::clear(kv)?;
-    let r: anyhow::Result<Vec<()>> = rankings_map.into_values().map(|mut r| r.insert(kv)).collect();
+    let r: anyhow::Result<Vec<()>> = rankings_map.into_values().map(|r| r.insert(kv)).collect();
     r?;
     Ok(())
   }

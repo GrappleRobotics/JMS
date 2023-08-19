@@ -1,144 +1,112 @@
-use std::{
-  env, fmt,
-  sync::atomic::{AtomicUsize, Ordering},
-};
-
-use chrono::Local;
-use env_logger::{
-  fmt::{Color, Style, StyledValue},
-  Builder, Target,
-};
+use std::io::Write;
 use log::Level;
+use termcolor::{StandardStream, WriteColor, ColorSpec, Color};
+use tokio::runtime::Handle;
+use uuid::Uuid;
 
-pub fn configure(debug_mode: bool) {
-  let mut default_level = log::LevelFilter::Info;
-  if debug_mode {
-    default_level = log::LevelFilter::Debug;
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct LogRecord {
+  pub id: String,
+  pub timestamp_utc: i64,
+  pub level: String,
+  pub target: String,
+  pub message: String,
+  pub module: Option<String>,
+  pub file: Option<String>,
+  pub line: Option<u32>
+}
+
+pub struct JMSLogger {
+  meili_client: meilisearch_sdk::Client,
+}
+
+impl JMSLogger {
+  pub fn init() -> anyhow::Result<()> {
+    let me = Self {
+      meili_client: meilisearch_sdk::Client::new("http://localhost:7700", None::<String>)
+    };
+
+    log::set_boxed_logger(Box::new(me)).map(|()| log::set_max_level(log::LevelFilter::Info))?;
+    Ok(())
+  }
+}
+
+impl log::Log for JMSLogger {
+  fn enabled(&self, metadata: &log::Metadata) -> bool {
+    metadata.level() <= Level::Info
   }
 
-  let env_filters = env::var("JMS_LOG").unwrap_or_default();
+  fn log(&self, record: &log::Record) {
+    let meta = record.metadata();
+    if self.enabled(meta) {
+      let index = self.meili_client.index("logs");
+      let timestamp = chrono::Utc::now();
 
-  builder()
-    .filter_level(default_level)
-    .parse_filters(&env_filters)
-    .target(Target::Stdout)
-    .init();
-}
+      let log_record = LogRecord {
+        id: Uuid::new_v4().to_string(),
+        timestamp_utc: timestamp.timestamp(),
+        level: meta.level().to_string(),
+        target: meta.target().to_owned(),
+        message: format!("{}", record.args()),
+        module: record.module_path().map(|x| x.to_owned()),
+        file: record.file().map(|x| x.to_owned()),
+        line: record.line().clone(),
+      };
 
-// Error wrapping
-#[macro_export(local_inner_macros)]
-macro_rules! log_expect {
-  ($result:expr, $($arg:tt)+) => {{
-    $result.unwrap_or_else(|e| {
-      log::error!($($arg)+, e);
-      std::panic!($($arg)+, e);
-    })
-  }};
-  (debug $result:expr) => {{
-    log_expect!($result, "Unexpected FATAL error: {:?}")
-  }};
-  ($result:expr) => {{
-    log_expect!($result, "Unexpected FATAL error: {}")
-  }}
-}
+      let handle = Handle::current();
+      let _ = handle.enter();
+      match futures::executor::block_on(index.add_documents(&[log_record.clone()], Some("id"))) {
+        Ok(_) => (),
+        Err(e) => eprintln!("Logging Failure (Meilisearch): {}", e)
+      }
 
-const COLOR_GRAY_DARK: Color = Color::Rgb(100, 100, 100);
-const COLOR_GRAY: Color = Color::Rgb(150, 150, 150);
+      let mut level_spec = ColorSpec::new();
+      let mut message_spec = ColorSpec::new();
 
-// Adapted from pretty_env_logger, with some custom sauce (better timestamps, error line/file refs, breadcrumb)
-fn builder() -> Builder {
-  let mut builder = Builder::new();
+      match meta.level() {
+        Level::Error => {
+          level_spec.set_fg(Some(Color::Red)).set_bold(true);
+          message_spec.set_fg(Some(Color::Red)).set_bold(true);
+        },
+        Level::Warn => {
+          level_spec.set_fg(Some(Color::Yellow));
+          message_spec.set_fg(Some(Color::Yellow));
+        },
+        Level::Info => {
+          level_spec.set_fg(Some(Color::Green));
+          message_spec.set_fg(Some(Color::White));
+        },
+        Level::Debug => {
+          level_spec.set_fg(Some(Color::Blue));
+          message_spec.set_fg(Some(Color::Rgb(150, 150, 150)));
+        },
+        Level::Trace => {
+          level_spec.set_fg(Some(Color::Magenta));
+          message_spec.set_fg(Some(Color::Rgb(100, 100, 100)));
+        },
+      }
 
-  builder.format(|f, record| {
-    use std::io::Write;
-
-    let target = record.target();
-
-    let max_width = max_target_width(target);
-
-    let mut style = f.style();
-    let level = colored_level(&mut style, record.level());
-
-    let mut style = f.style();
-    let target = style.set_bold(true).value(Padded {
-      value: target,
-      width: max_width,
-    });
-
-    let mut style = f.style();
-    let time = style
-      .set_color(COLOR_GRAY_DARK)
-      .value(Local::now().format("%Y-%m-%d %H:%M:%S.%3f %z"));
-
-    let mut style = f.style();
-    let message = message_colored_level(&mut style, record.level()).value(record.args());
-
-    let mut style = f.style();
-    let lineno = render_record_line(&mut style, record.file(), record.line());
-
-    let mut style = f.style();
-    let splitter = style.set_color(COLOR_GRAY_DARK).set_bold(true).value(">");
-
-    if record.level() <= Level::Error {
-      writeln!(f, " {} {} {} {} {}: {}", time, level, target, splitter, lineno, message)
-    } else {
-      writeln!(f, " {} {} {} {} {}", time, level, target, splitter, message)
+      let mut stdout = StandardStream::stdout(termcolor::ColorChoice::Auto);
+      stdout.set_color(ColorSpec::new().set_fg(Some(termcolor::Color::Rgb(100, 100, 100)))).ok();
+      write!(&mut stdout, "{} ", chrono::Local::now().format("%Y-%m-%d %H:%M:%S.%3f %z")).ok();
+      stdout.set_color(&level_spec).ok();
+      write!(&mut stdout, "{} ", log_record.level.to_uppercase()).ok();
+      if let Some(module) = log_record.module {
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)).set_bold(true)).ok();
+        write!(&mut stdout, "{} ", &module).ok();
+      }
+      stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(100, 100, 100)))).ok();
+      write!(&mut stdout, "> ").ok();
+      stdout.set_color(&message_spec).ok();
+      write!(&mut stdout, "{}", log_record.message).ok();
+      if meta.level() <= Level::Warn {
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(150, 150, 150)))).ok();
+        write!(&mut stdout, " [at {}:{}]", log_record.file.unwrap_or("<unknown>".to_owned()), log_record.line.map(|x| format!("{}", x)).unwrap_or("<unknown>".to_owned())).ok();
+      }
+      stdout.reset().ok();
+      writeln!(&mut stdout).ok();
     }
-  });
-
-  builder
-}
-
-fn render_record_line<'a>(style: &'a mut Style, file: Option<&str>, num: Option<u32>) -> StyledValue<'a, String> {
-  let file = file.unwrap_or("<unknown>");
-  let ln = match num {
-    Some(n) => n.to_string(),
-    None => String::from("<unknown>"),
-  };
-  return style.set_bold(true).value(format!("[at {}:{}]", file, ln));
-}
-
-// from pretty_env_logger
-struct Padded<T> {
-  value: T,
-  width: usize,
-}
-
-impl<T: fmt::Display> fmt::Display for Padded<T> {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{: <width$}", self.value, width = self.width)
   }
-}
 
-fn colored_level<'a>(style: &'a mut Style, level: Level) -> StyledValue<'a, &'static str> {
-  match level {
-    Level::Trace => style.set_color(Color::Magenta).value("TRACE"),
-    Level::Debug => style.set_color(Color::Blue).value("DEBUG"),
-    Level::Info => style.set_color(Color::Green).value(" INFO"),
-    Level::Warn => style.set_color(Color::Yellow).value(" WARN"),
-    Level::Error => style.set_color(Color::Red).value("ERROR"),
-  }
-}
-
-fn message_colored_level(style: &mut Style, level: Level) -> &mut Style {
-  match level {
-    Level::Trace => style.set_color(COLOR_GRAY_DARK),
-    Level::Debug => style.set_color(COLOR_GRAY),
-    Level::Info => style.set_color(Color::White),
-    Level::Warn => style.set_color(Color::Yellow),
-    Level::Error => style.set_color(Color::Red).set_bold(true),
-  }
-}
-
-static MAX_MODULE_WIDTH: AtomicUsize = AtomicUsize::new(0);
-static ABSOLUTE_MAX: usize = 20;
-
-fn max_target_width(target: &str) -> usize {
-  let max_width = MAX_MODULE_WIDTH.load(Ordering::Relaxed);
-  if max_width < target.len() && target.len() < ABSOLUTE_MAX {
-    MAX_MODULE_WIDTH.store(target.len(), Ordering::Relaxed);
-    target.len()
-  } else {
-    max_width
-  }
+  fn flush(&self) { }
 }

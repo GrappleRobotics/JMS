@@ -1,5 +1,5 @@
 use jms_base::kv;
-use jms_core_lib::{models, db::{Table, Singleton}, reports::ReportData};
+use jms_core_lib::{models, db::Singleton, reports::ReportData};
 
 use super::{report_pdf, pdf_table};
 

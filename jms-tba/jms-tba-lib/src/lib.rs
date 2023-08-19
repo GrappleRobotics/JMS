@@ -1,4 +1,4 @@
-use jms_core_lib::db::{Singleton, DBDuration};
+use jms_core_lib::db::Singleton;
 
 #[derive(jms_macros::Updateable)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]

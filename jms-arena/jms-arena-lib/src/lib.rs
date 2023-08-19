@@ -1,4 +1,4 @@
-use std::{error::Error, convert::Infallible};
+use std::convert::Infallible;
 
 use jms_base::{kv, mq::{MessageQueueSubscriber, MessageQueueChannel}};
 use jms_core_lib::{models::{AllianceStationId, AllianceParseError, Alliance, JmsComponent}, db::{DBDuration, Table}};

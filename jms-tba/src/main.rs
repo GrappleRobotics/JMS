@@ -1,4 +1,4 @@
-use jms_base::kv;
+use jms_base::{kv, logging::JMSLogger};
 use jms_core_lib::{models::{JmsComponent, self}, db::Table};
 use log::{info, warn};
 use tokio::try_join;
@@ -54,7 +54,7 @@ async fn tba_svc(kv: kv::KVConnection) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  jms_base::logging::configure(false);
+  JMSLogger::init()?;
 
   let kv = kv::KVConnection::new()?;
 
