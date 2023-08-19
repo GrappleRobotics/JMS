@@ -320,8 +320,7 @@ impl Arena {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  // _logging::configure(false);
-  JMSLogger::init()?;
+  let _ = JMSLogger::init().await?;
   let kv = KVConnection::new()?;
   let mq = MessageQueue::new("arena-reply").await?;
   info!("Connected!");

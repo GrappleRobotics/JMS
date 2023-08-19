@@ -41,7 +41,7 @@ pub mod tickets;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  JMSLogger::init()?;
+  let _ = JMSLogger::init().await?;
 
   let matches = Command::new("JMS-WebSocket")
     .about("JMS WebSocket Server")

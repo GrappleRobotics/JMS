@@ -78,7 +78,7 @@ async fn logs_svc(kv: kv::KVConnection) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  JMSLogger::init()?;
+  let _ = JMSLogger::init().await?;
   
   let kv = kv::KVConnection::new()?;
 

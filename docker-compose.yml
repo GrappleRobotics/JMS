@@ -6,6 +6,7 @@ x-jms-base: &jms-base
   environment:
   - REDIS_URI=redis://redis:6379/0
   - RABBITMQ_URI=amqp://rabbitmq:5672/%2f
+  - MEILI_URI=http://meilisearch:7700
   depends_on:
     redis:
       condition: service_healthy
@@ -20,6 +21,10 @@ services:
     command: jms-arena
     depends_on:
     - jms-networking
+
+  jms-backup:
+    <<: *jms-base
+    command: jms-backup
 
   jms-core:
     <<: *jms-base
@@ -152,12 +157,14 @@ services:
   meilisearch:
     image: getmeili/meilisearch:v1.3
     restart: unless-stopped
+    environment:
+    - MEILI_LOG_LEVEL=WARN
     volumes:
     - "./data/meilisearch:/meili_data"
     ports:
     - "7700:7700"
     healthcheck:
-      test: curl --max-time 5 -kILs --fail https://localhost:7700/health
+      test: curl --max-time 5 -Ls --fail http://localhost:7700/health
       interval: 10s
       timeout: 10s
       retries: 5

@@ -142,7 +142,7 @@ async fn component_svc(mut component: JmsComponent, kv: kv::KVConnection) -> any
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  JMSLogger::init()?;
+  let _ = JMSLogger::init().await?;
 
   let kv = KVConnection::new()?;
   let mq = MessageQueue::new("arena-reply").await?;

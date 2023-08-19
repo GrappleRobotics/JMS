@@ -80,7 +80,7 @@ async fn arena_ok_worker(kv: KVConnection, ok: Arc<AtomicBool>) -> anyhow::Resul
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  JMSLogger::init()?;
+  let _ = JMSLogger::init().await?;
   let kv = KVConnection::new()?;
 
   let component = JmsComponent::new("jms.driverstation", "JMS-DriverStation", "D", 500);

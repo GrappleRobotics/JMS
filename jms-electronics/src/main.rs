@@ -56,7 +56,7 @@ async fn run_scoring_table(mq: MessageQueueChannel) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-  JMSLogger::init()?;
+  let _ = JMSLogger::init().await?;
 
   let kv = kv::KVConnection::new()?;
   let mq = mq::MessageQueue::new("jms.networking-reply").await?;

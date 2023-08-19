@@ -1,13 +1,12 @@
-use std::io::Write;
+use std::{io::Write, sync::{Mutex, Arc}, thread};
 use log::Level;
 use termcolor::{StandardStream, WriteColor, ColorSpec, Color};
-use tokio::runtime::Handle;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LogRecord {
   pub id: String,
-  pub timestamp_utc: i64,
+  pub timestamp_utc: f64,
   pub level: String,
   pub target: String,
   pub message: String,
@@ -16,18 +15,41 @@ pub struct LogRecord {
   pub line: Option<u32>
 }
 
+pub async fn auto_flush() {
+  let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+  loop {
+    interval.tick().await;
+    log::logger().flush()
+  }
+}
+
+pub struct FlushGuard { }
+
+impl Drop for FlushGuard {
+  fn drop(&mut self) {
+    log::logger().flush()
+  }
+}
+
 pub struct JMSLogger {
-  meili_client: meilisearch_sdk::Client,
+  meili_uri: String,
+  buffered: Mutex<Vec<LogRecord>>,
 }
 
 impl JMSLogger {
-  pub fn init() -> anyhow::Result<()> {
+  pub async fn init() -> anyhow::Result<FlushGuard> {
+    let meili_uri = std::env::var("MEILI_URI").unwrap_or("http://localhost:7700".to_owned());
+
     let me = Self {
-      meili_client: meilisearch_sdk::Client::new("http://localhost:7700", None::<String>)
+      meili_uri,
+      buffered: Mutex::new(vec![])
     };
 
     log::set_boxed_logger(Box::new(me)).map(|()| log::set_max_level(log::LevelFilter::Info))?;
-    Ok(())
+
+    tokio::task::spawn(auto_flush());
+
+    Ok(FlushGuard { })
   }
 }
 
@@ -39,12 +61,11 @@ impl log::Log for JMSLogger {
   fn log(&self, record: &log::Record) {
     let meta = record.metadata();
     if self.enabled(meta) {
-      let index = self.meili_client.index("logs");
       let timestamp = chrono::Utc::now();
 
       let log_record = LogRecord {
         id: Uuid::new_v4().to_string(),
-        timestamp_utc: timestamp.timestamp(),
+        timestamp_utc: timestamp.timestamp() as f64 + timestamp.timestamp_subsec_nanos() as f64 / 10e9f64,
         level: meta.level().to_string(),
         target: meta.target().to_owned(),
         message: format!("{}", record.args()),
@@ -52,13 +73,6 @@ impl log::Log for JMSLogger {
         file: record.file().map(|x| x.to_owned()),
         line: record.line().clone(),
       };
-
-      let handle = Handle::current();
-      let _ = handle.enter();
-      match futures::executor::block_on(index.add_documents(&[log_record.clone()], Some("id"))) {
-        Ok(_) => (),
-        Err(e) => eprintln!("Logging Failure (Meilisearch): {}", e)
-      }
 
       let mut level_spec = ColorSpec::new();
       let mut message_spec = ColorSpec::new();
@@ -86,12 +100,12 @@ impl log::Log for JMSLogger {
         },
       }
 
-      let mut stdout = StandardStream::stdout(termcolor::ColorChoice::Auto);
+      let mut stdout = StandardStream::stdout(termcolor::ColorChoice::Always);
       stdout.set_color(ColorSpec::new().set_fg(Some(termcolor::Color::Rgb(100, 100, 100)))).ok();
       write!(&mut stdout, "{} ", chrono::Local::now().format("%Y-%m-%d %H:%M:%S.%3f %z")).ok();
       stdout.set_color(&level_spec).ok();
       write!(&mut stdout, "{} ", log_record.level.to_uppercase()).ok();
-      if let Some(module) = log_record.module {
+      if let Some(module) = &log_record.module {
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)).set_bold(true)).ok();
         write!(&mut stdout, "{} ", &module).ok();
       }
@@ -101,12 +115,47 @@ impl log::Log for JMSLogger {
       write!(&mut stdout, "{}", log_record.message).ok();
       if meta.level() <= Level::Warn {
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(150, 150, 150)))).ok();
-        write!(&mut stdout, " [at {}:{}]", log_record.file.unwrap_or("<unknown>".to_owned()), log_record.line.map(|x| format!("{}", x)).unwrap_or("<unknown>".to_owned())).ok();
+        write!(&mut stdout, " [at {}:{}]", log_record.file.clone().unwrap_or("<unknown>".to_owned()), log_record.line.map(|x| format!("{}", x)).unwrap_or("<unknown>".to_owned())).ok();
       }
       stdout.reset().ok();
       writeln!(&mut stdout).ok();
+
+      let mut flush = meta.level() <= Level::Warn;
+
+      if let Ok(mut v) = self.buffered.lock() {
+        v.push(log_record);
+
+        if v.len() > 10 {
+          flush = true;
+        }
+      }
+
+      if flush {
+        self.flush();
+      }
     }
   }
 
-  fn flush(&self) { }
+  fn flush(&self) {
+    if let Ok(mut v) = self.buffered.lock() {
+
+      if v.len() > 0 {
+        let documents = serde_json::to_string(&v.drain(..).collect::<Vec<_>>());
+        let meili_uri = self.meili_uri.clone();
+        if let Ok(docs) = documents {
+          tokio::task::spawn(async move {
+            let c = reqwest::ClientBuilder::new().timeout(std::time::Duration::from_millis(100)).build();
+
+            if let Ok(c) = c {
+              c.post(format!("{}/indexes/logs/documents?primaryKey=id", meili_uri))
+                .header("Content-Type", "application/json")
+                .body(docs)
+                .send().await.ok();
+            }
+          });
+        }
+      }
+    }
+
+  }
 }
