@@ -1,11 +1,19 @@
 @import "../variables.scss";
 
+.match-flow {
+  @media (orientation: portrait) {
+    font-size: 0.75em;
+  }
+}
+
 .match-flow-btn {
   @extend .btn-lg !optional;
   display: block;
   width: 100%;
 
   border: 0;
+
+  font-size: 1em;
 
   &.active {
     background: darken(theme-color("good"), 10%) !important;

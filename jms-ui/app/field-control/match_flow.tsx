@@ -28,7 +28,7 @@ export function MatchFlow({ state, current_match }: { state: ArenaState, current
       </Col>
     </Row>
 
-  return <Row>
+  return <Row className="match-flow">
     <Col>
       <MatchFlowButton
         arenaState={state}
@@ -36,7 +36,7 @@ export function MatchFlow({ state, current_match }: { state: ArenaState, current
         onClick={() => signal(state?.state == "Prestart" ? "PrestartUndo" : "Prestart")}
         disabled={!(current_match && ((state?.state === "Idle") || (state?.state === "Prestart")))}
       >
-        { state?.state == "Prestart" ? "Revert Prestart" : "Prestart" }
+        { state?.state == "Prestart" ? "Revert Prestart" : "Prestart Match" }
       </MatchFlowButton>
     </Col>
     <Col>

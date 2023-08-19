@@ -4,11 +4,20 @@
   margin: 0.05em;
 
   font-size: 2vw;
+
+  @media (orientation: portrait) {
+    font-size: 4vw;
+  }
+
   padding-left: 0.3vw;
   padding-right: 0.3vw;
 
   text-align: center;
   align-items: center;
+
+  .row > * {
+    width: auto;
+  }
 
   .fta-alliance-station-nstats {
     font-size: 0.6em;
@@ -53,8 +62,10 @@
 }
 
 .fta-team-indicator {
-  font-size: 0.75em;
+  font-size: 0.65em;
   padding: 0.2em 0em;
+  margin-left: -0.5em;
+  margin-right: -0.5em;
 }
 
 .fta-diagnosis {
@@ -81,7 +92,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10rem;
+  font-size: 8rem;
   font-weight: bold;
   text-align: center;
   padding: 5rem;

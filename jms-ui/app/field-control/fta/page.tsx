@@ -4,7 +4,7 @@ import "./fta.scss";
 import { PermissionGate, withPermission } from "@/app/support/permissions"
 import JmsWebsocket from "@/app/support/ws";
 import { useWebsocket } from "@/app/support/ws-component";
-import { AllianceStation, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch, SupportTicket, Team } from "@/app/ws-schema";
+import { AllianceStation, AllianceStationId, AllianceStationUpdate, ArenaState, DriverStationReport, Match, SerialisedLoadedMatch, SupportTicket, Team } from "@/app/ws-schema";
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBattery, faCheck, faCode, faFlag, faNetworkWired, faRobot, faSign, faTimes, faWifi } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -24,6 +24,9 @@ import Link from "next/link";
 import moment from "moment";
 
 export default withPermission(["FTA", "FTAA"], function FTAView() {
+  const [ width, setWidth ] = useState<number>(window.innerWidth);
+  const [ height, setHeight ] = useState<number>(window.innerHeight);
+
   const [ allianceStations, setAllianceStations ] = useState<AllianceStation[]>([]);
   const [ dsReports, setDsReports ] = useState<{ [k: number]: DriverStationReport }>({});
   const [ state, setState ] = useState<ArenaState>({ state: "Init" });
@@ -44,6 +47,17 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
       subscribe<"matches/matches">("matches/matches", setMatches),
       subscribe<"team/teams">("team/teams", setTeams),
     ];
+
+    window.addEventListener("resize", () => {
+      setWidth(window.innerWidth);
+      setHeight(window.innerHeight);
+    });
+
+    window.addEventListener("orientationchange", () => {
+      setWidth(window.innerWidth);
+      setHeight(window.innerHeight);
+    });
+
     return () => unsubscribe(cb);
   }, []);
 
@@ -60,12 +74,18 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
     }
   }
 
+  const stations = _.zip(allianceStations, stationReports).map(([stn, report], i) => [stn!.id, <FTAAllianceStation key={i} station={stn!} match_id={currentMatch?.match_id} report={report || null} call={call} addError={addError} teams={teams} />] as [AllianceStationId, React.ReactNode]);
+  const landscape = width > height;
+
   return <div style={{ marginLeft: '1em', marginRight: '1em' }}>
-    <Row>
-      {
-        _.zip(allianceStations, stationReports).map(([stn, report], i) => <FTAAllianceStation key={i} station={stn!} match_id={currentMatch?.match_id} report={report || null} call={call} addError={addError} teams={teams} />)
-      }
-    </Row>
+    {
+      landscape ? <Row>
+        { stations.map(stn => stn[1]) }
+      </Row> : <React.Fragment>
+        <Row> { stations.filter(stn => stn[0].alliance === "blue").map(stn => stn[1]) } </Row>
+        <Row> { stations.filter(stn => stn[0].alliance === "red").map(stn => stn[1]) } </Row>
+      </React.Fragment>
+    }
     {
       Object.keys(remainingDsReports).map((t, i) => {
         const report = remainingDsReports[t as any];
@@ -216,7 +236,6 @@ async function editStationModal(station: AllianceStation, match_id: string | und
           <InputGroup.Text>Team Number</InputGroup.Text>
           <BufferedFormControl
             auto
-            autofocus
             type="number"
             min={0}
             step={1}
@@ -243,15 +262,15 @@ async function editStationModal(station: AllianceStation, match_id: string | und
           {
             tickets.map(ticket => <Link className="no-text-decoration" key={ticket.id} href={`/csa/${ticket.id}`}>
               <Row className="fta-ticket">
-                <Col md={3}>
-                  <strong>{ ticket.resolved && <FontAwesomeIcon className="text-success" icon={faCheck} /> }&nbsp; { ticket.issue_type } { ticket.match_id ? `in ${ticket.match_id}` : "" } </strong>
+                <Col md={2}>
+                  <strong>{ ticket.resolved && <FontAwesomeIcon className="text-success" icon={faCheck} /> }&nbsp; { ticket.issue_type } </strong>
                 </Col>
                 <Col>
                   { ticket.notes.map((note, i) => <Row 
                     key={i}
                     className="fta-ticket-note text-white mb-0"
                   >
-                    <Col md={2} className="text-muted"> { moment(note.time).fromNow() } </Col>
+                    <Col md={3} className="text-muted"> { moment(note.time).fromNow() } </Col>
                     <Col> { note.comment } </Col>
                   </Row>) }
                 </Col>
