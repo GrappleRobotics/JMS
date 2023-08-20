@@ -10,7 +10,7 @@ pub fn wpa_report(kv: &kv::KVConnection) -> Result<ReportData, Box<dyn std::erro
 
   let event_details = models::EventDetails::get(kv)?;
   let event_name = event_details.event_name.unwrap_or("Unnamed Event".to_owned());
-  let teams = models::Team::all(kv)?;
+  let teams = models::Team::sorted(kv)?;
 
   let mut doc = report_pdf("WPA Key Report (FTA ONLY)", &event_name, true);
 
