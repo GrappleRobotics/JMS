@@ -43,61 +43,63 @@ impl TBAMatchUpdate {
     let scores = models::CommittedMatchScores::all_map(kv)?;
 
     for m in matches {
-      let latest_score = scores.get(&m.id).and_then(|cms| cms.scores.last()).map(|x| Into::<MatchScoreSnapshot>::into(x.clone()));
-      
-      // Try to convert our format into TBA's format
-      let (comp_level, set, match_n) = match (&playoff_type.mode, m.match_type, m.round, m.set_number, m.match_number) {
-        (_, MatchType::Qualification, _, s, _) => ( Some(TBAMatchLevel("qm")), 1, s ),
-        (_, MatchType::Final, _, s, m) => ( Some(TBAMatchLevel("f")), s, m ),
+      if m.match_type != MatchType::Test {
+        let latest_score = scores.get(&m.id).and_then(|cms| cms.scores.last()).map(|x| Into::<MatchScoreSnapshot>::into(x.clone()));
+        
+        // Try to convert our format into TBA's format
+        let (comp_level, set, match_n) = match (&playoff_type.mode, m.match_type, m.round, m.set_number, m.match_number) {
+          (_, MatchType::Qualification, _, s, _) => ( Some(TBAMatchLevel("qm")), 1, s ),
+          (_, MatchType::Final, _, s, m) => ( Some(TBAMatchLevel("f")), s, m ),
 
-        (PlayoffModeType::Bracket, MatchType::Playoff, r, s, m) => {
-          match (r, s) {
-            (1, x) => ( Some(TBAMatchLevel("qf")), x, m ),
-            (2, x) => ( Some(TBAMatchLevel("sf")), x, m ),
-            _ => ( None, 0, 0 )
-          }
-        },
-        (PlayoffModeType::DoubleBracket, MatchType::Playoff, r, s, m) => {
-          let tba_set = match (r, s) {
-            (1, x) => x,
-            (2, x) => 4 + x,
-            (3, x) => 8 + x,
-            (4, x) => 10 + x,
-            (5, x) => 12 + x,
-            (_, _) => 0
-          };
-          ( Some(TBAMatchLevel("sf")), tba_set, m )
-        },
-        _ => (None, 0, 0)
-      };
+          (PlayoffModeType::Bracket, MatchType::Playoff, r, s, m) => {
+            match (r, s) {
+              (1, x) => ( Some(TBAMatchLevel("qf")), x, m ),
+              (2, x) => ( Some(TBAMatchLevel("sf")), x, m ),
+              _ => ( None, 0, 0 )
+            }
+          },
+          (PlayoffModeType::DoubleBracket, MatchType::Playoff, r, s, m) => {
+            let tba_set = match (r, s) {
+              (1, x) => x,
+              (2, x) => 4 + x,
+              (3, x) => 8 + x,
+              (4, x) => 10 + x,
+              (5, x) => 12 + x,
+              (_, _) => 0
+            };
+            ( Some(TBAMatchLevel("sf")), tba_set, m )
+          },
+          _ => (None, 0, 0)
+        };
 
-      let mut tba_matches = vec![];
+        let mut tba_matches = vec![];
 
-      // Fill TBA's match type
-      match (comp_level, set, match_n) {
-        ( Some(comp_level), set_number, match_number ) if set_number != 0 && match_number != 0 => {
-          let red_teams = m.red_teams.iter().filter_map(|x| x.map(|t| TBATeam::from(t))).collect();
-          let blue_teams = m.blue_teams.iter().filter_map(|x| x.map(|t| TBATeam::from(t))).collect();
+        // Fill TBA's match type
+        match (comp_level, set, match_n) {
+          ( Some(comp_level), set_number, match_number ) if set_number != 0 && match_number != 0 => {
+            let red_teams = m.red_teams.iter().filter_map(|x| x.map(|t| TBATeam::from(t))).collect();
+            let blue_teams = m.blue_teams.iter().filter_map(|x| x.map(|t| TBATeam::from(t))).collect();
 
-          let tba_match = TBAMatch {
-            comp_level, set_number, match_number,
-            score_breakdown: latest_score.clone().map(Into::into),
-            alliances: TBAMatchAlliances {
-              red: TBAMatchAlliance { teams: red_teams, score: latest_score.as_ref().map(|x| x.red.derived.total_score as isize) },
-              blue: TBAMatchAlliance { teams: blue_teams, score: latest_score.as_ref().map(|x| x.blue.derived.total_score as isize) }
-            },
-            time_str: Some(m.start_time.format("%l:%M %p").to_string()),
-            time_utc: Some(chrono::DateTime::<chrono::Utc>::from(m.start_time).format("%+").to_string())
-          };
+            let tba_match = TBAMatch {
+              comp_level, set_number, match_number,
+              score_breakdown: latest_score.clone().map(Into::into),
+              alliances: TBAMatchAlliances {
+                red: TBAMatchAlliance { teams: red_teams, score: latest_score.as_ref().map(|x| x.red.derived.total_score as isize) },
+                blue: TBAMatchAlliance { teams: blue_teams, score: latest_score.as_ref().map(|x| x.blue.derived.total_score as isize) }
+              },
+              time_str: Some(m.start_time.format("%l:%M %p").to_string()),
+              time_utc: Some(chrono::DateTime::<chrono::Utc>::from(m.start_time).format("%+").to_string())
+            };
 
-          tba_matches.push(tba_match);
-        },
-        _ => error!("Could not convert match to TBA format: {}", m.id)
-      }
+            tba_matches.push(tba_match);
+          },
+          _ => error!("Could not convert match to TBA format: {}", m.id)
+        }
 
-      // Push to TBA
-      if tba_matches.len() > 0 {
-        TBAClient::post("matches", "update", &tba_matches, kv).await?;
+        // Push to TBA
+        if tba_matches.len() > 0 {
+          TBAClient::post("matches", "update", &tba_matches, kv).await?;
+        }
       }
     }
 
