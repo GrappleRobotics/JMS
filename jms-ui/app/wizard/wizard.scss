@@ -16,3 +16,14 @@
     opacity: 80%;
   }
 }
+
+@import "~react-csv-importer/dist/index.css";
+
+.CSVImporter_Importer {
+  color: $gray-700;
+}
+
+.CSVImporter_FileSelector {
+  background-color: $gray-700;
+  color: $gray-400;
+}

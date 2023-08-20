@@ -11,10 +11,10 @@ pub enum RadioType {
 pub struct NetworkingSettings {
   pub router_username: String,
   pub router_password: String,
-  pub radio_username: String,
-  pub radio_password: String,
 
   pub radio_type: RadioType,
+  pub radio_username: String,
+  pub radio_password: String,
 
   pub team_channel: Option<usize>,
   pub admin_channel: Option<usize>,
@@ -27,10 +27,10 @@ impl Default for NetworkingSettings {
     Self {
       router_username: "admin".to_owned(),
       router_password: "jmsR0cks".to_owned(),
-      radio_username: "root".to_owned(),
-      radio_password: "root".to_owned(),
-
+      
       radio_type: RadioType::Unifi,
+      radio_username: "FTA".to_owned(),
+      radio_password: "jmsR0cks".to_owned(),
 
       team_channel: None,
       admin_channel: None,

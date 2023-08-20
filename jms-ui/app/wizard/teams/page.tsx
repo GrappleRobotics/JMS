@@ -9,10 +9,11 @@ import { Team, TeamUpdate, WebsocketRpcRequest } from "@/app/ws-schema";
 import { faCheck, faCloudDownloadAlt, faCross, faInfoCircle, faSpinner, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
-import { Button, Form, FormControlProps, Table } from "react-bootstrap";
+import { Accordion, Button, Form, FormControlProps, Table } from "react-bootstrap";
 import update, { Spec } from "immutability-helper";
 import { nullIfEmpty } from "@/app/support/strings";
 import { withConfirm } from "@/app/components/Confirm";
+import { Importer, ImporterField } from "react-csv-importer";
 
 // This is a well-known public key I've created. It may be cancelled at any time.
 const TBA_AUTH_KEY = "19iOXH0VVxCvYQTlmIRpXyx2xoUQuZoWEPECGitvJcFxEY6itgqDP7A4awVL2CJn";
@@ -37,10 +38,27 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
     return () => { unsubscribe([cb]) }
   }, []);
 
-  const updateTeam = (team_i: number, updates: TeamUpdate[]) => {
+  
+  const updateTeam = (team_i: number, updates: TeamUpdate[], cb?: () => void) => {
     call<"team/update">("team/update", { team_number: teams[team_i].number, updates })
-      .then(t => setTeams(update(teams, { [team_i]: { $set: t } })))
-      .catch(addError)
+    .then(t => { setTeams(update(teams, { [team_i]: { $set: t } })); if (cb) cb() })
+    .catch(addError)
+  }
+  
+  const importCSV = async (rows: { number: string, display_number?: string, name?: string, affiliation?: string, location?: string }[]) => {
+    // TODO: Batch updates, otherwise the state update breaks it.
+    rows.forEach(team => {
+      let id = nullIfEmpty(team.number);
+      if (id !== null) {
+        let number = parseInt(id);
+        let display_number = nullIfEmpty(team.display_number) || ("" + number);
+        let name = nullIfEmpty(team.name);
+        let affiliation = nullIfEmpty(team.affiliation);
+        let location = nullIfEmpty(team.location);
+
+        call<"team/new_team">("team/new_team", { team_number: number, display_number, name, affiliation, location });
+      }
+    })
   }
 
   const updateFromTBA = (force: boolean) => {
@@ -124,6 +142,26 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
 
   return <React.Fragment>
     <h3> Team Management </h3>
+    { teams.length > 0 && <p className="text-muted"> { teams.length } Teams </p> }
+
+    <Accordion>
+      <Accordion.Item eventKey="0">
+        <Accordion.Header> Import Data </Accordion.Header>
+        <Accordion.Body>
+          <Importer
+            restartable={true}
+            processChunk={importCSV}
+          >
+            <ImporterField name="number" label="Team Number" />
+            <ImporterField name="display_number" label="Display Number" optional />
+            <ImporterField name="name" label="Team Name" optional />
+            <ImporterField name="affiliation" label="Team Affiliation (School)" optional />
+            <ImporterField name="location" label="Team Location" optional />
+          </Importer>
+        </Accordion.Body>
+      </Accordion.Item>
+    </Accordion>
+
     <br />
     <Button variant="blue" onClick={() => updateFromTBA(false)} disabled={fetching}>
       <FontAwesomeIcon icon={fetching ? faSpinner : faCloudDownloadAlt} spin={fetching} /> &nbsp;
