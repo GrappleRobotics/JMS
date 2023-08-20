@@ -26,12 +26,12 @@ impl DriverStationElectronics {
   }
 
   pub async fn run(self) -> anyhow::Result<()> {
-    let stream = tokio::time::timeout(Duration::from_millis(3000), TcpStream::connect(self.ip.to_string() + ":1071")).await.map_err(|_| anyhow::anyhow!("Connection Timed Out"))??;
+    let stream = tokio::time::timeout(Duration::from_millis(3000), TcpStream::connect(self.ip.to_string() + ":1071")).await.map_err(|_| anyhow::anyhow!("Connection Timed Out"))?.map_err(|e| anyhow::anyhow!("Connect error: {}", e))?;
     let mut framed = FramedRead::new(stream, GrappleTcpCodec {});
 
     let mut cache_interval = tokio::time::interval(Duration::from_millis(500));
 
-    let mut stations = AllianceStation::all(&self.kv)?;
+    let mut stations = AllianceStation::sorted(&self.kv)?;
 
     loop {
       tokio::select! {
@@ -50,10 +50,17 @@ impl DriverStationElectronics {
               }
             },
             StatusMessage::Network(net) => {
-              // TODO: This
+              for stn in &mut stations {
+                if stn.id.alliance == self.alliance {
+                  let link = matches!(net.ports[stn.id.station], PortStatus::LinkUp { .. });
+                  if Some(link) != stn.ds_eth_ok {
+                    stn.set_ds_eth_ok(Some(link), &self.kv)?;
+                  }
+                }
+              }
             }
           },
-          Some(Err(e)) => log::error!("Error: {}", e),
+          Some(Err(e)) => log::error!("Framed Error: {}", e),
           None => (),
         }
       }

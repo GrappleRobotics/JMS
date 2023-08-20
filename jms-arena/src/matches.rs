@@ -54,7 +54,7 @@ impl LoadedMatch {
     }
   }
 
-  pub async fn update(&mut self) -> anyhow::Result<()> {
+  pub async fn update(&mut self) -> anyhow::Result<bool> {
     let first = self.last_state != Some(self.state);
     self.last_state = Some(self.state);
 
@@ -112,7 +112,7 @@ impl LoadedMatch {
     self.remaining = remaining;
     self.endgame = endgame;
 
-    Ok(())
+    Ok(first)
   }
 
   pub fn write_state(&self, kv: &mut KVConnection) -> anyhow::Result<()> {

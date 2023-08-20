@@ -216,7 +216,11 @@ impl Arena {
           current_match.start()?;
         }
 
-        current_match.update().await?;
+        if current_match.update().await? && current_match.state == MatchPlayState::Pause {
+          for stn in self.stations.values_mut() {
+            stn.set_astop(false, &self.kv)?;
+          }
+        }
 
         match current_match.state {
           MatchPlayState::Complete => { self.set_state(ArenaState::MatchComplete).await?; },
