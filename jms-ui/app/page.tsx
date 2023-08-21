@@ -46,6 +46,7 @@ export default function Home() {
         <PermissionGate permissions={["FTA", "FTAA"]}>
           <HomeTile name="FTA" href="/field-control/fta"> Monitor teams, run matches. </HomeTile>
           <HomeTile name="DEBUG" href="/debug"> Debug Controls </HomeTile>
+          <HomeTile name="JMS Logs" href="/logs"> JMS Logs </HomeTile>
         </PermissionGate>
         <PermissionGate permissions={["EditScores"]}>
           <HomeTile name="Edit Scores" href="/scoring/edit">Edit Scores</HomeTile>

@@ -10,6 +10,7 @@ use components::ComponentWebsocket;
 use debug::DebugWebsocket;
 use event::EventWebsocket;
 use jms_base::{mq::MessageQueue, kv::KVConnection, logging::JMSLogger};
+use logs::LogWebsocket;
 use matches::MatchesWebsocket;
 use networking::NetworkingWebsocket;
 use reports::ReportWebsocket;
@@ -29,6 +30,7 @@ pub mod components;
 pub mod debug;
 pub mod event;
 pub mod handler;
+pub mod logs;
 pub mod matches;
 pub mod scoring;
 pub mod teams;
@@ -74,6 +76,7 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(100000), "tba", TBAWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "networking", NetworkingWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "backup", BackupWebsocket::new()).await;
+  ws.register(Duration::from_millis(100000), "logs", LogWebsocket::new()).await;
   ws.register(Duration::from_millis(5000), "tickets", TicketWebsocket::new()).await;
 
   match matches.subcommand() {

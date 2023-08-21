@@ -1,4 +1,4 @@
-use std::{io::Write, sync::{Mutex, Arc}, thread};
+use std::{io::Write, sync::Mutex};
 use log::Level;
 use termcolor::{StandardStream, WriteColor, ColorSpec, Color};
 use uuid::Uuid;
@@ -36,12 +36,15 @@ pub struct JMSLogger {
   buffered: Mutex<Vec<LogRecord>>,
 }
 
+pub fn meilisearch_uri() -> String {
+  std::env::var("MEILI_URI").unwrap_or("http://localhost:7700".to_owned())
+}
+
 impl JMSLogger {
   pub async fn init() -> anyhow::Result<FlushGuard> {
-    let meili_uri = std::env::var("MEILI_URI").unwrap_or("http://localhost:7700".to_owned());
 
     let me = Self {
-      meili_uri,
+      meili_uri: meilisearch_uri(),
       buffered: Mutex::new(vec![])
     };
 
