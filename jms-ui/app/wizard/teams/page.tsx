@@ -2,7 +2,7 @@
 
 import BufferedFormControl, { BufferedProps } from "@/app/components/BufferedFormControl";
 import EditableFormControl from "@/app/components/EditableFormControl";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { useWebsocket } from "@/app/support/ws-component";
 import { Team, TeamUpdate, WebsocketRpcRequest } from "@/app/ws-schema";
@@ -31,7 +31,7 @@ export default withPermission(["ManageTeams"], function EventWizardTeams() {
   });
   const [ fetching, setFetching ] = useState(false);
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
   
   useEffect(() => {
     let cb = subscribe<"team/teams">("team/teams", setTeams);

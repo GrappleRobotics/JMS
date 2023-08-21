@@ -4,7 +4,7 @@ import { Alliance, AllianceStation, EndgameType, Match, MatchScoreSnapshot, Scor
 import React, { useEffect, useState } from "react";
 import { RefereePanelFouls } from "../../referee";
 import { useWebsocket } from "@/app/support/ws-component";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { Button, Col, Row } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
@@ -19,7 +19,7 @@ export default withPermission(["Scoring"], function RefereePanel({ params }: { p
   const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null)
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
   
   useEffect(() => {
     let cbs = [

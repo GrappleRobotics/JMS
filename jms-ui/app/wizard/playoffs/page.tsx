@@ -2,7 +2,7 @@
 import { withConfirm } from "@/app/components/Confirm";
 import PlayoffBracketGraph from "@/app/components/playoff-graphs/PlayoffBracket";
 import MatchSchedule from "@/app/match_schedule";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Match, PlayoffMode, Team } from "@/app/ws-schema";
@@ -19,7 +19,7 @@ export default withPermission(["ManagePlayoffs"], function EventWizardPlayoffs()
   const [ playoffMode, setPlayoffMode ] = useState<PlayoffMode>();
   const [ teams, setTeams ] = useState<Team[]>([]);
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     const cb = [

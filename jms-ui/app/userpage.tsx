@@ -3,10 +3,10 @@ import { useWebsocket } from "./support/ws-component";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
-import { Alert, Button, Col, Container, Nav, Navbar, Row } from "react-bootstrap";
+import { Alert, Button, Col, Container, Nav, Navbar, Row, Toast, ToastContainer } from "react-bootstrap";
 import "./userpage.scss";
 import Link from "next/link";
-import { useErrors } from "./support/errors";
+import { useToasts } from "./support/errors";
 import { ArenaState, JmsComponent, Match, SerialisedLoadedMatch } from "./ws-schema";
 import { PermissionGate } from "./support/permissions";
 import confirmBool from "./components/Confirm";
@@ -22,13 +22,11 @@ interface UserPageProps {
 };
 
 export default function UserPage(props: UserPageProps) {
-  const { error, removeError } = useErrors();
+  const { toasts, removeToast } = useToasts();
   const topRef = useRef<HTMLElement>(null);
   const bottomRef = useRef<HTMLElement>(null);
 
   const [ viewportPos, setViewportPos ] = useState({ top_height: 0, bottom_top: 0 });
-
-  const alert = error !== null && <Alert className="m-3" variant="danger" dismissible onClose={() => removeError()}>{ error }</Alert>
 
   useEffect(() => {
     const ob = new ResizeObserver(() => {
@@ -42,6 +40,19 @@ export default function UserPage(props: UserPageProps) {
     return () => ob.disconnect();
   })
 
+  const inner = <React.Fragment>
+    { props.children }
+
+    <ToastContainer className="m-3" position="bottom-end">
+      {
+        toasts.map((t, i) => <Toast key={i} bg={t.variant} onClose={() => removeToast(i)}>
+          <Toast.Header> { t.title } <span className="me-auto"></span> </Toast.Header>
+          <Toast.Body> { t.message } </Toast.Body>
+        </Toast>)
+      }
+    </ToastContainer>
+  </React.Fragment>
+
   return <React.Fragment>
     <TopNavbar ref={topRef} />
     <div className="viewport" style={{
@@ -53,8 +64,8 @@ export default function UserPage(props: UserPageProps) {
     }}>
       {
         props.container ? 
-          <Container className={props.space ? "mt-3" : ""}> { alert } { props.children } </Container> 
-          : <React.Fragment> { alert } { props.children } </React.Fragment>
+          <Container className={props.space ? "mt-3" : ""}> { inner } </Container> 
+          : <React.Fragment> { inner } </React.Fragment>
       }
     </div>
     <BottomNavbar ref={bottomRef} />
@@ -74,7 +85,7 @@ const ARENA_STATE_MAP: { [k in ArenaState["state"]]: string } = {
 
 const TopNavbar = React.forwardRef<HTMLElement>(function TopNavbar(props: {}, ref) {
   const { user, connected, logout, subscribe, unsubscribe, call } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   const [ arenaState, setArenaState ] = useState<ArenaState>();
   const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null);

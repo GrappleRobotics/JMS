@@ -63,3 +63,11 @@
 .no-text-decoration {
   text-decoration: none;
 }
+
+@each $key, $color in $theme-colors {
+  .bg-#{$key} {
+    .toast-header {
+      background-color: desaturate(darken($color, 25%), 30%);
+    }
+  }
+}

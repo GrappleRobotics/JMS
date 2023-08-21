@@ -1,7 +1,7 @@
 "use client"
 import BufferedFormControl from "@/app/components/BufferedFormControl";
 import { withConfirm } from "@/app/components/Confirm";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Award, AwardRecipient } from "@/app/ws-schema";
@@ -18,7 +18,7 @@ export default withPermission(["ManageAwards"], function EventWizardAwards() {
   let [ awards, setAwards ] = useState<Award[]>([]);
   
   const { subscribe, unsubscribe, call } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     let cb = [

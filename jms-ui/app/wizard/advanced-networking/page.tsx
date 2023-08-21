@@ -2,7 +2,7 @@
 
 import BufferedFormControl from "@/app/components/BufferedFormControl";
 import EnumToggleGroup from "@/app/components/EnumToggleGroup";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
@@ -16,7 +16,7 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
   const [ components, setComponents ] = useState<[string, JmsComponent[]]>(["", []]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     call<"networking/settings">("networking/settings", null)

@@ -1,6 +1,6 @@
 "use client"
 import BufferedFormControl from "@/app/components/BufferedFormControl";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
 import { JmsComponent, TBASettings } from "@/app/ws-schema";
@@ -14,7 +14,7 @@ export default function TBAIntegration() {
   const [ components, setComponents ] = useState<[string, JmsComponent[]]>(["", []]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     call<"tba/get_settings">("tba/get_settings", null)

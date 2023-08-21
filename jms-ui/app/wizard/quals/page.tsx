@@ -9,7 +9,7 @@ import React, { useEffect, useState } from "react";
 import { Button, InputGroup } from "react-bootstrap";
 import update from "immutability-helper";
 import JmsWebsocket from "@/app/support/ws";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import MatchSchedule from "@/app/match_schedule";
@@ -18,7 +18,7 @@ export default withPermission(["ManageSchedule"], function EventWizardQuals() {
   const [ matches, setMatches ] = useState<Match[]>([]);
   const [ generationInProgress, setGenerationInProgress ] = useState<boolean>(false);
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     const cb = [

@@ -2,7 +2,7 @@
 import BufferedFormControl from "@/app/components/BufferedFormControl";
 import { confirmModal } from "@/app/components/Confirm";
 import Paginate from "@/app/components/Paginate";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { nullIfEmpty } from "@/app/support/strings";
 import { withVal } from "@/app/support/util";
@@ -18,7 +18,7 @@ export default withPermission(["ManageAudience"], function AudienceDisplayContro
   const [ awards, setAwards ] = useState<Award[]>([]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     let cbs = [

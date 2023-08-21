@@ -1,7 +1,7 @@
 "use client"
 
 import BufferedFormControl from "@/app/components/BufferedFormControl";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
@@ -32,7 +32,7 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
   const [ playoffMode, setPlayoffMode ] = useState<PlayoffMode | null>(null);
   const [ awards, setAwards ] = useState<Award[]>([]);
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     call<"matches/get_playoff_mode">("matches/get_playoff_mode", null)

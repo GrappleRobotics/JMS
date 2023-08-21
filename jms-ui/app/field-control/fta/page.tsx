@@ -12,7 +12,7 @@ import _ from "lodash";
 import React, { useEffect, useState } from "react";
 import { Button, Card, Col, InputGroup, ListGroup, Row } from "react-bootstrap";
 import { capitalise } from "@/app/support/strings";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import update from "immutability-helper";
 import BufferedFormControl from "@/app/components/BufferedFormControl";
 import { MatchFlow } from "../match_flow";
@@ -36,7 +36,7 @@ export default withPermission(["FTA", "FTAA"], function FTAView() {
   const [ signboard, setSignboard ] = useState<string | null>(null);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     let cb = [

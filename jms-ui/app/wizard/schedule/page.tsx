@@ -10,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import moment from "moment";
 import { ScheduleBlock, ScheduleBlockType, ScheduleBlockUpdate } from "@/app/ws-schema";
 import { useWebsocket } from "@/app/support/ws-component";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import JmsWebsocket from "@/app/support/ws";
 import { DateSelectArg, EventApi, EventInput } from "@fullcalendar/core/index.js";
 import { confirmModal } from "@/app/components/Confirm";
@@ -54,7 +54,7 @@ export default withPermission(["ManageSchedule"], function EventWizardSchedule()
   const [ nTeams, setNTeams ] = useState<number>(0);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   const refresh = () => {
     call<"event/schedule_get">("event/schedule_get", null).then(setBlocks).catch(addError);

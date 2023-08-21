@@ -1,33 +1,45 @@
 import { useRouter } from "next/router";
 import React, { useCallback, useContext, useState } from "react";
+import update from "immutability-helper";
 
-export const ErrorContext = React.createContext<{ error: string | null, addError: (e: string) => void, removeError: () => void }>({
-  error: null,
+export interface Toast {
+  variant: string,
+  message: string,
+  title: string
+};
+
+export const ToastContext = React.createContext<{ toasts: Toast[], add: (variant: string, e: string, title?: string) => void, addError: (e: string, title?: string) => void, addWarning: (e: string, title?: string) => void, addInfo: (e: string, title?: string) => void, removeToast: (idx: number) => void }>({
+  toasts: [],
+  add: () => {},
   addError: () => {},
-  removeError: () => {}
+  addWarning: () => {},
+  addInfo: () => {},
+  removeToast: () => {}
 });
 
 export default function ErrorProvider({ children }: { children: React.ReactElement }) {
-  const [error, setError] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const removeError = () => setError(null);
-
-  const addError = (error: string) => setError(error);
+  const remove = (i: number) => setToasts(update(toasts, { $splice: [[i, 1]] }));
+  const add = (variant: string, e: string, title?: string) => setToasts(update(toasts, { $push: [{ title: title || "",  message: e, variant }]  }))
 
   const contextValue = {
-    error,
-    addError: useCallback((error: string) => addError(error), []),
-    removeError: useCallback(() => removeError(), [])
+    toasts,
+    add: useCallback((variant: string, e: string, title?: string) => add(variant, e, title), []),
+    addError: useCallback((e: string, title?: string) => add("danger", e, title), []),
+    addWarning: useCallback((e: string, title?: string) => add("warning", e, title), []),
+    addInfo: useCallback((e: string, title?: string) => add("primary", e, title), []),
+    removeToast: useCallback((i: number) => remove(i), [])
   };
 
   return (
-    <ErrorContext.Provider value={contextValue as any}>
+    <ToastContext.Provider value={contextValue as any}>
       {children}
-    </ErrorContext.Provider>
+    </ToastContext.Provider>
   );
 }
 
-export function useErrors() {
-  const { error, addError, removeError } = useContext(ErrorContext);
-  return { error, addError, removeError };
+export function useToasts() {
+  const { toasts, add, addError, addWarning, addInfo, removeToast } = useContext(ToastContext);
+  return { toasts, add, addError, addWarning, addInfo, removeToast };
 }

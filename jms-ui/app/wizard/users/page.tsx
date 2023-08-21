@@ -1,6 +1,6 @@
 "use client";
 import { confirmModal, withConfirm } from "@/app/components/Confirm";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { PERMISSIONS, withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Permission, User } from "@/app/ws-schema";
@@ -60,7 +60,7 @@ export default withPermission(["Admin"], function EventWizardUsers() {
   const [ users, setUsers ] = useState<User[]>([]);
   const { call } = useWebsocket();
 
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   const refreshUsers = () => {
     call<"user/users">("user/users", null).then(setUsers).catch(addError);

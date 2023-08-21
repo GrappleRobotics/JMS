@@ -1,5 +1,5 @@
 "use client"
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Alliance, CommittedMatchScores, DerivedScore, EndgameType, LiveScore, Match, MatchScore, MatchScoreSnapshot } from "@/app/ws-schema";
@@ -23,7 +23,7 @@ export default withPermission(["EditScores"], function EditScores() {
   const [ newScore, setNewScore ] = useState<MatchScore>();
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     let cbs = [
@@ -124,7 +124,7 @@ function EditScoresInner({ score, onUpdate, disabled, match }: { score: MatchSco
   const [ derivedScore, setDerivedScore ] = useState<MatchScoreSnapshot>();
   
   const { call } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     if (score !== undefined)

@@ -2,7 +2,7 @@
 import { Button } from "react-bootstrap";
 import UserPage from "../userpage";
 import { useWebsocket } from "../support/ws-component";
-import { useErrors } from "../support/errors";
+import { useToasts } from "../support/errors";
 import { MatchType, ReportData, WebsocketRpcRequest } from "../ws-schema";
 import React, { useState } from "react";
 import { PermissionGate } from "../support/permissions";
@@ -18,7 +18,7 @@ export default function Reports() {
   const [loading, setLoading] = useState<boolean>(false);
 
   const { call } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   const open = (report: ReportData) => {
     console.log("Report: ", report)

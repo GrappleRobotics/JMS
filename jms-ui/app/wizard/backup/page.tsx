@@ -1,6 +1,6 @@
 "use client"
 
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
 import { BackupSettings, BackupSettingsUpdate, JmsComponent } from "@/app/ws-schema";
@@ -17,7 +17,7 @@ export default withPermission(["FTA"], function EventWizardBackups() {
   const [ components, setComponents ] = useState<[string, JmsComponent[]]>(["", []]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     call<"backup/settings">("backup/settings", null)

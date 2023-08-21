@@ -4,11 +4,11 @@ import { Button, ButtonProps, Col, Row } from "react-bootstrap";
 import { ArenaSignal, ArenaState, SerialisedLoadedMatch } from "../ws-schema";
 import { withPermission } from "../support/permissions";
 import { useWebsocket } from "../support/ws-component";
-import { useErrors } from "../support/errors";
+import { useToasts } from "../support/errors";
 
 export function MatchFlow({ state, current_match }: { state: ArenaState, current_match: SerialisedLoadedMatch | null }) {
   const { call } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
   
   const signal = (signal: ArenaSignal) => {
     call<"arena/signal">("arena/signal", { signal })

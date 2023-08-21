@@ -2,7 +2,7 @@
 
 import BufferedFormControl from "@/app/components/BufferedFormControl";
 import MatchLogView from "@/app/match-logs/view";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { nullIfEmpty } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
@@ -16,7 +16,7 @@ import { Button, Card, Col, Row } from "react-bootstrap";
 
 export default withPermission(["Ticketing"], function CSATicket({ params }: { params: { id: string } }) {
   const { user, call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   const [ ticket, setTicket ] = useState<SupportTicket>();
   const [ teams, setTeams ] = useState<Team[]>([]);

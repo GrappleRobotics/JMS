@@ -1,6 +1,6 @@
 "use client"
 
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { withValU } from "@/app/support/util";
 import { useWebsocket } from "@/app/support/ws-component";
@@ -22,7 +22,7 @@ export default withPermission(["Scoring"], function ScorerPanel({ params }: { pa
   const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null)
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
   
   useEffect(() => {
     let cbs = [

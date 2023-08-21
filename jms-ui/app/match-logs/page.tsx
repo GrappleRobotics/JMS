@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Match, MatchLog, Team } from "../ws-schema";
 import { useWebsocket } from "../support/ws-component";
 import { Alert, Button, Col, Form, Row } from "react-bootstrap";
-import { useErrors } from "../support/errors";
+import { useToasts } from "../support/errors";
 import MatchLogView from "./view";
 
 export default function MatchLogsIndex() {

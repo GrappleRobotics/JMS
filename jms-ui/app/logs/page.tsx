@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { withPermission } from "../support/permissions";
 import { LogRecord } from "../ws-schema";
 import { useWebsocket } from "../support/ws-component";
-import { useErrors } from "../support/errors";
+import { useToasts } from "../support/errors";
 import moment from "moment";
 import update from "immutability-helper";
 
@@ -13,7 +13,7 @@ export default withPermission(["FTA"], function JMSLogsView() {
   const [ lastUpdate, setLastUpdate ] = useState<moment.Moment>(moment());
 
   const { call } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   const updateAllLogs = async() => {
     let theseLogs: LogRecord[] = [];

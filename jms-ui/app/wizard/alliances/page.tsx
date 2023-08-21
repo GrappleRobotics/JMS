@@ -1,7 +1,7 @@
 "use client"
 
 import { withConfirm } from "@/app/components/Confirm"
-import { useErrors } from "@/app/support/errors"
+import { useToasts } from "@/app/support/errors"
 import { withPermission } from "@/app/support/permissions"
 import { useWebsocket } from "@/app/support/ws-component"
 import { Match, PlayoffAlliance, Team, TeamRanking } from "@/app/ws-schema"
@@ -17,7 +17,7 @@ export default withPermission(["ManageAlliances"], function EventWizardAlliances
   const [ rankings, setRankings ] = useState<TeamRanking[]>([]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     let cbs = [

@@ -1,7 +1,7 @@
 "use client";
 import confirmBool from "@/app/components/Confirm";
 import "../../estop.scss";
-import { useErrors } from "@/app/support/errors";
+import { useToasts } from "@/app/support/errors";
 import { capitalise } from "@/app/support/strings";
 import { useWebsocket } from "@/app/support/ws-component";
 import { Alliance, AllianceStation, DriverStationReport } from "@/app/ws-schema";
@@ -16,7 +16,7 @@ export default function TeamEstop({ params }: { params: { alliance: Alliance, st
   const [ dsReports, setDsReports ] = useState<DriverStationReport[]>([]);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   useEffect(() => {
     let cbs = [

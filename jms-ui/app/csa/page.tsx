@@ -4,7 +4,7 @@ import { withPermission } from "../support/permissions";
 import { useWebsocket } from "../support/ws-component";
 import { Button, Col, ListGroup, Row } from "react-bootstrap";
 import { Match, SupportTicket, Team } from "../ws-schema";
-import { useErrors } from "../support/errors";
+import { useToasts } from "../support/errors";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import JmsWebsocket from "../support/ws";
@@ -14,7 +14,7 @@ import { newTicketModal } from "./tickets";
 
 export default withPermission(["Ticketing"], function CSAView() {
   const { user, call, subscribe, unsubscribe } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   const [ teams, setTeams ] = useState<Team[]>([]);
   const [ matches, setMatches ] = useState<Match[]>([]);

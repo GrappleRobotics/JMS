@@ -1,7 +1,7 @@
 "use client"
 import React, { useEffect, useState } from "react";
 import { useWebsocket } from "../support/ws-component";
-import { useErrors } from "../support/errors";
+import { useToasts } from "../support/errors";
 import { Match, PlayoffMode, Team, TeamRanking } from "@/app/ws-schema";
 import { Col, Row, Table } from "react-bootstrap";
 import { Element, scroller } from "react-scroll";

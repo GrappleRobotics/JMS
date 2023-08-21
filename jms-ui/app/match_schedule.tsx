@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { withConfirm } from "./components/Confirm";
 import { useWebsocket } from "./support/ws-component";
-import { useErrors } from "./support/errors";
+import { useToasts } from "./support/errors";
 
 interface MatchScheduleProps {
   matches: Match[],
@@ -21,7 +21,7 @@ interface MatchScheduleProps {
 
 export default function MatchSchedule({ matches, currentMatch, canLoad, isLoadDisabled, canDelete, filter, teams }: MatchScheduleProps) {
   const { call } = useWebsocket();
-  const { addError } = useErrors();
+  const { addError } = useToasts();
 
   return <React.Fragment>
     {

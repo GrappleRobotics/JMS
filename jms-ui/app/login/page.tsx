@@ -6,12 +6,12 @@ import { AppRouterInstance } from "next/dist/shared/lib/app-router-context";
 import React, { useState } from "react";
 import { Alert, Button, Card, Form, InputGroup } from "react-bootstrap";
 import "./login.scss";
-import { useErrors } from "../support/errors";
+import { useToasts } from "../support/errors";
 
 export default function LoginPage() {
   const router = useRouter();
   const { user, login } = useWebsocket();
-  const errorCtx = useErrors();
+  const errorCtx = useToasts();
 
   const [username, setUsername] = useState("");
   const [pin, setPin] = useState("");
