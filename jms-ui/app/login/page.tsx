@@ -48,7 +48,7 @@ export default function LoginPage() {
           style={{ width: '100%' }}
           onClick={() => {
             login(username, pin)
-              .then(() => { router.push("/"); errorCtx.removeError() })
+              .then(() => { router.push("/") })
               .catch(e => { setError(e); errorCtx.addError(e as string); })
           }}
         >
