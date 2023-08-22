@@ -262,7 +262,7 @@ async function editStationModal(station: AllianceStation, match_id: string | und
           {
             tickets.map(ticket => <Link className="no-text-decoration" key={ticket.id} href={`/csa/${ticket.id}`}>
               <Row className="fta-ticket">
-                <Col md={2}>
+                <Col md={2} style={{ minWidth: '7.5em', padding: 0 }}>
                   <strong>{ ticket.resolved && <FontAwesomeIcon className="text-success" icon={faCheck} /> }&nbsp; { ticket.issue_type } </strong>
                 </Col>
                 <Col>
@@ -270,7 +270,7 @@ async function editStationModal(station: AllianceStation, match_id: string | und
                     key={i}
                     className="fta-ticket-note text-white mb-0"
                   >
-                    <Col md={3} className="text-muted"> { moment(note.time).fromNow() } </Col>
+                    <Col md={3} className="text-muted" style={{ minWidth: '10em' }}> { moment(note.time).fromNow() } </Col>
                     <Col> { note.comment } </Col>
                   </Row>) }
                 </Col>

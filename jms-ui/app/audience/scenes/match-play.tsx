@@ -32,7 +32,7 @@ export default function MatchPlayScene({ eventDetails, currentMatch, matches, te
         playSound("MatchStop");
       } else if (currentMatch.state === "Teleop") {
         playSound("TeleopStart");
-      } else if (currentMatch.state === "Complete") {
+      } else if (currentMatch.state === "Cooldown") {
         playSound("MatchStop");
       }
     }

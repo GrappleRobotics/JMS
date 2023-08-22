@@ -181,6 +181,7 @@ const BottomNavbar = React.forwardRef<HTMLElement>(function BottomNavbar(props: 
       { rendered_time }
     </Col>
     <Col>
+      <Button className="float-end" size="sm" variant="warning" onClick={() => window.location.reload()}>REFRESH</Button>
     </Col>
   </Row>
 })

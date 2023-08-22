@@ -109,8 +109,8 @@
   margin-top: 2em;
 
   .scorer-community-col {
-    width: 10em;
-    height: 10em;
+    width: 7em;
+    height: 7em;
     border: 2px solid $gray-500;
 
     @each $alliance in $alliances {
@@ -131,21 +131,21 @@
     padding: 0;
 
     .scorer-gamepiece {
-      margin: 2em;
+      margin: 1em;
       &[data-gamepiece="None"] {
         visibility: hidden;
       }
       &[data-gamepiece="Cube"] {
-        width: 6em;
-        height: 6em;
+        width: 5em;
+        height: 5em;
         background-color: theme-color("purple");
       }
       &[data-gamepiece="Cone"] {
-        margin-top: -1vw;
+        margin-top: -1.75em;
         height: 0;
         width: 0;
-        border: 3em solid transparent;
-        border-bottom: 6em solid theme-color("yellow");
+        border: 2.5em solid transparent;
+        border-bottom: 5em solid theme-color("yellow");
       }
     }
   }

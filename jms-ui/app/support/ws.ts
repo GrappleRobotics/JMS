@@ -31,6 +31,7 @@ export default class JmsWebsocket {
   on_login: Map<string, (token: User | null) => void>;
   user: User | null;
   send_queue: object[];
+  ping_timeout?: NodeJS.Timeout | null;
 
   constructor(timeout=250) {
     this.timeout = timeout;
@@ -40,6 +41,7 @@ export default class JmsWebsocket {
     this.on_login = new Map();
     this.user = null;
     this.send_queue = [];
+    this.ping_timeout = null;
 
     this.connect = this.connect.bind(this);
     this.dead = this.dead.bind(this);
@@ -122,6 +124,18 @@ export default class JmsWebsocket {
     ws.onmessage = msg => {
       let meta = JSON.parse(msg.data);
       let data = meta.data;
+
+      if (this.ping_timeout) {
+        clearTimeout(this.ping_timeout);
+      }
+      
+      this.ping_timeout = setTimeout(() => {
+        this.connectCallbacks.forEach(cb => cb(false));
+        this.user = null;
+        this.on_login.forEach(cb => cb(null));
+        this.ws = undefined;
+        this.tryReconnect(url);
+      }, 1000);
 
       if (meta.replying_to != null) {
         // Reconcile Reply
