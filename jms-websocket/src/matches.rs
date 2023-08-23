@@ -1,4 +1,4 @@
-use jms_core_lib::{models::{Match, MaybeToken, Permission, PlayoffMode, CommittedMatchScores, TeamRanking}, db::{Table, Singleton}, schedule::generators::{QualsMatchGeneratorParams, MatchGeneratorRPCClient, MATCH_GENERATOR_JOB_KEY}};
+use jms_core_lib::{models::{Match, MaybeToken, Permission, PlayoffMode, CommittedMatchScores, TeamRanking, MatchType}, db::{Table, Singleton}, schedule::generators::{QualsMatchGeneratorParams, MatchGeneratorRPCClient, MATCH_GENERATOR_JOB_KEY}};
 
 use crate::ws::WebsocketContext;
 
@@ -13,7 +13,7 @@ pub trait MatchesWebsocket {
 
   #[publish]
   async fn next(&self, ctx: &WebsocketContext) -> anyhow::Result<Option<Match>> {
-    Ok(Match::sorted(&ctx.kv)?.into_iter().find(|m| !m.played))
+    Ok(Match::sorted(&ctx.kv)?.into_iter().find(|m| m.match_type != MatchType::Test && !m.played))
   }
 
   #[publish]

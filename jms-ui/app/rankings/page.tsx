@@ -54,7 +54,7 @@ export default function TeamRankings() {
       subscribe<"team/teams">("team/teams", setTeams)
     ];
     refreshPlayoffMode();
-    scrollDown();
+    // scrollDown();
     return () => unsubscribe(cbs);
   }, []);
 
