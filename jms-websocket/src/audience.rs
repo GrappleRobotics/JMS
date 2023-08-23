@@ -8,6 +8,7 @@ pub trait AudienceWebsocket {
   #[publish]
   async fn current(&self, ctx: &WebsocketContext) -> anyhow::Result<AudienceDisplay> {
     let ad = AudienceDisplay::get(&ctx.kv)?;
+    // TODO: This doesn't work when using multiple websocket instances :( Need to keep track of sound
     let mut ad2 = ad.clone();
     ad2.take_sound(&ctx.kv)?;
     Ok(ad)

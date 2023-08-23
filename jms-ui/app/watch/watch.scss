@@ -1,0 +1,164 @@
+@import "../variables.scss";
+
+.fta-watch-root {
+  &[data-arena-state="Estop"] {
+    @include hazard-active(theme-color("hazard-red"));
+  }
+
+  &[data-arena-ready="false"] {
+    background-color: darken(desaturate(theme-color("bad"), 30%), 40%);
+  }
+  &[data-arena-ready="true"] {
+    background-color: darken(desaturate(theme-color("good"), 30%), 30%);
+  }
+}
+
+.fta-watch {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fta-watch-headline {
+  font-size: 20vw;
+  font-weight: bold;
+}
+
+.fta-watch-time {
+  position: absolute;
+  font-size: 10vw;
+  bottom: 77vh;
+  left: 0;
+  color: $gray-300;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fta-watch-match-timing {
+  position: absolute;
+  font-size: 8vw;
+  top: 77vh;
+  left: 0;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fta-watch-team-issues {
+  font-weight: bold;
+  height: 50vh;
+  width: 100vw;
+
+  .fta-watch-team-issue {
+    font-size: 0.5em;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    height: 25vh;
+    margin: 0;
+
+    border: 2px solid #555;
+
+    .fta-watch-team {
+      font-size: 8vh;
+      padding: 0;
+
+      transform: translate(-50%, 0%);
+      left: 50%;
+      position: absolute;
+    }
+
+    .fta-watch-diagnosis {
+      font-size: 5vh;
+
+      transform: translate(-50%, 0%);
+      left: 50%;
+      position: absolute;
+    }
+
+    &[data-ok=true] {
+      color: theme-color("good");
+
+      .fta-watch-diagnosis {
+        font-size: 10vh;
+      }
+    }
+
+    &[data-ok=false] {
+      color: theme-color("bad");
+    }
+
+    &[data-bypass=true] {
+      background-color: $gray-900 !important;
+      .fta-watch-team {
+        color: $gray-600;
+      }
+      .fta-watch-diagnosis {
+        color: $gray-600;
+      }
+    }
+
+    &[data-estop=true] {
+      @include hazard-active(theme-color("hazard-red"));
+    }
+
+    &[data-astop=true] {
+      @include hazard-active(theme-color("hazard-yellow"));
+    }
+
+    &[data-alliance="blue"] {
+      top: 50vh;
+      transform: translate(0%, -100%);
+      .fta-watch-team {
+        bottom: 0;
+      }
+      .fta-watch-diagnosis {
+        bottom: 10vh;
+      }
+    }
+
+    &[data-alliance="red"] {
+      top: 50vh;
+      .fta-watch-diagnosis {
+        top: 10vh;
+      }
+    }
+
+    &[data-station="1"] {
+      left: 0;
+      width: 35%;
+    }
+
+    &[data-station="2"] {
+      left: 35%;
+      width: 30%;
+    }
+
+    &[data-station="3"] {
+      left: 65%;
+      width: 35%;
+    }
+
+    @each $alliance in $alliances {
+      $tc: theme-color($alliance);
+      &[data-alliance=#{$alliance}] {
+        background-color: desaturate(darken($tc, 45%), 25%);
+      }
+    }
+
+  }
+}
+
+.fta-watch-actions {
+  .btn {
+    margin-top: 5vh;
+    font-size: 10vw;
+    display: block;
+    width: 70vw;
+  }
+}

@@ -169,7 +169,7 @@ function FTAAllianceStation({ station, report, match_id, call, addError, teams }
   </Col>
 }
 
-function ftaDiagnosis(station: AllianceStation, report: DriverStationReport | null) {
+export function ftaDiagnosis(station: AllianceStation, report: DriverStationReport | null) {
   if (station.bypass) return "BYP";
   if (station.astop) return "ASTOP";
   if (station.estop) return "ESTOP";
