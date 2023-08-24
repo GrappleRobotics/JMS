@@ -16,3 +16,8 @@ impl Default for TBASettings {
 impl Singleton for TBASettings {
   const KEY: &'static str = "db:tba";
 }
+
+#[jms_macros::service]
+pub trait TBARPC {
+  async fn update_now() -> Result<(), String>;
+}

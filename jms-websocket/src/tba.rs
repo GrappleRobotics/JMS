@@ -1,5 +1,5 @@
 use jms_core_lib::{models::{MaybeToken, Permission}, db::Singleton};
-use jms_tba_lib::{TBASettings, TBASettingsUpdate};
+use jms_tba_lib::{TBASettings, TBASettingsUpdate, TBARPC, TBARPCClient};
 
 use crate::ws::WebsocketContext;
 
@@ -17,5 +17,12 @@ pub trait TBAWebsocket {
     update.apply(&mut settings);
     settings.update(&ctx.kv)?;
     Ok(settings)
+  }
+
+  #[endpoint]
+  async fn update_now(&self, ctx: &WebsocketContext, token: &MaybeToken) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA])?;
+    TBARPCClient::update_now(&ctx.mq).await?.map_err(|e| anyhow::anyhow!(e))?;
+    Ok(())
   }
 }

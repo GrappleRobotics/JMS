@@ -12,9 +12,10 @@ pub enum TBAPlayoffType {
   Bracket4 = 2,
   AvgScore8 = 3,
   RoundRobin6 = 4,
-  DoubleElim8 = 5,
+  LegacyDoubleElim8 = 5,
   BestOf5FinalOnly = 6,
   BestOf3FinalOnly = 7,
+  DoubleElim8 = 10,
   Custom = 8
 }
 

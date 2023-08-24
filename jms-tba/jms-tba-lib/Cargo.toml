@@ -6,9 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.75"
+async-trait = "0.1.73"
 chrono = "0.4.26"
 jms-base = { path = "../../jms-base" }
 jms-core-lib = { path = "../../jms-core/jms-core-lib" }
 jms-macros = { path = "../../jms-macros" }
+log = "0.4.20"
 schemars = "0.8.12"
 serde = "1.0.183"

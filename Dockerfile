@@ -2,7 +2,7 @@
 # debian images instead.
 FROM rust:slim-buster AS chef
 WORKDIR /app
-RUN apt-get update && apt-get install --yes build-essential libssl-dev libssh2-1-dev pkg-config
+RUN apt-get update && apt-get install --yes build-essential libssl-dev libssh2-1-dev pkg-config ca-certificates
 RUN cargo install cargo-chef --locked
 
 # Prepare Recipe
@@ -23,7 +23,7 @@ RUN cargo run --bin jms-websocket --release -- gen-schema -f schema.json
 
 # Create JMS runtime environment
 FROM debian:buster-slim as rust_runtime
-RUN apt-get update && apt-get install --yes libssl-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --yes libssl-dev ca-certificates && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/jms-* /usr/local/bin
 # The UI image is built off this image, and needs access to the schema, so we copy it into the final image. 
 COPY --from=builder /app/schema.json /jms/schema.json
