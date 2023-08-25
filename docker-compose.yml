@@ -37,7 +37,7 @@ services:
     - REDIS_URI=redis://redis:6379/0
     - RABBITMQ_URI=amqp://rabbitmq:5672/%2f
     - MEILI_URI=http://meilisearch:7700
-    # - DS_ELECTRONICS=true
+    - DS_ELECTRONICS=true
     depends_on:
     - jms-arena
     devices:
