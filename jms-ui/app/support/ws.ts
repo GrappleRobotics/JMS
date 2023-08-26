@@ -135,7 +135,7 @@ export default class JmsWebsocket {
         this.on_login.forEach(cb => cb(null));
         this.ws = undefined;
         this.tryReconnect(url);
-      }, 1000);
+      }, 2000);
 
       if (meta.replying_to != null) {
         // Reconcile Reply

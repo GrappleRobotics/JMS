@@ -105,7 +105,7 @@ impl TeamRanking {
 }
 
 fn cmp_f64(a: f64, b: f64) -> std::cmp::Ordering {
-  if (a - b).abs() <= 1e-10 {
+  if (a - b).abs() <= 1e-6 {
     std::cmp::Ordering::Equal
   } else {
     b.partial_cmp(&a).unwrap_or(std::cmp::Ordering::Equal)

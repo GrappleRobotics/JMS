@@ -254,5 +254,33 @@ function YearSpecificAllianceScoreEdit({ alliance, live, derived, onUpdate, disa
         </Col>)
       }
     </Row>
+
+    <Row className="mt-2">
+      <Col>
+        <Button className="btn-block" variant={live.sustainability_adjust ? "success" : "danger"} onClick={() => onUpdate({ sustainability_adjust: { $set: !live.sustainability_adjust } })} disabled={disabled}>
+          SUSTAIN. OVRD { live.sustainability_adjust ? "TRUE" : "FALSE" }
+        </Button>
+      </Col>
+      <Col>
+        <Button className="btn-block" variant={live.activation_adjust ? "success" : "danger"} onClick={() => onUpdate({ activation_adjust: { $set: !live.activation_adjust } })} disabled={disabled}>
+          ACTIV. OVRD { live.activation_adjust ? "TRUE" : "FALSE" }
+        </Button>
+      </Col>
+    </Row>
+
+    <Row className="mt-2">
+      <Col>
+        <InputGroup>
+          <InputGroup.Text>ADJUSTMENT</InputGroup.Text>
+          <BufferedFormControl
+            auto
+            type="number"
+            disabled={disabled}
+            value={live.adjustment}
+            onUpdate={v => onUpdate({ adjustment: { $set: (v as number || 0) } })}
+          />
+        </InputGroup>
+      </Col>
+    </Row>
   </React.Fragment>
 }

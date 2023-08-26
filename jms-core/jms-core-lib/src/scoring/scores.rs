@@ -62,6 +62,9 @@ pub struct LiveScore {
   pub charge_station_level: ModeScore<bool>,
   pub endgame: Vec<EndgameType>,
   pub penalties: Penalties,
+  pub adjustment: usize,
+  pub sustainability_adjust: bool,
+  pub activation_adjust: bool
 }
 
 impl Default for LiveScore {
@@ -236,6 +239,9 @@ impl LiveScore {
         fouls: 0,
         tech_fouls: 0,
       },
+      activation_adjust: false,
+      sustainability_adjust: false,
+      adjustment: 0
     }
   }
 
@@ -243,7 +249,7 @@ impl LiveScore {
     let penalty_points = other_alliance.penalty_points_other_alliance();
     let mode_score = self.mode_score();
 
-    let total_score = mode_score.total() as usize + penalty_points;
+    let total_score = mode_score.total() as usize + penalty_points + self.adjustment;
     let other_total_score = other_alliance.mode_score().total() as usize + self.penalty_points_other_alliance();
 
     let (win_status, win_rp) = match (total_score, other_total_score) {
@@ -377,7 +383,10 @@ impl LiveScore {
       while col < occupancy_grid[row].len() {
         if occupancy_grid[row][col] {
           count += 1;
+        } else {
+          count = 0;
         }
+        
         if count == 3 {
           count = 0;
           // n_links += 1;
@@ -419,11 +428,11 @@ impl LiveScore {
   }
 
   fn sustainability_rp(&self, other_alliance: &Self) -> bool {
-    self.links().len() as isize >= self.sustainability_threshold(other_alliance) as isize
+    (self.links().len() as isize >= self.sustainability_threshold(other_alliance) as isize) || self.sustainability_adjust
   }
   
   fn activation_rp(&self) -> bool {
-    (self.auto_docked_points() + self.endgame_points(false)) >= 26
+    ((self.auto_docked_points() + self.endgame_points(false)) >= 26) || self.activation_adjust
   }
 
   fn endgame_points(&self, allow_parked: bool) -> isize {
@@ -503,6 +512,9 @@ impl LiveScore {
         fouls: rng.gen_range(0..=4),
         tech_fouls: rng.gen_range(0..=2)
       },
+      sustainability_adjust: false,
+      activation_adjust: false,
+      adjustment: 0
     }
   }
 }

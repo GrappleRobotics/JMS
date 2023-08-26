@@ -7,6 +7,8 @@ x-jms-base: &jms-base
   - REDIS_URI=redis://redis:6379/0
   - RABBITMQ_URI=amqp://rabbitmq:5672/%2f
   - MEILI_URI=http://meilisearch:7700
+  volumes:
+  - /etc/localtime:/etc/localtime:ro
   depends_on:
     redis:
       condition: service_healthy
