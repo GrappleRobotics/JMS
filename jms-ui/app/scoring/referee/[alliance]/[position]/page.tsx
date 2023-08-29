@@ -16,7 +16,7 @@ export default withPermission(["Scoring"], function RefereePanel({ params }: { p
   const [ score, setScore ] = useState<MatchScoreSnapshot>();
   const [ matches, setMatches ] = useState<Match[]>([]);
   const [ stations, setStations ] = useState<AllianceStation[]>([]);
-  const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null)
+  const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null);
 
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useToasts();

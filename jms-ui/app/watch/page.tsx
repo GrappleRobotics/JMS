@@ -82,13 +82,13 @@ export default withPermission(["FTA"], function FTASmartWatch() {
           arenaState.state === "Estop" ? <div className="fta-watch-headline"> ESTOP </div>
             : <React.Fragment>
                 <div className="fta-watch-time">
-                  { now.format("HH:MM:ss") }
+                  { now.format("HH:mm:ss") }
                 </div>
                 <div className="fta-watch-team-issues">
                   {
-                    _.zip(allianceStations, diagnoses).map(([stn, diag], i) => <div key={i} className="fta-watch-team-issue" data-ok={stn!.team === 9191} data-bypass={stn!.bypass} data-estop={stn!.estop} data-astop={stn!.astop} data-alliance={stn!.id.alliance} data-station={stn!.id.station}>
+                    _.zip(allianceStations, diagnoses).map(([stn, diag], i) => <div key={i} className="fta-watch-team-issue" data-ok={diag === null} data-bypass={stn!.bypass} data-estop={stn!.estop} data-astop={stn!.astop} data-alliance={stn!.id.alliance} data-station={stn!.id.station}>
                       <div className="fta-watch-team"> { stn!.team || "----" } </div>
-                      <div className="fta-watch-diagnosis"> { stn!.team === 9191 ? "OK" : (diag || "OK") } </div>
+                      <div className="fta-watch-diagnosis"> { diag === null ? "OK" : (diag || "OK") } </div>
                     </div>)
                   }
                 </div>

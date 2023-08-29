@@ -180,8 +180,8 @@ impl From<Link> for TBALink {
 
 impl TBA2023ScoreBreakdown {
   pub fn yes_no(b: Option<&bool>) -> &'static str {
-    if b == Some(&true) { "yes" }
-    else { "no" }
+    if b == Some(&true) { "Yes" }
+    else { "No" }
   }
 
   pub fn endgame_map(egt: Option<&EndgameType>) -> &'static str {
@@ -203,9 +203,9 @@ impl TBA2023ScoreBreakdown {
       }).collect();
 
       map.insert(match row_i {
-        0 => "Bottom",
-        1 => "Mid",
-        _ => "Top"
+        0 => "B",
+        1 => "M",
+        _ => "T"
       }, v);
     }
 
@@ -217,6 +217,15 @@ impl From<SnapshotScore> for TBA2023ScoreBreakdown {
   fn from(score: SnapshotScore) -> Self {
     let live = score.live;
     let derived = score.derived;
+
+    let mut teleop_community = live.community.auto.clone();
+    for (i, row) in live.community.teleop.iter().enumerate() {
+      for (j, col) in row.iter().enumerate() {
+        if *col != GamepieceType::None {
+          teleop_community[i][j] = *col;
+        }
+      }
+    }
 
     Self {
       mobilityRobot1: Self::yes_no(live.mobility.get(0)),
@@ -232,7 +241,7 @@ impl From<SnapshotScore> for TBA2023ScoreBreakdown {
       autoGamePiecePoints: derived.community_points.auto,
       autoPoints: derived.mode_score.auto,
       teleopGamePieceCount: live.community.teleop.iter().flat_map(|x| x).filter(|gp| *gp != &GamepieceType::None).count() as isize,
-      teleopCommunity: Self::convert_community(live.community.teleop),
+      teleopCommunity: Self::convert_community(teleop_community),
       teleopGamePiecePoints: derived.community_points.teleop,
       links: derived.links.into_iter().map(|x| x.into()).collect(),
       linkPoints: derived.link_points,
