@@ -1,0 +1,17 @@
+jms-master:
+  hosts:
+    jms-a.jms.local:
+      vars:
+        ansible_host: 10.0.100.10
+jms-slaves:
+  hosts:
+    jms-b.jms.local:
+      vars:
+        ansible_host: 10.0.100.11
+jms:
+  children:
+    jms-master:
+    jms-slaves:
+  vars:
+    ansible_user: root
+    ansible_password: jmsR0cks
