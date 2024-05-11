@@ -104,3 +104,9 @@
   nat/add chain=srcnat out-interface="vlan-uplink" action="masquerade" comment="#jms-uplink"
 
 /ip/dns set allow-remote-requests=yes
+
+/ip/dns/static
+  remove [find name~".*jms.local"]
+  add address=10.0.100.5 name=jms.local type=A
+  add address=10.0.100.10 name=jms-master.jms.local type=A
+  add address=10.0.100.11 name=jms-slave.jms.local type=A
