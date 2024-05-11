@@ -1,5 +1,5 @@
 /interface
-  set ether1 comment="#jms-dmz-uplink"
+  set ether1 comment="#jms-uplink"
   set ether2 comment="#jms-admin"
   set ether3 comment="#jms-server-primary"
   set ether4 comment="#jms-server-secondary"
@@ -52,7 +52,7 @@
   :global trunks ("bridge-trunk", [:toarray [/interface/ethernet/find where comment~"#jms-trunk" or comment~"#jms-server"]])
 
   add bridge=bridge-trunk vlan-ids=100 comment="#jms-admin" untagged=[/interface/ethernet/find where comment~"#jms-admin" or comment~"#jms-trunk" or comment~"#jms-server"] tagged="bridge-trunk"
-  add bridge=bridge-trunk vlan-ids=99 comment="#jms-dmz" untagged=[/interface/ethernet/find where comment~"#jms-dmz"] tagged="$trunks"
+  add bridge=bridge-trunk vlan-ids=99 comment="#jms-uplink" untagged=[/interface/ethernet/find where comment~"#jms-uplink"] tagged="$trunks"
   add bridge=bridge-trunk vlan-ids=98 comment="#jms-imaging" untagged=[/interface/ethernet/find where comment~"#jms-imaging"] tagged="$trunks"
 
   :foreach name,vlan in=$teamvlans do={
@@ -61,7 +61,7 @@
 
 /interface/bridge/port
   :foreach iface in=[/interface/ethernet/find where comment~"#jms-admin" or comment~"#jms-trunk" or comment~"#jms-server"] do={ set pvid=100 [find interface=[/interface/ethernet/get $iface name]] }
-  :foreach iface in=[/interface/ethernet/find where comment~"#jms-dmz"] do={ set pvid=99 [find interface=[/interface/ethernet/get $iface name]] }
+  :foreach iface in=[/interface/ethernet/find where comment~"#jms-uplink"] do={ set pvid=99 [find interface=[/interface/ethernet/get $iface name]] }
   :foreach iface in=[/interface/ethernet/find where comment~"#jms-imaging"] do={ set pvid=98 [find interface=[/interface/ethernet/get $iface name]] }
 
   :foreach name,vlan in=$teamvlans do={
@@ -71,7 +71,7 @@
 /interface/vlan
   remove [find comment~"#jms-.*"]
   add interface=[/interface/bridge/find] vlan-id=100 comment="#jms-admin" name="vlan-admin"
-  add interface=[/interface/bridge/find] vlan-id=99 comment="#jms-dmz" name="vlan-dmz"
+  add interface=[/interface/bridge/find] vlan-id=99 comment="#jms-uplink" name="vlan-uplink"
   # No need to assign a VLAN to jms-imaging, since it's not routed
 
   :foreach name,vlan in=$teamvlans do={
@@ -86,7 +86,7 @@
 
 /ip/dhcp-client
   remove [find comment~"#jms-.*"]
-  add interface="vlan-dmz" comment="#jms-dmz"
+  add interface="vlan-uplink" comment="#jms-uplink"
 
 /ip/pool
   remove [find comment~"#jms-.*"]
@@ -101,6 +101,6 @@
 
 /ip/firewall
   nat/remove [find comment~"#jms-.*"]
-  nat/add chain=srcnat out-interface="vlan-dmz" action="masquerade" comment="#jms-dmz"
+  nat/add chain=srcnat out-interface="vlan-uplink" action="masquerade" comment="#jms-uplink"
 
 /ip/dns set allow-remote-requests=yes
