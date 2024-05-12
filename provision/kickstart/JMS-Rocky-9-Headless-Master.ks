@@ -47,7 +47,7 @@ cat > /usr/local/bin/jms-provision.sh <<'EOF'
 
 set -e
 
-ln -s $(find /var/lib/rancher/rke2/data/ -name kubectl) /usr/local/bin/kubectl
+ln -s $(find /var/lib/rancher/rke2/data/ -name kubectl) /usr/local/bin/kubectl || true
 
 # Install Helm
 curl -L https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
@@ -80,7 +80,7 @@ EOF
 chown root:root /usr/local/bin/jms-provision.sh
 chmod u+rx /usr/local/bin/jms-provision.sh
 
-# Make it trigger at startup
+# Make it trigger at startup. Need restart as sometimes rke2 isn't ready yet.
 cat > /etc/systemd/system/jms-provision.service <<EOF
 [Unit]
 Description=JMS Provisioning Service
@@ -91,7 +91,8 @@ After=rke2-server.service
 
 [Service]
 ExecStart=/usr/local/bin/jms-provision.sh
-Restart=no
+Restart=on-failure
+RestartSec=30
 Type=oneshot
 RemainAfterExit=yes
 
