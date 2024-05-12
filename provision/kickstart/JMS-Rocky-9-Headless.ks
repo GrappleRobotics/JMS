@@ -81,6 +81,12 @@ chvt 6
 
 echo "PATH=\"/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin\"" > /etc/environment
 
+echo "[#] Installing Docker"
+dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+systemctl enable docker
+usermod -a -G docker fta
+
 echo "[#] Installing RKE2..."
 
 # Install RKE2

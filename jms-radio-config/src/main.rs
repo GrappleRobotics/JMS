@@ -140,7 +140,7 @@ async fn home_mode(args: &Args, iface: LinkMetadata) -> anyhow::Result<()> {
 }
 
 mod interactive {
-  use cursive::{views::{Dialog, TextView, LinearLayout, EditView, PaddedView}, view::{Resizable, Identifiable, Margins}, theme::{ColorStyle, Color, BaseColor}};
+  use cursive::{views::{Dialog, TextView, LinearLayout, EditView, PaddedView}, view::{Resizable, Margins, Nameable}, theme::{ColorStyle, Color, BaseColor}};
   use jms_util::{net, WPAKeys};
 
   use crate::imager::{image, ImagingProps};
