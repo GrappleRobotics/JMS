@@ -108,5 +108,6 @@
 /ip/dns/static
   remove [find name~".*jms.local"]
   add address=10.0.100.5 name=jms.local type=A
-  add address=10.0.100.10 name=jms-master.jms.local type=A
-  add address=10.0.100.11 name=jms-slave.jms.local type=A
+  add address=10.0.100.10 name=jms-primary.jms.local type=A
+  add address=10.0.100.11 name=jms-secondary.jms.local type=A
+  add address=10.0.100.12 name=jms-tertiary.jms.local type=A
