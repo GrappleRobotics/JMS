@@ -17,7 +17,7 @@ repo --name="extras" --baseurl=http://dl.rockylinux.org/pub/rocky/9/extras/$base
 
 zerombr
 clearpart --all --initlabel
-autopart
+autopart --nohome
 
 selinux --disabled
 
