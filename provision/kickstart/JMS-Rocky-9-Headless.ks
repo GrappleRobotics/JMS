@@ -69,6 +69,9 @@ exec < /dev/tty6 > /dev/tty6 2>&1
 chvt 6
 echo "JMS Type: $(cat /tmp/jms-type)"
 
+echo "[#] Extending Root Partition"
+lvextend $(find /dev/mapper -name "*-root") -l +100%FREE -r
+
 # Make the sysimage aware of the JMS type
 cp /tmp/jms-type /mnt/sysimage/etc/jms-type
 chvt 1
