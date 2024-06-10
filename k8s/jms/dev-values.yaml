@@ -1,0 +1,8 @@
+image: registry.gitlab.rise.jaci.au/jaci/jms/jms
+ui:
+  image: registry.gitlab.rise.jaci.au/jaci/jms/jms-ui
+
+imagePullPolicy: Always
+
+imagePullSecrets:
+- name: regcred

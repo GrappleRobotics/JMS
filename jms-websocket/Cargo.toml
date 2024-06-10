@@ -29,4 +29,3 @@ tokio = { version = "1.29.1", features = ["full"] }
 tokio-tungstenite = "0.19.0"
 uuid = { verison = "1.4.1", features = ["v4"] }
 gethostname = "0.4.3"
-meilisearch-sdk = "0.24.1"

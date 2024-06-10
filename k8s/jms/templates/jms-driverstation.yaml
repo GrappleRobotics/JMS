@@ -1,0 +1,4 @@
+{{- $subdict := dict "name" "driverstation" "valspec" .Values.driverstation -}}
+{{- $dict := merge $subdict . -}}
+
+{{ template "jms.statefulset" $dict }}

@@ -36,3 +36,5 @@ Cargo.lock
 
 *.sqlite
 *.db
+
+.kube

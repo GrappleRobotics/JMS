@@ -27,3 +27,6 @@ RUN apt-get update && apt-get install --yes libssl-dev ca-certificates && apt-ge
 COPY --from=builder /app/target/release/jms-* /usr/local/bin
 # The UI image is built off this image, and needs access to the schema, so we copy it into the final image. 
 COPY --from=builder /app/schema.json /jms/schema.json
+
+COPY docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]

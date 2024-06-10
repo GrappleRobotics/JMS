@@ -1,0 +1,4 @@
+{{- $subdict := dict "name" "ui" "valspec" .Values.ui -}}
+{{- $dict := merge $subdict . -}}
+
+{{ template "jms.deployment" $dict }}

@@ -51,9 +51,9 @@
   remove [find comment~"#jms-.*"]
   :global trunks ("bridge-trunk", [:toarray [/interface/ethernet/find where comment~"#jms-trunk" or comment~"#jms-server"]])
 
-  add bridge=bridge-trunk vlan-ids=100 comment="#jms-admin" untagged=[/interface/ethernet/find where comment~"#jms-admin" or comment~"#jms-trunk" or comment~"#jms-server"] tagged="bridge-trunk"
-  add bridge=bridge-trunk vlan-ids=99 comment="#jms-uplink" untagged=[/interface/ethernet/find where comment~"#jms-uplink"] tagged="$trunks"
-  add bridge=bridge-trunk vlan-ids=98 comment="#jms-imaging" untagged=[/interface/ethernet/find where comment~"#jms-imaging"] tagged="$trunks"
+  add bridge=bridge-trunk vlan-ids=100 comment="#jms-admin" tagged="bridge-trunk"
+  add bridge=bridge-trunk vlan-ids=99 comment="#jms-uplink" tagged="$trunks"
+  add bridge=bridge-trunk vlan-ids=98 comment="#jms-imaging" tagged="$trunks"
 
   :foreach name,vlan in=$teamvlans do={
     add bridge=bridge-trunk vlan-ids=$vlan comment="#$name" untagged=[/interface/ethernet/find where comment~"#$name"] tagged="$trunks"

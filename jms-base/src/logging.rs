@@ -31,22 +31,11 @@ impl Drop for FlushGuard {
   }
 }
 
-pub struct JMSLogger {
-  meili_uri: String,
-  buffered: Mutex<Vec<LogRecord>>,
-}
-
-pub fn meilisearch_uri() -> String {
-  std::env::var("MEILI_URI").unwrap_or("http://localhost:7700".to_owned())
-}
+pub struct JMSLogger { }
 
 impl JMSLogger {
   pub async fn init() -> anyhow::Result<FlushGuard> {
-
-    let me = Self {
-      meili_uri: meilisearch_uri(),
-      buffered: Mutex::new(vec![])
-    };
+    let me = Self {};
 
     log::set_boxed_logger(Box::new(me)).map(|()| log::set_max_level(log::LevelFilter::Info))?;
 
@@ -123,15 +112,7 @@ impl log::Log for JMSLogger {
       stdout.reset().ok();
       writeln!(&mut stdout).ok();
 
-      let mut flush = meta.level() <= Level::Warn;
-
-      if let Ok(mut v) = self.buffered.lock() {
-        v.push(log_record);
-
-        if v.len() > 10 {
-          flush = true;
-        }
-      }
+      let flush = meta.level() <= Level::Warn;
 
       if flush {
         self.flush();
@@ -139,26 +120,5 @@ impl log::Log for JMSLogger {
     }
   }
 
-  fn flush(&self) {
-    if let Ok(mut v) = self.buffered.lock() {
-
-      if v.len() > 0 {
-        let documents = serde_json::to_string(&v.drain(..).collect::<Vec<_>>());
-        let meili_uri = self.meili_uri.clone();
-        if let Ok(docs) = documents {
-          tokio::task::spawn(async move {
-            let c = reqwest::ClientBuilder::new().timeout(std::time::Duration::from_millis(100)).build();
-
-            if let Ok(c) = c {
-              c.post(format!("{}/indexes/logs/documents?primaryKey=id", meili_uri))
-                .header("Content-Type", "application/json")
-                .body(docs)
-                .send().await.ok();
-            }
-          });
-        }
-      }
-    }
-
-  }
+  fn flush(&self) { }
 }

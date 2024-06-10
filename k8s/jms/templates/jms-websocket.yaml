@@ -1,0 +1,4 @@
+{{- $subdict := dict "name" "websocket" "valspec" .Values.websocket -}}
+{{- $dict := merge $subdict . -}}
+
+{{ template "jms.deployment" $dict }}
