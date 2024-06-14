@@ -1,4 +1,4 @@
-{{- $subdict := dict "name" "matchlogs" "valspec" .Values.matchlogs -}}
+{{- $subdict := dict "name" "arena" "valspec" .Values.arena -}}
 {{- $dict := merge $subdict . -}}
 
 {{- if $dict.valspec.enabled -}}

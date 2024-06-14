@@ -26,4 +26,4 @@ COPY --from=builder /app/jms-ui/.next/static ./.next/static
 ENV PORT 3000
 ENV HOSTNAME localhost
 
-CMD [ "node", "server.js" ]
+CMD [ "node", "server.js", "--host=0.0.0.0" ]

@@ -3,8 +3,20 @@ tag: latest
 imagePullSecrets: {}
 imagePullPolicy: IFNotPresent
 
+arena:
+  command: [ "jms-arena" ]
+  enabled: true
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 50m
+    limits:
+      memory: 1024Mi
+      cpu: 1
+
 backup:
   command: [ "jms-backup" ]
+  enabled: true
   resources:
     requests:
       memory: 1024Mi
@@ -15,6 +27,7 @@ backup:
 
 core:
   command: [ "jms-core" ]
+  enabled: true
   resources:
     requests:
       memory: 256Mi
@@ -25,6 +38,7 @@ core:
 
 driverstation:
   command: [ "jms-driverstation" ]
+  enabled: true
   resources:
     requests:
       memory: 512Mi
@@ -35,6 +49,7 @@ driverstation:
 
 electronics:
   command: [ "jms-electronics" ]
+  enabled: true
   resources:
     requests:
       memory: 256Mi
@@ -45,6 +60,7 @@ electronics:
 
 matchlogs:
   command: [ "jms-match-logs" ]
+  enabled: true
   resources:
     requests:
       memory: 256Mi
@@ -55,6 +71,7 @@ matchlogs:
 
 networking:
   command: [ "jms-networking" ]
+  enabled: true
   resources:
     requests:
       memory: 256Mi
@@ -65,6 +82,7 @@ networking:
 
 tba:
   command: [ "jms-tba" ]
+  enabled: true
   resources:
     requests:
       memory: 256Mi
@@ -76,6 +94,7 @@ tba:
 ui:
   image: jaci/jms-ui
   replicaCount: 3
+  enabled: true
   resources:
     requests:
       memory: 512Mi
@@ -87,6 +106,7 @@ ui:
 websocket:
   command: [ "jms-websocket" ]
   replicaCount: 3
+  enabled: true
   resources:
     requests:
       memory: 256Mi

@@ -1,4 +1,46 @@
 {{- $subdict := dict "name" "websocket" "valspec" .Values.websocket -}}
 {{- $dict := merge $subdict . -}}
 
+{{- if $dict.valspec.enabled -}}
 {{ template "jms.deployment" $dict }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "jms.tpl.name" $dict }}
+  labels:
+    app: {{ include "jms.tpl.name" $dict }}
+    chart: {{ include "jms.chart" $dict }}
+    release: {{ .Release.Name | quote }}
+spec:
+  selector:
+    app: {{ include "jms.tpl.name" $dict }}
+    release: {{ .Release.Name | quote }}
+  ports:
+    - name: websocket
+      protocol: TCP
+      port: 9000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "jms.tpl.name" $dict }}-ingress
+  labels:
+    app: {{ include "jms.tpl.name" $dict }}
+    chart: {{ include "jms.chart" $dict }}
+    release: {{ .Release.Name | quote }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /ws(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "jms.tpl.name" $dict }}
+            port:
+              number: 9000
+{{- end -}}
