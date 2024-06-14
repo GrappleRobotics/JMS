@@ -16,6 +16,18 @@
   "jms-admin"=100;
 }
 
+:global dhcpmap {
+  "jms-blue-1"=10;
+  "jms-blue-2"=20;
+  "jms-blue-3"=30;
+  "jms-red-1"=40;
+  "jms-red-2"=50;
+  "jms-red-3"=60;
+  "jms-spare-1"=70;
+  "jms-spare-2"=80;
+  "jms-spare-3"=90;
+}
+
 /system/identity/set name=$switchname
 /interface/bridge/set name=bridge-trunk comment="#jms-trunk" [find]
 
@@ -44,7 +56,7 @@
 
 /ip/address
   remove [find comment~"#jms-.*"]
-  add interface=[/interface/vlan/find where comment~"#jms-admin"] comment="jms-admin" address="$switchip/24" network="10.0.100.0"
+  add interface=[/interface/vlan/find where comment~"#jms-admin"] comment="#jms-admin" address="$switchip/24" network="10.0.100.0"
 
 /interface/bridge/set vlan-filtering=yes pvid=100 bridge-trunk
 
@@ -57,16 +69,33 @@
     remove [find comment~"#jms-.*"]
     add interface=[/interface/vlan/find where comment~"#jms-uplink"] comment="#jms-uplink"
   
+  /ip/address
+    :foreach iname,vlan in=$dhcpmap do={
+      add interface=[/interface/vlan/find where comment~"#$iname"] comment="#$iname" address="10.0.$vlan.4/24" network="10.0.$vlan.0"
+    }
+
   /ip/pool
     remove [find comment~"#jms-.*"]
-    add name="dhcp-admin" ranges=10.0.100.101-10.0.100.254 comment="#jms-admin"
+    add name="dhcp-jms-admin" ranges=10.0.100.101-10.0.100.254 comment="#jms-admin"
+
+    :foreach iname,vlan in=$dhcpmap do={
+      add name="dhcp-$iname" ranges="10.0.$vlan.100-10.0.$vlan.150" comment="#$iname"
+    }
 
   /ip/dhcp-server
     remove [find comment~"#jms-.*"]
-    add name="dhcp-admin" comment="#jms-admin" interface=[/interface/vlan/find where comment~"#jms-admin"] address-pool="dhcp-admin"
+    add name="dhcp-admin" comment="#jms-admin" interface=[/interface/vlan/find where comment~"#jms-admin"] address-pool="dhcp-jms-admin"
+
+    :foreach iname,vlan in=$dhcpmap do={
+      add name="dhcp-$iname" comment="#$iname" interface=[/interface/vlan/find where comment~"#$iname"] address-pool="dhcp-$iname"
+    }
 
     network/remove [find comment~"#jms-.*"]
     network/add address=10.0.100.0/24 gateway=$switchip dns-server=$switchip comment="#jms-admin"
+
+    :foreach iname,vlan in=$dhcpmap do={
+      network/add comment="#$iname" address="10.0.$vlan.0/24"
+    }
   
   /ip/firewall
     nat/remove [find comment~"#jms-.*"]
@@ -80,4 +109,19 @@
     add address=10.0.100.10 name=jms-primary.jms.local type=A
     add address=10.0.100.11 name=jms-secondary.jms.local type=A
     add address=10.0.100.12 name=jms-tertiary.jms.local type=A
+  
+  /ip/firewall/filter
+    remove [find comment~"#jms.*"]
+
+    add comment="#jms-existing" chain=input action=accept connection-state=established,related
+    add comment="#jms-existing" chain=forward action=accept connection-state=established,related
+    add comment="#jms-admin-router-access" chain=input action=accept src-address=10.0.100.0/24
+    add comment="#jms-admin-internet-access" chain=forward action=accept src-address=10.0.100.0/24 out-interface=[/interface/vlan/find where comment~"#jms-uplink"]
+    add comment="#jms-icmp-router" chain=input action=accept protocol=icmp
+    add comment="#jms-ds2fms-tcp" chain=forward action=accept protocol=tcp dst-address=10.0.100.5 dst-port=1750
+    add comment="#jms-ds2fms-udp" chain=forward action=accept protocol=udp dst-address=10.0.100.5 dst-port=1160
+    add comment="#jms-ds2fms-icmp" chain=forward action=accept protocol=icmp dst-address=10.0.100.5
+    add comment="#jms-fms2ds-udp" chain=forward action=accept protocol=udp src-address=10.0.100.5 dst-port=1121
+    add comment="#jms-default-deny" chain=input action=drop
+    add comment="#jms-default-deny" chain=forward action=drop
 }
