@@ -8,6 +8,7 @@ use log::{info, error};
 
 pub mod imaging;
 pub mod linksys_ap;
+pub mod mikrotik;
 pub mod pfsense;
 pub mod ssh;
 pub mod unifi;
@@ -40,7 +41,7 @@ pub struct NetworkConfig {
 
 async fn do_team_network_update(network: NetworkConfig, settings: NetworkingSettings) -> anyhow::Result<()> {
   info!("Starting Network Update...");
-  pfsense::configure_firewall(&network, &settings).await.map_err(|e| anyhow::anyhow!("PFSense Error: {}", e))?;
+  mikrotik::configure_firewall(&network, &settings).await.map_err(|e| anyhow::anyhow!("Mikrotik Error: {}", e))?;
   match settings.radio_type {
     RadioType::Linksys => linksys_ap::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?,
     RadioType::Unifi => unifi::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?,
