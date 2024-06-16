@@ -12,7 +12,7 @@ spec:
     matchLabels:
       app: {{ include "jms.tpl.name" . }}
       release: {{ .Release.Name | quote }}
-  replicas: {{ .valspec.replicas }}
+  replicas: {{ .valspec.replicaCount }}
   template:
     metadata:
       labels:

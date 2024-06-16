@@ -5,5 +5,8 @@ dependencies:
 - name: redis
   repository: https://charts.bitnami.com/bitnami
   version: 19.5.2
-digest: sha256:0aed59ce1b377c82f7b60ec85047c9f7ea0aa455478aca68acb60e65fda6d77d
-generated: "2024-06-09T21:34:57.3422265+10:00"
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 15.6.6
+digest: sha256:48eb41bc2242751f753281d223ec8df8f355903c443a76ff2b43115278459761
+generated: "2024-06-15T16:51:03.3765845+10:00"

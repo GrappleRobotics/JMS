@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "unifi.fullname" . }}
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 10.0.100.6
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 443
+      targetPort: https
+      protocol: TCP
+      name: https
+    - port: 3478
+      targetPort: stun
+      protocol: UDP
+      name: stun
+    - port: 10001
+      targetPort: discovery
+      protocol: UDP
+      name: discovery
+  externalTrafficPolicy: Local
+  selector:
+    {{- include "unifi.selectorLabels" . | nindent 4 }}

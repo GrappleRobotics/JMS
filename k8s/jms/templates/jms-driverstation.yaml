@@ -3,4 +3,18 @@
 
 {{- if $dict.valspec.enabled -}}
 {{ template "jms.statefulset" $dict }}
+---
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ include "jms.tpl.name" $dict }}
+  labels:
+    app: {{ include "jms.tpl.name" $dict }}
+    chart: {{ include "jms.chart" $dict }}
+    release: {{ .Release.Name | quote }}
+spec:
+  config: '{
+      "cniVersion": "1.1.0",
+      "type": "jms-ds-cni"
+    }'
 {{- end -}}

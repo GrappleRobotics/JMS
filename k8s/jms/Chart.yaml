@@ -30,3 +30,6 @@ dependencies:
 - name: redis
   version: "19.5.2"
   repository: https://charts.bitnami.com/bitnami
+- name: mongodb
+  version: "15.6.6"
+  repository: https://charts.bitnami.com/bitnami

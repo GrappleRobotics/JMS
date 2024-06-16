@@ -1,0 +1,69 @@
+#!/bin/bash
+log=/var/log/jms-ds-cni.log
+config=`cat /dev/stdin`
+
+echo >> $log
+echo "COMMAND: $CNI_COMMAND" >> $log
+echo "CFG: $config" >> $log
+echo "CONTAINERID: $CNI_CONTAINERID" >> $log
+echo "NETNS: $CNI_NETNS" >> $log
+echo "IFNAME: $CNI_IFNAME" >> $log
+
+target_interface=$(ip -brief addr show | grep -i 10.0.100. | awk '{print $1}')
+
+case $CNI_COMMAND in
+ADD)
+  ln -sfT $CNI_NETNS /var/run/netns/$CNI_CONTAINERID
+  # Setup macvlan
+  ip link add $CNI_IFNAME link $target_interface type macvlan mode bridge
+  ip link set $CNI_IFNAME netns $CNI_CONTAINERID
+  ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
+  ip netns exec $CNI_CONTAINERID ip addr add 10.0.100.5/24 dev $CNI_IFNAME
+  ip netns exec $CNI_CONTAINERID ip route add 10.0.0.0/8 via 10.0.100.1
+
+  mac=$(ip netns exec $CNI_CONTAINERID ip link show $CNI_IFNAME | awk '/ether/ {print $2}')
+  output="
+{
+  \"cniVersion\": \"1.0.0\",
+  \"interfaces\": [
+    {
+      \"name\": \"$CNI_IFNAME\",
+      \"mac\": \"$mac\",
+      \"sandbox\": \"$CNI_NETNS\"
+    }
+  ],
+  \"ips\": [
+    {
+      \"version\": \"4\",
+      \"address\": \"10.0.100.5/24\",
+      \"interface\": 0
+    }
+  ]
+}"
+
+  echo $output >> $log
+  echo "$output"
+;;
+
+DEL)
+  rm -rf /var/run/netns/$CNI_CONTAINERID
+;;
+
+CHECK)
+;;
+
+GC)
+;;
+
+VERSION)
+echo '{
+  "cniVersion": "1.0.0",
+  "supportedVersions": [ "0.3.1", "0.4.0", "1.0.0" ]
+}'
+;;
+
+*)
+  echo "Unknown cni command: $CNI_COMMAND"
+  exit 1
+;;
+esac

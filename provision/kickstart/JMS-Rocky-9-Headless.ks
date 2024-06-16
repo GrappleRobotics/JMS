@@ -100,6 +100,9 @@ token: jmsR0cks
 cluster-cidr: 172.16.0.0/16
 service-cidr: 172.17.0.0/16
 cluster-dns: 172.17.0.10
+cni:
+- multus
+- canal
 EOF
 
 # If we're not a primary node, make sure we're connecting to the same

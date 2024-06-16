@@ -56,7 +56,8 @@ pub async fn configure_firewall(config: &NetworkConfig, settings: &NetworkingSet
         let id = net.get(".id").ok_or(anyhow::anyhow!("No ID present for net."))?.as_str().ok_or(anyhow::anyhow!("Not a string!"))?;
         client.patch(&api_url(&format!("ip/dhcp-server/network/{}", id)))
           .json(&json!({
-            "address": format!("10.{}.{}.0/24", cfg_template.0 / 100, cfg_template.0 % 100)
+            "address": format!("10.{}.{}.0/24", cfg_template.0 / 100, cfg_template.0 % 100),
+            "gateway": format!("10.{}.{}.4", cfg_template.0 / 100, cfg_template.0 % 100)
           }))
           .basic_auth(&settings.router_username, Some(&settings.router_password))
           .send().await?.error_for_status()?;
@@ -76,7 +77,7 @@ pub async fn configure_firewall(config: &NetworkConfig, settings: &NetworkingSet
         let id = ip.get(".id").ok_or(anyhow::anyhow!("No ID present for ip."))?.as_str().ok_or(anyhow::anyhow!("Not a string!"))?;
         client.patch(&api_url(&format!("ip/address/{}", id)))
           .json(&json!({
-            "address": format!("10.{}.{}.1/24", cfg_template.0 / 100, cfg_template.0 % 100),
+            "address": format!("10.{}.{}.4/24", cfg_template.0 / 100, cfg_template.0 % 100),
             "network": format!("10.{}.{}.0", cfg_template.0 / 100, cfg_template.0 % 100)
           }))
           .basic_auth(&settings.router_username, Some(&settings.router_password))

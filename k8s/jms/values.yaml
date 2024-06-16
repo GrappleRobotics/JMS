@@ -120,6 +120,28 @@ rabbitmq:
   auth:
     password: rabbitmq
 
+mongodb:
+  architecture: standalone
+  fullnameOverride: mongodb
+  useStatefulSet: true
+  auth:
+    enabled: true
+    rootUser: root
+    rootPassword: jmsR0cks
+  initdbScripts:
+    init_unifi.js: |
+      db.getSiblingDB("unifi").createUser({user: "unifi", pwd: "unifi", roles: [{role: "dbOwner", db: "unifi"}, {role: "dbOwner", db: "unifi_stat"}]});
+
+
+unifi:
+  resources:
+    requests:
+      memory: 1024Mi
+      cpu: 100m
+    limits:
+      memory: 2048Mi
+      cpu: 2
+
 # Thanks https://medium.com/@gerkElznik/deploy-redis-stack-using-bitnamis-helm-chart-d8339453352c
 redis:
   image:
@@ -131,6 +153,8 @@ redis:
   fullnameOverride: redis
   cluster:
     enabled: false
+  commonConfiguration: |-
+    appendonly no
   master:
     args:
       - -c
