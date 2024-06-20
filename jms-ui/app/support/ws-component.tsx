@@ -25,7 +25,11 @@ export class WebsocketManagerComponent extends React.Component<{ children: React
   };
 
   componentDidMount = () => {
-    this.socket.connect("ws://" + window.location.hostname + "/ws");
+    if (!!process && process.env.NODE_ENV == "development") {
+      this.socket.connect("ws://" + window.location.hostname + ":9000");
+    } else {
+      this.socket.connect("ws://" + window.location.hostname + "/ws");
+    }
     this.handles = [
       this.socket.onConnectChange(connected => this.setState({ connected })),
       this.socket.onLogin(user => this.setState({ user }))

@@ -1,7 +1,7 @@
 import { ALLIANCES, otherAlliance } from "@/app/support/alliances";
 import { usePrevious, withValU } from "@/app/support/util";
 import { AllianceStation, ArenaState, EventDetails, Match, MatchScoreSnapshot, SerialisedLoadedMatch, Team } from "@/app/ws-schema";
-import { faLink } from "@fortawesome/free-solid-svg-icons";
+import { faLink, faMusic } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect } from "react";
 import { Col, Row } from "react-bootstrap";
@@ -85,7 +85,7 @@ export default function MatchPlayScene({ eventDetails, currentMatch, matches, te
                   </Row>) }
                   <Row className="audience-play-score-links">
                     <Col>
-                      <FontAwesomeIcon icon={faLink} /> &nbsp; { derived?.link_count || 0 } / { derived?.meets_coopertition && other?.meets_coopertition ? 4 : 5 }
+                      <FontAwesomeIcon icon={faMusic} /> &nbsp; { derived?.notes.total_count || 0 } / { derived?.melody_threshold }
                     </Col>
                   </Row>
                 </div>

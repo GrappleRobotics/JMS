@@ -1,8 +1,9 @@
-use std::ops::Add;
+use std::{ops::Add, time::Instant};
 
+use chrono::{DateTime, Duration, Local};
 use rand::{rngs::ThreadRng, Rng};
 
-use crate::{models::Alliance, db::Singleton};
+use crate::{db::{DBDuration, Singleton}, models::Alliance};
 
 pub fn saturating_offset(base: usize, delta: isize) -> usize {
   if delta < 0 {
@@ -28,17 +29,10 @@ where
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub enum GamepieceType {
-  None,
-  Cone,
-  Cube
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum EndgameType {
   None,
   Parked,
-  Docked
+  Stage(usize)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -55,43 +49,52 @@ pub enum WinStatus {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct LiveNotes {
+  pub banked: usize,
+  pub amp: ModeScore<usize>,
+  pub speaker_auto: usize,
+  pub speaker_amped: usize,
+  pub speaker_unamped: usize,
+  pub amp_time: Option<chrono::DateTime<chrono::Local>>
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct DerivedNotes {
+  pub amp_points: ModeScore<isize>,
+  pub speaker_auto_points: isize,
+  pub speaker_amped_points: isize,
+  pub speaker_unamped_points: isize,
+  pub amplified_remaining: Option<DBDuration>,
+  pub total_count: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct LiveScore {
-  pub mobility: Vec<bool>,
-  pub community: ModeScore<Vec<Vec<GamepieceType>>>,
-  pub auto_docked: bool,
-  pub charge_station_level: ModeScore<bool>,
+  pub leave: Vec<bool>,
+  pub notes: LiveNotes,
+  pub coop: bool,
+  pub microphones: Vec<bool>,
+  pub traps: Vec<bool>,
   pub endgame: Vec<EndgameType>,
   pub penalties: Penalties,
-  pub adjustment: usize,
-  pub sustainability_adjust: bool,
-  pub activation_adjust: bool
+  pub adjustment: isize,
 }
 
 impl Default for LiveScore {
   fn default() -> Self {
-    LiveScore::new(3)
+    Self::new(3)
   }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-pub struct Link {
-  pub nodes: [usize; 3],
-  pub row: usize,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DerivedScore {
-  pub mobility_points: isize,
-  pub links: Vec<Link>,
-  pub link_count: isize,
-  pub link_points: isize,
-  pub community_points: ModeScore<isize>,
-  pub auto_docked_points: isize,
+  pub leave_points: isize,
+  pub notes: DerivedNotes,
   pub endgame_points: isize,
-  pub meets_coopertition: bool,
-  pub sustainability_threshold: usize,
-  pub sustainability_rp: bool,
-  pub activation_rp: bool,
+  pub coopertition_met: bool,
+  pub melody_threshold: usize,
+  pub melody_rp: bool,
+  pub ensemble_rp: bool,
 
   pub mode_score: ModeScore<isize>,
   pub penalty_score: usize,
@@ -186,22 +189,26 @@ impl From<MatchScoreSnapshot> for MatchScore {
 // For updating from the frontend.
 #[derive(Debug, Clone, serde::Deserialize, schemars::JsonSchema)]
 pub enum ScoreUpdate {
-  Mobility {
+  Leave {
     station: usize,
-    crossed: bool,
+    crossed: bool
   },
-  Community {
+  Coop,
+  Amplify,
+  Microphone {
+    stage: usize,
+    activated: bool
+  },
+  Trap {
+    stage: usize,
+    filled: bool
+  },
+  Notes {
     auto: bool,
-    row: usize,
-    col: usize,
-    gamepiece: GamepieceType
-  },
-  AutoDocked {
-    docked: bool
-  },
-  ChargeStationLevel {
-    auto: bool,
-    level: bool
+    #[serde(default)]
+    speaker: isize,
+    #[serde(default)]
+    amp: isize
   },
   Endgame {
     station: usize,
@@ -221,89 +228,150 @@ pub struct ScoreUpdateData {
   pub update: ScoreUpdate,
 }
 
-// Game Manual 4.4.5
 impl LiveScore {
   pub fn new(num_teams: usize) -> Self {
     Self {
-      mobility: vec![false; num_teams],
-      community: ModeScore {
-        auto: vec![vec![GamepieceType::None; 9]; 3],
-        teleop: vec![vec![GamepieceType::None; 9]; 3]
+      leave: vec![false; num_teams],
+      notes: LiveNotes {
+        banked: 0,
+        amp: ModeScore { auto: 0, teleop: 0 },
+        speaker_auto: 0,
+        speaker_amped: 0,
+        speaker_unamped: 0,
+        amp_time: None
       },
-      auto_docked: false,
-      charge_station_level: ModeScore {
-        auto: true, teleop: true
-      },
+      coop: false,
+      microphones: vec![false; 3],
+      traps: vec![false; 3],
       endgame: vec![EndgameType::None; num_teams],
       penalties: Penalties {
         fouls: 0,
         tech_fouls: 0,
       },
-      activation_adjust: false,
-      sustainability_adjust: false,
-      adjustment: 0
+      adjustment: 0,
     }
   }
 
-  pub fn derive(&self, other_alliance: &LiveScore) -> DerivedScore {
-    let penalty_points = other_alliance.penalty_points_other_alliance();
-    let mode_score = self.mode_score();
+  pub fn partial_derive(&self, other_alliance: &LiveScore) -> DerivedScore {
+    let melody_threshold = match self.coop && other_alliance.coop {
+      true => 15,
+      false => 18,
+    };
+    
+    // TODO: Calculate End-game
+    // let endgame_points = self.endgame.iter().map(|x| match (*x, &self.microphones[..]) {
+    //   (EndgameType::None, _) => 0,
+    //   (EndgameType::Parked, _) => 1,
+    //   (EndgameType::StageLeft, &[true, _, _]) => 4,
+    //   (EndgameType::StageLeft, &[false, _, _]) => 3,
+    // });
 
-    let total_score = mode_score.total() as usize + penalty_points + self.adjustment;
-    let other_total_score = other_alliance.mode_score().total() as usize + self.penalty_points_other_alliance();
+    let endgame_points = 0;
 
-    let (win_status, win_rp) = match (total_score, other_total_score) {
-      (a, b) if a > b => ( WinStatus::WIN, 2 ),
-      (a, b) if a < b => ( WinStatus::LOSS, 0 ),
-      _ => ( WinStatus::TIE, 1 )
+    let amplified_remaining = match self.notes.amp_time {
+      Some(x) => {
+        let elapsed = Local::now() - x;
+        if elapsed >= Duration::seconds(10) {
+          None
+        } else {
+          Some(Duration::seconds(10) - elapsed)
+        }
+      },
+      None => None
     };
 
-    let links = self.links();
+    let total_notes = self.notes.amp.total() + self.notes.speaker_amped + self.notes.speaker_unamped;
 
-    DerivedScore {
-      mobility_points: self.mobility_points(),
-      link_count: links.len() as isize,
-      links,
-      link_points: self.link_points(),
-      community_points: self.community_points(),
-      auto_docked_points: self.auto_docked_points(),
-      endgame_points: self.endgame_points(true),
-      meets_coopertition: self.meets_coopertition(),
-      sustainability_threshold: self.sustainability_threshold(other_alliance),
-      sustainability_rp: self.sustainability_rp(other_alliance),
-      activation_rp: self.activation_rp(),
+    let mut d = DerivedScore {
+      leave_points: self.leave.iter().map(|x| (*x as isize) * 2).sum(),
+      notes: DerivedNotes {
+        amp_points: ModeScore { auto: (self.notes.amp.auto * 2) as isize, teleop: (self.notes.amp.teleop * 1) as isize },
+        speaker_auto_points: (self.notes.speaker_auto * 5) as isize,
+        speaker_amped_points: (self.notes.speaker_amped * 5) as isize,
+        speaker_unamped_points: (self.notes.speaker_unamped * 2) as isize,
+        amplified_remaining: amplified_remaining.map(DBDuration),
+        total_count: total_notes
+      },
+      coopertition_met: self.coop,
+      melody_threshold,
+      melody_rp: total_notes >= melody_threshold,
+      ensemble_rp: endgame_points >= 10 && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= 2,
+      endgame_points,
+
+      penalty_score: other_alliance.penalties.fouls * 2 + other_alliance.penalties.tech_fouls * 5,
       
-      mode_score,
-      penalty_score: penalty_points,
-      total_score,
-      total_bonus_rp: self.total_bonus_rp(other_alliance),
-      win_rp,
-      total_rp: self.total_bonus_rp(other_alliance) + win_rp,
-      win_status,
-    }
+      mode_score: ModeScore { auto: 0, teleop: 0 },
+      total_score: 0,
+      total_bonus_rp: 0,
+      win_rp: 0,
+      total_rp: 0,
+      win_status: WinStatus::TIE,
+    };
+
+    d.mode_score = ModeScore {
+      auto: d.leave_points + d.notes.amp_points.auto + d.notes.speaker_auto_points,
+      teleop: d.notes.amp_points.teleop + d.notes.speaker_amped_points + d.notes.speaker_unamped_points + d.endgame_points,
+    };
+    d.total_score = (d.mode_score.auto as isize + d.mode_score.teleop as isize + d.penalty_score as isize + self.adjustment).max(0) as usize;
+
+    d
+  }
+
+  pub fn derive(&self, other_alliance: &LiveScore) -> DerivedScore {
+    let mut d = self.partial_derive(other_alliance);
+    let other_d = other_alliance.partial_derive(self);
+    
+    let win_status = match d.total_score.cmp(&other_d.total_score) {
+      std::cmp::Ordering::Greater => WinStatus::WIN,
+      std::cmp::Ordering::Less => WinStatus::LOSS,
+      std::cmp::Ordering::Equal => WinStatus::TIE,
+    };
+
+    d.total_bonus_rp = (d.melody_rp as usize) + (d.ensemble_rp as usize);
+    d.win_rp = match win_status {
+      WinStatus::WIN => 2,
+      WinStatus::LOSS => 0,
+      WinStatus::TIE => 1,
+      };
+    d.win_status = win_status;
+    d.total_rp = d.win_rp + d.total_bonus_rp;
+
+    d
   }
 
   // TODO: This needs better error handling - currently all inputs are assumed to be correct
   pub fn update(&mut self, score_update: ScoreUpdate) {
     match score_update {
-      ScoreUpdate::Mobility { station, crossed } => {
-        self.mobility[station] = crossed;
+      ScoreUpdate::Leave { station, crossed } => {
+        self.leave[station] = crossed;
       },
-      ScoreUpdate::Community { auto, row, col, gamepiece } => {
+      ScoreUpdate::Coop => {
+        self.coop = true;
+      },
+      ScoreUpdate::Amplify => {
+        self.notes.amp_time = Some(Local::now());
+      },
+      ScoreUpdate::Microphone { stage, activated } => {
+        self.microphones[stage] = activated;
+      },
+      ScoreUpdate::Trap { stage, filled } => {
+        self.traps[stage] = filled;
+      },
+      ScoreUpdate::Notes { auto, speaker, amp } => {
+        let amplified = match self.notes.amp_time {
+          Some(x) if (Local::now() - x) <= Duration::seconds(10) => true,
+          _ => false
+        };
+
         if auto {
-          self.community.auto[row][col] = gamepiece;
+          self.notes.amp.auto = saturating_offset(self.notes.amp.auto, amp);
+          self.notes.speaker_auto = saturating_offset(self.notes.speaker_auto, speaker);
+        } else if amplified {
+          self.notes.amp.auto = saturating_offset(self.notes.amp.teleop, amp);
+          self.notes.speaker_amped = saturating_offset(self.notes.speaker_amped, speaker);
         } else {
-          self.community.teleop[row][col] = gamepiece;
-        }
-      },
-      ScoreUpdate::AutoDocked { docked } => {
-        self.auto_docked = docked;
-      },
-      ScoreUpdate::ChargeStationLevel { auto, level } => {
-        if auto {
-          self.charge_station_level.auto = level;
-        } else {
-          self.charge_station_level.teleop = level;
+          self.notes.amp.auto = saturating_offset(self.notes.amp.teleop, amp);
+          self.notes.speaker_unamped = saturating_offset(self.notes.speaker_unamped, speaker);
         }
       },
       ScoreUpdate::Endgame { station, endgame } => {
@@ -316,205 +384,60 @@ impl LiveScore {
     }
   }
 
-  fn mobility_points(&self) -> isize {
-    self.mobility.iter().map(|&x| (x as isize) * 3).sum()
-  }
-
-  fn auto_docked_points(&self) -> isize {
-    if self.charge_station_level.auto {
-      self.auto_docked as isize * 12
-    } else {
-      self.auto_docked as isize * 8
-    }
-  }
-
-  fn community_points(&self) -> ModeScore<isize> {
-    let mut ms = ModeScore { auto: 0, teleop: 0 };
-
-    for (row, cols) in self.community.auto.iter().enumerate() {
-      let point_base = match row {
-        0 => 3,
-        1 => 4,
-        2 => 6,
-        _ => panic!("Unknown community row")
-      };
-
-      ms.auto += point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
-    }
-
-    for (row, cols) in self.community.teleop.iter().enumerate() {
-      let point_base = match row {
-        0 => 2,
-        1 => 3,
-        2 => 5,
-        _ => panic!("Unknown community row")
-      };
-
-      ms.teleop += point_base * cols.iter().filter(|&x| *x != GamepieceType::None).count() as isize;
-    }
-
-    ms
-  }
-
-  fn links(&self) -> Vec<Link> {
-    let mut occupancy_grid = vec![vec![false; 9]; 3];
-    for (row, cols) in self.community.auto.iter().enumerate() {
-      for (col, gptype) in cols.iter().enumerate() {
-        if *gptype != GamepieceType::None {
-          occupancy_grid[row][col] = true;
-        }
-      }
-    }
-
-    for (row, cols) in self.community.teleop.iter().enumerate() {
-      for (col, gptype) in cols.iter().enumerate() {
-        if *gptype != GamepieceType::None {
-          occupancy_grid[row][col] = true;
-        }
-      }
-    }
-
-    let mut links = vec![];
-
-    // Scan each row left to right
-    for row in 0..occupancy_grid.len() {
-      let mut col = 0;
-      let mut count = 0;
-      while col < occupancy_grid[row].len() {
-        if occupancy_grid[row][col] {
-          count += 1;
-        } else {
-          count = 0;
-        }
-        
-        if count == 3 {
-          count = 0;
-          // n_links += 1;
-          links.push(Link {
-            row,
-            nodes: [ col - 2, col - 1, col ]
-          })
-        }
-        col += 1;
-      }
-    }
-
-    links
-  }
-
-  fn link_points(&self) -> isize {
-    self.links().len() as isize * 5
-  }
-
-  fn meets_coopertition(&self) -> bool {
-    let mut total = 0;
-    for els in self.community.auto.iter().chain(self.community.teleop.iter()) {
-      // At least three in the center grid
-      for col in 3..=5 {
-        if els[col] != GamepieceType::None {
-          total += 1;
-        }
-      }
-    }
-    total >= 3
-  }
-
-  fn sustainability_threshold(&self, other_alliance: &Self) -> usize {
-    if self.meets_coopertition() && other_alliance.meets_coopertition() {
-      4
-    } else {
-      5
-    }
-  }
-
-  fn sustainability_rp(&self, other_alliance: &Self) -> bool {
-    (self.links().len() as isize >= self.sustainability_threshold(other_alliance) as isize) || self.sustainability_adjust
-  }
-  
-  fn activation_rp(&self) -> bool {
-    ((self.auto_docked_points() + self.endgame_points(false)) >= 26) || self.activation_adjust
-  }
-
-  fn endgame_points(&self, allow_parked: bool) -> isize {
-    let level = self.charge_station_level.teleop;
-
-    self.endgame.iter().map(|x| match x {
-      EndgameType::None => 0,
-      EndgameType::Parked if !allow_parked => 0,
-      EndgameType::Parked => 2,
-      EndgameType::Docked if level => 10,
-      EndgameType::Docked => 6,
-    }).sum()
-  }
-
-  fn penalty_points_other_alliance(&self) -> usize {
-    self.penalties.fouls * 5 + self.penalties.tech_fouls * 12
-  }
-
-  fn mode_score(&self) -> ModeScore<isize> {
-    ModeScore {
-      auto: self.mobility_points() + self.community_points().auto + self.auto_docked_points(),
-      teleop: self.community_points().teleop + self.link_points() + self.endgame_points(true),
-    }
-  }
-
-  fn total_bonus_rp(&self, other_alliance: &Self) -> usize {
-    self.sustainability_rp(other_alliance) as usize + self.activation_rp() as usize
-  }
-
   pub fn randomise() -> Self {
-    let mut rng = rand::thread_rng();
+    // let mut rng = rand::thread_rng();
 
-    let rand_endgame = |rng: &mut ThreadRng| {
-      match rng.gen_range(0..=2) {
-        0 => EndgameType::None,
-        1 => EndgameType::Parked,
-        _ => EndgameType::Docked
-      }
-    };
+    // let rand_endgame = |rng: &mut ThreadRng| {
+    //   match rng.gen_range(0..=2) {
+    //     0 => EndgameType::None,
+    //     1 => EndgameType::Parked,
+    //     _ => EndgameType::Docked
+    //   }
+    // };
 
-    let mut community = ModeScore {
-      auto: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
-      teleop: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
-    };
+    // let mut community = ModeScore {
+    //   auto: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
+    //   teleop: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
+    // };
 
-    let auto_pieces = rng.gen_range(0..=2);
-    let teleop_pieces = rng.gen_range(0..=10);
+    // let auto_pieces = rng.gen_range(0..=2);
+    // let teleop_pieces = rng.gen_range(0..=10);
 
-    for i in 0..(auto_pieces + teleop_pieces) {
-      let row = rng.gen_range(0..3);
-      let col = rng.gen_range(0..9);
+    // for i in 0..(auto_pieces + teleop_pieces) {
+    //   let row = rng.gen_range(0..3);
+    //   let col = rng.gen_range(0..9);
 
-      let allowed = match row {
-        0 => vec![GamepieceType::Cube, GamepieceType::Cone],
-        _ => match col {
-          x if x % 3 == 1 => vec![GamepieceType::Cube],
-          _ => vec![GamepieceType::Cone]
-        }
-      };
+    //   let allowed = match row {
+    //     0 => vec![GamepieceType::Cube, GamepieceType::Cone],
+    //     _ => match col {
+    //       x if x % 3 == 1 => vec![GamepieceType::Cube],
+    //       _ => vec![GamepieceType::Cone]
+    //     }
+    //   };
 
-      let selected = allowed[rng.gen_range(0..allowed.len())];
+    //   let selected = allowed[rng.gen_range(0..allowed.len())];
 
-      if i < auto_pieces {
-        community.auto[row][col] = selected;
-      } else {
-        community.teleop[row][col] = selected;
-      }
-    }
+    //   if i < auto_pieces {
+    //     community.auto[row][col] = selected;
+    //   } else {
+    //     community.teleop[row][col] = selected;
+    //   }
+    // }
 
-    Self {
-      mobility: vec![rng.gen(), rng.gen(), rng.gen()],
-      community,
-      auto_docked: rng.gen(),
-      charge_station_level: ModeScore { auto: rng.gen(), teleop: rng.gen() },
-      endgame: vec![rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng)],
-      penalties: Penalties {
-        fouls: rng.gen_range(0..=4),
-        tech_fouls: rng.gen_range(0..=2)
-      },
-      sustainability_adjust: false,
-      activation_adjust: false,
-      adjustment: 0
-    }
+    // Self {
+    //   mobility: vec![rng.gen(), rng.gen(), rng.gen()],
+    //   community,
+    //   auto_docked: rng.gen(),
+    //   charge_station_level: ModeScore { auto: rng.gen(), teleop: rng.gen() },
+    //   endgame: vec![rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng)],
+    //   penalties: Penalties {
+    //     fouls: rng.gen_range(0..=4),
+    //     tech_fouls: rng.gen_range(0..=2)
+    //   },
+    //   sustainability_adjust: false,
+    //   activation_adjust: false,
+    //   adjustment: 0
+    // }
+    Self::new(3)
   }
 }

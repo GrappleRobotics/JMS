@@ -4,11 +4,11 @@ use jms_tba_lib::TBARPC;
 use log::{info, warn};
 use tokio::try_join;
 
-use crate::{alliances::TBAAlliances, eventinfo::TBAEventInfoUpdate, rankings::TBARankings, teams::TBATeams, matches::TBAMatchUpdate};
+use crate::{alliances::TBAAlliances, eventinfo::TBAEventInfoUpdate, rankings::TBARankings, teams::TBATeams};
 
 pub mod alliances;
 pub mod client;
-pub mod matches;
+// pub mod matches;
 pub mod eventinfo;
 pub mod teams;
 pub mod rankings;
@@ -43,7 +43,7 @@ async fn do_update(kv: &kv::KVConnection) -> anyhow::Result<()> {
   if let Err(e) = rankings.issue(&kv).await { warn!("Could not issue ranking update: {}", e) }
 
   // Matches
-  if let Err(e) = TBAMatchUpdate::issue(&kv).await { warn!("Could not issue teams update: {}", e) }
+  // if let Err(e) = TBAMatchUpdate::issue(&kv).await { warn!("Could not issue teams update: {}", e) }
 
   info!("TBA Update Finished");
   Ok(())
