@@ -56,37 +56,37 @@
 .referee-station-score {
   padding: 0.5em;
 
-  &[data-score-type=mobility] {
+  &[data-score-type=leave] {
     @extend .btn-bad;
     &[data-score-value=true] {
       @extend .btn-good;
     }
   }
 
-  &[data-score-type=auto_docked], &[data-score-type=charge_station_level] {
-    @extend .btn-bad;
-    &[data-score-value=true] {
-      @extend .btn-good;
-    }
-    font-size: 2em !important;
-  }
+  // &[data-score-type=auto_docked], &[data-score-type=charge_station_level] {
+  //   @extend .btn-bad;
+  //   &[data-score-value=true] {
+  //     @extend .btn-good;
+  //   }
+  //   font-size: 2em !important;
+  // }
 
-  &[data-score-type=endgame] {
-    width: 100%;
-    display: flex;
-    > button {
-      @extend .btn-outline-light;
-      &[data-selected=true] {
-        @extend .btn-good;
-      }
-      flex-grow: 1;
-      font-weight: bold;
-    }
+  // &[data-score-type=endgame] {
+  //   width: 100%;
+  //   display: flex;
+  //   > button {
+  //     @extend .btn-outline-light;
+  //     &[data-selected=true] {
+  //       @extend .btn-good;
+  //     }
+  //     flex-grow: 1;
+  //     font-weight: bold;
+  //   }
 
-    &[data-score-value=None] > [data-selected=true] {
-      @extend .btn-bad;
-    }
-  }
+  //   &[data-score-value=None] > [data-selected=true] {
+  //     @extend .btn-bad;
+  //   }
+  // }
 }
 
 // Scorers
@@ -104,53 +104,6 @@
   }
 }
 
-.scorer-community-row {
-  border: 2px solid $gray-700;
-  margin-top: 2em;
-
-  .scorer-community-col {
-    width: 5em;
-    height: 5em;
-    border: 2px solid $gray-500;
-
-    @each $alliance in $alliances {
-      $tc: theme-color($alliance);
-      &[data-alliance=#{$alliance}] {
-        background-color: desaturate(darken($tc, 45%), 00%);
-      }
-    }
-
-    &[data-column="3"], &[data-column="4"], &[data-column="5"] {
-      background-color: black;
-    }
-
-    &[data-has-auto="true"] {
-      border-color: theme-color("green");
-    }
-
-    padding: 0;
-
-    .scorer-gamepiece {
-      margin: 0.5em;
-      &[data-gamepiece="None"] {
-        visibility: hidden;
-      }
-      &[data-gamepiece="Cube"] {
-        width: 4em;
-        height: 4em;
-        background-color: theme-color("purple");
-      }
-      &[data-gamepiece="Cone"] {
-        margin-top: -1.75em;
-        height: 0;
-        width: 0;
-        border: 2em solid transparent;
-        border-bottom: 4em solid theme-color("yellow");
-      }
-    }
-  }
-}
-
 .edit-scores-version-link {
   background-color: theme-color("dark");
 
@@ -161,5 +114,80 @@
   &:hover {
     cursor: pointer;
     opacity: 80%;
+  }
+}
+
+.scorer-button {
+  &[data-button-type="2024-amp"] {
+    font-weight: bold;
+    font-size: 1.45em;
+    height: 3.75em;
+  }
+
+  &[data-button-type="2024-speaker"] {
+    font-weight: bold;
+    font-size: 1.45em;
+    height: 3.75em;
+  }
+}
+
+// 2024
+.scoring-2024-stage {
+  width: 100%;
+  position: relative;
+
+  img {
+    margin: auto;
+    display: block;
+
+    width: 500px;
+    height: 500px;
+    object-fit: contain;
+  }
+
+  .scoring-2024-indicator {
+    position: absolute;
+    transform: translate(-50%, -50%);
+
+    font-weight: bold;
+    font-size: 2em;
+  }
+
+  &[data-alliance="red"] {
+    .scoring-2024-indicator {
+      &[data-index="0"] {
+        left: 10%;
+        top: 50%;
+      }
+
+      &[data-index="1"] {
+        left: 60%;
+        top: 70%;
+      }
+
+      &[data-index="2"] {
+        left: 60%;
+        top: 30%;
+      }
+    }
+  }
+
+  &[data-alliance="blue"] {
+    .scoring-2024-indicator {
+      &[data-index="0"] {
+        left: 90%;
+        top: 50%;
+      }
+
+      &[data-index="1"] {
+        left: 40%;
+        top: 30%;
+      }
+
+      &[data-index="2"] {
+        left: 40%;
+        top: 70%;
+      }
+    }
   }
 }

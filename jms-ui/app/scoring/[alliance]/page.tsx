@@ -4,16 +4,10 @@ import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions"
 import { withValU } from "@/app/support/util";
 import { useWebsocket } from "@/app/support/ws-component";
-import { Alliance, GamepieceType, LiveScore, Match, MatchScoreSnapshot, SerialisedLoadedMatch, SnapshotScore } from "@/app/ws-schema";
+import { Alliance, LiveScore, Match, MatchScoreSnapshot, SerialisedLoadedMatch, SnapshotScore } from "@/app/ws-schema";
 import { Spec } from "immutability-helper";
 import React, { useEffect, useState } from "react"
 import { Button, Col, Row } from "react-bootstrap";
-
-const ALLOWED_GAMEPIECE_MAP = [
-  Array(9).fill(["None", "Cube", "Cone"]),
-  [ ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"] ],
-  [ ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"], ["None", "Cone"], ["None", "Cube"], ["None", "Cone"] ],
-];
 
 export default withPermission(["Scoring"], function ScorerPanel({ params }: { params: { alliance: Alliance } }) {
   const [ score, setScore ] = useState<SnapshotScore>();
@@ -58,12 +52,12 @@ export default withPermission(["Scoring"], function ScorerPanel({ params }: { pa
     </Row>
 
     {
-      score && <Community2023
+      score && <Notes2024
         score={score.live}
         alliance={params.alliance}
-        onUpdate={(row, col, type) => call<"scoring/score_update">("scoring/score_update", {
+        onUpdate={(speaker, amp) => call<"scoring/score_update">("scoring/score_update", {
           update: { alliance: params.alliance, update: {
-            Community: { auto: !autoFinalised, row, col, gamepiece: type }
+            Notes: { auto: !autoFinalised, speaker, amp }
           } }
         })}
       />
@@ -71,43 +65,33 @@ export default withPermission(["Scoring"], function ScorerPanel({ params }: { pa
   </div>
 })
 
-export function Community2023({ score, alliance, onUpdate }: { score: LiveScore, alliance: Alliance, onUpdate: (row: number, col: number, type: GamepieceType) => void }) {
-  let auto = score.community.auto;
-  let teleop = score.community.teleop;
-
-  let merged_community: GamepieceType[][] = [ Array(9).fill("None"), Array(9).fill("None"), Array(9).fill("None") ];
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 9; j++) {
-      if (auto[i][j] != "None") merged_community[i][j] = auto[i][j];
-      if (teleop[i][j] != "None") merged_community[i][j] = teleop[i][j];
-    }
-  }
-
-  return <Row className="scorer-community">
+export function Notes2024({ score, alliance, onUpdate }: { score: LiveScore, alliance: Alliance, onUpdate: (speaker: number, amp: number) => void }) {
+  return <Row>
     <Col>
-      {
-        merged_community.map((row, i) => <Row key={i} className="scorer-community-row">
-          {
-            row.map((gamepiece, j) => (
-              <Col
-                key={j}
-                className="scorer-community-col"
-                data-alliance={alliance}
-                data-column={j}
-                data-has-auto={auto[i][j] != "None"}
-                onClick={() => {
-                  let allowed: GamepieceType[] = ALLOWED_GAMEPIECE_MAP[i][j];
-                  let current_idx = allowed.findIndex(g => g == gamepiece);
-                  let next = (current_idx + 1) % allowed.length;
-                  onUpdate(i, j, allowed[next])
-                }}
-              >
-                <div className="scorer-gamepiece" data-gamepiece={gamepiece} />
-              </Col>
-            ))
-          }
-        </Row>).reverse()
-      }
+      <Button
+        className="btn-block scorer-button"
+        data-button-type="2024-amp"
+        data-alliance={alliance}
+        variant="orange"
+        onClick={() => onUpdate(0, 1)}
+      >
+        +1 AMP
+      </Button>
+      <br />
+      <span className="text-muted"> AUTO: { score.notes.amp.auto }, TELEOP: { score.notes.amp.teleop } </span>
+    </Col>
+    <Col>
+      <Button
+        className="btn-block scorer-button"
+        data-button-type="2024-speaker"
+        data-alliance={alliance}
+        variant={alliance}
+        onClick={() => onUpdate(1, 0)}
+      >
+        +1 SPEAKER
+      </Button>
+      <br />
+      <span className="text-muted"> AUTO: { score.notes.speaker_auto }, TELEOP: { score.notes.speaker_unamped } NORMAL + { score.notes.speaker_amped } AMPED </span>
     </Col>
   </Row>
 }

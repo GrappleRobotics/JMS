@@ -299,7 +299,7 @@ impl LiveScore {
       None => None
     };
 
-    let total_notes = self.notes.amp.total() + self.notes.speaker_amped + self.notes.speaker_unamped;
+    let total_notes = self.notes.amp.total() + self.notes.speaker_auto + self.notes.speaker_amped + self.notes.speaker_unamped;
 
     let amp_points = ModeScore { auto: (self.notes.amp.auto * 2) as isize, teleop: (self.notes.amp.teleop * 1) as isize };
     let speaker_auto_points = (self.notes.speaker_auto * 5) as isize;
@@ -392,10 +392,10 @@ impl LiveScore {
           self.notes.amp.auto = saturating_offset(self.notes.amp.auto, amp);
           self.notes.speaker_auto = saturating_offset(self.notes.speaker_auto, speaker);
         } else if amplified {
-          self.notes.amp.auto = saturating_offset(self.notes.amp.teleop, amp);
+          self.notes.amp.teleop = saturating_offset(self.notes.amp.teleop, amp);
           self.notes.speaker_amped = saturating_offset(self.notes.speaker_amped, speaker);
         } else {
-          self.notes.amp.auto = saturating_offset(self.notes.amp.teleop, amp);
+          self.notes.amp.teleop = saturating_offset(self.notes.amp.teleop, amp);
           self.notes.speaker_unamped = saturating_offset(self.notes.speaker_unamped, speaker);
         }
       },

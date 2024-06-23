@@ -20,6 +20,8 @@ export default withPermission(["Scoring"], function RefereePanel({ params }: { p
 
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useToasts();
+
+  const [ mode, setMode ] = useState<string>("root");
   
   useEffect(() => {
     let cbs = [
@@ -37,48 +39,47 @@ export default withPermission(["Scoring"], function RefereePanel({ params }: { p
         <h3 className="mb-0"><i>{ currentMatch ? currentMatch.match_id === "test" ? "Test Match" : matches.find(m => m.id === currentMatch?.match_id)?.name || currentMatch?.match_id : "Waiting for Scorekeeper..." }</i></h3>
         <i className="text-muted"> { params.alliance.toUpperCase() } { params.position.toUpperCase() } Referee </i>
       </Col>
-    </Row>
-    { score && <RefereePanelFouls
-      score={score}
-      onUpdate={update => call<"scoring/score_update">("scoring/score_update", { update: update }).then(setScore).catch(addError)}
-      flipped={params.position === "far"}
-    /> }
-    { score && <Row>
-      { stations.filter(s => s.id.alliance === params.alliance).map((stn, i) => (
-        <RefereeTeamCard
-          key={i}
-          idx={i}
-          score={score[params.alliance]}
-          station={stn}
-          update={update => call<"scoring/score_update">("scoring/score_update", { update: { alliance: params.alliance, update: update } }).then(setScore).catch(addError)}
+      <Col md="auto">
+        <EnumToggleGroup
+          name="mode"
+          values={[ "root", "stage" ]}
+          names={["FOULS & LEAVE", "STAGE & MICS"]}
+          value={mode}
+          onChange={(m) => setMode(m)}
+          variant="outline-secondary"
+          variantActive="green"
         />
-      ))}
-    </Row>}
-    { score && <Row>
-      <Button
-        className="btn-block referee-station-score"
-        data-score-type="auto_docked"
-        data-score-value={score[params.alliance].live.auto_docked}
-        onClick={() => call<"scoring/score_update">("scoring/score_update", { update: { alliance: params.alliance, update: { AutoDocked: { docked: !score[params.alliance].live.auto_docked } } } }).then(setScore).catch(addError)}
-      >
-        {
-          score[params.alliance].live.auto_docked ? <React.Fragment> AUTO DOCKED &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
-            : <React.Fragment> NO AUTO DOCKED &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
-        }
-      </Button>
-    </Row> }
+      </Col>
+    </Row>
+
+    {
+      mode == "root" ? <React.Fragment>
+        { score && <RefereePanelFouls
+          score={score}
+          onUpdate={update => call<"scoring/score_update">("scoring/score_update", { update: update }).then(setScore).catch(addError)}
+          flipped={params.position === "far"}
+        /> }
+        { score && <Row>
+          { stations.filter(s => s.id.alliance === params.alliance).map((stn, i) => (
+            <RefereeTeamCard
+              key={i}
+              idx={i}
+              score={score[params.alliance]}
+              station={stn}
+              update={update => call<"scoring/score_update">("scoring/score_update", { update: { alliance: params.alliance, update: update } }).then(setScore).catch(addError)}
+            />
+          ))}
+        </Row>}
+      </React.Fragment> : <React.Fragment>
+          { score && <Stage2024 alliance={params.alliance} stations={stations} score={score[params.alliance]} update={update => call<"scoring/score_update">("scoring/score_update", { update: { alliance: params.alliance, update: update } })} /> }
+      </React.Fragment>
+    }
   </div>
 })
 
-export const ENDGAME_MAP: { [K in EndgameType]: string } = {
-  None: "None",
-  Parked: "ENDGAME Park",
-  Docked: "ENDGAME Docked"
-};
-
 function RefereeTeamCard({ idx, station, score, update }: { idx: number, station: AllianceStation, score: SnapshotScore, update: (u: ScoreUpdate) => void }) {
   const alliance = station.id.alliance;
-  const has_mobility = score.live.mobility[idx];
+  const has_mobility = score.live.leave[idx];
   
   return withVal(station.team, team => <Col className="referee-station" data-alliance={alliance}>
       <Row>
@@ -86,18 +87,18 @@ function RefereeTeamCard({ idx, station, score, update }: { idx: number, station
         <Col>
           <Button
             className="btn-block referee-station-score"
-            data-score-type="mobility"
+            data-score-type="leave"
             data-score-value={has_mobility}
-            onClick={() => update( { Mobility: { station: idx, crossed: !has_mobility } } )}
+            onClick={() => update( { Leave: { station: idx, crossed: !has_mobility } } )}
           >
             {
-              has_mobility ? <React.Fragment> AUTO MOBILITY OK &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
-                : <React.Fragment> NO AUTO MOBILITY &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
+              has_mobility ? <React.Fragment> AUTO LEAVE OK &nbsp; <FontAwesomeIcon icon={faCheck} />  </React.Fragment>
+                : <React.Fragment> NO AUTO LEAVE &nbsp; <FontAwesomeIcon icon={faTimes} /> </React.Fragment>
             }
           </Button>
         </Col>
       </Row>
-      <Row>
+      {/* <Row>
           <Col>
             <EnumToggleGroup
               name={`${team}-endgame`}
@@ -111,6 +112,70 @@ function RefereeTeamCard({ idx, station, score, update }: { idx: number, station
               // disabled={!endgame}
             />
           </Col>
-      </Row>
+      </Row> */}
     </Col>) || <Col />;
+}
+
+const STAGE_MAP = [
+  "CENTER",
+  "LEFT",
+  "RIGHT"
+]
+
+const STAGE_COLORS = [
+  "purple",
+  "orange",
+  "green"
+]
+
+function Stage2024({ alliance, stations, score, update }: { alliance: Alliance, stations: AllianceStation[], score: SnapshotScore, update: (u: ScoreUpdate) => void }) {
+  return <Row>
+    <Col md="auto">
+      <div className="scoring-2024-stage" data-alliance={alliance}>
+        <img src={`/img/game/stage_${alliance}.png`}></img>
+
+        {
+          [0, 1, 2].map(i => <span className={`scoring-2024-indicator text-${STAGE_COLORS[i]}`} data-index={i}>{ STAGE_MAP[i] }</span>)
+        }
+      </div>
+    </Col>
+    <Col md="5">
+      <h4> Microphones </h4>
+        {[ 0, 1, 2 ].map(i => <Button className="mx-1" variant={score.live.microphones[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => update({ Microphone: { activated: !score.live.microphones[i], stage: i } })}>
+          <FontAwesomeIcon icon={ score.live.microphones[i] ? faCheck : faTimes } /> &nbsp; { STAGE_MAP[i] }
+        </Button>)}
+      <br />
+      <br />
+
+      <h4> Traps </h4>
+        {[ 0, 1, 2 ].map(i => <Button className="mx-1" variant={score.live.traps[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => update({ Trap: { filled: !score.live.traps[i], stage: i } })}>
+          <FontAwesomeIcon icon={ score.live.traps[i] ? faCheck : faTimes } /> &nbsp; { STAGE_MAP[i] }
+        </Button>)}
+      <br />
+      <br />
+
+      <h4> Robots </h4>
+        {stations.map((s, i) => <Row>
+          { s.team && <Col>
+            { s.team }
+            <br /> 
+            <EnumToggleGroup
+              name={`${s.team}-endgame`}
+              values={["None", "Parked", { Stage: 0 }, { Stage: 1 }, { Stage: 2 }].map(x => JSON.stringify(x))}
+              names={["NONE", "PARK", "CENTER", "LEFT", "RIGHT"]}
+              value={JSON.stringify(score.live.endgame[i])}
+              onChange={(eg) => update({ Endgame: { endgame: JSON.parse(eg) as EndgameType, station: i } })}
+              variant={"outline-secondary"}
+              variantActive={
+                score.live.endgame[i] == "None" ? "secondary" : 
+                score.live.endgame[i] == "Parked" ? "primary" : 
+                STAGE_COLORS[(score.live.endgame[i] as any).Stage]
+              }
+            />
+          </Col> }
+        </Row>)}
+      <br />
+      <br />
+    </Col>
+  </Row>
 }

@@ -14,24 +14,14 @@ const derivedRenderer = <T extends keyof DerivedScore,>(dr: DerivedRenderer<T>):
 
 const DERIVED_RENDER: SomeDerivedRenderer[] = [
   derivedRenderer({
-    key: "mobility_points",
+    key: "leave_points",
     name: "MOBILITY POINTS",
     render: v => v,
   }),
   derivedRenderer({
-    key: "auto_docked_points",
-    name: "AUTO DOCK POINTS",
-    render: v => v,
-  }),
-  derivedRenderer({
-    key: "community_points",
-    name: "COMMUNITY POINTS",
-    render: v => (v.auto + v.teleop)
-  }),
-  derivedRenderer({
-    key: "link_points",
-    name: "LINK POINTS",
-    render: v => v
+    key: "notes",
+    name: "NOTE POINTS",
+    render: v => v.total_points
   }),
   derivedRenderer({
     key: "endgame_points",

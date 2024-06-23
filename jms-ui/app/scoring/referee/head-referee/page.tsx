@@ -37,7 +37,7 @@ export default withPermission(["Scoring"], function HeadReferee() {
       onUpdate={update => call<"scoring/score_update">("scoring/score_update", { update: update }).then(setScore).catch(addError)}
       flipped={false}
     /> }
-    <Row>
+    {/* <Row>
       {
         score && ALLIANCES.map(alliance => <Col key={alliance as string}>
           <Button
@@ -59,6 +59,6 @@ export default withPermission(["Scoring"], function HeadReferee() {
           </Button>
         </Col>)
       }
-    </Row>
+    </Row> */}
   </div>
 })
