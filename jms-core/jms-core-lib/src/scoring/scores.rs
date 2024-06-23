@@ -66,6 +66,7 @@ pub struct DerivedNotes {
   pub speaker_unamped_points: isize,
   pub amplified_remaining: Option<DBDuration>,
   pub total_count: usize,
+  pub total_points: isize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -106,7 +107,6 @@ pub struct DerivedScore {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
-// #[serde(into = "MatchScoreSnapshot", from = "MatchScoreSnapshot")]
 pub struct MatchScore {
   pub red: LiveScore,
   pub blue: LiveScore,
@@ -257,16 +257,35 @@ impl LiveScore {
       true => 15,
       false => 18,
     };
-    
-    // TODO: Calculate End-game
-    // let endgame_points = self.endgame.iter().map(|x| match (*x, &self.microphones[..]) {
-    //   (EndgameType::None, _) => 0,
-    //   (EndgameType::Parked, _) => 1,
-    //   (EndgameType::StageLeft, &[true, _, _]) => 4,
-    //   (EndgameType::StageLeft, &[false, _, _]) => 3,
-    // });
 
-    let endgame_points = 0;
+    let mut endgame_points = 0isize;
+
+    let mut stage_counts = [0; 3];
+
+    // PARK / ONSTAGE Points
+    for team_endgame in self.endgame.iter() {
+      match team_endgame {
+        EndgameType::None => {},
+        EndgameType::Parked => {
+          endgame_points += 1;
+        },
+        EndgameType::Stage(stage) => {
+          let spotlit = self.microphones[*stage];
+          stage_counts[*stage] += 1;
+          if spotlit {
+            endgame_points += 4;
+          } else {
+            endgame_points += 3;
+          }
+        },
+      }
+    }
+
+    // HARMONY points
+    endgame_points += stage_counts.iter().filter(|&x| *x >= 2).map(|x| *x - 1).count() as isize * 2;
+
+    // Trap Points
+    endgame_points += self.traps.iter().filter(|&x| *x).count() as isize * 5;
 
     let amplified_remaining = match self.notes.amp_time {
       Some(x) => {
@@ -282,15 +301,21 @@ impl LiveScore {
 
     let total_notes = self.notes.amp.total() + self.notes.speaker_amped + self.notes.speaker_unamped;
 
+    let amp_points = ModeScore { auto: (self.notes.amp.auto * 2) as isize, teleop: (self.notes.amp.teleop * 1) as isize };
+    let speaker_auto_points = (self.notes.speaker_auto * 5) as isize;
+    let speaker_amped_points = (self.notes.speaker_amped * 5) as isize;
+    let speaker_unamped_points = (self.notes.speaker_unamped * 2) as isize;
+
     let mut d = DerivedScore {
       leave_points: self.leave.iter().map(|x| (*x as isize) * 2).sum(),
       notes: DerivedNotes {
-        amp_points: ModeScore { auto: (self.notes.amp.auto * 2) as isize, teleop: (self.notes.amp.teleop * 1) as isize },
-        speaker_auto_points: (self.notes.speaker_auto * 5) as isize,
-        speaker_amped_points: (self.notes.speaker_amped * 5) as isize,
-        speaker_unamped_points: (self.notes.speaker_unamped * 2) as isize,
+        total_points: amp_points.auto + amp_points.teleop + speaker_auto_points + speaker_amped_points + speaker_unamped_points,
+        amp_points,
+        speaker_auto_points,
+        speaker_amped_points,
+        speaker_unamped_points,
         amplified_remaining: amplified_remaining.map(DBDuration),
-        total_count: total_notes
+        total_count: total_notes,
       },
       coopertition_met: self.coop,
       melody_threshold,
@@ -385,59 +410,87 @@ impl LiveScore {
   }
 
   pub fn randomise() -> Self {
-    // let mut rng = rand::thread_rng();
+    let mut rng = rand::thread_rng();
 
-    // let rand_endgame = |rng: &mut ThreadRng| {
-    //   match rng.gen_range(0..=2) {
-    //     0 => EndgameType::None,
-    //     1 => EndgameType::Parked,
-    //     _ => EndgameType::Docked
-    //   }
-    // };
+    let rand_endgame = |rng: &mut ThreadRng| {
+      match rng.gen_range(0..=5) {
+        0 => EndgameType::None,
+        1 => EndgameType::Parked,
+        x => EndgameType::Stage(x - 2)
+      }
+    };
 
-    // let mut community = ModeScore {
-    //   auto: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
-    //   teleop: vec![vec![GamepieceType::None; 9], vec![GamepieceType::None; 9], vec![GamepieceType::None; 9]],
-    // };
+    let leave: Vec<bool> = vec![ rng.gen(), rng.gen(), rng.gen() ];
 
-    // let auto_pieces = rng.gen_range(0..=2);
-    // let teleop_pieces = rng.gen_range(0..=10);
+    let notes = LiveNotes {
+      banked: 0,
+      amp: ModeScore { auto: rng.gen_range(0..=1), teleop: rng.gen_range(0..=7) },
+      speaker_auto: rng.gen_range(0..=5),
+      speaker_amped: rng.gen_range(0..=10),
+      speaker_unamped: rng.gen_range(0..=20),
+      amp_time: None,
+    };
 
-    // for i in 0..(auto_pieces + teleop_pieces) {
-    //   let row = rng.gen_range(0..3);
-    //   let col = rng.gen_range(0..9);
+    Self {
+      leave,
+      notes,
+      coop: rng.gen(),
+      microphones: vec![rng.gen(), rng.gen(), rng.gen()],
+      traps: vec![rng.gen(), rng.gen(), rng.gen()],
+      endgame: vec![rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng)],
+      penalties: Penalties {
+        fouls: rng.gen_range(0..=4),
+        tech_fouls: rng.gen_range(0..=2)
+      },
+      adjustment: 0,
+    }
+  }
+}
 
-    //   let allowed = match row {
-    //     0 => vec![GamepieceType::Cube, GamepieceType::Cone],
-    //     _ => match col {
-    //       x if x % 3 == 1 => vec![GamepieceType::Cube],
-    //       _ => vec![GamepieceType::Cone]
-    //     }
-    //   };
+#[cfg(test)]
+mod tests {
+  use super::*;
 
-    //   let selected = allowed[rng.gen_range(0..allowed.len())];
+  #[test]
+  fn hop_qm16() {
+    let blue = LiveScore {
+      leave: vec![false, true, true],
+      notes: LiveNotes { banked: 0, amp: ModeScore { auto: 0, teleop: 4 }, speaker_auto: 5, speaker_amped: 2, speaker_unamped: 8, amp_time: None },
+      coop: true,
+      microphones: vec![false, false, false],
+      traps: vec![false, true, false],
+      endgame: vec![EndgameType::None, EndgameType::Stage(1), EndgameType::Stage(2)],
+      penalties: Penalties { fouls: 0, tech_fouls: 2 },
+      adjustment: 0,
+    };
 
-    //   if i < auto_pieces {
-    //     community.auto[row][col] = selected;
-    //   } else {
-    //     community.teleop[row][col] = selected;
-    //   }
-    // }
+    let red = LiveScore {
+      leave: vec![true, false, true],
+      notes: LiveNotes { banked: 0, amp: ModeScore { auto: 0, teleop: 7 }, speaker_auto: 6, speaker_amped: 10, speaker_unamped: 0, amp_time: None },
+      coop: true,
+      microphones: vec![false, false, false],
+      traps: vec![false, false, false],
+      endgame: vec![EndgameType::Parked, EndgameType::Stage(1), EndgameType::Parked],
+      penalties: Penalties { fouls: 1, tech_fouls: 0 },
+      adjustment: 0,
+    };
 
-    // Self {
-    //   mobility: vec![rng.gen(), rng.gen(), rng.gen()],
-    //   community,
-    //   auto_docked: rng.gen(),
-    //   charge_station_level: ModeScore { auto: rng.gen(), teleop: rng.gen() },
-    //   endgame: vec![rand_endgame(&mut rng), rand_endgame(&mut rng), rand_endgame(&mut rng)],
-    //   penalties: Penalties {
-    //     fouls: rng.gen_range(0..=4),
-    //     tech_fouls: rng.gen_range(0..=2)
-    //   },
-    //   sustainability_adjust: false,
-    //   activation_adjust: false,
-    //   adjustment: 0
-    // }
-    Self::new(3)
+    let derived_blue = blue.derive(&red);
+    let derived_red = red.derive(&blue);
+    
+    assert_eq!(derived_blue.notes.total_points, 55);
+    assert_eq!(derived_blue.leave_points, 4);
+    assert_eq!(derived_blue.endgame_points, 11);
+
+    assert_eq!(derived_red.notes.total_points, 87);
+    assert_eq!(derived_red.leave_points, 4);
+    assert_eq!(derived_red.endgame_points, 5);
+
+    assert_eq!(derived_blue.total_score, 72);
+    assert_eq!(derived_blue.total_rp, 1);
+
+    // NOTE: The extra ensemble RP comes from G424, which in JMS is allocated after the scores are entered.
+    assert_eq!(derived_red.total_score, 106);
+    assert_eq!(derived_red.total_rp, 3);
   }
 }
