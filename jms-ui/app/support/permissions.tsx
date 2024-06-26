@@ -8,6 +8,9 @@ export const PERMISSIONS: { [k in Permission]: string } = {
   "FTA": "FTA",
   "FTAA": "FTAA",
   "Scorekeeper": "Scorekeeper",
+  
+  "HumanPlayerBlue": "Human Player (Blue)",
+  "HumanPlayerRed": "Human Player (Red)",
 
   "ManageEvent": "Manage Event",
   "ManageTeams": "Manage Teams",
@@ -29,6 +32,9 @@ export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
   "FTA": [ "ManageEvent", "ManageTeams", "ManageSchedule", "ManagePlayoffs", "ManageAwards", "MatchFlow", "Estop", "ManageAlliances", "ManageAudience", "Ticketing" ],
   "FTAA": [ "Estop", "Ticketing" ],
   "Scorekeeper": [ "ManageAwards", "MatchFlow", "Estop", "Scoring", "EditScores", "ManageAlliances", "ManageAudience" ],
+
+  "HumanPlayerBlue": [],
+  "HumanPlayerRed": [],
 
   /* Implications are not transient, so individual permissions get no implications */
   "ManageEvent": [],

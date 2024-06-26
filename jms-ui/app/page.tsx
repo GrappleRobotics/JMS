@@ -66,6 +66,12 @@ export default function Home() {
           <HomeTile name="Scoring" href="/scoring" img="scorers.jpg"> Score Matches </HomeTile>
           <HomeTile name="Referee" href="/scoring/referee" img="referee.jpg"> Referee Matches, Assign Fouls </HomeTile>
         </PermissionGate>
+        <PermissionGate permissions={["HumanPlayerBlue"]}>
+          <HomeTile name="Human Player Blue" href="/scoring/blue/human-player" img="scorers.jpg"> Human Player (Blue) </HomeTile>
+        </PermissionGate>
+        <PermissionGate permissions={["HumanPlayerRed"]}>
+          <HomeTile name="Human Player Red" href="/scoring/red/human-player" img="scorers.jpg"> Human Player (Red) </HomeTile>
+        </PermissionGate>
         <HomeTile name="Match Timer" href="/timer" img="timer.png"> On-Field Match Timers </HomeTile>
         <HomeTile name="Team Estops" href="/estops" img="estop.png"> Team E-Stops </HomeTile>
       </HomeTileRow>

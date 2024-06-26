@@ -135,27 +135,27 @@ function Stage2024({ alliance, stations, score, update }: { alliance: Alliance, 
         <img src={`/img/game/stage_${alliance}.png`}></img>
 
         {
-          [0, 1, 2].map(i => <span className={`scoring-2024-indicator text-${STAGE_COLORS[i]}`} data-index={i}>{ STAGE_MAP[i] }</span>)
+          [0, 1, 2].map(i => <span key={`indicator-${i}`} className={`scoring-2024-indicator text-${STAGE_COLORS[i]}`} data-index={i}>{ STAGE_MAP[i] }</span>)
         }
       </div>
     </Col>
     <Col md="5">
       <h4> Microphones </h4>
-        {[ 0, 1, 2 ].map(i => <Button className="mx-1" variant={score.live.microphones[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => update({ Microphone: { activated: !score.live.microphones[i], stage: i } })}>
+        {[ 0, 1, 2 ].map(i => <Button key={`mic-${i}`} className="mx-1" variant={score.live.microphones[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => update({ Microphone: { activated: !score.live.microphones[i], stage: i } })}>
           <FontAwesomeIcon icon={ score.live.microphones[i] ? faCheck : faTimes } /> &nbsp; { STAGE_MAP[i] }
         </Button>)}
       <br />
       <br />
 
       <h4> Traps </h4>
-        {[ 0, 1, 2 ].map(i => <Button className="mx-1" variant={score.live.traps[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => update({ Trap: { filled: !score.live.traps[i], stage: i } })}>
+        {[ 0, 1, 2 ].map(i => <Button key={`trap-${i}`} className="mx-1" variant={score.live.traps[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => update({ Trap: { filled: !score.live.traps[i], stage: i } })}>
           <FontAwesomeIcon icon={ score.live.traps[i] ? faCheck : faTimes } /> &nbsp; { STAGE_MAP[i] }
         </Button>)}
       <br />
       <br />
 
       <h4> Robots </h4>
-        {stations.map((s, i) => <Row>
+        {stations.map((s, i) => <Row key={`station-${i}`}>
           { s.team && <Col>
             { s.team }
             <br /> 

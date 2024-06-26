@@ -87,7 +87,7 @@ impl Default for LiveScore {
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct DerivedScore {
   pub leave_points: isize,
   pub notes: DerivedNotes,
@@ -96,6 +96,8 @@ pub struct DerivedScore {
   pub melody_threshold: usize,
   pub melody_rp: bool,
   pub ensemble_rp: bool,
+
+  pub amplified_remaining: Option<DBDuration>,
 
   pub mode_score: ModeScore<isize>,
   pub penalty_score: usize,
@@ -147,7 +149,7 @@ pub struct SnapshotScore {
 
 impl PartialEq for SnapshotScore {
   fn eq(&self, other: &Self) -> bool {
-    self.live == other.live
+    self.live == other.live && self.derived == other.derived
   }
 }
 
@@ -325,6 +327,8 @@ impl LiveScore {
 
       penalty_score: other_alliance.penalties.fouls * 2 + other_alliance.penalties.tech_fouls * 5,
       
+      amplified_remaining: self.amplified_remaining(),
+
       mode_score: ModeScore { auto: 0, teleop: 0 },
       total_score: 0,
       total_bonus_rp: 0,
@@ -371,10 +375,16 @@ impl LiveScore {
         self.leave[station] = crossed;
       },
       ScoreUpdate::Coop => {
-        self.coop = true;
+        if self.notes.banked > 0 {
+          self.coop = true;
+          self.notes.banked = saturating_offset(self.notes.banked, -1);
+        }
       },
       ScoreUpdate::Amplify => {
-        self.notes.amp_time = Some(Local::now());
+        if self.notes.banked >= 2 {
+          self.notes.amp_time = Some(Local::now());
+          self.notes.banked = 0;
+        }
       },
       ScoreUpdate::Microphone { stage, activated } => {
         self.microphones[stage] = activated;
@@ -383,20 +393,23 @@ impl LiveScore {
         self.traps[stage] = filled;
       },
       ScoreUpdate::Notes { auto, speaker, amp } => {
-        let amplified = match self.notes.amp_time {
-          Some(x) if (Local::now() - x) <= Duration::seconds(10) => true,
-          _ => false
-        };
+        let amplified = self.amplified_remaining().is_some();
 
         if auto {
           self.notes.amp.auto = saturating_offset(self.notes.amp.auto, amp);
           self.notes.speaker_auto = saturating_offset(self.notes.speaker_auto, speaker);
+
+          self.notes.banked = 2.min(saturating_offset(self.notes.banked, amp));
         } else if amplified {
           self.notes.amp.teleop = saturating_offset(self.notes.amp.teleop, amp);
           self.notes.speaker_amped = saturating_offset(self.notes.speaker_amped, speaker);
+
+          self.notes.banked = 2.min(saturating_offset(self.notes.banked, amp));
         } else {
           self.notes.amp.teleop = saturating_offset(self.notes.amp.teleop, amp);
           self.notes.speaker_unamped = saturating_offset(self.notes.speaker_unamped, speaker);
+
+          self.notes.banked = 2.min(saturating_offset(self.notes.banked, amp));
         }
       },
       ScoreUpdate::Endgame { station, endgame } => {
@@ -406,6 +419,21 @@ impl LiveScore {
         self.penalties.fouls = saturating_offset(self.penalties.fouls, fouls);
         self.penalties.tech_fouls = saturating_offset(self.penalties.tech_fouls, tech_fouls);
       },
+    }
+  }
+
+  fn amplified_remaining(&self) -> Option<DBDuration> {
+    match self.notes.amp_time {
+      Some(x) => {
+        let elapsed = Local::now() - x;
+        let max = Duration::seconds(10);
+        if elapsed <= max {
+          return Some(DBDuration(max - elapsed));
+        } else {
+          return None
+        }
+      },
+      _ => None
     }
   }
 

@@ -12,6 +12,8 @@ pub enum Permission {
   FTA,
   FTAA,
   Scorekeeper,
+  HumanPlayerBlue,
+  HumanPlayerRed,
   /* Permissions */
   ManageEvent,
   ManageTeams,

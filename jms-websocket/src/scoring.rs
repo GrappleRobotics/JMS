@@ -25,7 +25,17 @@ pub trait ScoringWebsocket {
 
   #[endpoint]
   async fn score_update(&self, ctx: &WebsocketContext, token: &MaybeToken, update: ScoreUpdateData) -> anyhow::Result<MatchScoreSnapshot> {
-    token.auth(&ctx.kv)?.require_permission(&[Permission::Scoring])?;
+    let hp_permission = match update.alliance {
+      Alliance::Blue => Permission::HumanPlayerBlue,
+      Alliance::Red => Permission::HumanPlayerRed,
+    };
+    
+    // Check permissions
+    match update.update {
+      jms_core_lib::scoring::scores::ScoreUpdate::Coop => token.auth(&ctx.kv)?.require_permission(&[hp_permission])?,
+      jms_core_lib::scoring::scores::ScoreUpdate::Amplify => token.auth(&ctx.kv)?.require_permission(&[hp_permission])?,
+      _ => token.auth(&ctx.kv)?.require_permission(&[Permission::Scoring])?
+    };
     
     let my_id = Uuid::new_v4().to_string();
 

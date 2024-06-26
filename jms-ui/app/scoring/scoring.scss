@@ -90,7 +90,7 @@
 }
 
 // Scorers
-.scorer-panel {
+.scorer-panel, .hp-panel {
   max-width: 90vw;
   margin: auto;
 
@@ -118,17 +118,15 @@
 }
 
 .scorer-button {
-  &[data-button-type="2024-amp"] {
-    font-weight: bold;
-    font-size: 1.45em;
-    height: 3.75em;
-  }
+  font-weight: bold;
+  font-size: 1.45em;
+  height: 3.75em;
+}
 
-  &[data-button-type="2024-speaker"] {
-    font-weight: bold;
-    font-size: 1.45em;
-    height: 3.75em;
-  }
+.hp-button {
+  font-weight: bold;
+  font-size: 1.45em;
+  height: 3.75em;
 }
 
 // 2024
