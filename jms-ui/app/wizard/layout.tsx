@@ -36,6 +36,7 @@ export default function WizardLayout({ children }: { children: React.ReactNode }
           <WizardTabLink link="awards">Manage Awards</WizardTabLink>
           <br /> <h6 className="text-muted"> Advanced </h6>
           <WizardTabLink link="advanced-networking">Advanced Networking</WizardTabLink>
+          <WizardTabLink link="electronics">Field Electronics</WizardTabLink>
           <WizardTabLink link="backup">Backups</WizardTabLink>
           <br /> <h6 className="text-muted"> Integrations </h6>
           <WizardTabLink link="integrations/tba">The Blue Alliance</WizardTabLink>

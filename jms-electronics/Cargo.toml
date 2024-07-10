@@ -12,6 +12,7 @@ jms-base = { path = "../jms-base" }
 jms-core-lib = { path = "../jms-core/jms-core-lib" }
 jms-arena-lib = { path = "../jms-arena/jms-arena-lib" }
 jms-driverstation-lib = { path = "../jms-driverstation/jms-driverstation-lib" }
+jms-electronics-lib = { path = "./jms-electronics-lib" }
 tokio-serial = "5.4.4"
 log = "0.4.20"
 deku = "0.16.0"
@@ -19,3 +20,8 @@ bytes = "1.4.0"
 tokio-util = { version = "0.7.8", features = ["net", "codec"] }
 futures-util = "0.3.28"
 futures = "0.3.28"
+async-trait = "0.1.72"
+
+binmarshal = { version = "1.1.6", default-features = false }
+grapple-frc-msgs = { version = "~2024.4.6", default-features = false, features = ["std", "serde", "schema", "grapple_jms"] }
+bounded-static = { version = "0.7.0", default-features = false, features = ["alloc", "collections", "derive"] }

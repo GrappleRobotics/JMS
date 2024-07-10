@@ -1,0 +1,15 @@
+[package]
+name = "jms-electronics-lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jms-core-lib = { path = "../../jms-core/jms-core-lib" }
+jms-base = { path = "../../jms-base" }
+schemars = "0.8.12"
+serde = "1.0.183"
+grapple-frc-msgs = { version = "~2024.4.6", default-features = false, features = ["std", "serde", "schema", "grapple_jms"] }
+jms-macros = { path = "../../jms-macros" }
+anyhow = "1.0.72"
+async-trait = "0.1.72"
+log = "0.4.19"

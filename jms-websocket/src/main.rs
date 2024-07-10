@@ -8,6 +8,7 @@ use backups::BackupWebsocket;
 use clap::{Command, Arg};
 use components::ComponentWebsocket;
 use debug::DebugWebsocket;
+use electronics::ElectronicsWebsocket;
 use event::EventWebsocket;
 use jms_base::{mq::MessageQueue, kv::KVConnection, logging::JMSLogger};
 use matches::MatchesWebsocket;
@@ -38,6 +39,7 @@ pub mod reports;
 pub mod tba;
 pub mod networking;
 pub mod tickets;
+pub mod electronics;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -75,6 +77,7 @@ async fn main() -> anyhow::Result<()> {
   ws.register(Duration::from_millis(100000), "networking", NetworkingWebsocket::new()).await;
   ws.register(Duration::from_millis(100000), "backup", BackupWebsocket::new()).await;
   ws.register(Duration::from_millis(5000), "tickets", TicketWebsocket::new()).await;
+  ws.register(Duration::from_millis(250), "electronics", ElectronicsWebsocket::new()).await;
 
   match matches.subcommand() {
     Some(("gen-schema", gen_schema)) => {

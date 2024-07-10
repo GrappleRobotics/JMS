@@ -36,14 +36,11 @@ services:
   #   <<: *jms-base
   #   command: jms-electronics
   #   environment:
-  #   - REDIS_URI=redis://redis:6379/0
-  #   - RABBITMQ_URI=amqp://rabbitmq:5672/%2f
-  #   - MEILI_URI=http://meilisearch:7700
-  #   - DS_ELECTRONICS=true
+  #   - REDIS_URI=redis://localhost:6379/0
+  #   - RABBITMQ_URI=amqp://localhost:5672/%2f
   #   depends_on:
   #   - jms-arena
-  #   devices:
-  #   - /dev/ttyACM0
+  #   network_mode: host
 
   # Driver Station needs network_mode: host in order to see UDP packet addresses and reply to them
   # accordingly.
@@ -82,17 +79,19 @@ services:
     <<: *jms-base
     command: jms-websocket
     deploy:
-      replicas: 3
-    # ports:
-    # - 9000:9000
+      replicas: 1
+    ports:
+    - 9000:9000
 
-  jms-ui:
-    image: jaci/jms-ui:latest
-    restart: unless-stopped
-    deploy:
-      replicas: 2
-    # ports:
-    # - 3000:3000
+  # jms-ui:
+  #   image: jaci/jms-ui:latest
+  #   restart: unless-stopped
+  #   deploy:
+  #     replicas: 2
+  #   environment:
+  #   - NODE_ENV=development
+  #   # ports:
+  #   # - 3000:3000
 
   # unifi:
   #   image: lscr.io/linuxserver/unifi-controller:7.4.162
@@ -122,17 +121,6 @@ services:
   #     retries: 5
 
   # Support
-  nginx:
-    build:
-      context: nginx
-    restart: unless-stopped
-    depends_on:
-    - jms-ui
-    - jms-websocket
-    ports:
-    - 80:80
-    - 9000:9000
-
   redis:
     image: redis/redis-stack:latest
     restart: unless-stopped
