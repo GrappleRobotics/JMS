@@ -98,37 +98,22 @@ function RefereeTeamCard({ idx, station, score, update }: { idx: number, station
           </Button>
         </Col>
       </Row>
-      {/* <Row>
-          <Col>
-            <EnumToggleGroup
-              name={`${team}-endgame`}
-              className="referee-station-score"
-              data-score-type="endgame"
-              data-score-value={score.live.endgame[idx]}
-              value={score.live.endgame[idx]}
-              values={_.keys(ENDGAME_MAP) as EndgameType[]}
-              names={_.values(ENDGAME_MAP)}
-              onChange={v => update({ Endgame: { station: idx, endgame: v } })}
-              // disabled={!endgame}
-            />
-          </Col>
-      </Row> */}
     </Col>) || <Col />;
 }
 
-const STAGE_MAP = [
+export const STAGE_MAP = [
   "CENTER",
   "LEFT",
   "RIGHT"
 ]
 
-const STAGE_COLORS = [
+export const STAGE_COLORS = [
   "purple",
   "orange",
   "green"
 ]
 
-function Stage2024({ alliance, stations, score, update }: { alliance: Alliance, stations: AllianceStation[], score: SnapshotScore, update: (u: ScoreUpdate) => void }) {
+export function Stage2024({ alliance, stations, score, update }: { alliance: Alliance, stations: AllianceStation[], score: SnapshotScore, update: (u: ScoreUpdate) => void }) {
   return <Row>
     <Col md="auto">
       <div className="scoring-2024-stage" data-alliance={alliance}>

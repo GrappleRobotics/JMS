@@ -2,8 +2,8 @@
 import { useToasts } from "@/app/support/errors";
 import { withPermission } from "@/app/support/permissions";
 import { useWebsocket } from "@/app/support/ws-component";
-import { Alliance, CommittedMatchScores, DerivedScore, EndgameType, LiveScore, Match, MatchScore, MatchScoreSnapshot } from "@/app/ws-schema";
-import { faInfoCircle, faShuffle } from "@fortawesome/free-solid-svg-icons";
+import { Alliance, AllianceStation, CommittedMatchScores, DerivedScore, EndgameType, LiveScore, Match, MatchScore, MatchScoreSnapshot, SerialisedLoadedMatch, SnapshotScore } from "@/app/ws-schema";
+import { faCheck, faInfoCircle, faShuffle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Spec } from "immutability-helper";
 import React, { useEffect, useState } from "react";
@@ -11,11 +11,109 @@ import { Button, Card, Col, Container, Form, InputGroup, Nav, Row, Table } from 
 import update from "immutability-helper";
 import { ALLIANCES } from "@/app/support/alliances";
 import BufferedFormControl from "@/app/components/BufferedFormControl";
-import { ENDGAME_MAP } from "../referee/[alliance]/[position]/page";
-import { Community2023 } from "../[alliance]/page";
 import { withConfirm } from "@/app/components/Confirm";
+import EnumToggleGroup from "@/app/components/EnumToggleGroup";
+import { STAGE_COLORS, STAGE_MAP } from "../referee/[alliance]/[position]/page";
+
+type ModeT = "Live" | "Committed";
 
 export default withPermission(["EditScores"], function EditScores() {
+  const [ mode, setMode ] = useState<ModeT>("Live");
+
+  return <Container>
+    <Row>
+      <Col>
+        <h2 className="mt-3 mb-0"> Edit Scores </h2>
+      </Col>
+      <Col className="mt-4" md="auto">
+        <EnumToggleGroup
+          name="mode"
+          value={mode}
+          onChange={setMode}
+          values={["Live", "Committed"]}
+          variant="secondary"
+          size="lg"
+        />
+      </Col>
+    </Row>
+    <Row className="mt-3">
+      <Col>
+        {
+          mode == "Committed" ? <EditScoreCommitted /> : <EditScoreLive />
+        }
+      </Col>
+    </Row>
+  </Container>
+});
+
+function EditScoreLive() {
+  const [ score, setScore ] = useState<MatchScore | null>(null);
+  const [ newScore, setNewScore ] = useState<MatchScore | null>(null);
+  const [ currentMatch, setCurrentMatch ] = useState<SerialisedLoadedMatch | null>(null);
+  const [ matches, setMatches ] = useState<Match[]>([]);
+  const [ stations, setStations ] = useState<AllianceStation[]>([]);
+
+  const { call, subscribe, unsubscribe } = useWebsocket();
+  const { addError } = useToasts();
+
+  useEffect(() => {
+    let cbs = [
+      subscribe<"scoring/current">("scoring/current", s => {
+        if (newScore === null)
+          setNewScore({ blue: s.blue.live, red: s.red.live });
+        setScore({ blue: s.blue.live, red: s.red.live });
+      }),
+      subscribe<"arena/current_match">("arena/current_match", setCurrentMatch),
+      subscribe<"matches/matches">("matches/matches", setMatches),
+      subscribe<"arena/stations">("arena/stations", setStations),
+    ];
+    return () => unsubscribe(cbs);
+  }, []);
+
+  const match = matches.find(m => m.id === currentMatch?.match_id);
+  const upToDate = JSON.stringify(score) == JSON.stringify(newScore);
+
+  return <Container>
+    <h3> Edit Live Scores </h3>
+    {
+      !(currentMatch && newScore && score && match) ? <h4 className="text-danger">No match loaded!</h4> : <React.Fragment>
+        <p className="text-muted"><FontAwesomeIcon icon={faInfoCircle} /> &nbsp; You are editing scores for <span className="text-good">{ match.name }</span></p>
+
+        <Row>
+          <Col>
+            <Button
+              variant="good"
+              onClick={() => withConfirm(() => {
+                call<"scoring/score_full_update">("scoring/score_full_update", { score: newScore })
+                  .catch(addError)
+              }, undefined, { okVariant: "good" })}
+              disabled={upToDate}
+            >
+              UPDATE SCORES
+            </Button>
+            &nbsp;
+            <Button
+              onClick={() => setNewScore(score)}
+              disabled={upToDate}
+            >
+              RESET TO LIVE
+            </Button>
+          </Col>
+        </Row>
+
+        <EditScoresInner
+          score={newScore}
+          onUpdate={u => setNewScore(update(newScore, u))}
+          disabled={false}
+          match={match}
+          stations={stations}
+        />
+      </React.Fragment>
+    }
+  </Container>
+}
+
+function EditScoreCommitted() {
   const [ matches, setMatches ] = useState<Match[]>();
   const [ targetMatch, setTargetMatch ] = useState<string>();
   const [ committedScore, setCommittedScore ] = useState<CommittedMatchScores>();
@@ -27,7 +125,7 @@ export default withPermission(["EditScores"], function EditScores() {
 
   useEffect(() => {
     let cbs = [
-      subscribe<"matches/matches">("matches/matches", setMatches)
+      subscribe<"matches/matches">("matches/matches", setMatches),
     ];
     return () => unsubscribe(cbs);
   }, [])
@@ -53,7 +151,7 @@ export default withPermission(["EditScores"], function EditScores() {
   };
 
   return <Container>
-    <h2 className="mt-3 mb-0"> Edit Scores </h2>
+    <h3> Edit Committed Scores </h3>
     <p className="text-muted"><FontAwesomeIcon icon={faInfoCircle} /> &nbsp; Here you can edit scores for matches before or after they are run. All edits will trigger a recalculation of team rankings if appropriate.</p>
     
     <Row>
@@ -69,7 +167,7 @@ export default withPermission(["EditScores"], function EditScores() {
     <br />
     {
       match && (committedScore ? <Row>
-        <Col md={3}>
+        <Col md={2}>
           <Nav variant="pills" className="flex-column">
             <h6 className="text-muted"> Select Version </h6>
             {
@@ -118,9 +216,9 @@ export default withPermission(["EditScores"], function EditScores() {
       </React.Fragment>)
     }
   </Container>
-})
+}
 
-function EditScoresInner({ score, onUpdate, disabled, match }: { score: MatchScore, onUpdate: (u: Spec<MatchScore>) => void, disabled: boolean, match: Match }) {
+function EditScoresInner({ score, onUpdate, disabled, match, stations }: { score: MatchScore, onUpdate: (u: Spec<MatchScore>) => void, disabled: boolean, match: Match, stations?: AllianceStation[] }) {
   const [ derivedScore, setDerivedScore ] = useState<MatchScoreSnapshot>();
   
   const { call } = useWebsocket();
@@ -136,6 +234,41 @@ function EditScoresInner({ score, onUpdate, disabled, match }: { score: MatchSco
       <Col>
         <Card className="card-dark" data-alliance={alliance}>
           <Card.Body>
+            <Row>
+              <Col>
+                <h6> { alliance.toUpperCase() } ALLIANCE </h6>
+              </Col>
+              <Col md="auto">
+                { derivedScore[alliance].derived.total_score }pts - +{ derivedScore[alliance].derived.total_rp }RP
+              </Col>
+            </Row>
+            <Row className="mt-2">
+              <Col>
+                <InputGroup>
+                  <InputGroup.Text>FOULS</InputGroup.Text>
+                  <BufferedFormControl
+                    auto
+                    type="number"
+                    disabled={disabled}
+                    value={score[alliance].penalties.fouls}
+                    onUpdate={v => onUpdate({ [alliance]: { penalties: { fouls: { $set: (v as number || 0) } } } })}
+                  />
+                </InputGroup>
+              </Col>
+              <Col>
+                <InputGroup>
+                  <InputGroup.Text>TECH FOULS</InputGroup.Text>
+                  <BufferedFormControl
+                    auto
+                    type="number"
+                    disabled={disabled}
+                    value={score[alliance].penalties.tech_fouls}
+                    onUpdate={v => onUpdate({ [alliance]: { penalties: { tech_fouls: { $set: (v as number || 0) } } } })}
+                  />
+                </InputGroup>
+              </Col>
+            </Row>
+            
             <YearSpecificAllianceScoreEdit
               alliance={alliance}
               live={score[alliance]}
@@ -143,7 +276,23 @@ function EditScoresInner({ score, onUpdate, disabled, match }: { score: MatchSco
               disabled={disabled}
               onUpdate={s => onUpdate({ [alliance]: s })}
               match={match}
+              stations={stations?.filter(s => s.id.alliance == alliance).sort((a, b) => a.id.station - b.id.station)}
             />
+
+            <Row className="mt-2">
+              <Col>
+                <InputGroup>
+                  <InputGroup.Text>ADJUSTMENT</InputGroup.Text>
+                  <BufferedFormControl
+                    auto
+                    type="number"
+                    disabled={disabled}
+                    value={score[alliance].adjustment}
+                    onUpdate={v => onUpdate({ [alliance]: { adjustment: { $set: (v as number || 0) } } })}
+                  />
+                </InputGroup>
+              </Col>
+            </Row>
           </Card.Body>
         </Card>
       </Col>
@@ -151,94 +300,90 @@ function EditScoresInner({ score, onUpdate, disabled, match }: { score: MatchSco
   </React.Fragment>
 }
 
-function YearSpecificAllianceScoreEdit({ alliance, live, derived, onUpdate, disabled, match }: { alliance: Alliance, live: LiveScore, derived: DerivedScore, onUpdate: (u: Spec<LiveScore>) => void, disabled: boolean, match: Match }) {
-  const [ communityAuto, setCommunityAuto ] = useState<boolean>(true);
-
+function YearSpecificAllianceScoreEdit({ alliance, live, derived, onUpdate, disabled, match, stations }: { alliance: Alliance, live: LiveScore, derived: DerivedScore, onUpdate: (u: Spec<LiveScore>) => void, disabled: boolean, match: Match, stations?: AllianceStation[] }) {
   return <React.Fragment>
-    <Row>
-      <Col>
-        <h6> { alliance.toUpperCase() } ALLIANCE </h6>
-      </Col>
-      <Col md="auto">
-        { derived.total_score }pts - +{ derived.total_rp }RP
-      </Col>
-    </Row>
+    {/* Co-op & Notes */}
     <Row className="mt-2">
+      <Col md="auto">
+        <Button variant={live.coop ? "good" : "bad"} onClick={() => onUpdate({ coop: { $set: !live.coop } })}>
+          <FontAwesomeIcon icon={live.coop ? faCheck : faTimes} /> &nbsp; { live.coop ? "CO-OP" : "NO CO-OP" }
+        </Button>
+      </Col>
       <Col>
         <InputGroup>
-          <InputGroup.Text>FOULS</InputGroup.Text>
+          <InputGroup.Text>AMP Notes (A)</InputGroup.Text>
           <BufferedFormControl
             auto
             type="number"
             disabled={disabled}
-            value={live.penalties.fouls}
-            onUpdate={v => onUpdate({ penalties: { fouls: { $set: (v as number || 0) } } })}
+            value={live.notes.amp.auto}
+            onUpdate={v => onUpdate({ notes: { amp: { auto: { $set: (v as number || 0) } } } })}
           />
         </InputGroup>
       </Col>
       <Col>
         <InputGroup>
-          <InputGroup.Text>TECH FOULS</InputGroup.Text>
+          <InputGroup.Text>AMP Notes (T)</InputGroup.Text>
           <BufferedFormControl
             auto
             type="number"
             disabled={disabled}
-            value={live.penalties.tech_fouls}
-            onUpdate={v => onUpdate({ penalties: { tech_fouls: { $set: (v as number || 0) } } })}
+            value={live.notes.amp.teleop}
+            onUpdate={v => onUpdate({ notes: { amp: { teleop: { $set: (v as number || 0) } } } })}
           />
         </InputGroup>
       </Col>
     </Row>
     <Row className="mt-2">
       <Col>
-        <Button className="btn-block" variant={live.auto_docked ? "success" : "danger"} onClick={() => onUpdate({ auto_docked: { $set: !live.auto_docked } })} disabled={disabled}>
-          AUTO DOCKED { live.auto_docked ? "OK" : "NOT OK" }
-        </Button>
+        <InputGroup>
+          <InputGroup.Text>Spk Notes (A)</InputGroup.Text>
+          <BufferedFormControl
+            auto
+            type="number"
+            disabled={disabled}
+            value={live.notes.speaker_auto}
+            onUpdate={v => onUpdate({ notes: { speaker_auto: { $set: (v as number || 0) } } })}
+          />
+        </InputGroup>
       </Col>
       <Col>
-        <Button className="btn-block" variant={live.charge_station_level.auto ? "success" : "danger"} onClick={() => onUpdate({ charge_station_level: { auto: { $set: !live.charge_station_level.auto } }})} disabled={disabled}>
-          CS AUTO - { live.charge_station_level.auto ? "LEVEL" : "NOT LEVEL" }
-        </Button>
+        <InputGroup>
+          <InputGroup.Text>Spk Notes (T AMPd)</InputGroup.Text>
+          <BufferedFormControl
+            auto
+            type="number"
+            disabled={disabled}
+            value={live.notes.speaker_amped}
+            onUpdate={v => onUpdate({ notes: { speaker_amped: { $set: (v as number || 0) } } })}
+          />
+        </InputGroup>
       </Col>
       <Col>
-        <Button className="btn-block" variant={live.charge_station_level.teleop ? "success" : "danger"} onClick={() => onUpdate({ charge_station_level: { teleop: { $set: !live.charge_station_level.teleop } }})} disabled={disabled}>
-          CS TELEOP - { live.charge_station_level.teleop ? "LEVEL" : "NOT LEVEL" }
-        </Button>
-      </Col>
-    </Row>
-
-    {/* Community */}
-    <Row className="mt-2">
-      <Col md="auto">
-        <strong>Community ({ communityAuto ? "AUTO" : "TELEOP" })</strong>
-      </Col>
-      <Col>
-        <Button size="sm" onClick={() => setCommunityAuto(!communityAuto)}>
-          <FontAwesomeIcon icon={faShuffle} />
-        </Button>
-      </Col>
-    </Row>
-    <Row>
-      <Col style={{ fontSize: '0.5em' }}>
-        <Community2023
-          score={live}
-          alliance={alliance}
-          onUpdate={(row, col, type) => onUpdate({ community: { [communityAuto ? "auto" : "teleop"]: { [row]: { [col]: { $set: type } } } } })}
-        />
+        <InputGroup>
+          <InputGroup.Text>Spk Notes (T)</InputGroup.Text>
+          <BufferedFormControl
+            auto
+            type="number"
+            disabled={disabled}
+            value={live.notes.speaker_unamped}
+            onUpdate={v => onUpdate({ notes: { speaker_unamped: { $set: (v as number || 0) } } })}
+          />
+        </InputGroup>
       </Col>
     </Row>
 
     {/* Teams */}
     <Row className="mt-2">
       {
-        match[`${alliance}_teams`].map((t, i) => <Col key={i}> <strong>{  t ? `TEAM ${t}` : `Station ${i + 1}` }</strong> </Col>)
+        (stations ? stations.map(s => s.team) : match[`${alliance}_teams`]).map((t, i) => <Col key={i}> <strong>{  t ? `TEAM ${t}` : `Station ${i + 1}` }</strong> </Col>)
       }
     </Row>
     <Row className="mt-2">
       {
-        live.mobility.map((mobility, i) => <Col key={i}>
-          <Button className="btn-block" variant={mobility ? "success" : "danger"} onClick={() => onUpdate({ mobility: { [i]: { $set: !mobility } }})} disabled={disabled}>
-            MOBILITY - { mobility ? "OK" : "NOT OK" }
+        live.leave.map((mobility, i) => <Col key={i}>
+          <Button className="btn-block" variant={mobility ? "success" : "danger"} onClick={() => onUpdate({ leave: { [i]: { $set: !mobility } }})} disabled={disabled}>
+            AUTO LEAVE - { mobility ? "OK" : "NOT OK" }
           </Button>
         </Col>)
       }
@@ -246,40 +391,56 @@ function YearSpecificAllianceScoreEdit({ alliance, live, derived, onUpdate, disa
     <Row className="mt-2">
       {
         live.endgame.map((eg, i) => <Col key={i}>
-          <Form.Select value={eg} onChange={v => onUpdate({ endgame: { [i]: { $set: v.target.value as EndgameType } } })} disabled={disabled}>
-            {
-              Object.keys(ENDGAME_MAP).map(egt => <option key={egt} value={egt}>{ (ENDGAME_MAP as any)[egt] }</option>)
+          <EnumToggleGroup
+            name={`${i}-endgame`}
+            values={["None", "Parked", { Stage: 0 }, { Stage: 1 }, { Stage: 2 }].map(x => JSON.stringify(x))}
+            names={["NONE", "PARK", "CENT.", "LEFT", "RIGHT"]}
+            value={JSON.stringify(eg)}
+            onChange={(eg2) => onUpdate({ endgame: { [i]: { $set: JSON.parse(eg2) as EndgameType } } })}
+            variant={"secondary"}
+            variantActive={
+              eg == "None" ? "dark" : 
+              eg == "Parked" ? "primary" : 
+              STAGE_COLORS[(eg as any).Stage]
             }
-          </Form.Select>
+            size="sm"
+          />
         </Col>)
       }
     </Row>
 
+    {/* Stage */}
     <Row className="mt-2">
       <Col>
-        <Button className="btn-block" variant={live.sustainability_adjust ? "success" : "danger"} onClick={() => onUpdate({ sustainability_adjust: { $set: !live.sustainability_adjust } })} disabled={disabled}>
-          SUSTAIN. OVRD { live.sustainability_adjust ? "TRUE" : "FALSE" }
-        </Button>
+        <h5> Microphones </h5>
+        {[ 0, 1, 2 ].map(i => <Button key={`mic-${i}`} className="mx-1" variant={live.microphones[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => onUpdate({ microphones: { [i]: { $set: !live.microphones[i] } } })}>
+          <FontAwesomeIcon icon={ live.microphones[i] ? faCheck : faTimes } /> &nbsp; { STAGE_MAP[i] }
+        </Button>)}
       </Col>
       <Col>
-        <Button className="btn-block" variant={live.activation_adjust ? "success" : "danger"} onClick={() => onUpdate({ activation_adjust: { $set: !live.activation_adjust } })} disabled={disabled}>
-          ACTIV. OVRD { live.activation_adjust ? "TRUE" : "FALSE" }
-        </Button>
+        <h5> Traps </h5>
+        {[ 0, 1, 2 ].map(i => <Button key={`trap-${i}`} className="mx-1" variant={live.traps[i] ? STAGE_COLORS[i] : "secondary"} onClick={() => onUpdate({ traps: { [i]: { $set: !live.traps[i] } } })}>
+          <FontAwesomeIcon icon={ live.traps[i] ? faCheck : faTimes } /> &nbsp; { STAGE_MAP[i] }
+        </Button>)}
       </Col>
     </Row>
 
+    {/* Overrides */}
     <Row className="mt-2">
       <Col>
-        <InputGroup>
-          <InputGroup.Text>ADJUSTMENT</InputGroup.Text>
-          <BufferedFormControl
-            auto
-            type="number"
-            disabled={disabled}
-            value={live.adjustment}
-            onUpdate={v => onUpdate({ adjustment: { $set: (v as number || 0) } })}
-          />
-        </InputGroup>
+        <Button className="btn-block" variant={live.coop_adjust ? "success" : "danger"} onClick={() => onUpdate({ coop_adjust: { $set: !live.coop_adjust } })} disabled={disabled}>
+          CO-OP OVRD { live.coop_adjust ? "TRUE" : "FALSE" }
+        </Button>
+      </Col>
+      <Col>
+        <Button className="btn-block" variant={live.melody_adjust ? "success" : "danger"} onClick={() => onUpdate({ melody_adjust: { $set: !live.melody_adjust } })} disabled={disabled}>
+          MELODY OVRD { live.melody_adjust ? "TRUE" : "FALSE" }
+        </Button>
+      </Col>
+      <Col>
+        <Button className="btn-block" variant={live.ensemble_adjust ? "success" : "danger"} onClick={() => onUpdate({ ensemble_adjust: { $set: !live.ensemble_adjust } })} disabled={disabled}>
+          ENSEM. OVRD { live.ensemble_adjust ? "TRUE" : "FALSE" }
+        </Button>
       </Col>
     </Row>
   </React.Fragment>

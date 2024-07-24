@@ -78,6 +78,9 @@ pub struct LiveScore {
   pub traps: Vec<bool>,
   pub endgame: Vec<EndgameType>,
   pub penalties: Penalties,
+  pub coop_adjust: bool,
+  pub melody_adjust: bool,
+  pub ensemble_adjust: bool,
   pub adjustment: isize,
 }
 
@@ -250,12 +253,15 @@ impl LiveScore {
         fouls: 0,
         tech_fouls: 0,
       },
+      coop_adjust: false,
+      melody_adjust: false,
+      ensemble_adjust: false,
       adjustment: 0,
     }
   }
 
   pub fn partial_derive(&self, other_alliance: &LiveScore) -> DerivedScore {
-    let melody_threshold = match self.coop && other_alliance.coop {
+    let melody_threshold = match (self.coop && other_alliance.coop) || self.coop_adjust {
       true => 15,
       false => 18,
     };
@@ -321,8 +327,8 @@ impl LiveScore {
       },
       coopertition_met: self.coop,
       melody_threshold,
-      melody_rp: total_notes >= melody_threshold,
-      ensemble_rp: endgame_points >= 10 && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= 2,
+      melody_rp: (total_notes >= melody_threshold) || self.melody_adjust,
+      ensemble_rp: (endgame_points >= 10 && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= 2) || self.ensemble_adjust,
       endgame_points,
 
       penalty_score: other_alliance.penalties.fouls * 2 + other_alliance.penalties.tech_fouls * 5,
@@ -470,6 +476,9 @@ impl LiveScore {
         fouls: rng.gen_range(0..=4),
         tech_fouls: rng.gen_range(0..=2)
       },
+      coop_adjust: false,
+      melody_adjust: false,
+      ensemble_adjust: false,
       adjustment: 0,
     }
   }
@@ -489,6 +498,9 @@ mod tests {
       traps: vec![false, true, false],
       endgame: vec![EndgameType::None, EndgameType::Stage(1), EndgameType::Stage(2)],
       penalties: Penalties { fouls: 0, tech_fouls: 2 },
+      coop_adjust: false,
+      melody_adjust: false,
+      ensemble_adjust: false,
       adjustment: 0,
     };
 
@@ -500,6 +512,9 @@ mod tests {
       traps: vec![false, false, false],
       endgame: vec![EndgameType::Parked, EndgameType::Stage(1), EndgameType::Parked],
       penalties: Penalties { fouls: 1, tech_fouls: 0 },
+      coop_adjust: false,
+      melody_adjust: false,
+      ensemble_adjust: false,
       adjustment: 0,
     };
 

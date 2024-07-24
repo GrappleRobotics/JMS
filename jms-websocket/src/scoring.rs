@@ -52,6 +52,27 @@ pub trait ScoringWebsocket {
     r
   }
 
+  #[endpoint]
+  async fn score_full_update(&self, ctx: &WebsocketContext, token: &MaybeToken, score: MatchScore) -> anyhow::Result<MatchScoreSnapshot> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::EditScores])?;
+
+    let my_id = Uuid::new_v4().to_string();
+    
+    loop {
+      ctx.kv.setnx("__score_update_lock", &my_id)?;
+      if ctx.kv.get::<String>("__score_update_lock")? == my_id {
+        break;
+      }
+      tokio::time::sleep(Duration::from_millis(1)).await;
+    }
+
+    score.update(&ctx.kv)?;
+
+    ctx.kv.del("__score_update_lock")?;
+
+    Ok(score.into())
+  }
+
   // Historical Scores
 
   #[publish]
