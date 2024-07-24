@@ -1,13 +1,13 @@
-use std::{net::{IpAddr, SocketAddr}, str::FromStr, time::Duration};
+use std::{borrow::Cow, net::{IpAddr, SocketAddr}, str::FromStr, time::Duration};
 
-use binmarshal::{BitView, BitWriter, Demarshal, VecBitWriter};
+use binmarshal::{AsymmetricCow, BitView, BitWriter, Demarshal, VecBitWriter};
 use bounded_static::ToBoundedStatic;
 use bytes::Buf;
 use futures::{SinkExt, StreamExt};
-use grapple_frc_msgs::{grapple::{jms::{JMSMessage, JMSRole}, misc::MiscMessage, write_direct, GrappleDeviceMessage, GrappleMessageId, MaybeFragment, TaggedGrappleMessage}, ManufacturerMessage, MessageId};
+use grapple_frc_msgs::{grapple::{jms::{Colour, JMSCardUpdate, JMSElectronicsUpdate, JMSMessage, JMSRole, Pattern}, misc::MiscMessage, write_direct, GrappleDeviceMessage, GrappleMessageId, MaybeFragment, TaggedGrappleMessage}, ManufacturerMessage, MessageId};
 use jms_arena_lib::{AllianceStation, ArenaRPCClient, ArenaState, ARENA_STATE_KEY};
 use jms_base::{kv, mq::{self, MessageQueue, MessageQueueChannel}};
-use jms_core_lib::{db::{Singleton, Table}, models::Alliance};
+use jms_core_lib::{db::{Singleton, Table}, models::Alliance, scoring::scores::MatchScore};
 use jms_electronics_lib::{EstopMode, FieldElectronicsEndpoint, FieldElectronicsServiceRPC, FieldElectronicsSettings, FieldElectronicsUpdate};
 use log::{error, warn};
 use tokio::net::UdpSocket;
@@ -29,17 +29,80 @@ impl JMSElectronics {
 
     let mut stations = AllianceStation::sorted(&self.kv)?;
     let mut settings = FieldElectronicsSettings::get(&self.kv)?;
+    let mut endpoints = FieldElectronicsEndpoint::all(&self.kv)?;
+    let mut score = MatchScore::get(&self.kv)?;
 
     let mut arena_is_estopped = false;
 
     let mut cache_interval = tokio::time::interval(Duration::from_millis(100));
+    let mut lighting_update = tokio::time::interval(Duration::from_millis(250));
 
     loop {
       tokio::select! {
         _ = cache_interval.tick() => {
-          stations = AllianceStation::all(&self.kv)?;
+          stations = AllianceStation::sorted(&self.kv)?;
           settings = FieldElectronicsSettings::get(&self.kv)?;
+          endpoints = FieldElectronicsEndpoint::all(&self.kv)?;
+          score = MatchScore::get(&self.kv)?;
           arena_is_estopped = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")? == ArenaState::Estop;
+        },
+        _ = lighting_update.tick() => {
+          for station in &stations {
+            let (team_score, other_score, primary_colour, secondary_colour, target_role) = match station.id.alliance {
+              Alliance::Blue => ( &score.blue, &score.red, Colour::new(0, 0, 255), Colour::new(0, 0, 5), JMSRole::Blue(station.id.station as u8) ),
+              Alliance::Red => ( &score.red, &score.blue, Colour::new(255, 0, 0), Colour::new(5, 0, 0), JMSRole::Red(station.id.station as u8) ),
+            };
+
+            let score_derived = team_score.derive(&other_score);
+
+            let top_bar = match (team_score.coop, other_score.coop) {
+              (true, true) => Pattern::Solid(Colour::new(255, 120, 0)),
+              (x, y) if x != y => Pattern::FillLeft(Colour::new(255, 255, 0), Colour::new(5, 5, 0), 128),
+              _ => Pattern::Blank
+            };
+
+            // TODO: diagnosis
+            let bottom_bar = match (station.astop, station.estop) {
+              (_, true) => Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)),
+              (true, _) => Pattern::DiagonalStripes(Colour::new(255, 80, 0), Colour::new(5, 5, 0)),
+              _ => Pattern::Blank
+            };
+
+            let (background, text_colour) = match score_derived.notes.amplified_remaining {
+              Some(x) if x.0.num_seconds() <= 10 => {
+                (
+                  Pattern::FillLeft(primary_colour.clone(), secondary_colour, (255 / 10) * x.0.num_seconds() as u8),
+                  Colour::new(0, 0, 0)
+                )
+              },
+              _ => (Pattern::Blank, primary_colour.clone())
+            };
+
+            let team = match station.team {
+              Some(team) => format!("{}", team),
+              None => "----".to_owned(),
+            };
+
+            for ep in &endpoints {
+              if ep.status.role == target_role {
+                framed.send((
+                  TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Update(JMSElectronicsUpdate {
+                    card: 1,
+                    update: JMSCardUpdate::Lighting {
+                      text_back: AsymmetricCow(Cow::Borrowed("")),
+                      text_back_colour: primary_colour.clone(),
+                      text: AsymmetricCow(Cow::Borrowed(&team)),
+                      text_colour: text_colour.clone(),
+                      bottom_bar: bottom_bar.clone(),
+                      top_bar: top_bar.clone(),
+                      background: background.clone()
+                    }
+                  })))),
+                  SocketAddr::new(ep.ip.parse().unwrap(), 50002)
+                )).await.map_err(|e| e.to_string()).ok();
+              }
+            }
+          }
         },
         msg = framed.next() => match msg {
           Some(Ok((data, endpoint))) => match data.msg {
@@ -54,32 +117,38 @@ impl JMSElectronics {
 
                 let invert = settings.estop_mode == EstopMode::NormallyClosed;
 
-                match ep.status.role {
-                  JMSRole::ScoringTable => {
-                    let estop_state = invert ^ ep.status.cards[0].io_status[0];
-                    if estop_state && !arena_is_estopped {
-                      match ArenaRPCClient::signal(&self.mq, jms_arena_lib::ArenaSignal::Estop, "Field Electronics (Scoring Table)".to_string()).await? {
-                        Ok(()) => (),
-                        Err(e) => warn!("Field Electronics - Signal Error: {}", e)
-                      }
+                match ep.status.cards[0] {
+                  grapple_frc_msgs::grapple::jms::JMSCardStatus::IO(io) => {
+                    match ep.status.role {
+                      JMSRole::ScoringTable => {
+                        let estop_state = invert ^ io[0];
+                        if estop_state && !arena_is_estopped {
+                          match ArenaRPCClient::signal(&self.mq, jms_arena_lib::ArenaSignal::Estop, "Field Electronics (Scoring Table)".to_string()).await? {
+                            Ok(()) => (),
+                            Err(e) => warn!("Field Electronics - Signal Error: {}", e)
+                          }
+                        }
+                      },
+                      JMSRole::Red(stn) => {
+                        if let Some(stn) = stations.iter_mut().find(|x| x.id.alliance == Alliance::Red && x.id.station == stn as usize) {
+                          let estop_state = invert ^ io[0];
+                          if estop_state != stn.physical_estop {
+                            stn.set_physical_estop(estop_state, &self.kv)?;
+                          }
+                        }
+                      },
+                      JMSRole::Blue(stn) => {
+                        if let Some(stn) = stations.iter_mut().find(|x| x.id.alliance == Alliance::Blue && x.id.station == stn as usize) {
+                          let estop_state = invert ^ io[0];
+                          if estop_state != stn.physical_estop {
+                            stn.set_physical_estop(estop_state, &self.kv)?;
+                          }
+                        }
+                      },
+                      _ => ()
                     }
                   },
-                  JMSRole::Red => {
-                    if let Some(stn) = stations.iter_mut().find(|x| x.id.alliance == Alliance::Red) {
-                      let estop_state = invert ^ ep.status.cards[0].io_status[(stn.id.station - 1) * 2];
-                      if estop_state != stn.physical_estop {
-                        stn.set_physical_estop(estop_state, &self.kv)?;
-                      }
-                    }
-                  },
-                  JMSRole::Blue => {
-                    if let Some(stn) = stations.iter_mut().find(|x| x.id.alliance == Alliance::Blue) {
-                      let estop_state = invert ^ ep.status.cards[0].io_status[(stn.id.station - 1) * 2];
-                      if estop_state != stn.physical_estop {
-                        stn.set_physical_estop(estop_state, &self.kv)?;
-                      }
-                    }
-                  },
+                  grapple_frc_msgs::grapple::jms::JMSCardStatus::Lighting => {},
                 }
               },
               _ => ()

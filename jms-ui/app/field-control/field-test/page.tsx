@@ -8,27 +8,6 @@ import { FieldElectronicsEndpoint, JMSRole } from "@/app/ws-schema";
 import { useEffect, useState } from "react";
 import { Accordion, Card, Col, Container, Row } from "react-bootstrap";
 
-const role_io_map: { [key in JMSRole]: (string | null)[][] } = {
-  "ScoringTable": [
-    ["E-Stop", null, null, null,
-    null, null, null, null],
-    [null, null, null, null,
-    null, null, null, null],
-  ],
-  "Red": [
-    ["E-Stop 1", null, "E-Stop 2", null,
-    "E-Stop 3", null, null, null],
-    [null, null, null, null,
-    null, null, null, null],
-  ],
-  "Blue": [
-    ["E-Stop 1", null, "E-Stop 2", null,
-    "E-Stop 3", null, null, null],
-    [null, null, null, null,
-    null, null, null, null],
-  ]
-}
-
 export default withPermission(["ManageElectronics"], function FieldTest() {
   const { call, subscribe, unsubscribe } = useWebsocket();
   const { addError } = useToasts();
@@ -46,7 +25,7 @@ export default withPermission(["ManageElectronics"], function FieldTest() {
     {
       endpoints.map(ep => <Accordion key={`ep-${ep.ip}`} defaultActiveKey="0" className="mt-3">
         <Accordion.Item eventKey="0">
-          <Accordion.Header> <h4>{ ep.ip } - { ep.status.role }</h4> </Accordion.Header>
+          <Accordion.Header> <h4>{ ep.ip } - { JSON.stringify(ep.status.role) }</h4> </Accordion.Header>
           <Accordion.Body>
             <Row>
               {
@@ -54,11 +33,8 @@ export default withPermission(["ManageElectronics"], function FieldTest() {
                   <Card>
                     <Card.Header>Card { i }</Card.Header>
                     <Card.Body>
-                      { card.io_status.map((status, j) => {
+                      { card != "Lighting" && "IO" in card && card.IO.map((status, j) => {
                         let inner = <span className={status ? "text-good" : "text-bad"} style={{ fontSize: "2em", fontWeight: "bold" }}> { j } </span>;
-                        if (role_io_map[ep.status.role][i][j] != null) {
-                          return <SimpleTooltip id={`idx-${i}-${j}`} key={`idx-${i}-${j}`} tip={role_io_map[ep.status.role][i][j]}>{inner}</SimpleTooltip>
-                        }
                         return <span key={`idx-${i}-${j}`}>{ inner }</span>;
                       }) }
                     </Card.Body>
@@ -71,7 +47,8 @@ export default withPermission(["ManageElectronics"], function FieldTest() {
                 <EnumToggleGroup
                   name="role"
                   value={ep.status.role}
-                  values={[ "ScoringTable", "Red", "Blue" ] as JMSRole[]}
+                  values={[ "ScoringTable", { Red: 1 }, { Red: 2 }, { Red: 3 }, { Blue: 1 }, { Blue: 2 }, { Blue: 3 }, "TimerBlue", "TimerRed" ] as JMSRole[]}
+                  names={[ "Scoring Table", "Red 1", "Red 2", "Red 3", "Blue 1", "Blue 2", "Blue 3", "Timer (Blue)", "Timer (Red)" ]}
                   onChange={v => call<"electronics/update">("electronics/update", { update: { SetRole: { ip: ep.ip, role: v } } })}
                   variant="secondary"
                 />

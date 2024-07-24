@@ -1063,20 +1063,31 @@
       ]
     },
     "JMSCardStatus": {
-      "type": "object",
-      "required": [
-        "io_status"
-      ],
-      "properties": {
-        "io_status": {
-          "type": "array",
-          "items": {
-            "type": "boolean"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "Lighting"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "IO"
+          ],
+          "properties": {
+            "IO": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              },
+              "maxItems": 8,
+              "minItems": 8
+            }
           },
-          "maxItems": 8,
-          "minItems": 8
+          "additionalProperties": false
         }
-      }
+      ]
     },
     "JMSElectronicsStatus": {
       "type": "object",
@@ -1099,11 +1110,43 @@
       }
     },
     "JMSRole": {
-      "type": "string",
-      "enum": [
-        "ScoringTable",
-        "Red",
-        "Blue"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "ScoringTable",
+            "TimerRed",
+            "TimerBlue"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "Red"
+          ],
+          "properties": {
+            "Red": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "Blue"
+          ],
+          "properties": {
+            "Blue": {
+              "type": "integer",
+              "format": "uint8",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "JmsComponent": {
@@ -2737,51 +2780,6 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": [
-                {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/JmsComponent"
-                  }
-                }
-              ],
-              "maxItems": 2,
-              "minItems": 2
-            },
-            "path": {
-              "const": "components/components"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/PlayoffAlliance"
-              }
-            },
-            "path": {
-              "const": "alliances/alliances"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
               "$ref": "#/definitions/EventDetails"
             },
             "path": {
@@ -2798,11 +2796,11 @@
             "data": {
               "type": "array",
               "items": {
-                "$ref": "#/definitions/Award"
+                "$ref": "#/definitions/Match"
               }
             },
             "path": {
-              "const": "awards/awards"
+              "const": "matches/matches"
             }
           }
         },
@@ -2813,10 +2811,31 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/AudienceDisplay"
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Match"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "path": {
-              "const": "audience/current"
+              "const": "matches/next"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "boolean"
+            },
+            "path": {
+              "const": "matches/generator_busy"
             }
           }
         },
@@ -2869,6 +2888,130 @@
             },
             "path": {
               "const": "scoring/rankings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PlayoffAlliance"
+              }
+            },
+            "path": {
+              "const": "alliances/alliances"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/AudienceDisplay"
+            },
+            "path": {
+              "const": "audience/current"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/JmsComponent"
+                  }
+                }
+              ],
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "path": {
+              "const": "components/components"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_publish"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/FieldElectronicsEndpoint"
+              }
+            },
+            "path": {
+              "const": "electronics/endpoints"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Team"
+              }
+            },
+            "path": {
+              "const": "team/teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Award"
+              }
+            },
+            "path": {
+              "const": "awards/awards"
             }
           }
         },
@@ -2938,106 +3081,6 @@
             },
             "path": {
               "const": "arena/ds"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/FieldElectronicsEndpoint"
-              }
-            },
-            "path": {
-              "const": "electronics/endpoints"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "debug/test_publish"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Match"
-              }
-            },
-            "path": {
-              "const": "matches/matches"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Match"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "path": {
-              "const": "matches/next"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "boolean"
-            },
-            "path": {
-              "const": "matches/generator_busy"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Team"
-              }
-            },
-            "path": {
-              "const": "team/teams"
             }
           }
         }
@@ -3222,168 +3265,6 @@
           ],
           "properties": {
             "data": {
-              "const": null
-            },
-            "path": {
-              "const": "alliances/create"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "alliances/delete_all"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "alliances/promote"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "number",
-                "teams"
-              ],
-              "properties": {
-                "number": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                },
-                "teams": {
-                  "type": "array",
-                  "items": {
-                    "type": "integer",
-                    "format": "uint",
-                    "minimum": 0.0
-                  }
-                }
-              }
-            },
-            "path": {
-              "const": "alliances/set_teams"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "reports/awards"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "reports/teams"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "reports/rankings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "individual",
-                "match_type"
-              ],
-              "properties": {
-                "individual": {
-                  "type": "boolean"
-                },
-                "match_type": {
-                  "$ref": "#/definitions/MatchType"
-                }
-              }
-            },
-            "path": {
-              "const": "reports/matches"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "csv"
-              ],
-              "properties": {
-                "csv": {
-                  "type": "boolean"
-                }
-              }
-            },
-            "path": {
-              "const": "reports/wpa_key"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
               "required": [
                 "details"
               ],
@@ -3503,293 +3384,17 @@
           ],
           "properties": {
             "data": {
-              "const": null
-            },
-            "path": {
-              "const": "backup/settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
               "required": [
-                "update"
-              ],
-              "properties": {
-                "update": {
-                  "$ref": "#/definitions/BackupSettingsUpdate"
-                }
-              }
-            },
-            "path": {
-              "const": "backup/update_settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "backup/backup_now"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "backup/backup_to"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "data"
-              ],
-              "properties": {
-                "data": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "backup/restore"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "tickets/all"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "id"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "tickets/get"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "issue_type",
-                "match_id",
-                "team"
-              ],
-              "properties": {
-                "issue_type": {
-                  "type": "string"
-                },
-                "match_id": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "team": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
-                }
-              }
-            },
-            "path": {
-              "const": "tickets/new"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "comment",
-                "id"
-              ],
-              "properties": {
-                "comment": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "tickets/push_comment"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "assign",
-                "id"
-              ],
-              "properties": {
-                "assign": {
-                  "type": "boolean"
-                },
-                "id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "tickets/assign"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "id",
-                "resolve"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "resolve": {
-                  "type": "boolean"
-                }
-              }
-            },
-            "path": {
-              "const": "tickets/resolve"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "match_id",
-                "team"
+                "match_id"
               ],
               "properties": {
                 "match_id": {
                   "type": "string"
-                },
-                "team": {
-                  "type": "integer",
-                  "format": "uint",
-                  "minimum": 0.0
                 }
               }
             },
             "path": {
-              "const": "tickets/get_match_log"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "award"
-              ],
-              "properties": {
-                "award": {
-                  "$ref": "#/definitions/Award"
-                }
-              }
-            },
-            "path": {
-              "const": "awards/set_award"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "award_id"
-              ],
-              "properties": {
-                "award_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "awards/delete_award"
+              "const": "matches/delete"
             }
           }
         },
@@ -3803,7 +3408,7 @@
               "const": null
             },
             "path": {
-              "const": "networking/settings"
+              "const": "matches/debug_delete_all"
             }
           }
         },
@@ -3815,16 +3420,16 @@
           "properties": {
             "data": {
               "required": [
-                "update"
+                "params"
               ],
               "properties": {
-                "update": {
-                  "$ref": "#/definitions/NetworkingSettingsUpdate"
+                "params": {
+                  "$ref": "#/definitions/QualsMatchGeneratorParams"
                 }
               }
             },
             "path": {
-              "const": "networking/update_settings"
+              "const": "matches/gen_quals"
             }
           }
         },
@@ -3838,7 +3443,28 @@
               "const": null
             },
             "path": {
-              "const": "networking/reload_admin"
+              "const": "matches/get_playoff_mode"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "mode"
+              ],
+              "properties": {
+                "mode": {
+                  "$ref": "#/definitions/PlayoffMode"
+                }
+              }
+            },
+            "path": {
+              "const": "matches/set_playoff_mode"
             }
           }
         },
@@ -3852,7 +3478,7 @@
               "const": null
             },
             "path": {
-              "const": "networking/force_reprovision"
+              "const": "matches/reset_playoffs"
             }
           }
         },
@@ -3863,38 +3489,10 @@
           ],
           "properties": {
             "data": {
-              "required": [
-                "scene"
-              ],
-              "properties": {
-                "scene": {
-                  "$ref": "#/definitions/AudienceDisplayScene"
-                }
-              }
+              "const": null
             },
             "path": {
-              "const": "audience/set"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "sound"
-              ],
-              "properties": {
-                "sound": {
-                  "$ref": "#/definitions/AudienceDisplaySound"
-                }
-              }
-            },
-            "path": {
-              "const": "audience/play_sound"
+              "const": "matches/update_playoffs"
             }
           }
         },
@@ -4098,38 +3696,10 @@
           ],
           "properties": {
             "data": {
-              "required": [
-                "signal"
-              ],
-              "properties": {
-                "signal": {
-                  "$ref": "#/definitions/ArenaSignal"
-                }
-              }
+              "const": null
             },
             "path": {
-              "const": "arena/signal"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "match_id"
-              ],
-              "properties": {
-                "match_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "arena/load_match"
+              "const": "alliances/create"
             }
           }
         },
@@ -4143,7 +3713,7 @@
               "const": null
             },
             "path": {
-              "const": "arena/load_test_match"
+              "const": "alliances/delete_all"
             }
           }
         },
@@ -4157,7 +3727,7 @@
               "const": null
             },
             "path": {
-              "const": "arena/unload_match"
+              "const": "alliances/promote"
             }
           }
         },
@@ -4169,23 +3739,41 @@
           "properties": {
             "data": {
               "required": [
-                "station_id",
-                "updates"
+                "number",
+                "teams"
               ],
               "properties": {
-                "station_id": {
-                  "$ref": "#/definitions/AllianceStationId"
+                "number": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
                 },
-                "updates": {
+                "teams": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/AllianceStationUpdate"
+                    "type": "integer",
+                    "format": "uint",
+                    "minimum": 0.0
                   }
                 }
               }
             },
             "path": {
-              "const": "arena/update_station"
+              "const": "alliances/set_teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "tba/get_settings"
             }
           }
         },
@@ -4197,20 +3785,156 @@
           "properties": {
             "data": {
               "required": [
-                "astop",
-                "station_id"
+                "update"
               ],
               "properties": {
-                "astop": {
-                  "type": "boolean"
-                },
-                "station_id": {
-                  "$ref": "#/definitions/AllianceStationId"
+                "update": {
+                  "$ref": "#/definitions/TBASettingsUpdate"
                 }
               }
             },
             "path": {
-              "const": "arena/estop_station"
+              "const": "tba/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "tba/update_now"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "scene"
+              ],
+              "properties": {
+                "scene": {
+                  "$ref": "#/definitions/AudienceDisplayScene"
+                }
+              }
+            },
+            "path": {
+              "const": "audience/set"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "sound"
+              ],
+              "properties": {
+                "sound": {
+                  "$ref": "#/definitions/AudienceDisplaySound"
+                }
+              }
+            },
+            "path": {
+              "const": "audience/play_sound"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "networking/settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "update"
+              ],
+              "properties": {
+                "update": {
+                  "$ref": "#/definitions/NetworkingSettingsUpdate"
+                }
+              }
+            },
+            "path": {
+              "const": "networking/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "networking/reload_admin"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "networking/force_reprovision"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "in_text"
+              ],
+              "properties": {
+                "in_text": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "debug/test_endpoint"
             }
           }
         },
@@ -4291,38 +4015,10 @@
           ],
           "properties": {
             "data": {
-              "required": [
-                "in_text"
-              ],
-              "properties": {
-                "in_text": {
-                  "type": "string"
-                }
-              }
+              "const": null
             },
             "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "required": [
-                "match_id"
-              ],
-              "properties": {
-                "match_id": {
-                  "type": "string"
-                }
-              }
-            },
-            "path": {
-              "const": "matches/delete"
+              "const": "reports/awards"
             }
           }
         },
@@ -4336,7 +4032,21 @@
               "const": null
             },
             "path": {
-              "const": "matches/debug_delete_all"
+              "const": "reports/teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "reports/rankings"
             }
           }
         },
@@ -4348,30 +4058,20 @@
           "properties": {
             "data": {
               "required": [
-                "params"
+                "individual",
+                "match_type"
               ],
               "properties": {
-                "params": {
-                  "$ref": "#/definitions/QualsMatchGeneratorParams"
+                "individual": {
+                  "type": "boolean"
+                },
+                "match_type": {
+                  "$ref": "#/definitions/MatchType"
                 }
               }
             },
             "path": {
-              "const": "matches/gen_quals"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "matches/get_playoff_mode"
+              "const": "reports/matches"
             }
           }
         },
@@ -4383,44 +4083,16 @@
           "properties": {
             "data": {
               "required": [
-                "mode"
+                "csv"
               ],
               "properties": {
-                "mode": {
-                  "$ref": "#/definitions/PlayoffMode"
+                "csv": {
+                  "type": "boolean"
                 }
               }
             },
             "path": {
-              "const": "matches/set_playoff_mode"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "matches/reset_playoffs"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "const": null
-            },
-            "path": {
-              "const": "matches/update_playoffs"
+              "const": "reports/wpa_key"
             }
           }
         },
@@ -4535,7 +4207,7 @@
               "const": null
             },
             "path": {
-              "const": "tba/get_settings"
+              "const": "backup/settings"
             }
           }
         },
@@ -4551,12 +4223,12 @@
               ],
               "properties": {
                 "update": {
-                  "$ref": "#/definitions/TBASettingsUpdate"
+                  "$ref": "#/definitions/BackupSettingsUpdate"
                 }
               }
             },
             "path": {
-              "const": "tba/update_settings"
+              "const": "backup/update_settings"
             }
           }
         },
@@ -4570,7 +4242,378 @@
               "const": null
             },
             "path": {
-              "const": "tba/update_now"
+              "const": "backup/backup_now"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "backup/backup_to"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "data"
+              ],
+              "properties": {
+                "data": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "backup/restore"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "award"
+              ],
+              "properties": {
+                "award": {
+                  "$ref": "#/definitions/Award"
+                }
+              }
+            },
+            "path": {
+              "const": "awards/set_award"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "award_id"
+              ],
+              "properties": {
+                "award_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "awards/delete_award"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "tickets/all"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "tickets/get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "issue_type",
+                "match_id",
+                "team"
+              ],
+              "properties": {
+                "issue_type": {
+                  "type": "string"
+                },
+                "match_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "team": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "path": {
+              "const": "tickets/new"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "comment",
+                "id"
+              ],
+              "properties": {
+                "comment": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "tickets/push_comment"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "assign",
+                "id"
+              ],
+              "properties": {
+                "assign": {
+                  "type": "boolean"
+                },
+                "id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "tickets/assign"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "id",
+                "resolve"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "resolve": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "path": {
+              "const": "tickets/resolve"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "match_id",
+                "team"
+              ],
+              "properties": {
+                "match_id": {
+                  "type": "string"
+                },
+                "team": {
+                  "type": "integer",
+                  "format": "uint",
+                  "minimum": 0.0
+                }
+              }
+            },
+            "path": {
+              "const": "tickets/get_match_log"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "signal"
+              ],
+              "properties": {
+                "signal": {
+                  "$ref": "#/definitions/ArenaSignal"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/signal"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "match_id"
+              ],
+              "properties": {
+                "match_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/load_match"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "arena/load_test_match"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "const": null
+            },
+            "path": {
+              "const": "arena/unload_match"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "station_id",
+                "updates"
+              ],
+              "properties": {
+                "station_id": {
+                  "$ref": "#/definitions/AllianceStationId"
+                },
+                "updates": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/AllianceStationUpdate"
+                  }
+                }
+              }
+            },
+            "path": {
+              "const": "arena/update_station"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "required": [
+                "astop",
+                "station_id"
+              ],
+              "properties": {
+                "astop": {
+                  "type": "boolean"
+                },
+                "station_id": {
+                  "$ref": "#/definitions/AllianceStationId"
+                }
+              }
+            },
+            "path": {
+              "const": "arena/estop_station"
             }
           }
         }
@@ -4701,138 +4744,6 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/PlayoffAlliance"
-              }
-            },
-            "path": {
-              "const": "alliances/create"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "alliances/delete_all"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/PlayoffAlliance"
-              }
-            },
-            "path": {
-              "const": "alliances/promote"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/PlayoffAlliance"
-            },
-            "path": {
-              "const": "alliances/set_teams"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/ReportData"
-            },
-            "path": {
-              "const": "reports/awards"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/ReportData"
-            },
-            "path": {
-              "const": "reports/teams"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/ReportData"
-            },
-            "path": {
-              "const": "reports/rankings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/ReportData"
-            },
-            "path": {
-              "const": "reports/matches"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/ReportData"
-            },
-            "path": {
-              "const": "reports/wpa_key"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
               "$ref": "#/definitions/EventDetails"
             },
             "path": {
@@ -4906,24 +4817,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/BackupSettings"
+              "type": "null"
             },
             "path": {
-              "const": "backup/settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/BackupSettings"
-            },
-            "path": {
-              "const": "backup/update_settings"
+              "const": "matches/delete"
             }
           }
         },
@@ -4937,21 +4834,7 @@
               "type": "null"
             },
             "path": {
-              "const": "backup/backup_now"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "backup/backup_to"
+              "const": "matches/debug_delete_all"
             }
           }
         },
@@ -4965,7 +4848,7 @@
               "type": "null"
             },
             "path": {
-              "const": "backup/restore"
+              "const": "matches/gen_quals"
             }
           }
         },
@@ -4976,13 +4859,10 @@
           ],
           "properties": {
             "data": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/SupportTicket"
-              }
+              "$ref": "#/definitions/PlayoffMode"
             },
             "path": {
-              "const": "tickets/all"
+              "const": "matches/get_playoff_mode"
             }
           }
         },
@@ -4993,94 +4873,10 @@
           ],
           "properties": {
             "data": {
-              "$ref": "#/definitions/SupportTicket"
+              "$ref": "#/definitions/PlayoffMode"
             },
             "path": {
-              "const": "tickets/get"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/SupportTicket"
-            },
-            "path": {
-              "const": "tickets/new"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/SupportTicket"
-            },
-            "path": {
-              "const": "tickets/push_comment"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/SupportTicket"
-            },
-            "path": {
-              "const": "tickets/assign"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/SupportTicket"
-            },
-            "path": {
-              "const": "tickets/resolve"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/MatchLog"
-            },
-            "path": {
-              "const": "tickets/get_match_log"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Award"
-            },
-            "path": {
-              "const": "awards/set_award"
+              "const": "matches/set_playoff_mode"
             }
           }
         },
@@ -5094,35 +4890,7 @@
               "type": "null"
             },
             "path": {
-              "const": "awards/delete_award"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/NetworkingSettings"
-            },
-            "path": {
-              "const": "networking/settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/NetworkingSettings"
-            },
-            "path": {
-              "const": "networking/update_settings"
+              "const": "matches/reset_playoffs"
             }
           }
         },
@@ -5136,49 +4904,7 @@
               "type": "null"
             },
             "path": {
-              "const": "networking/reload_admin"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "networking/force_reprovision"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "audience/set"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "audience/play_sound"
+              "const": "matches/update_playoffs"
             }
           }
         },
@@ -5335,6 +5061,575 @@
           ],
           "properties": {
             "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PlayoffAlliance"
+              }
+            },
+            "path": {
+              "const": "alliances/create"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "alliances/delete_all"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PlayoffAlliance"
+              }
+            },
+            "path": {
+              "const": "alliances/promote"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/PlayoffAlliance"
+            },
+            "path": {
+              "const": "alliances/set_teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/TBASettings"
+            },
+            "path": {
+              "const": "tba/get_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/TBASettings"
+            },
+            "path": {
+              "const": "tba/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "tba/update_now"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "audience/set"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "audience/play_sound"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/NetworkingSettings"
+            },
+            "path": {
+              "const": "networking/settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/NetworkingSettings"
+            },
+            "path": {
+              "const": "networking/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "networking/reload_admin"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "networking/force_reprovision"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "debug/test_endpoint"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "electronics/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "electronics/reset_estops"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/FieldElectronicsSettings"
+            },
+            "path": {
+              "const": "electronics/settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/FieldElectronicsSettings"
+            },
+            "path": {
+              "const": "electronics/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/awards"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/teams"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/rankings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/matches"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/ReportData"
+            },
+            "path": {
+              "const": "reports/wpa_key"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/new_team"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Team"
+            },
+            "path": {
+              "const": "team/update"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "team/delete"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/BackupSettings"
+            },
+            "path": {
+              "const": "backup/settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/BackupSettings"
+            },
+            "path": {
+              "const": "backup/update_settings"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "backup/backup_now"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "string"
+            },
+            "path": {
+              "const": "backup/backup_to"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "backup/restore"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/Award"
+            },
+            "path": {
+              "const": "awards/set_award"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "null"
+            },
+            "path": {
+              "const": "awards/delete_award"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SupportTicket"
+              }
+            },
+            "path": {
+              "const": "tickets/all"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/SupportTicket"
+            },
+            "path": {
+              "const": "tickets/get"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/SupportTicket"
+            },
+            "path": {
+              "const": "tickets/new"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/SupportTicket"
+            },
+            "path": {
+              "const": "tickets/push_comment"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/SupportTicket"
+            },
+            "path": {
+              "const": "tickets/assign"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/SupportTicket"
+            },
+            "path": {
+              "const": "tickets/resolve"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
+              "$ref": "#/definitions/MatchLog"
+            },
+            "path": {
+              "const": "tickets/get_match_log"
+            }
+          }
+        },
+        {
+          "required": [
+            "data",
+            "path"
+          ],
+          "properties": {
+            "data": {
               "type": "null"
             },
             "path": {
@@ -5409,258 +5704,6 @@
             },
             "path": {
               "const": "arena/estop_station"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "electronics/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "electronics/reset_estops"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/FieldElectronicsSettings"
-            },
-            "path": {
-              "const": "electronics/settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/FieldElectronicsSettings"
-            },
-            "path": {
-              "const": "electronics/update_settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "string"
-            },
-            "path": {
-              "const": "debug/test_endpoint"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "matches/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "matches/debug_delete_all"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "matches/gen_quals"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/PlayoffMode"
-            },
-            "path": {
-              "const": "matches/get_playoff_mode"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/PlayoffMode"
-            },
-            "path": {
-              "const": "matches/set_playoff_mode"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "matches/reset_playoffs"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "matches/update_playoffs"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/new_team"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/Team"
-            },
-            "path": {
-              "const": "team/update"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "team/delete"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/TBASettings"
-            },
-            "path": {
-              "const": "tba/get_settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "$ref": "#/definitions/TBASettings"
-            },
-            "path": {
-              "const": "tba/update_settings"
-            }
-          }
-        },
-        {
-          "required": [
-            "data",
-            "path"
-          ],
-          "properties": {
-            "data": {
-              "type": "null"
-            },
-            "path": {
-              "const": "tba/update_now"
             }
           }
         }
