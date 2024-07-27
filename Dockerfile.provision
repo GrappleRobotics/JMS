@@ -3,7 +3,3 @@ FROM rockylinux:9.3
 RUN dnf install -y lorax wget
 
 WORKDIR /work
-ADD ./provision ./provision
-ADD ./k8s/jms-cni ./additional/jms-cni
-
-CMD ["./provision/build.sh"]

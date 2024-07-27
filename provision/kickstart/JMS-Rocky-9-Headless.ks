@@ -76,7 +76,8 @@ lvextend $(find /dev/mapper -name "*-root") -l +100%FREE -r
 cp /tmp/jms-type /mnt/sysimage/etc/jms-type
 
 # Copy through the additional stuff
-cp /run/install/repo/additional/jms-cni /mnt/sysimage/opt/cni/bin/jms-cni
+cp -r /run/install/repo/k8s /mnt/sysimage/home/fta
+cp -r /run/install/repo/docker_images /mnt/sysimage/home/fta
 
 chvt 1
 %end
@@ -157,6 +158,13 @@ helm repo update
 helm upgrade -i longhorn longhorn/longhorn --namespace longhorn-system --create-namespace
 kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.3/config/manifests/metallb-native.yaml
 fi
+
+# Install CNI
+cp /home/fta/k8s/jms-cni /opt/cni/bin/jms-cni
+
+# Install Images
+/var/lib/rancher/rke2/bin/ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io image import /home/fta/docker_images/jms.tar
+/var/lib/rancher/rke2/bin/ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io image import /home/fta/docker_images/jms-ui.tar
 
 # Disable the provisioning service, just so we don't run twice
 systemctl disable jms-provision.service
