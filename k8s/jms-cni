@@ -1,5 +1,5 @@
 #!/bin/bash
-log=/var/log/jms-ds-cni.log
+log=/var/log/jms-cni.log
 config=`cat /dev/stdin`
 
 echo >> $log
@@ -9,6 +9,7 @@ echo "CONTAINERID: $CNI_CONTAINERID" >> $log
 echo "NETNS: $CNI_NETNS" >> $log
 echo "IFNAME: $CNI_IFNAME" >> $log
 
+ip=$(echo $config | jq -r ".ip")
 target_interface=$(ip -brief addr show | grep -i 10.0.100. | awk '{print $1}')
 
 case $CNI_COMMAND in
@@ -18,7 +19,7 @@ ADD)
   ip link add $CNI_IFNAME link $target_interface type macvlan mode bridge
   ip link set $CNI_IFNAME netns $CNI_CONTAINERID
   ip netns exec $CNI_CONTAINERID ip link set $CNI_IFNAME up
-  ip netns exec $CNI_CONTAINERID ip addr add 10.0.100.5/24 dev $CNI_IFNAME
+  ip netns exec $CNI_CONTAINERID ip addr add $ip dev $CNI_IFNAME
   ip netns exec $CNI_CONTAINERID ip route add 10.0.0.0/8 via 10.0.100.1
 
   mac=$(ip netns exec $CNI_CONTAINERID ip link show $CNI_IFNAME | awk '/ether/ {print $2}')
@@ -35,7 +36,7 @@ ADD)
   \"ips\": [
     {
       \"version\": \"4\",
-      \"address\": \"10.0.100.5/24\",
+      \"address\": \"$ip\",
       \"interface\": 0
     }
   ]

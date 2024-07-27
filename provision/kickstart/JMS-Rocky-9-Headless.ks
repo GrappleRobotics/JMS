@@ -74,6 +74,10 @@ lvextend $(find /dev/mapper -name "*-root") -l +100%FREE -r
 
 # Make the sysimage aware of the JMS type
 cp /tmp/jms-type /mnt/sysimage/etc/jms-type
+
+# Copy through the additional stuff
+cp /run/install/repo/additional/jms-cni /mnt/sysimage/opt/cni/bin/jms-cni
+
 chvt 1
 %end
 
