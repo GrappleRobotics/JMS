@@ -33,6 +33,20 @@ pub struct DriverStationReport {
   pub actual_station: Option<AllianceStationId>
 }
 
+impl DriverStationReport {
+  pub fn diagnosis(&self) -> Option<&'static str> {
+    if self.estop { return Some("ESTOP") }
+    if !self.radio_ping  { return Some("RADIO") }
+    if !self.rio_ping { return Some("RIO") }
+    if !self.robot_ping { return Some("CODE") }
+
+    if self.rtt > 100 { return Some("L8NC") }
+    if self.battery_voltage < 9.0 { return Some("LBATT") }
+
+    return None
+  }
+}
+
 impl Table for DriverStationReport {
   const PREFIX: &'static str = "ds";
   type Id = u16;

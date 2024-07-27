@@ -8,6 +8,7 @@ use grapple_frc_msgs::{grapple::{jms::{Colour, JMSCardUpdate, JMSElectronicsUpda
 use jms_arena_lib::{AllianceStation, ArenaRPCClient, ArenaState, ARENA_STATE_KEY};
 use jms_base::{kv, mq::{self, MessageQueue, MessageQueueChannel}};
 use jms_core_lib::{db::{Singleton, Table}, models::Alliance, scoring::scores::MatchScore};
+use jms_driverstation_lib::DriverStationReport;
 use jms_electronics_lib::{EstopMode, FieldElectronicsEndpoint, FieldElectronicsServiceRPC, FieldElectronicsSettings, FieldElectronicsUpdate};
 use log::{error, warn};
 use tokio::net::UdpSocket;
@@ -61,11 +62,14 @@ impl JMSElectronics {
               _ => Pattern::Blank
             };
 
-            // TODO: diagnosis
-            let bottom_bar = match (station.astop, station.estop) {
-              (_, true) => Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)),
-              (true, _) => Pattern::DiagonalStripes(Colour::new(255, 80, 0), Colour::new(5, 5, 0)),
-              _ => Pattern::Blank
+            let report = station.team.and_then(|team| DriverStationReport::get(&(team as u16), &self.kv).ok());
+            let (bottom_bar, back_text, back_colour) = match (station.astop, station.estop, report) {
+              (_, true, _) => (Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)), "ESTOP".to_owned(), Colour::new(255, 0, 0)),
+              (true, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 80, 0), Colour::new(5, 5, 0)), "ASTOP".to_owned(), Colour::new(255, 80, 0)),
+              (_, _, Some(report)) if report.diagnosis() != None => {
+                (Pattern::Solid(Colour::new(255, 80, 0)), report.diagnosis().unwrap().to_owned(), Colour::new(255, 0, 0))
+              },
+              _ => (Pattern::Blank, station.team.map(|team| format!("{}", team)).unwrap_or("----".to_owned()), Colour::new(0, 255, 0))
             };
 
             let (background, text_colour) = match score_derived.notes.amplified_remaining {
@@ -89,8 +93,8 @@ impl JMSElectronics {
                   TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Update(JMSElectronicsUpdate {
                     card: 1,
                     update: JMSCardUpdate::Lighting {
-                      text_back: AsymmetricCow(Cow::Borrowed("")),
-                      text_back_colour: primary_colour.clone(),
+                      text_back: AsymmetricCow(Cow::Borrowed(&back_text)),
+                      text_back_colour: back_colour.clone(),
                       text: AsymmetricCow(Cow::Borrowed(&team)),
                       text_colour: text_colour.clone(),
                       bottom_bar: bottom_bar.clone(),
