@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "unifi.labels" . | nindent 4 }}
   annotations:
-    metallb.universe.tf/loadBalancerIPs: 10.0.100.6
+    metallb.universe.tf/loadBalancerIPs: 10.0.100.7
 spec:
   type: LoadBalancer
   ports:

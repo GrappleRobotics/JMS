@@ -20,7 +20,7 @@ spec:
         app: {{ include "jms.tpl.name" . }}
         chart: {{ include "jms.chart" . }}
         release: {{ .Release.Name | quote }}
-      {{ if eq .name "driverstation" }}
+      {{ if or (eq .name "driverstation") (eq .name "electronics") }}
       annotations:
         k8s.v1.cni.cncf.io/networks: {{ include "jms.tpl.name" . }}
       {{ end }}
