@@ -1,7 +1,7 @@
 image: jaci/jms
 tag: latest
 imagePullSecrets: {}
-imagePullPolicy: IFNotPresent
+imagePullPolicy: IfNotPresent
 
 arena:
   command: [ "jms-arena" ]

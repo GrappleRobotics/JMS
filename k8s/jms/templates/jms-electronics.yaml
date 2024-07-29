@@ -3,7 +3,6 @@
 
 {{- if $dict.valspec.enabled -}}
 {{ template "jms.statefulset" $dict }}
-{{- end -}}
 ---
 apiVersion: "k8s.cni.cncf.io/v1"
 kind: NetworkAttachmentDefinition
