@@ -71,7 +71,7 @@ export default withPermission(["Scoring"], function RefereePanel({ params }: { p
           ))}
         </Row>}
       </React.Fragment> : <React.Fragment>
-          { score && <Stage2024 alliance={params.alliance} stations={stations} score={score[params.alliance]} update={update => call<"scoring/score_update">("scoring/score_update", { update: { alliance: params.alliance, update: update } })} /> }
+          { score && <Stage2024 alliance={params.alliance} stations={stations.filter(s => s.id.alliance == params.alliance)} score={score[params.alliance]} update={update => call<"scoring/score_update">("scoring/score_update", { update: { alliance: params.alliance, update: update } })} /> }
       </React.Fragment>
     }
   </div>
