@@ -1,4 +1,6 @@
 #!/bin/sh
+set -e
+
 if [ ! -f ./cache/Rocky-9.4-x86_64-minimal.iso ]; then
   mkdir -p ./cache
   wget -O ./cache/Rocky-9.4-x86_64-minimal.iso https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9.4-x86_64-minimal.iso
