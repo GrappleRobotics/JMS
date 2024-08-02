@@ -16,7 +16,7 @@ env:
 - name: RABBITMQ_URI
   value: "amqp://user:rabbitmq@{{ template "common.names.fullname" .Subcharts.rabbitmq }}:5672/%2f"
 - name: UNIFI_URI
-  value: "https://10.0.100.6:443"
+  value: "https://10.0.100.7:443"
 {{- with .valspec.container }}
 {{- toYaml . | nindent 0 }}
 {{- end -}}
