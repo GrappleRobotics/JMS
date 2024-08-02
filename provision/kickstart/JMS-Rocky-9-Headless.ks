@@ -162,6 +162,11 @@ fi
 # Install CNI
 cp /home/fta/k8s/jms-cni /opt/cni/bin/jms-cni
 
+# Set permissions
+chown -R fta:fta /home/fta/docker_images
+chown -R fta:fta /home/fta/k8s
+chown -R fta:fta /home/fta/.kube
+
 # Install Images
 /var/lib/rancher/rke2/bin/ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io image import /home/fta/docker_images/jms.tar
 /var/lib/rancher/rke2/bin/ctr --address /run/k3s/containerd/containerd.sock --namespace k8s.io image import /home/fta/docker_images/jms-ui.tar
