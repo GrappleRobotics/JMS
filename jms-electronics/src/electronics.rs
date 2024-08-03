@@ -38,6 +38,8 @@ impl JMSElectronics {
     let mut cache_interval = tokio::time::interval(Duration::from_millis(100));
     let mut lighting_update = tokio::time::interval(Duration::from_millis(250));
 
+    let mut tick_n: u8 = 0;
+
     loop {
       tokio::select! {
         _ = cache_interval.tick() => {
@@ -48,6 +50,7 @@ impl JMSElectronics {
           arena_is_estopped = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")? == ArenaState::Estop;
         },
         _ = lighting_update.tick() => {
+          tick_n = tick_n.wrapping_add(1);
           for station in &stations {
             let (team_score, other_score, primary_colour, secondary_colour, target_role) = match station.id.alliance {
               Alliance::Blue => ( &score.blue, &score.red, Colour::new(0, 0, 255), Colour::new(0, 0, 5), JMSRole::Blue(station.id.station as u8) ),
@@ -72,8 +75,21 @@ impl JMSElectronics {
               _ => (Pattern::Blank, station.team.map(|team| format!("{}", team)).unwrap_or("----".to_owned()), Colour::new(0, 255, 0))
             };
 
-            let (background, text_colour) = match score_derived.notes.amplified_remaining {
-              Some(x) if x.0.num_seconds() <= 10 => {
+            let (background, text_colour) = match (arena_is_estopped, score_derived.notes.amplified_remaining) {
+              (true, _) => {
+                if tick_n % 4 < 2 {
+                  (
+                    Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)),
+                    Colour::new(0, 0, 0)
+                  )
+                } else {
+                  (
+                    Pattern::DiagonalStripes(Colour::new(5, 0, 0), Colour::new(255, 0, 0)),
+                    Colour::new(0, 0, 0)
+                  )
+                }
+              }
+              (false, Some(x)) if x.0.num_seconds() <= 10 => {
                 (
                   Pattern::FillLeft(primary_colour.clone(), secondary_colour, (255 / 10) * x.0.num_seconds() as u8),
                   Colour::new(0, 0, 0)
