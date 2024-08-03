@@ -6,7 +6,7 @@ x-jms-base: &jms-base
   environment:
   - REDIS_URI=redis://redis:6379/0
   - RABBITMQ_URI=amqp://rabbitmq:5672/%2f
-  # - MEILI_URI=http://meilisearch:7700
+  - UNIFI_URI=https://10.0.100.7:8443
   volumes:
   - /etc/localtime:/etc/localtime:ro
   depends_on:
@@ -14,8 +14,8 @@ x-jms-base: &jms-base
       condition: service_healthy
     rabbitmq:
       condition: service_healthy
-    # meilisearch:
-    #   condition: service_healthy
+  networks:
+    jms:
 
 services:
   jms-arena:
@@ -24,48 +24,44 @@ services:
     # depends_on:
     # - jms-networking
 
-  # jms-backup:
-  #   <<: *jms-base
-  #   command: jms-backup
+  jms-backup:
+    <<: *jms-base
+    command: jms-backup
 
   jms-core:
     <<: *jms-base
     command: jms-core
 
-  # jms-electronics:
-  #   <<: *jms-base
-  #   command: jms-electronics
-  #   environment:
-  #   - REDIS_URI=redis://localhost:6379/0
-  #   - RABBITMQ_URI=amqp://localhost:5672/%2f
-  #   depends_on:
-  #   - jms-arena
-  #   network_mode: host
+  jms-electronics:
+    <<: *jms-base
+    command: jms-electronics
+    depends_on:
+    - jms-arena
+    networks:
+      jms:
+      jms-ext:
+        ipv4_address: 10.0.100.6
 
-  # Driver Station needs network_mode: host in order to see UDP packet addresses and reply to them
-  # accordingly.
-  # On windows, you will need to run jms-driverstation outside of the container system (cargo run --bin jms-driverstation --release)
-  # jms-driverstation:
-  #   <<: *jms-base
-  #   command: jms-driverstation
-  #   depends_on:
-  #   - jms-arena
-  #   network_mode: host
-  #   environment:
-  #   - REDIS_URI=redis://localhost:6379/0
-  #   - RABBITMQ_URI=amqp://localhost:5672/%2f
+  jms-driverstation:
+    <<: *jms-base
+    command: jms-driverstation
+    depends_on:
+    - jms-arena
+    networks:
+      jms:
+      jms-ext:
+        ipv4_address: 10.0.100.5
   
-  # For some reason, this requires network-mode host as well. 
-  # jms-networking:
-  #   <<: *jms-base
-  #   command: jms-networking
-  #   network_mode: host
-  #   environment:
-  #   - REDIS_URI=redis://localhost:6379/0
-  #   - RABBITMQ_URI=amqp://localhost:5672/%2f
-  #   depends_on:
-  #     unifi:
-  #       condition: service_healthy
+  jms-networking:
+    <<: *jms-base
+    command: jms-networking
+    depends_on:
+      unifi:
+        condition: service_healthy
+    networks:
+      jms:
+      jms-ext:
+        ipv4_address: 10.0.100.8
 
   jms-match-logs:
     <<: *jms-base
@@ -80,67 +76,84 @@ services:
     command: jms-websocket
     deploy:
       replicas: 1
+    networks:
+      jms:
+
+  jms-ui:
+    image: jaci/jms-ui:latest
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+    networks:
+      jms:
+
+  nginx:
+    image: jaci/jms-nginx:latest
+    restart: unless-stopped
+    depends_on:
+    - jms-ui
+    - jms-websocket
     ports:
-    - 9000:9000
+    - 80:80
+    networks:
+      jms:
 
-  # jms-ui:
-  #   image: jaci/jms-ui:latest
-  #   restart: unless-stopped
-  #   deploy:
-  #     replicas: 2
-  #   environment:
-  #   - NODE_ENV=development
-  #   # ports:
-  #   # - 3000:3000
-
-  # unifi:
-  #   image: lscr.io/linuxserver/unifi-controller:7.4.162
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=Etc/UTC
-  #     - MEM_LIMIT=1024 
-  #     - MEM_STARTUP=1024
-  #   volumes:
-  #     - /data/unifi:/config
-  #   ports:
-  #     - 8443:8443
-  #     - 3478:3478/udp
-  #     - 10001:10001/udp
-  #     - 8080:8080
-  #     - 1900:1900/udp #optional
-  #     - 8843:8843 #optional
-  #     - 8880:8880 #optional
-  #     - 6789:6789 #optional
-  #     - 5514:5514/udp #optional
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: curl --max-time 5 -kILs --fail https://localhost:8443
-  #     interval: 10s
-  #     timeout: 10s
-  #     retries: 5
+  unifi:
+    image: lscr.io/linuxserver/unifi-controller:7.4.162
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - MEM_LIMIT=1024 
+      - MEM_STARTUP=1024
+    volumes:
+      - type: bind
+        source: "${JMS_DATA_DIR:-./data}/unifi"
+        target: /config
+    # ports:
+    #   - 8443:8443
+    #   - 3478:3478/udp
+    #   - 10001:10001/udp
+    #   - 8080:8080
+    #   - 1900:1900/udp #optional
+    #   - 8843:8843 #optional
+    #   - 8880:8880 #optional
+    #   - 6789:6789 #optional
+    #   - 5514:5514/udp #optional
+    restart: unless-stopped
+    healthcheck:
+      test: curl --max-time 5 -kILs --fail https://localhost:8443
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      jms-ext:
+        ipv4_address: 10.0.100.7
+      jms:
 
   # Support
   redis:
     image: redis/redis-stack:latest
     restart: unless-stopped
     volumes:
-    - "./data/redis:/data"
+      - type: bind
+        source: "${JMS_DATA_DIR:-./data}/redis"
+        target: /data
     healthcheck:
       test: ["CMD", "redis-cli","ping"]
       interval: 10s
       timeout: 10s
       retries: 5
     ports:
-      # Ports need to be forwarded for jms-driverstation
     - "6379:6379"
     - "8001:8001"
+    networks:
+      jms:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
     ports:
-      # Ports need to be forwarded for jms-driverstation
     - "5672:5672"
     - "15672:15672"
     healthcheck:
@@ -148,18 +161,18 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-   
-  # meilisearch:
-  #   image: getmeili/meilisearch:v1.3
-  #   restart: unless-stopped
-  #   environment:
-  #   - MEILI_LOG_LEVEL=WARN
-  #   volumes:
-  #   - "./data/meilisearch:/meili_data"
-  #   ports:
-  #   - "7700:7700"
-  #   healthcheck:
-  #     test: curl --max-time 5 -Ls --fail http://localhost:7700/health
-  #     interval: 10s
-  #     timeout: 10s
-  #     retries: 5
+    networks:
+      jms:
+
+networks:
+  jms:
+    driver: bridge
+  jms-ext:
+    driver: macvlan
+    driver_opts:
+      parent: ${JMS_INTERFACE}
+    ipam:
+      config:
+        - subnet: "10.0.100.0/24"
+          ip_range: "10.0.100.0/24"
+          gateway: "10.0.100.1"

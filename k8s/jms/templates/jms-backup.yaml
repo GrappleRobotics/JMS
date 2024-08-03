@@ -1,6 +1,0 @@
-{{- $subdict := dict "name" "backup" "valspec" .Values.backup -}}
-{{- $dict := merge $subdict . -}}
-
-{{- if $dict.valspec.enabled -}}
-{{ template "jms.statefulset" $dict }}
-{{- end -}}
