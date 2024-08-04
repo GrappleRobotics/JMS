@@ -59,17 +59,24 @@ impl JMSElectronics {
 
             let score_derived = team_score.derive(&other_score);
 
-            let top_bar = match (team_score.coop, other_score.coop) {
-              (true, true) => Pattern::Solid(Colour::new(255, 120, 0)),
-              (x, y) if x != y => Pattern::FillLeft(Colour::new(255, 255, 0), Colour::new(5, 5, 0), 128),
+            let top_bar = match (team_score.coop, other_score.coop, arena_is_estopped) {
+              (true, true, false) => Pattern::Solid(Colour::new(255, 120, 0)),
+              (true, false, false) => Pattern::FillLeft(Colour::new(255, 255, 0), Colour::new(5, 5, 0), 128),
               _ => Pattern::Blank
             };
 
             let report = station.team.and_then(|team| DriverStationReport::get(&(team as u16), &self.kv).ok());
-            let (bottom_bar, back_text, back_colour) = match (station.astop, station.estop, report) {
-              (_, true, _) => (Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)), "ESTOP".to_owned(), Colour::new(255, 0, 0)),
-              (true, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 80, 0), Colour::new(5, 5, 0)), "ASTOP".to_owned(), Colour::new(255, 80, 0)),
-              (_, _, Some(report)) if report.diagnosis() != None => {
+            let (bottom_bar, back_text, back_colour) = match (station.astop, station.estop, report, arena_is_estopped) {
+              (_, _, _, true) => {
+                if tick_n % 8 < 4 {
+                  (Pattern::Blank, "ARENA".to_owned(), Colour::new(255, 0, 0))
+                } else {
+                  (Pattern::Blank, "FAULT".to_owned(), Colour::new(255, 0, 0))
+                }
+              },
+              (_, true, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)), "ESTOP".to_owned(), Colour::new(255, 0, 0)),
+              (true, _, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 80, 0), Colour::new(5, 5, 0)), "ASTOP".to_owned(), Colour::new(255, 80, 0)),
+              (_, _, Some(report), _) if report.diagnosis() != None => {
                 (Pattern::Solid(Colour::new(255, 80, 0)), report.diagnosis().unwrap().to_owned(), Colour::new(255, 0, 0))
               },
               _ => (Pattern::Blank, station.team.map(|team| format!("{}", team)).unwrap_or("----".to_owned()), Colour::new(0, 255, 0))
@@ -80,12 +87,12 @@ impl JMSElectronics {
                 if tick_n % 4 < 2 {
                   (
                     Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)),
-                    Colour::new(0, 0, 0)
+                    Colour::new(255, 255, 255)
                   )
                 } else {
                   (
                     Pattern::DiagonalStripes(Colour::new(5, 0, 0), Colour::new(255, 0, 0)),
-                    Colour::new(0, 0, 0)
+                    Colour::new(255, 255, 255)
                   )
                 }
               }
@@ -98,9 +105,16 @@ impl JMSElectronics {
               _ => (Pattern::Blank, primary_colour.clone())
             };
 
-            let team = match station.team {
-              Some(team) => format!("{}", team),
-              None => "----".to_owned(),
+            let front_text = match (station.team, arena_is_estopped) {
+              (_, true) => {
+                if tick_n % 8 < 4 {
+                  "ARENA".to_owned()
+                } else {
+                  "FAULT".to_owned()
+                }
+              },
+              (Some(team), false) => format!("{}", team),
+              (None, false) => "----".to_owned(),
             };
 
             for ep in &endpoints {
@@ -111,7 +125,7 @@ impl JMSElectronics {
                     update: JMSCardUpdate::Lighting {
                       text_back: AsymmetricCow(Cow::Borrowed(&back_text)),
                       text_back_colour: back_colour.clone(),
-                      text: AsymmetricCow(Cow::Borrowed(&team)),
+                      text: AsymmetricCow(Cow::Borrowed(&front_text)),
                       text_colour: text_colour.clone(),
                       bottom_bar: bottom_bar.clone(),
                       top_bar: top_bar.clone(),
