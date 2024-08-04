@@ -93,6 +93,11 @@ docker image load --input /jms/docker_images/jms.tar
 docker image load --input /jms/docker_images/jms-ui.tar
 docker image load --input /jms/docker_images/jms-nginx.tar
 
+# Start containers
+pushd /jms
+docker compose up -d
+popd
+
 # Disable the provisioning service, just so we don't run twice
 systemctl disable jms-provision.service
 EOF
