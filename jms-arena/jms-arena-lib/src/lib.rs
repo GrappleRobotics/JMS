@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 
 use jms_base::{kv, mq::{MessageQueueSubscriber, MessageQueueChannel}};
-use jms_core_lib::{models::{AllianceStationId, AllianceParseError, Alliance, JmsComponent}, db::{DBDuration, Table}};
+use jms_core_lib::{db::{DBDuration, Singleton, Table}, models::{Alliance, AllianceParseError, AllianceStationId, JmsComponent}};
 
 pub const ARENA_STATE_KEY: &'static str = "arena:state";
 pub const ARENA_MATCH_KEY: &'static str = "arena:match";
@@ -113,6 +113,23 @@ impl Ord for AllianceStation {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
   }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub enum ArenaEntryCondition {
+  Unsafe,
+  Reset,
+  Safe,
+}
+
+impl Default for ArenaEntryCondition {
+  fn default() -> Self {
+    Self::Unsafe
+  }
+}
+
+impl Singleton for ArenaEntryCondition {
+  const KEY: &'static str = "arena.entry_state";
 }
 
 /* RPC */

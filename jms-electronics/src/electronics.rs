@@ -5,7 +5,7 @@ use bounded_static::ToBoundedStatic;
 use bytes::Buf;
 use futures::{SinkExt, StreamExt};
 use grapple_frc_msgs::{grapple::{jms::{Colour, JMSCardUpdate, JMSElectronicsUpdate, JMSMessage, JMSRole, Pattern}, misc::MiscMessage, write_direct, GrappleDeviceMessage, GrappleMessageId, MaybeFragment, TaggedGrappleMessage}, ManufacturerMessage, MessageId};
-use jms_arena_lib::{AllianceStation, ArenaRPCClient, ArenaState, ARENA_STATE_KEY};
+use jms_arena_lib::{AllianceStation, ArenaEntryCondition, ArenaRPCClient, ArenaState, ARENA_STATE_KEY};
 use jms_base::{kv, mq::{self, MessageQueue, MessageQueueChannel}};
 use jms_core_lib::{db::{Singleton, Table}, models::Alliance, scoring::scores::MatchScore};
 use jms_driverstation_lib::DriverStationReport;
@@ -32,6 +32,7 @@ impl JMSElectronics {
     let mut settings = FieldElectronicsSettings::get(&self.kv)?;
     let mut endpoints = FieldElectronicsEndpoint::all(&self.kv)?;
     let mut score = MatchScore::get(&self.kv)?;
+    let mut entry_condition = ArenaEntryCondition::get(&self.kv)?;
 
     let mut arena_is_estopped = false;
 
@@ -48,6 +49,7 @@ impl JMSElectronics {
           endpoints = FieldElectronicsEndpoint::all(&self.kv)?;
           score = MatchScore::get(&self.kv)?;
           arena_is_estopped = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")? == ArenaState::Estop;
+          entry_condition = ArenaEntryCondition::get(&self.kv)?;
         },
         _ = lighting_update.tick() => {
           tick_n = tick_n.wrapping_add(1);
@@ -82,8 +84,8 @@ impl JMSElectronics {
               _ => (Pattern::Blank, station.team.map(|team| format!("{}", team)).unwrap_or("----".to_owned()), Colour::new(0, 255, 0))
             };
 
-            let (background, text_colour) = match (arena_is_estopped, score_derived.notes.amplified_remaining) {
-              (true, _) => {
+            let (background, text_colour) = match (arena_is_estopped, score_derived.notes.amplified_remaining, entry_condition.clone()) {
+              (true, _, _) => {
                 if tick_n % 4 < 2 {
                   (
                     Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)),
@@ -95,8 +97,14 @@ impl JMSElectronics {
                     Colour::new(255, 255, 255)
                   )
                 }
-              }
-              (false, Some(x)) if x.0.num_seconds() <= 10 => {
+              },
+              (false, _, ArenaEntryCondition::Safe) => {
+                (Pattern::Blank, Colour::new(0, 255, 0))
+              },
+              (false, _, ArenaEntryCondition::Reset) => {
+                (Pattern::Blank, Colour::new(255, 0, 255))
+              },
+              (false, Some(x), _) if x.0.num_seconds() <= 10 => {
                 (
                   Pattern::FillLeft(primary_colour.clone(), secondary_colour, (255 / 10) * x.0.num_seconds() as u8),
                   Colour::new(0, 0, 0)
@@ -105,16 +113,22 @@ impl JMSElectronics {
               _ => (Pattern::Blank, primary_colour.clone())
             };
 
-            let front_text = match (station.team, arena_is_estopped) {
-              (_, true) => {
+            let front_text = match (station.team, arena_is_estopped, entry_condition.clone()) {
+              (_, true, _) => {
                 if tick_n % 8 < 4 {
                   "ARENA".to_owned()
                 } else {
                   "FAULT".to_owned()
                 }
               },
-              (Some(team), false) => format!("{}", team),
-              (None, false) => "----".to_owned(),
+              (_, _, ArenaEntryCondition::Safe) => {
+                "SAFE".to_owned()
+              },
+              (_, _, ArenaEntryCondition::Reset) => {
+                "RESET".to_owned()
+              },
+              (Some(team), false, ArenaEntryCondition::Unsafe) => format!("{}", team),
+              (None, false, ArenaEntryCondition::Unsafe) => "----".to_owned(),
             };
 
             for ep in &endpoints {

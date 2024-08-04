@@ -14,6 +14,7 @@ pub enum Permission {
   Scorekeeper,
   HumanPlayerBlue,
   HumanPlayerRed,
+  HeadReferee,
   /* Permissions */
   ManageEvent,
   ManageTeams,
@@ -28,6 +29,7 @@ pub enum Permission {
   ManageAudience,
   Ticketing,
   ManageElectronics,
+  EntryCondition,
 }
 
 impl Permission {
@@ -38,12 +40,13 @@ impl Permission {
 
       (Permission::FTA, Permission::ManageEvent | Permission::ManageTeams | Permission::ManageSchedule | Permission::ManagePlayoffs |
                         Permission::ManageAwards | Permission::ManageAlliances | Permission::MatchFlow | Permission::Estop | Permission::ManageAudience |
-                        Permission::Ticketing | Permission::ManageElectronics) => true,
+                        Permission::Ticketing | Permission::ManageElectronics | Permission::EntryCondition) => true,
 
       (Permission::FTAA, Permission::Estop | Permission::Ticketing) => true, 
       (Permission::Scorekeeper, Permission::ManageAwards | Permission::MatchFlow | Permission::Estop | Permission::Scoring | Permission::EditScores
                                 | Permission::ManageAlliances | Permission::ManageAudience | Permission::ManageElectronics) => true,
-
+      (Permission::HeadReferee, Permission::Estop | Permission::Scoring | Permission::EditScores
+                                | Permission::EntryCondition) => true,
       _ => false
     }
   }

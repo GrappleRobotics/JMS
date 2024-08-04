@@ -2,7 +2,7 @@ pub mod matches;
 
 use std::{time::{Duration, Instant}, collections::HashMap};
 
-use jms_arena_lib::{ArenaSignal, ArenaState, MatchPlayState, ArenaRPC, AllianceStation, ARENA_STATE_KEY, ArenaHookDB, HookReply};
+use jms_arena_lib::{AllianceStation, ArenaEntryCondition, ArenaHookDB, ArenaRPC, ArenaSignal, ArenaState, HookReply, MatchPlayState, ARENA_STATE_KEY};
 use jms_base::{kv::KVConnection, mq::{MessageQueueChannel, MessageQueue, MessageQueueSubscriber}, logging::JMSLogger};
 use jms_core_lib::{models::{AllianceStationId, self, JmsComponent, Match, Alliance}, db::{Table, Singleton}, scoring::scores::MatchScore};
 use log::{info, error};
@@ -147,6 +147,8 @@ impl Arena {
           m.fault();
         }
 
+        ArenaEntryCondition::update(&ArenaEntryCondition::Unsafe, &self.kv)?;
+
         if signal == Some(ArenaSignal::EstopReset) {
           self.set_state(ArenaState::Reset { ready: false }).await?;
         }
@@ -206,11 +208,15 @@ impl Arena {
         }
       },
       ArenaState::MatchArmed => {
+        ArenaEntryCondition::update(&ArenaEntryCondition::Unsafe, &self.kv)?;
+
         if signal == Some(ArenaSignal::MatchPlay) {
           self.set_state(ArenaState::MatchPlay).await?;
         }
       },
       ArenaState::MatchPlay => {
+        ArenaEntryCondition::update(&ArenaEntryCondition::Unsafe, &self.kv)?;
+        
         let current_match = self.current_match.as_mut().ok_or(anyhow::anyhow!("No match present!"))?;
         if first {
           current_match.start()?;

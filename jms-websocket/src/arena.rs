@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use jms_arena_lib::{ArenaState, ArenaSignal, ArenaRPCClient, ARENA_STATE_KEY, AllianceStation, SerialisedLoadedMatch, ARENA_MATCH_KEY, AllianceStationUpdate};
-use jms_core_lib::{models::{MaybeToken, Permission, AllianceStationId, Match, MatchType}, db::Table};
+use jms_arena_lib::{AllianceStation, AllianceStationUpdate, ArenaEntryCondition, ArenaRPCClient, ArenaSignal, ArenaState, SerialisedLoadedMatch, ARENA_MATCH_KEY, ARENA_STATE_KEY};
+use jms_core_lib::{db::{Singleton, Table}, models::{AllianceStationId, Match, MatchType, MaybeToken, Permission}};
 use jms_driverstation_lib::DriverStationReport;
 
 use crate::ws::WebsocketContext;
@@ -16,6 +16,11 @@ pub trait ArenaWebsocket {
     Ok(ctx.kv.json_get(ARENA_STATE_KEY, "$")?)
   }
 
+  #[publish]
+  async fn entry(&self, ctx: &WebsocketContext) -> anyhow::Result<ArenaEntryCondition> {
+    Ok(ArenaEntryCondition::get(&ctx.kv)?)
+  }
+
   #[endpoint]
   async fn signal(&self, ctx: &WebsocketContext, token: &MaybeToken, signal: ArenaSignal) -> anyhow::Result<()> {
     let user = token.auth(&ctx.kv)?;
@@ -27,6 +32,16 @@ pub trait ArenaWebsocket {
 
     let fut = ArenaRPCClient::signal(&ctx.mq, signal, user.username.clone());
     tokio::time::timeout(Duration::from_millis(200), fut).await??.map_err(|e| anyhow::anyhow!(e))
+  }
+
+  #[endpoint]
+  async fn set_entry_condition(&self, ctx: &WebsocketContext, token: &MaybeToken, condition: ArenaEntryCondition) -> anyhow::Result<()> {
+    let user = token.auth(&ctx.kv)?;
+    user.require_permission(&[Permission::EntryCondition])?;
+
+    ArenaEntryCondition::update(&condition, &ctx.kv)?;
+
+    Ok(())
   }
 
   /* Match */

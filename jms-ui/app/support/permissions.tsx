@@ -12,6 +12,8 @@ export const PERMISSIONS: { [k in Permission]: string } = {
   "HumanPlayerBlue": "Human Player (Blue)",
   "HumanPlayerRed": "Human Player (Red)",
 
+  "HeadReferee": "Head Referee",
+
   "ManageEvent": "Manage Event",
   "ManageTeams": "Manage Teams",
   "ManageSchedule": "Manage Schedule",
@@ -24,7 +26,8 @@ export const PERMISSIONS: { [k in Permission]: string } = {
   "ManageAlliances": "Manage Alliances",
   "ManageAudience": "Manage Audience Display",
   "Ticketing": "CSA Tickets",
-  "ManageElectronics": "Manage Electronics"
+  "ManageElectronics": "Manage Electronics",
+  "EntryCondition": "Allow Field Entry",
 }
 
 // See user.rs in jms-core-lib, this should echo Permission::has
@@ -33,6 +36,7 @@ export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
   "FTA": [ "ManageEvent", "ManageTeams", "ManageSchedule", "ManagePlayoffs", "ManageAwards", "MatchFlow", "Estop", "ManageAlliances", "ManageAudience", "Ticketing", "ManageElectronics" ],
   "FTAA": [ "Estop", "Ticketing" ],
   "Scorekeeper": [ "ManageAwards", "MatchFlow", "Estop", "Scoring", "EditScores", "ManageAlliances", "ManageAudience", "ManageElectronics" ],
+  "HeadReferee": [ "Estop", "Scoring", "EditScores", "EntryCondition" ],
 
   "HumanPlayerBlue": [],
   "HumanPlayerRed": [],
@@ -50,7 +54,8 @@ export const PERMISSION_IMPLICATIONS: { [k in Permission]: Permission[] } = {
   "ManageAlliances": [],
   "ManageAudience": [],
   "Ticketing": [],
-  "ManageElectronics": []
+  "ManageElectronics": [],
+  "EntryCondition": []
 }
 
 export function has_permission(required: Permission, permission: Permission) {
