@@ -34,7 +34,8 @@ impl JMSElectronics {
     let mut score = MatchScore::get(&self.kv)?;
     let mut entry_condition = ArenaEntryCondition::get(&self.kv)?;
 
-    let mut arena_is_estopped = false;
+    // let mut arena_is_estopped = false;
+    let mut arena_state = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")?;
 
     let mut cache_interval = tokio::time::interval(Duration::from_millis(100));
     let mut lighting_update = tokio::time::interval(Duration::from_millis(250));
@@ -48,7 +49,7 @@ impl JMSElectronics {
           settings = FieldElectronicsSettings::get(&self.kv)?;
           endpoints = FieldElectronicsEndpoint::all(&self.kv)?;
           score = MatchScore::get(&self.kv)?;
-          arena_is_estopped = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")? == ArenaState::Estop;
+          arena_state = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")?;
           entry_condition = ArenaEntryCondition::get(&self.kv)?;
         },
         _ = lighting_update.tick() => {
@@ -61,31 +62,50 @@ impl JMSElectronics {
 
             let score_derived = team_score.derive(&other_score);
 
-            let top_bar = match (team_score.coop, other_score.coop, arena_is_estopped) {
-              (true, true, false) => Pattern::Solid(Colour::new(255, 120, 0)),
-              (true, false, false) => Pattern::FillLeft(Colour::new(255, 255, 0), Colour::new(5, 5, 0), 128),
+            let top_bar = match (team_score.coop, other_score.coop, arena_state) {
+              (_, _, ArenaState::Estop) => Pattern::Blank,
+              (true, true, _) => Pattern::Solid(Colour::new(255, 120, 0)),
+              (true, false, _) => Pattern::FillLeft(Colour::new(255, 255, 0), Colour::new(5, 5, 0), 128),
               _ => Pattern::Blank
             };
 
             let report = station.team.and_then(|team| DriverStationReport::get(&(team as u16), &self.kv).ok());
-            let (bottom_bar, back_text, back_colour) = match (station.astop, station.estop, report, arena_is_estopped) {
-              (_, _, _, true) => {
+            
+            let (bottom_bar, back_background, back_text, back_colour) = match (station.astop, station.estop, report, arena_state) {
+              (_, _, _, ArenaState::Estop) => {
                 if tick_n % 8 < 4 {
-                  (Pattern::Blank, "ARENA".to_owned(), Colour::new(255, 0, 0))
+                  (Pattern::Blank, Pattern::Blank, "ARENA".to_owned(), Colour::new(255, 0, 0))
                 } else {
-                  (Pattern::Blank, "FAULT".to_owned(), Colour::new(255, 0, 0))
+                  (Pattern::Blank, Pattern::Blank, "FAULT".to_owned(), Colour::new(255, 0, 0))
                 }
               },
-              (_, true, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)), "ESTOP".to_owned(), Colour::new(255, 0, 0)),
-              (true, _, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 80, 0), Colour::new(5, 5, 0)), "ASTOP".to_owned(), Colour::new(255, 80, 0)),
+              (_, true, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)), Pattern::Blank, "ESTOP".to_owned(), Colour::new(255, 0, 0)),
+              (true, _, _, _) => (Pattern::DiagonalStripes(Colour::new(255, 80, 0), Colour::new(5, 5, 0)), Pattern::Blank, "ASTOP".to_owned(), Colour::new(255, 80, 0)),
               (_, _, Some(report), _) if report.diagnosis() != None => {
-                (Pattern::Solid(Colour::new(255, 80, 0)), report.diagnosis().unwrap().to_owned(), Colour::new(255, 0, 0))
+                (Pattern::Solid(Colour::new(255, 80, 0)), Pattern::Blank, report.diagnosis().unwrap().to_owned(), Colour::new(255, 0, 0))
               },
-              _ => (Pattern::Blank, station.team.map(|team| format!("{}", team)).unwrap_or("----".to_owned()), Colour::new(0, 255, 0))
+              (_, _, _, ArenaState::MatchPlay) => {
+                if let Some(secs) = score_derived.notes.amplified_remaining.as_ref().map(|x| x.0.num_seconds()) {
+                  (
+                    Pattern::Blank,
+                    Pattern::FillLeft(primary_colour.clone(), secondary_colour.clone(), (255 / 10) * secs as u8),
+                    "".to_owned(),
+                    Colour::new(0, 0, 0)
+                  )
+                } else {
+                  (
+                    Pattern::Blank,
+                    Pattern::Blank,
+                    format!("{}/{}", score_derived.notes.total_count, score_derived.melody_threshold),
+                    if score_derived.melody_rp { Colour::new(0, 255, 0) } else { Colour::new(255, 40, 0) }
+                  )
+                }
+              },
+              _ => (Pattern::Blank, Pattern::Blank, station.team.map(|team| format!("{}", team)).unwrap_or("----".to_owned()), Colour::new(0, 255, 0))
             };
 
-            let (background, text_colour) = match (arena_is_estopped, score_derived.notes.amplified_remaining, entry_condition.clone()) {
-              (true, _, _) => {
+            let (background, text_colour) = match (arena_state, score_derived.notes.amplified_remaining, entry_condition.clone()) {
+              (ArenaState::Estop, _, _) => {
                 if tick_n % 4 < 2 {
                   (
                     Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)),
@@ -98,13 +118,13 @@ impl JMSElectronics {
                   )
                 }
               },
-              (false, _, ArenaEntryCondition::Safe) => {
+              (_, _, ArenaEntryCondition::Safe) => {
                 (Pattern::Blank, Colour::new(0, 255, 0))
               },
-              (false, _, ArenaEntryCondition::Reset) => {
+              (_, _, ArenaEntryCondition::Reset) => {
                 (Pattern::Blank, Colour::new(255, 0, 255))
               },
-              (false, Some(x), _) if x.0.num_seconds() <= 10 => {
+              (_, Some(x), _) if x.0.num_seconds() <= 10 => {
                 (
                   Pattern::FillLeft(primary_colour.clone(), secondary_colour, (255 / 10) * x.0.num_seconds() as u8),
                   Colour::new(0, 0, 0)
@@ -113,8 +133,8 @@ impl JMSElectronics {
               _ => (Pattern::Blank, primary_colour.clone())
             };
 
-            let front_text = match (station.team, arena_is_estopped, entry_condition.clone()) {
-              (_, true, _) => {
+            let front_text = match (station.team, arena_state, entry_condition.clone()) {
+              (_, ArenaState::Estop, _) => {
                 if tick_n % 8 < 4 {
                   "ARENA".to_owned()
                 } else {
@@ -127,8 +147,8 @@ impl JMSElectronics {
               (_, _, ArenaEntryCondition::Reset) => {
                 "RESET".to_owned()
               },
-              (Some(team), false, ArenaEntryCondition::Unsafe) => format!("{}", team),
-              (None, false, ArenaEntryCondition::Unsafe) => "----".to_owned(),
+              (Some(team), _, ArenaEntryCondition::Unsafe) => format!("{}", team),
+              (None, _, ArenaEntryCondition::Unsafe) => "----".to_owned(),
             };
 
             for ep in &endpoints {
@@ -139,6 +159,7 @@ impl JMSElectronics {
                     update: JMSCardUpdate::Lighting {
                       text_back: AsymmetricCow(Cow::Borrowed(&back_text)),
                       text_back_colour: back_colour.clone(),
+                      back_background: back_background.clone(),
                       text: AsymmetricCow(Cow::Borrowed(&front_text)),
                       text_colour: text_colour.clone(),
                       bottom_bar: bottom_bar.clone(),
@@ -170,7 +191,7 @@ impl JMSElectronics {
                     match ep.status.role {
                       JMSRole::ScoringTable => {
                         let estop_state = invert ^ io[0];
-                        if estop_state && !arena_is_estopped {
+                        if estop_state && arena_state != ArenaState::Estop {
                           match ArenaRPCClient::signal(&self.mq, jms_arena_lib::ArenaSignal::Estop, "Field Electronics (Scoring Table)".to_string()).await? {
                             Ok(()) => (),
                             Err(e) => warn!("Field Electronics - Signal Error: {}", e)

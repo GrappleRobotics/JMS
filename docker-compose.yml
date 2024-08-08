@@ -52,16 +52,16 @@ services:
       jms-ext:
         ipv4_address: 10.0.100.5
   
-  jms-networking:
-    <<: *jms-base
-    command: jms-networking
-    depends_on:
-      unifi:
-        condition: service_healthy
-    networks:
-      jms:
-      jms-ext:
-        ipv4_address: 10.0.100.8
+  # jms-networking:
+  #   <<: *jms-base
+  #   command: jms-networking
+  #   depends_on:
+  #     unifi:
+  #       condition: service_healthy
+  #   networks:
+  #     jms:
+  #     jms-ext:
+  #       ipv4_address: 10.0.100.8
 
   jms-match-logs:
     <<: *jms-base
