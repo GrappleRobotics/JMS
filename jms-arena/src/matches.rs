@@ -15,6 +15,7 @@ pub struct LoadedMatch {
   state_start_time: Instant,
 
   pub remaining: Duration,
+  pub remaining_max: Duration,
   pub endgame: bool,
 }
 
@@ -28,6 +29,7 @@ impl LoadedMatch {
       state_start_time: Instant::now(),
 
       remaining: Duration::zero(),
+      remaining_max: Duration::zero(),
       endgame: false
     }
   }
@@ -60,12 +62,14 @@ impl LoadedMatch {
 
     let elapsed = Duration::from_std(Instant::now() - self.state_start_time).unwrap();
     let mut remaining = Duration::zero();
+    let mut remaining_max = Duration::zero();
     let mut endgame = false;
 
     match self.state {
       MatchPlayState::Waiting => (),
       MatchPlayState::Warmup => {
-        remaining = Duration::seconds(3) - elapsed;
+        remaining_max = Duration::seconds(3);
+        remaining = remaining_max - elapsed;
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Auto);
         }
@@ -74,26 +78,30 @@ impl LoadedMatch {
         if first {
           self.match_start_time = Some(Instant::now());
         }
-        remaining = Duration::seconds(15) - elapsed;
+        remaining_max = Duration::seconds(15);
+        remaining = remaining_max - elapsed;
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Pause);
         }
       }
       MatchPlayState::Pause => {
-        remaining = Duration::seconds(3) - elapsed;
+        remaining_max = Duration::seconds(3);
+        remaining = remaining_max - elapsed;
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Teleop);
         }
       }
       MatchPlayState::Teleop => {
-        remaining = Duration::seconds(2*60 + 15) - elapsed;
+        remaining_max = Duration::seconds(2*60 + 15);
+        remaining = remaining_max - elapsed;
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Cooldown);
         }
         endgame = remaining <= Duration::seconds(30);
       }
       MatchPlayState::Cooldown => {
-        remaining = Duration::seconds(3) - elapsed;
+        remaining_max = Duration::seconds(3);
+        remaining = remaining_max - elapsed;
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Complete);
         }
@@ -109,6 +117,7 @@ impl LoadedMatch {
       }
     }
 
+    self.remaining_max = remaining_max;
     self.remaining = remaining;
     self.endgame = endgame;
 
@@ -119,6 +128,7 @@ impl LoadedMatch {
     let serialised = SerialisedLoadedMatch {
       match_id: self.match_id.clone(),
       remaining: DBDuration(self.remaining),
+      remaining_max: DBDuration(self.remaining_max),
       match_time: self.match_start_time.map(|mt| DBDuration(Duration::from_std(Instant::now() - mt).unwrap())),
       endgame: self.endgame,
       state: self.state

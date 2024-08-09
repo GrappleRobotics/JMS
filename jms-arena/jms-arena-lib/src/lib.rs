@@ -50,6 +50,7 @@ pub enum MatchPlayState {
 pub struct SerialisedLoadedMatch {
   pub match_id: String,
   pub remaining: DBDuration,
+  pub remaining_max: DBDuration,
   pub match_time: Option<DBDuration>,
   pub endgame: bool,
   pub state: MatchPlayState

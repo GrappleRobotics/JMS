@@ -5,7 +5,7 @@ use bounded_static::ToBoundedStatic;
 use bytes::Buf;
 use futures::{SinkExt, StreamExt};
 use grapple_frc_msgs::{grapple::{jms::{Colour, JMSCardUpdate, JMSElectronicsUpdate, JMSMessage, JMSRole, Pattern}, misc::MiscMessage, write_direct, GrappleDeviceMessage, GrappleMessageId, MaybeFragment, TaggedGrappleMessage}, ManufacturerMessage, MessageId};
-use jms_arena_lib::{AllianceStation, ArenaEntryCondition, ArenaRPCClient, ArenaState, ARENA_STATE_KEY};
+use jms_arena_lib::{AllianceStation, ArenaEntryCondition, ArenaRPCClient, ArenaState, SerialisedLoadedMatch, ARENA_MATCH_KEY, ARENA_STATE_KEY};
 use jms_base::{kv, mq::{self, MessageQueue, MessageQueueChannel}};
 use jms_core_lib::{db::{Singleton, Table}, models::Alliance, scoring::scores::MatchScore};
 use jms_driverstation_lib::DriverStationReport;
@@ -33,6 +33,7 @@ impl JMSElectronics {
     let mut endpoints = FieldElectronicsEndpoint::all(&self.kv)?;
     let mut score = MatchScore::get(&self.kv)?;
     let mut entry_condition = ArenaEntryCondition::get(&self.kv)?;
+    let mut current_match: Option<SerialisedLoadedMatch> = self.kv.json_get(ARENA_MATCH_KEY, "$").ok();
 
     // let mut arena_is_estopped = false;
     let mut arena_state = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")?;
@@ -51,6 +52,7 @@ impl JMSElectronics {
           score = MatchScore::get(&self.kv)?;
           arena_state = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")?;
           entry_condition = ArenaEntryCondition::get(&self.kv)?;
+          current_match = self.kv.json_get(ARENA_MATCH_KEY, "$").ok();
         },
         _ = lighting_update.tick() => {
           tick_n = tick_n.wrapping_add(1);
@@ -165,6 +167,39 @@ impl JMSElectronics {
                       bottom_bar: bottom_bar.clone(),
                       top_bar: top_bar.clone(),
                       background: background.clone()
+                    }
+                  })))),
+                  SocketAddr::new(ep.ip.parse().unwrap(), 50002)
+                )).await.map_err(|e| e.to_string()).ok();
+              }
+            }
+          }
+
+          for alliance in [Alliance::Red, Alliance::Blue] {
+            for ep in &endpoints {
+              if (alliance == Alliance::Blue && ep.status.role == JMSRole::TimerBlue) || (alliance == Alliance::Red && ep.status.role == JMSRole::TimerRed) {
+                let mut front_text = "---".to_owned();
+                let mut portion = 0;
+
+                if let Some(current) = current_match.as_ref() {
+                  front_text = format!("{}", current.remaining.0.num_seconds());
+                  if current.remaining_max.0.num_seconds() > 0 {
+                    portion = ((current.remaining.0.num_seconds() * 255) / (current.remaining_max.0.num_seconds())) as u8;
+                  }
+                }
+
+                framed.send((
+                  TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Update(JMSElectronicsUpdate {
+                    card: 1,
+                    update: JMSCardUpdate::Lighting {
+                      text_back: AsymmetricCow(Cow::Borrowed("")),
+                      text_back_colour: Colour::new(0, 0, 0).clone(),
+                      back_background: Pattern::Blank,
+                      text: AsymmetricCow(Cow::Borrowed(&front_text)),
+                      text_colour: Colour::new(255, 255, 255),
+                      bottom_bar: Pattern::FillLeft(Colour::new(255, 255, 255), Colour::new(0, 0, 0), portion),
+                      top_bar: Pattern::Blank,
+                      background: Pattern::Blank
                     }
                   })))),
                   SocketAddr::new(ep.ip.parse().unwrap(), 50002)
