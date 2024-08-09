@@ -1,4 +1,5 @@
 pub mod electronics;
+pub mod network;
 
 use electronics::{JMSElectronics, JMSElectronicsService};
 use jms_base::{kv, mq, logging::JMSLogger};

@@ -23,7 +23,7 @@ RUN cargo run --bin jms-websocket --release -- gen-schema -f schema.json
 
 # Create JMS runtime environment
 FROM debian:buster-slim as rust_runtime
-RUN apt-get update && apt-get install --yes libssl-dev ca-certificates && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install --yes libssl-dev ca-certificates iproute2 && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/jms-* /usr/local/bin
 # The UI image is built off this image, and needs access to the schema, so we copy it into the final image. 
 COPY --from=builder /app/schema.json /jms/schema.json

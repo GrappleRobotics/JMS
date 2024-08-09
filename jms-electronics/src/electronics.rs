@@ -1,4 +1,4 @@
-use std::{borrow::Cow, net::{IpAddr, SocketAddr}, str::FromStr, time::Duration};
+use std::{borrow::Cow, net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr, time::Duration};
 
 use binmarshal::{AsymmetricCow, BitView, BitWriter, Demarshal, VecBitWriter};
 use bounded_static::ToBoundedStatic;
@@ -11,8 +11,18 @@ use jms_core_lib::{db::{Singleton, Table}, models::Alliance, scoring::scores::Ma
 use jms_driverstation_lib::DriverStationReport;
 use jms_electronics_lib::{EstopMode, FieldElectronicsEndpoint, FieldElectronicsServiceRPC, FieldElectronicsSettings, FieldElectronicsUpdate};
 use log::{error, warn};
+use pnet::datalink;
 use tokio::net::UdpSocket;
 use tokio_util::{codec::{Decoder, Encoder}, udp::UdpFramed};
+
+use crate::network::JMSElectronicsL2Framed;
+
+pub fn get_jms_admin_interface() -> datalink::NetworkInterface {
+  datalink::interfaces().into_iter()
+          .filter(|net| !net.is_loopback() && net.is_up() && net.ips.iter().filter(|ip| ip.contains(IpAddr::V4(Ipv4Addr::new(10, 0, 100, 5)))).next().is_some())
+          .next()
+          .unwrap()
+}
 
 pub struct JMSElectronics {
   kv: kv::KVConnection,
@@ -25,8 +35,9 @@ impl JMSElectronics {
   }
 
   pub async fn run(self) -> anyhow::Result<()> {
-    let udp_socket = UdpSocket::bind("0.0.0.0:50002").await?;
-    let mut framed = UdpFramed::new(udp_socket, JMSElectronicsCodec {});
+    // let udp_socket = UdpSocket::bind("0.0.0.0:50002").await?;
+    // let mut framed = UdpFramed::new(udp_socket, JMSElectronicsCodec {});
+    let mut framed = JMSElectronicsL2Framed::new(get_jms_admin_interface());
 
     let mut stations = AllianceStation::sorted(&self.kv)?;
     let mut settings = FieldElectronicsSettings::get(&self.kv)?;
@@ -155,7 +166,8 @@ impl JMSElectronics {
 
             for ep in &endpoints {
               if ep.status.role == target_role {
-                framed.send((
+                framed.send_framed(
+                  ep.mac.parse()?,
                   TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Update(JMSElectronicsUpdate {
                     card: 1,
                     update: JMSCardUpdate::Lighting {
@@ -168,9 +180,8 @@ impl JMSElectronics {
                       top_bar: top_bar.clone(),
                       background: background.clone()
                     }
-                  })))),
-                  SocketAddr::new(ep.ip.parse().unwrap(), 50002)
-                )).await.map_err(|e| e.to_string()).ok();
+                  }))))
+                ).await.map_err(|e| e.to_string()).ok();
               }
             }
           }
@@ -188,7 +199,8 @@ impl JMSElectronics {
                   }
                 }
 
-                framed.send((
+                framed.send_framed(
+                  ep.mac.parse()?,
                   TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Update(JMSElectronicsUpdate {
                     card: 1,
                     update: JMSCardUpdate::Lighting {
@@ -201,19 +213,18 @@ impl JMSElectronics {
                       top_bar: Pattern::Blank,
                       background: Pattern::Blank
                     }
-                  })))),
-                  SocketAddr::new(ep.ip.parse().unwrap(), 50002)
-                )).await.map_err(|e| e.to_string()).ok();
+                  }))))
+                ).await.map_err(|e| e.to_string()).ok();
               }
             }
           }
         },
-        msg = framed.next() => match msg {
-          Some(Ok((data, endpoint))) => match data.msg {
+        msg = framed.next_framed() => match msg {
+          Some((endpoint, data)) => match data.msg {
             GrappleDeviceMessage::Misc(MiscMessage::JMS(jms)) => match jms {
               JMSMessage::Status(status) => {
                 let ep = FieldElectronicsEndpoint {
-                  ip: endpoint.ip().to_string(),
+                  mac: endpoint.to_string(),
                   status
                 };
                 ep.insert(&self.kv).ok();
@@ -259,52 +270,11 @@ impl JMSElectronics {
             },
             _ => ()
           },
-          Some(Err(e)) => error!("Error: {}", e),
+          // Some(Err(e)) => error!("Error: {}", e),
           None => (),
         }
       }
     }
-  }
-}
-
-pub struct JMSElectronicsCodec { }
-
-impl Decoder for JMSElectronicsCodec {
-  type Item = TaggedGrappleMessage<'static>;
-  type Error = anyhow::Error;
-
-  fn decode(&mut self, src: &mut bytes::BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-    if src.len() < 4 { return Ok(None) }
-
-    let mut view = BitView::new(&src[..]);
-
-    let result = match view.take::<4>(4, 0) {
-      Ok(arr) => {
-        let id: MessageId = u32::from_le_bytes(*arr.0).into();
-        match ManufacturerMessage::read(&mut view, id.clone()) {
-          Ok(ManufacturerMessage::Grapple(MaybeFragment::Message(msg))) => {
-            Ok(Some(TaggedGrappleMessage::new(id.device_id, msg.to_static())))
-          },
-          _ => Ok(None),
-        }
-      },
-      Err(_) => Err(anyhow::anyhow!("Demarshal Error Error"))
-    };
-
-    src.advance(src.len());
-
-    result
-  }
-}
-
-impl<'a> Encoder<TaggedGrappleMessage<'a>> for JMSElectronicsCodec {
-  type Error = anyhow::Error;
-
-  fn encode(&mut self, item: TaggedGrappleMessage<'a>, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
-    let mut writer = VecBitWriter::new();
-    write_direct(&mut writer, item).map_err(|_| anyhow::anyhow!("Writer Error!"))?;
-    dst.extend_from_slice(writer.slice());
-    Ok(())
   }
 }
 
@@ -313,13 +283,15 @@ impl<'a> Encoder<TaggedGrappleMessage<'a>> for JMSElectronicsCodec {
 pub struct JMSElectronicsService {
   pub mq: MessageQueueChannel,
   pub kv: kv::KVConnection,
-  pub framed: UdpFramed<JMSElectronicsCodec, UdpSocket>
+  pub framed: JMSElectronicsL2Framed
 }
 
 impl JMSElectronicsService {
   pub async fn new(mq: MessageQueueChannel, kv: kv::KVConnection) -> Result<Self, anyhow::Error> {
-    let udp_socket = UdpSocket::bind("0.0.0.0:50003").await?;
-    let framed = UdpFramed::new(udp_socket, JMSElectronicsCodec {});
+    // let udp_socket = UdpSocket::bind("0.0.0.0:50003").await?;
+    // let framed = UdpFramed::new(udp_socket, JMSElectronicsCodec {});
+    let mut framed = JMSElectronicsL2Framed::new(get_jms_admin_interface());
+
 
     Ok(Self { mq, kv, framed })
   }
@@ -338,14 +310,24 @@ impl FieldElectronicsServiceRPC for JMSElectronicsService {
 
   async fn update(&mut self, update: FieldElectronicsUpdate) -> Result<(), String> {
     match update {
-      FieldElectronicsUpdate::SetRole { ip, role } => {
-        if let Ok(ip) = ip.parse() {
-          self.framed.send((
+      FieldElectronicsUpdate::SetRole { mac, role } => {
+        if let Ok(mac) = mac.parse() {
+          self.framed.send_framed(
+            mac,
             TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::SetRole(role)))),
-            SocketAddr::new(ip, 50002)
-          )).await.map_err(|e| e.to_string())
+          ).await.map_err(|e| e.to_string())
         } else {
-          Err(format!("Invalid IP: {}", ip))
+          Err(format!("Invalid MAC: {}", mac))
+        }
+      },
+      FieldElectronicsUpdate::Blink { mac } => {
+        if let Ok(mac) = mac.parse() {
+          self.framed.send_framed(
+            mac,
+            TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Blink))),
+          ).await.map_err(|e| e.to_string())
+        } else {
+          Err(format!("Invalid MAC: {}", mac))
         }
       }
     }

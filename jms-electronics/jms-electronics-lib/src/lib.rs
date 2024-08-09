@@ -5,7 +5,7 @@ use jms_core_lib::db::{Singleton, Table};
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct FieldElectronicsEndpoint {
-  pub ip: String,
+  pub mac: String,
   pub status: JMSElectronicsStatus,
 }
 
@@ -15,15 +15,18 @@ impl Table for FieldElectronicsEndpoint {
   type Err = Infallible;
 
   fn id(&self) -> Self::Id {
-    self.ip.clone()
+    self.mac.clone()
   }
 }
 
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub enum FieldElectronicsUpdate {
   SetRole {
-    ip: String,
+    mac: String,
     role: JMSRole
+  },
+  Blink {
+    mac: String
   }
 }
 
