@@ -186,36 +186,34 @@ impl JMSElectronics {
             }
           }
 
-          for alliance in [Alliance::Red, Alliance::Blue] {
-            for ep in &endpoints {
-              if (alliance == Alliance::Blue && ep.status.role == JMSRole::TimerBlue) || (alliance == Alliance::Red && ep.status.role == JMSRole::TimerRed) {
-                let mut front_text = "---".to_owned();
-                let mut portion = 0;
+          for ep in &endpoints {
+            if [JMSRole::TimerBlue, JMSRole::TimerRed, JMSRole::ScoringTable].contains(&ep.status.role) {
+              let mut front_text = "---".to_owned();
+              let mut portion = 0;
 
-                if let Some(current) = current_match.as_ref() {
-                  front_text = format!("{}", current.remaining.0.num_seconds());
-                  if current.remaining_max.0.num_seconds() > 0 {
-                    portion = ((current.remaining.0.num_seconds() * 255) / (current.remaining_max.0.num_seconds())) as u8;
-                  }
+              if let Some(current) = current_match.as_ref() {
+                front_text = format!("{}", current.remaining.0.num_seconds());
+                if current.remaining_max.0.num_seconds() > 0 {
+                  portion = ((current.remaining.0.num_seconds() * 255) / (current.remaining_max.0.num_seconds())) as u8;
                 }
-
-                framed.send_framed(
-                  ep.mac.parse()?,
-                  TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Update(JMSElectronicsUpdate {
-                    card: 1,
-                    update: JMSCardUpdate::Lighting {
-                      text_back: AsymmetricCow(Cow::Borrowed("")),
-                      text_back_colour: Colour::new(0, 0, 0).clone(),
-                      back_background: Pattern::Blank,
-                      text: AsymmetricCow(Cow::Borrowed(&front_text)),
-                      text_colour: Colour::new(255, 255, 255),
-                      bottom_bar: Pattern::FillLeft(Colour::new(255, 255, 255), Colour::new(0, 0, 0), portion),
-                      top_bar: Pattern::Blank,
-                      background: Pattern::Blank
-                    }
-                  }))))
-                ).await.map_err(|e| e.to_string()).ok();
               }
+
+              framed.send_framed(
+                ep.mac.parse()?,
+                TaggedGrappleMessage::new(0x00, GrappleDeviceMessage::Misc(MiscMessage::JMS(JMSMessage::Update(JMSElectronicsUpdate {
+                  card: 1,
+                  update: JMSCardUpdate::Lighting {
+                    text_back: AsymmetricCow(Cow::Borrowed("")),
+                    text_back_colour: Colour::new(0, 0, 0).clone(),
+                    back_background: Pattern::Blank,
+                    text: AsymmetricCow(Cow::Borrowed(&front_text)),
+                    text_colour: Colour::new(255, 255, 255),
+                    bottom_bar: Pattern::FillLeft(Colour::new(255, 255, 255), Colour::new(0, 0, 0), portion),
+                    top_bar: Pattern::Blank,
+                    background: Pattern::Blank
+                  }
+                }))))
+              ).await.map_err(|e| e.to_string()).ok();
             }
           }
         },
