@@ -95,6 +95,11 @@ pub struct DerivedScore {
   pub leave_points: isize,
   pub notes: DerivedNotes,
   pub endgame_points: isize,
+  pub endgame_park_points: isize,
+  pub endgame_onstage_points: isize,
+  pub endgame_harmony_points: isize,
+  pub endgame_spotlit_bonus_points: isize,
+  pub endgame_trap_points: isize,
   pub coopertition_met: bool,
   pub melody_threshold: usize,
   pub melody_rp: bool,
@@ -104,6 +109,8 @@ pub struct DerivedScore {
 
   pub mode_score: ModeScore<isize>,
   pub penalty_score: usize,
+  pub foul_score: usize,
+  pub tech_foul_score: usize,
   pub total_score: usize,
   pub total_bonus_rp: usize,
   pub win_rp: usize,
@@ -266,7 +273,11 @@ impl LiveScore {
       false => 18,
     };
 
-    let mut endgame_points = 0isize;
+    let mut endgame_park_points = 0isize;
+    let mut endgame_onstage_points = 0isize;
+    let mut endgame_spotlit_bonus_points = 0isize;
+    let mut endgame_harmony_points = 0isize;
+    let mut endgame_trap_points = 0isize;
 
     let mut stage_counts = [0; 3];
 
@@ -275,25 +286,26 @@ impl LiveScore {
       match team_endgame {
         EndgameType::None => {},
         EndgameType::Parked => {
-          endgame_points += 1;
+          endgame_park_points += 1;
         },
         EndgameType::Stage(stage) => {
           let spotlit = self.microphones[*stage];
           stage_counts[*stage] += 1;
+          endgame_onstage_points += 3;
           if spotlit {
-            endgame_points += 4;
-          } else {
-            endgame_points += 3;
+            endgame_spotlit_bonus_points += 1;
           }
         },
       }
     }
 
     // HARMONY points
-    endgame_points += stage_counts.iter().filter(|&x| *x >= 2).map(|x| *x - 1).count() as isize * 2;
+    endgame_harmony_points += stage_counts.iter().filter(|&x| *x >= 2).map(|x| *x - 1).count() as isize * 2;
 
     // Trap Points
-    endgame_points += self.traps.iter().filter(|&x| *x).count() as isize * 5;
+    endgame_trap_points += self.traps.iter().filter(|&x| *x).count() as isize * 5;
+
+    let endgame_points = endgame_park_points + endgame_harmony_points + endgame_onstage_points + endgame_trap_points + endgame_spotlit_bonus_points;
 
     let amplified_remaining = match self.notes.amp_time {
       Some(x) => {
@@ -314,6 +326,9 @@ impl LiveScore {
     let speaker_amped_points = (self.notes.speaker_amped * 5) as isize;
     let speaker_unamped_points = (self.notes.speaker_unamped * 2) as isize;
 
+    let foul_score = other_alliance.penalties.fouls * 2;
+    let tech_foul_score = other_alliance.penalties.tech_fouls * 5;
+
     let mut d = DerivedScore {
       leave_points: self.leave.iter().map(|x| (*x as isize) * 2).sum(),
       notes: DerivedNotes {
@@ -329,9 +344,16 @@ impl LiveScore {
       melody_threshold,
       melody_rp: (total_notes >= melody_threshold) || self.melody_adjust,
       ensemble_rp: (endgame_points >= 10 && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= 2) || self.ensemble_adjust,
+      endgame_harmony_points,
+      endgame_onstage_points,
+      endgame_park_points,
+      endgame_trap_points,
+      endgame_spotlit_bonus_points,
       endgame_points,
 
-      penalty_score: other_alliance.penalties.fouls * 2 + other_alliance.penalties.tech_fouls * 5,
+      foul_score,
+      tech_foul_score,
+      penalty_score: foul_score + tech_foul_score,
       
       amplified_remaining: self.amplified_remaining(),
 
