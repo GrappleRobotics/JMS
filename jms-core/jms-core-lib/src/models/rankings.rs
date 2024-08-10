@@ -3,7 +3,7 @@ use std::{num::ParseIntError, collections::HashMap};
 use jms_base::kv;
 use rand::Rng;
 
-use crate::{db::Table, scoring::scores::{DerivedScore, WinStatus}};
+use crate::{db::{Singleton, Table}, scoring::scores::{DerivedScore, ScoringConfig, WinStatus}};
 
 use super::MatchType;
 
@@ -44,8 +44,9 @@ impl TeamRanking {
       if let Some(m) = matches.get(&score.match_id) {
         if m.match_type == MatchType::Qualification {
           if let Some(score) = score.scores.last() {
-            let score_red = score.red.derive(&score.blue);
-            let score_blue = score.blue.derive(&score.red);
+            let config = ScoringConfig::get(kv)?;
+            let score_red = score.red.derive(&score.blue, config);
+            let score_blue = score.blue.derive(&score.red, config);
 
             for team in m.red_teams.iter().filter_map(|t| t.as_ref()) {
               Self::update_single(*team, &score_red, &mut rankings_map);

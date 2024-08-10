@@ -1,19 +1,14 @@
-use std::{borrow::Cow, net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr, time::Duration};
+use std::{borrow::Cow, net::{IpAddr, Ipv4Addr}, time::Duration};
 
-use binmarshal::{AsymmetricCow, BitView, BitWriter, Demarshal, VecBitWriter};
-use bounded_static::ToBoundedStatic;
-use bytes::Buf;
-use futures::{SinkExt, StreamExt};
-use grapple_frc_msgs::{grapple::{jms::{Colour, JMSCardUpdate, JMSElectronicsUpdate, JMSMessage, JMSRole, Pattern}, misc::MiscMessage, write_direct, GrappleDeviceMessage, GrappleMessageId, MaybeFragment, TaggedGrappleMessage}, ManufacturerMessage, MessageId};
+use binmarshal::AsymmetricCow;
+use grapple_frc_msgs::grapple::{jms::{Colour, JMSCardUpdate, JMSElectronicsUpdate, JMSMessage, JMSRole, Pattern}, misc::MiscMessage, GrappleDeviceMessage, TaggedGrappleMessage};
 use jms_arena_lib::{AllianceStation, ArenaEntryCondition, ArenaRPCClient, ArenaState, SerialisedLoadedMatch, ARENA_MATCH_KEY, ARENA_STATE_KEY};
-use jms_base::{kv, mq::{self, MessageQueue, MessageQueueChannel}};
-use jms_core_lib::{db::{Singleton, Table}, models::Alliance, scoring::scores::MatchScore};
+use jms_base::{kv, mq::{self, MessageQueueChannel}};
+use jms_core_lib::{db::{Singleton, Table}, models::Alliance, scoring::scores::{MatchScore, ScoringConfig}};
 use jms_driverstation_lib::DriverStationReport;
 use jms_electronics_lib::{EstopMode, FieldElectronicsEndpoint, FieldElectronicsServiceRPC, FieldElectronicsSettings, FieldElectronicsUpdate};
-use log::{error, warn};
+use log::warn;
 use pnet::datalink;
-use tokio::net::UdpSocket;
-use tokio_util::{codec::{Decoder, Encoder}, udp::UdpFramed};
 
 use crate::network::JMSElectronicsL2Framed;
 
@@ -67,13 +62,15 @@ impl JMSElectronics {
         },
         _ = lighting_update.tick() => {
           tick_n = tick_n.wrapping_add(1);
+          let config = ScoringConfig::get(&self.kv)?;
+
           for station in &stations {
             let (team_score, other_score, primary_colour, secondary_colour, target_role) = match station.id.alliance {
               Alliance::Blue => ( &score.blue, &score.red, Colour::new(0, 0, 255), Colour::new(0, 0, 5), JMSRole::Blue(station.id.station as u8) ),
               Alliance::Red => ( &score.red, &score.blue, Colour::new(255, 0, 0), Colour::new(5, 0, 0), JMSRole::Red(station.id.station as u8) ),
             };
 
-            let score_derived = team_score.derive(&other_score);
+            let score_derived = team_score.derive(&other_score, config);
 
             let top_bar = match (team_score.coop, other_score.coop, arena_state) {
               (_, _, ArenaState::Estop) => Pattern::Blank,
@@ -288,8 +285,7 @@ impl JMSElectronicsService {
   pub async fn new(mq: MessageQueueChannel, kv: kv::KVConnection) -> Result<Self, anyhow::Error> {
     // let udp_socket = UdpSocket::bind("0.0.0.0:50003").await?;
     // let framed = UdpFramed::new(udp_socket, JMSElectronicsCodec {});
-    let mut framed = JMSElectronicsL2Framed::new(get_jms_admin_interface());
-
+    let framed = JMSElectronicsL2Framed::new(get_jms_admin_interface());
 
     Ok(Self { mq, kv, framed })
   }

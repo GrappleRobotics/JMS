@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use jms_base::kv;
-use jms_core_lib::{scoring::scores::{SnapshotScore, EndgameType, MatchScoreSnapshot}, models::{self, PlayoffModeType, MatchType}, db::{Table, Singleton}};
+use jms_core_lib::{db::{Singleton, Table}, models::{self, MatchType, PlayoffModeType}, scoring::scores::{EndgameType, MatchScoreSnapshot, ScoringConfig, SnapshotScore}};
 use log::{error, warn};
 
 use crate::{teams::TBATeam, client::TBAClient};
@@ -41,10 +39,11 @@ impl TBAMatchUpdate {
     let playoff_type = models::PlayoffMode::get(kv)?;
     let matches = models::Match::all(kv)?;
     let scores = models::CommittedMatchScores::all_map(kv)?;
+    let score_config = ScoringConfig::get(kv)?;
 
     for m in matches {
       if m.match_type != MatchType::Test {
-        let latest_score = scores.get(&m.id).and_then(|cms| cms.scores.last()).map(|x| Into::<MatchScoreSnapshot>::into(x.clone()));
+        let latest_score = scores.get(&m.id).and_then(|cms| cms.scores.last()).map(|x| x.clone().derive(score_config));
         
         // Try to convert our format into TBA's format
         let (comp_level, set, match_n) = match (&playoff_type.mode, m.match_type, m.round, m.set_number, m.match_number) {

@@ -1,26 +1,42 @@
 use std::time::Duration;
 
 use jms_base::kv;
-use jms_core_lib::{scoring::scores::{MatchScoreSnapshot, MatchScore, ScoreUpdateData, LiveScore}, db::{Singleton, Table}, models::{MaybeToken, Alliance, Permission, CommittedMatchScores, Match, TeamRanking, MatchType}, schedule::generators::MatchGeneratorRPCClient};
+use jms_core_lib::{db::{Singleton, Table}, models::{Alliance, CommittedMatchScores, Match, MatchType, MaybeToken, Permission, TeamRanking}, schedule::generators::MatchGeneratorRPCClient, scoring::scores::{LiveScore, MatchScore, MatchScoreSnapshot, ScoreUpdateData, ScoringConfig}};
 use uuid::Uuid;
 
 use crate::ws::WebsocketContext;
 
 #[jms_websocket_macros::websocket_handler]
 pub trait ScoringWebsocket {
+  // Config
+  #[publish]
+  async fn config(&self, ctx: &WebsocketContext) -> anyhow::Result<ScoringConfig> {
+    let config = ScoringConfig::get(&ctx.kv)?;
+    Ok(config)
+  }
+
+  #[endpoint]
+  async fn update_config(&self, ctx: &WebsocketContext, token: &MaybeToken, config: ScoringConfig) -> anyhow::Result<ScoringConfig> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::EditScores])?;
+    ScoringConfig::update(&config, &ctx.kv)?;
+    Ok(config)
+  }
+
   #[publish]
   async fn current(&self, ctx: &WebsocketContext) -> anyhow::Result<MatchScoreSnapshot> {
-    Ok(MatchScore::get(&ctx.kv)?.into())
+    let config = ScoringConfig::get(&ctx.kv)?;
+    Ok(MatchScore::get(&ctx.kv)?.derive(config))
   }
 
   async fn do_score_update(kv: &kv::KVConnection, update: ScoreUpdateData) -> anyhow::Result<MatchScoreSnapshot> {
+    let config = ScoringConfig::get(&kv)?;
     let mut live_score = MatchScore::get(kv)?;
     match update.alliance {
       Alliance::Red => live_score.red.update(update.update),
       Alliance::Blue => live_score.blue.update(update.update)
     }
     live_score.update(kv)?;
-    Ok(live_score.into())
+    Ok(live_score.derive(config))
   }
 
   #[endpoint]
@@ -57,6 +73,7 @@ pub trait ScoringWebsocket {
     token.auth(&ctx.kv)?.require_permission(&[Permission::EditScores])?;
 
     let my_id = Uuid::new_v4().to_string();
+    let config = ScoringConfig::get(&ctx.kv)?;
     
     loop {
       ctx.kv.setnx("__score_update_lock", &my_id)?;
@@ -70,7 +87,7 @@ pub trait ScoringWebsocket {
 
     ctx.kv.del("__score_update_lock")?;
 
-    Ok(score.into())
+    Ok(score.derive(config))
   }
 
   // Historical Scores
@@ -122,8 +139,9 @@ pub trait ScoringWebsocket {
   }
 
   #[endpoint]
-  async fn derive_score(&self, _ctx: &WebsocketContext, _token: &MaybeToken, score: MatchScore) -> anyhow::Result<MatchScoreSnapshot> {
-    Ok(score.into())
+  async fn derive_score(&self, ctx: &WebsocketContext, _token: &MaybeToken, score: MatchScore) -> anyhow::Result<MatchScoreSnapshot> {
+    let config = ScoringConfig::get(&ctx.kv)?;
+    Ok(score.derive(config))
   }
 
   #[endpoint]

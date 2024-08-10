@@ -1,6 +1,6 @@
 use chrono::Duration;
 use jms_base::kv;
-use jms_core_lib::{models::{MatchType, Match, CommittedMatchScores, PlayoffMode, PlayoffModeType, PlayoffAlliance, ScheduleBlock, ScheduleBlockType, AwardRecipient, Award, Team}, db::{Table, Singleton}};
+use jms_core_lib::{db::{Singleton, Table}, models::{Award, AwardRecipient, CommittedMatchScores, Match, MatchType, PlayoffAlliance, PlayoffMode, PlayoffModeType, ScheduleBlock, ScheduleBlockType, Team}, scoring::scores::ScoringConfig};
 use log::{info, warn};
 
 use super::bracket::bracket_update;
@@ -78,8 +78,9 @@ impl PlayoffMatchGenerator {
     let scores = CommittedMatchScores::all_map(kv)?;
     let blocks = ScheduleBlock::sorted(kv)?.into_iter().filter(|x| x.block_type == ScheduleBlockType::Playoff);
 
+    let config = ScoringConfig::get(kv)?;
     let update = match playoff_mode.mode {
-      PlayoffModeType::Bracket | PlayoffModeType::DoubleBracket => bracket_update(&playoff_mode, &matches, &scores)?
+      PlayoffModeType::Bracket | PlayoffModeType::DoubleBracket => bracket_update(&playoff_mode, &matches, &scores, config)?
     };
 
     match update {

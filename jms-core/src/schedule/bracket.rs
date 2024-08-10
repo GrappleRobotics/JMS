@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use jms_core_lib::{models::{Match, CommittedMatchScores, Alliance, MatchType, PlayoffMode, PlayoffModeType}, db::Table};
+use jms_core_lib::{db::Table, models::{Alliance, CommittedMatchScores, Match, MatchType, PlayoffMode, PlayoffModeType}, scoring::scores::ScoringConfig};
 
 use crate::schedule::playoffs::PlayoffAllianceDescriptor;
 
@@ -88,7 +88,7 @@ pub const SINGLE_BRACKET_TEMPLATE: [PlayoffScheduleItem; 24] = [
   PlayoffScheduleItem::TiebreakerSlot,
 ];
 
-pub fn bracket_update(playoff_mode: &PlayoffMode, matches: &Vec<Match>, scores: &HashMap<String, CommittedMatchScores>) -> anyhow::Result<GenerationUpdate> {
+pub fn bracket_update(playoff_mode: &PlayoffMode, matches: &Vec<Match>, scores: &HashMap<String, CommittedMatchScores>, config: ScoringConfig) -> anyhow::Result<GenerationUpdate> {
   if playoff_mode.n_alliances > 8 {
     anyhow::bail!("Brackets do not currently support >8 alliances!");
   }
@@ -149,7 +149,7 @@ pub fn bracket_update(playoff_mode: &PlayoffMode, matches: &Vec<Match>, scores: 
         let set_matches = matches.iter().filter(|m| m.match_type == incomplete_match.ty && m.round == incomplete_match.round && m.set_number == incomplete_match.set);
         let played = set_matches.clone().filter(|m| m.played);
 
-        let match_wins = played.clone().filter_map(|x| scores.get(&x.id()).and_then(|x| x.scores.last()).and_then(|s| s.winner()));
+        let match_wins = played.clone().filter_map(|x| scores.get(&x.id()).and_then(|x| x.scores.last()).and_then(|s| s.winner(config)));
 
         let red_wins = match_wins.clone().filter(|x| *x == Alliance::Red).count();
         let blue_wins = match_wins.clone().filter(|x| *x == Alliance::Blue).count();

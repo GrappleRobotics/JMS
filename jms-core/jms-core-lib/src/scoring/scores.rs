@@ -1,6 +1,6 @@
-use std::{ops::Add, time::Instant};
+use std::ops::Add;
 
-use chrono::{DateTime, Duration, Local};
+use chrono::{Duration, Local};
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::{db::{DBDuration, Singleton}, models::Alliance};
@@ -46,6 +46,57 @@ pub enum WinStatus {
   WIN,
   LOSS,
   TIE
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+pub struct ScoringConfig {
+  pub park_points: usize,
+  pub onstage_points: usize,
+  pub spotlight_points: usize,
+  pub harmony_threshold: usize,
+  pub harmony_points: usize,
+  pub trap_points: usize,
+  pub amp_auto_points: usize,
+  pub amp_teleop_points: usize,
+  pub speaker_auto_points: usize,
+  pub speaker_amped_points: usize,
+  pub speaker_unamped_points: usize,
+  pub foul_points: usize,
+  pub tech_foul_points: usize,
+  pub leave_points: usize,
+  pub melody_threshold_coop: usize,
+  pub melody_threshold: usize,
+  pub ensemble_points_threshold: usize,
+  pub ensemble_stage_count_threshold: usize,
+}
+
+impl Default for ScoringConfig {
+  fn default() -> Self {
+    Self {
+      park_points: 1,
+      onstage_points: 3,
+      spotlight_points: 1,
+      harmony_threshold: 2,
+      harmony_points: 2,
+      trap_points: 5,
+      amp_auto_points: 2,
+      amp_teleop_points: 1,
+      speaker_auto_points: 5,
+      speaker_amped_points: 5,
+      speaker_unamped_points: 2,
+      foul_points: 2,
+      tech_foul_points: 5,
+      leave_points: 2,
+      melody_threshold_coop: 15,
+      melody_threshold: 18,
+      ensemble_points_threshold: 10,
+      ensemble_stage_count_threshold: 2,
+    }
+  }
+}
+
+impl Singleton for ScoringConfig {
+  const KEY: &'static str = "score:config";
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
@@ -132,9 +183,9 @@ impl MatchScore {
     }
   }
 
-  pub fn winner(&self) -> Option<Alliance> {
-    let red_derived = self.red.derive(&self.blue);
-    let blue_derived = self.blue.derive(&self.red);
+  pub fn winner(&self, config: ScoringConfig) -> Option<Alliance> {
+    let red_derived = self.red.derive(&self.blue, config);
+    let blue_derived = self.blue.derive(&self.red, config);
 
     if red_derived.total_score == blue_derived.total_score {
       None
@@ -144,12 +195,27 @@ impl MatchScore {
       Some(Alliance::Blue)
     }
   }
+
+  pub fn derive(self, config: ScoringConfig) -> MatchScoreSnapshot {
+    let derive_red = self.red.derive(&self.blue, config);
+    let derive_blue = self.blue.derive(&self.red, config);
+
+    MatchScoreSnapshot {
+      red: SnapshotScore {
+        live: self.red,
+        derived: derive_red,
+      },
+      blue: SnapshotScore {
+        live: self.blue,
+        derived: derive_blue,
+      },
+    }
+  }
 }
 
 impl Singleton for MatchScore {
   const KEY: &'static str = "score:live";
 }
-
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
 pub struct SnapshotScore {
@@ -169,24 +235,6 @@ impl Eq for SnapshotScore { }
 pub struct MatchScoreSnapshot {
   pub red: SnapshotScore,
   pub blue: SnapshotScore,
-}
-
-impl Into<MatchScoreSnapshot> for MatchScore {
-  fn into(self) -> MatchScoreSnapshot {
-    let derive_red = self.red.derive(&self.blue);
-    let derive_blue = self.blue.derive(&self.red);
-
-    MatchScoreSnapshot {
-      red: SnapshotScore {
-        live: self.red,
-        derived: derive_red,
-      },
-      blue: SnapshotScore {
-        live: self.blue,
-        derived: derive_blue,
-      },
-    }
-  }
 }
 
 impl From<MatchScoreSnapshot> for MatchScore {
@@ -267,10 +315,10 @@ impl LiveScore {
     }
   }
 
-  pub fn partial_derive(&self, other_alliance: &LiveScore) -> DerivedScore {
+  pub fn partial_derive(&self, other_alliance: &LiveScore, config: ScoringConfig) -> DerivedScore {
     let melody_threshold = match (self.coop && other_alliance.coop) || self.coop_adjust {
-      true => 15,
-      false => 18,
+      true => config.melody_threshold_coop,
+      false => config.melody_threshold,
     };
 
     let mut endgame_park_points = 0isize;
@@ -286,24 +334,24 @@ impl LiveScore {
       match team_endgame {
         EndgameType::None => {},
         EndgameType::Parked => {
-          endgame_park_points += 1;
+          endgame_park_points += config.park_points as isize;
         },
         EndgameType::Stage(stage) => {
           let spotlit = self.microphones[*stage];
           stage_counts[*stage] += 1;
-          endgame_onstage_points += 3;
+          endgame_onstage_points += config.onstage_points as isize;
           if spotlit {
-            endgame_spotlit_bonus_points += 1;
+            endgame_spotlit_bonus_points += config.spotlight_points as isize;
           }
         },
       }
     }
 
     // HARMONY points
-    endgame_harmony_points += stage_counts.iter().filter(|&x| *x >= 2).map(|x| *x - 1).count() as isize * 2;
+    endgame_harmony_points += stage_counts.iter().filter(|&x| *x >= config.harmony_threshold).map(|x| *x - 1).count() as isize * config.harmony_points as isize;
 
     // Trap Points
-    endgame_trap_points += self.traps.iter().filter(|&x| *x).count() as isize * 5;
+    endgame_trap_points += self.traps.iter().filter(|&x| *x).count() as isize * config.trap_points as isize;
 
     let endgame_points = endgame_park_points + endgame_harmony_points + endgame_onstage_points + endgame_trap_points + endgame_spotlit_bonus_points;
 
@@ -321,16 +369,16 @@ impl LiveScore {
 
     let total_notes = self.notes.amp.total() + self.notes.speaker_auto + self.notes.speaker_amped + self.notes.speaker_unamped;
 
-    let amp_points = ModeScore { auto: (self.notes.amp.auto * 2) as isize, teleop: (self.notes.amp.teleop * 1) as isize };
-    let speaker_auto_points = (self.notes.speaker_auto * 5) as isize;
-    let speaker_amped_points = (self.notes.speaker_amped * 5) as isize;
-    let speaker_unamped_points = (self.notes.speaker_unamped * 2) as isize;
+    let amp_points = ModeScore { auto: (self.notes.amp.auto * config.amp_auto_points) as isize, teleop: (self.notes.amp.teleop * config.amp_teleop_points) as isize };
+    let speaker_auto_points = (self.notes.speaker_auto * config.speaker_auto_points) as isize;
+    let speaker_amped_points = (self.notes.speaker_amped * config.speaker_amped_points) as isize;
+    let speaker_unamped_points = (self.notes.speaker_unamped * config.speaker_unamped_points) as isize;
 
-    let foul_score = other_alliance.penalties.fouls * 2;
-    let tech_foul_score = other_alliance.penalties.tech_fouls * 5;
+    let foul_score = other_alliance.penalties.fouls * config.foul_points;
+    let tech_foul_score = other_alliance.penalties.tech_fouls * config.tech_foul_points;
 
     let mut d = DerivedScore {
-      leave_points: self.leave.iter().map(|x| (*x as isize) * 2).sum(),
+      leave_points: self.leave.iter().map(|x| (*x as isize) * config.leave_points as isize).sum(),
       notes: DerivedNotes {
         total_points: amp_points.auto + amp_points.teleop + speaker_auto_points + speaker_amped_points + speaker_unamped_points,
         amp_points,
@@ -343,7 +391,7 @@ impl LiveScore {
       coopertition_met: self.coop,
       melody_threshold,
       melody_rp: (total_notes >= melody_threshold) || self.melody_adjust,
-      ensemble_rp: (endgame_points >= 10 && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= 2) || self.ensemble_adjust,
+      ensemble_rp: (endgame_points >= config.ensemble_points_threshold as isize && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= config.ensemble_stage_count_threshold) || self.ensemble_adjust,
       endgame_harmony_points,
       endgame_onstage_points,
       endgame_park_points,
@@ -374,9 +422,9 @@ impl LiveScore {
     d
   }
 
-  pub fn derive(&self, other_alliance: &LiveScore) -> DerivedScore {
-    let mut d = self.partial_derive(other_alliance);
-    let other_d = other_alliance.partial_derive(self);
+  pub fn derive(&self, other_alliance: &LiveScore, config: ScoringConfig) -> DerivedScore {
+    let mut d = self.partial_derive(other_alliance, config);
+    let other_d = other_alliance.partial_derive(self, config);
     
     let win_status = match d.total_score.cmp(&other_d.total_score) {
       std::cmp::Ordering::Greater => WinStatus::WIN,
@@ -540,9 +588,15 @@ mod tests {
       adjustment: 0,
     };
 
-    let derived_blue = blue.derive(&red);
-    let derived_red = red.derive(&blue);
-    
+    let mut config = ScoringConfig::default();
+
+    // This was at the FIRST Championship, so there's new limits
+    config.melody_threshold = 25;
+    config.melody_threshold_coop = 21;
+
+    let derived_blue = blue.derive(&red, config);
+    let derived_red = red.derive(&blue, config);
+
     assert_eq!(derived_blue.notes.total_points, 55);
     assert_eq!(derived_blue.leave_points, 4);
     assert_eq!(derived_blue.endgame_points, 11);
