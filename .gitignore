@@ -10,6 +10,7 @@
 /output
 /cache
 /docker_images
+/build
 
 # Event backups
 *.tar.gz
