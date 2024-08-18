@@ -14,6 +14,7 @@
   "jms-spare-3"=90;
   "jms-uplink"=99;
   "jms-admin"=100;
+  "jms-guest"=200;
 }
 
 :global dhcpmap {
@@ -70,6 +71,7 @@
     add interface=[/interface/vlan/find where comment~"#jms-uplink"] comment="#jms-uplink"
   
   /ip/address
+    add interface=[/interface/vlan/find where comment~"#jms-guest"] comment="#jms-guest" address="10.0.200.1/24" network="10.0.200.0"
     :foreach iname,vlan in=$dhcpmap do={
       add interface=[/interface/vlan/find where comment~"#$iname"] comment="#$iname" address="10.0.$vlan.4/24" network="10.0.$vlan.0"
     }
@@ -77,6 +79,7 @@
   /ip/pool
     remove [find comment~"#jms-.*"]
     add name="dhcp-jms-admin" ranges=10.0.100.101-10.0.100.254 comment="#jms-admin"
+    add name="dhcp-jms-guest" ranges=10.0.200.101-10.0.200.254 comment="#jms-guest"
 
     :foreach iname,vlan in=$dhcpmap do={
       add name="dhcp-$iname" ranges="10.0.$vlan.100-10.0.$vlan.150" comment="#$iname"
@@ -85,6 +88,7 @@
   /ip/dhcp-server
     remove [find comment~"#jms-.*"]
     add name="dhcp-admin" comment="#jms-admin" interface=[/interface/vlan/find where comment~"#jms-admin"] address-pool="dhcp-jms-admin"
+    add name="dhcp-guest" comment="#jms-guest" interface=[/interface/vlan/find where comment~"#jms-guest"] address-pool="dhcp-jms-guest"
 
     :foreach iname,vlan in=$dhcpmap do={
       add name="dhcp-$iname" comment="#$iname" interface=[/interface/vlan/find where comment~"#$iname"] address-pool="dhcp-$iname"
@@ -92,6 +96,7 @@
 
     network/remove [find comment~"#jms-.*"]
     network/add address=10.0.100.0/24 gateway=$switchip dns-server=$switchip comment="#jms-admin"
+    network/add address=10.0.200.0/24 gateway="10.0.200.1" dns-server="10.0.200.1" comment="#jms-guest"
 
     :foreach iname,vlan in=$dhcpmap do={
       network/add comment="#$iname" address="10.0.$vlan.0/24"
@@ -100,7 +105,7 @@
   /ip/firewall
     nat/remove [find comment~"#jms-.*"]
     nat/add chain=srcnat out-interface=[/interface/vlan/find where comment~"#jms-uplink"] action="masquerade" comment="#jms-uplink"
-  
+
   /ip/dns set allow-remote-requests=yes
 
   /ip/dns/static
@@ -116,8 +121,11 @@
     add comment="#jms-existing" chain=input action=accept connection-state=established,related
     add comment="#jms-existing" chain=forward action=accept connection-state=established,related
     add comment="#jms-admin-router-access" chain=input action=accept src-address=10.0.100.0/24
+    add comment="#jms-guest-router-access" chain=input action=accept src-address=10.0.200.0/24
     add comment="#jms-admin-internet-access" chain=forward action=accept src-address=10.0.100.0/24 out-interface=[/interface/vlan/find where comment~"#jms-uplink"]
+    add comment="#jms-guest-internet-access" chain=forward action=accept src-address=10.0.200.0/24 out-interface=[/interface/vlan/find where comment~"#jms-uplink"]
     add comment="#jms-icmp-router" chain=input action=accept protocol=icmp
+    add comment="#jms-deny-fms-guest" chain=forward action=drop dst-address=10.0.100.5 src-address=10.0.200.0/24
     add comment="#jms-ds2fms-tcp" chain=forward action=accept protocol=tcp dst-address=10.0.100.5 dst-port=1750
     add comment="#jms-ds2fms-udp" chain=forward action=accept protocol=udp dst-address=10.0.100.5 dst-port=1160
     add comment="#jms-ds2fms-icmp" chain=forward action=accept protocol=icmp dst-address=10.0.100.5
