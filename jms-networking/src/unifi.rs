@@ -113,7 +113,7 @@ pub async fn configure_ap_teams(config: &NetworkConfig, settings: &NetworkingSet
     if let Some(network_id) = network_id {
       if let Some(vlan) = network_ids.get(&network_id) {
         if let Some((team, wpa_key)) = vlan_configs.get(vlan) {
-          wlan_mut.insert("name".to_owned(), json!(format!("{}", team)));
+          wlan_mut.insert("name".to_owned(), json!(team.map(|x| format!("{}", x)).unwrap_or(format!("unoccupied-{}", vlan))));
           wlan_mut.insert("hide_ssid".to_owned(), json!(true));
           wlan_mut.insert("wlan_band".to_owned(), json!("5g"));
           wlan_mut.insert("wlan_bands".to_owned(), json!(["5g"]));

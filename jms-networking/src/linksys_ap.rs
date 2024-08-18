@@ -17,14 +17,14 @@ pub async fn configure_ap_teams(config: &NetworkConfig, settings: &NetworkingSet
     match wpa_key {
       Some(wpa_key) => {
         cfgs.push(format!("set wireless.@wifi-iface[{}].disabled='0'", iface_num));
-        cfgs.push(format!("set wireless.@wifi-iface[{}].ssid='{}'", iface_num, team));
+        cfgs.push(format!("set wireless.@wifi-iface[{}].ssid='{}'", iface_num, team.map(|x| format!("{}", x)).unwrap_or(format!("unoccupied-{}", i))));
         cfgs.push(format!("set wireless.@wifi-iface[{}].key='{}'", iface_num, wpa_key));
         cfgs.push(format!("set wireless.@wifi-iface[{}].encryption='psk2'", iface_num));
       },
       None => {
         info!("Station {} unoccupied", iface_num);
         cfgs.push(format!("set wireless.@wifi-iface[{}].disabled='1'", iface_num));
-        cfgs.push(format!("set wireless.@wifi-iface[{}].ssid='{}'", iface_num, team));
+        cfgs.push(format!("set wireless.@wifi-iface[{}].ssid='{}'", iface_num, team.map(|x| format!("{}", x)).unwrap_or(format!("unoccupied-{}", i))));
         cfgs.push(format!("set wireless.@wifi-iface[{}].key='unoccupied'", iface_num));
         cfgs.push(format!("set wireless.@wifi-iface[{}].encryption='psk2'", iface_num));
       }

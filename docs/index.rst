@@ -5,3 +5,5 @@ Contents
 --------
 
 .. toctree::
+  povs/index
+  full-walkthrough/index

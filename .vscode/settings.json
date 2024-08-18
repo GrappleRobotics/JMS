@@ -11,6 +11,10 @@
     "string_view": "cpp",
     "initializer_list": "cpp"
   },
+  "pasteImage.path": "${currentFileDir}/imgs",
+  "pasteImage.showFilePathConfirmInputBox": true,
+  "pasteImage.filePathConfirmInputBoxMode": "onlyName",
+  "pasteImage.insertPattern": ".. image:: ${imageFilePath}",
   "spellright.language": [
     "English (Australian)"
   ],

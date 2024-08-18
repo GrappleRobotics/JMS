@@ -73,7 +73,7 @@
   /ip/address
     add interface=[/interface/vlan/find where comment~"#jms-guest"] comment="#jms-guest" address="10.0.200.1/24" network="10.0.200.0"
     :foreach iname,vlan in=$dhcpmap do={
-      add interface=[/interface/vlan/find where comment~"#$iname"] comment="#$iname" address="10.0.$vlan.4/24" network="10.0.$vlan.0"
+      add interface=[/interface/vlan/find where comment~"#$iname"] comment="#$iname" address="10.0.1$vlan.4/24" network="10.0.1$vlan.0"
     }
 
   /ip/pool
@@ -82,7 +82,7 @@
     add name="dhcp-jms-guest" ranges=10.0.200.101-10.0.200.254 comment="#jms-guest"
 
     :foreach iname,vlan in=$dhcpmap do={
-      add name="dhcp-$iname" ranges="10.0.$vlan.100-10.0.$vlan.150" comment="#$iname"
+      add name="dhcp-$iname" ranges="10.0.1$vlan.100-10.0.1$vlan.150" comment="#$iname"
     }
 
   /ip/dhcp-server
@@ -99,7 +99,7 @@
     network/add address=10.0.200.0/24 gateway="10.0.200.1" dns-server="10.0.200.1" comment="#jms-guest"
 
     :foreach iname,vlan in=$dhcpmap do={
-      network/add comment="#$iname" address="10.0.$vlan.0/24"
+      network/add comment="#$iname" address="10.0.1$vlan.0/24"
     }
   
   /ip/firewall

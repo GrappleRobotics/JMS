@@ -31,12 +31,12 @@ async fn component_svc(mut component: JmsComponent, kv: kv::KVConnection) -> any
 // ( team number, WPA key ). If no WPA key, no wireless network is allocated.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct NetworkConfig {
-  blue1: ( usize, Option<String> ),
-  blue2: ( usize, Option<String> ),
-  blue3: ( usize, Option<String> ),
-  red1: ( usize, Option<String> ),
-  red2: ( usize, Option<String> ),
-  red3: ( usize, Option<String> ),
+  blue1: ( Option<usize>, Option<String> ),
+  blue2: ( Option<usize>, Option<String> ),
+  blue3: ( Option<usize>, Option<String> ),
+  red1: ( Option<usize>, Option<String> ),
+  red2: ( Option<usize>, Option<String> ),
+  red3: ( Option<usize>, Option<String> ),
 }
 
 async fn do_team_network_update(network: NetworkConfig, settings: NetworkingSettings) -> anyhow::Result<()> {
@@ -88,12 +88,12 @@ impl NetworkingService {
         state = hook_reset.next() => {
           state?;
           let config = NetworkConfig {
-            blue1: (1, None),
-            blue2: (2, None),
-            blue3: (3, None),
-            red1: (4, None),
-            red2: (5, None),
-            red3: (6, None),
+            blue1: (None, None),
+            blue2: (None, None),
+            blue3: (None, None),
+            red1: (None, None),
+            red2: (None, None),
+            red3: (None, None),
           };
           match do_team_network_update(config, NetworkingSettings::get(&self.kv)?).await {
             Ok(()) => hook_reset.success(&self.mq).await?,
@@ -114,12 +114,12 @@ impl NetworkingService {
           let red3 = stations.get(&AllianceStationId::new(Alliance::Red, 3)).map(|x| x.team).unwrap_or(None);
 
           let config = NetworkConfig {
-            blue1: (blue1.unwrap_or(1), blue1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
-            blue2: (blue2.unwrap_or(2), blue2.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
-            blue3: (blue3.unwrap_or(3), blue3.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
-            red1: (red1.unwrap_or(4), red1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
-            red2: (red2.unwrap_or(5), red2.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
-            red3: (red3.unwrap_or(6), red3.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+            blue1: (blue1, blue1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+            blue2: (blue2, blue2.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+            blue3: (blue3, blue3.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+            red1: (red1, red1.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+            red2: (red2, red2.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
+            red3: (red3, red3.and_then(|t| teams.get(&t).map(|t| t.wpakey.clone()))),
           };
 
           match do_team_network_update(config, NetworkingSettings::get(&self.kv)?).await {

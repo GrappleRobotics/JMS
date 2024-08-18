@@ -84,6 +84,17 @@ export function MatchFlow({ state, current_match }: { state: ArenaState, current
         Commit Scores
       </MatchFlowButton>
     </Col>
+    <Col>
+      <Button
+        className="match-flow-btn"
+        data-target="MatchShowScores"
+        variant="warning"
+        disabled={state?.state !== "Idle"}
+        onClick={() => call<"audience/set_latest_scores">("audience/set_latest_scores", {}).catch(addError)}
+      >
+        Show Scores
+      </Button>
+    </Col>
   </Row>
 };
 
