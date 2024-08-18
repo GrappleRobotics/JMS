@@ -73,6 +73,7 @@ pub trait ArenaWebsocket {
       red_teams: vec![None, None, None],
       blue_alliance: None,
       red_alliance: None,
+      dqs: vec![],
       played: false,
       ready: true
     };

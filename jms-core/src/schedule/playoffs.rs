@@ -176,6 +176,7 @@ impl PlayoffMatchGenerator {
                   blue_alliance,
                   red_teams: vec![ red_teams.get(0).copied(), red_teams.get(1).copied(), red_teams.get(2).copied() ],
                   red_alliance,
+                  dqs: vec![],
                   played: false,
                   ready: blue_alliance.is_some() && red_alliance.is_some()
                 };

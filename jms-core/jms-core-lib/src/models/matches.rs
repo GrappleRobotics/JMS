@@ -120,6 +120,7 @@ pub struct Match {
   pub blue_alliance: Option<usize>,
   pub red_teams: Vec<Option<usize>>,
   pub red_alliance: Option<usize>,
+  pub dqs: Vec<usize>,
 
   pub played: bool,
   pub ready: bool,
@@ -245,14 +246,33 @@ impl Table for CommittedMatchScores {
 }
 
 impl CommittedMatchScores {
-  pub fn push_and_insert(&mut self, score: MatchScore, kv: &kv::KVConnection) -> anyhow::Result<()> {
+  pub fn push_and_insert(&mut self, mut score: MatchScore, kv: &kv::KVConnection) -> anyhow::Result<()> {
+    // Update match played status
+    let mut m = Match::get(&self.match_id, kv)?;
+    m.played = true;
+
+    // Propagate any DQ's
+    if m.match_type == MatchType::Playoff || m.match_type == MatchType::Final {
+      for dq in &m.dqs {
+        let is_red = m.red_teams.contains(&Some(*dq));
+        let is_blue = m.blue_teams.contains(&Some(*dq));
+
+        if is_red {
+          score.red.is_dq = true;
+        }
+
+        if is_blue {
+          score.blue.is_dq = true;
+        }
+      }
+    }
+
+    // Push the score into the committed record
     self.scores.push(score);
     self.last_update = Local::now();
     self.insert(kv)?;
 
-    // Update match played status
-    let mut m = Match::get(&self.match_id, kv)?;
-    m.played = true;
+    // Update the match played status
     m.insert(kv)?;
 
     // Update team rankings

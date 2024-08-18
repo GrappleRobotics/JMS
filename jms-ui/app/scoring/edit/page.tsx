@@ -293,6 +293,14 @@ function EditScoresInner({ score, onUpdate, disabled, match, stations }: { score
                 </InputGroup>
               </Col>
             </Row>
+
+            <Row className="mt-2">
+              <Col>
+                <Button className="btn-block" variant={score[alliance].is_dq ? "danger" : "success"} onClick={() => onUpdate({ is_dq: { $set: !score[alliance].is_dq } })} disabled={disabled}>
+                  (PLAYOFF) DQ / RED CARD - { score[alliance].is_dq ? "TRUE" : "FALSE" }
+                </Button>
+              </Col>
+            </Row>
           </Card.Body>
         </Card>
       </Col>

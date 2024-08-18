@@ -43,6 +43,21 @@ pub trait MatchesWebsocket {
     Ok(())
   }
 
+  #[endpoint]
+  async fn toggle_dq(&self, ctx: &WebsocketContext, token: &MaybeToken, match_id: String, team: usize) -> anyhow::Result<()> {
+    token.auth(&ctx.kv)?.require_permission(&[Permission::FTA, Permission::Scorekeeper, Permission::HeadReferee])?;
+
+    let mut m = Match::get(&match_id, &ctx.kv)?;
+    if !m.dqs.contains(&team) {
+      m.dqs.push(team);
+    } else {
+      m.dqs.remove(m.dqs.iter().position(|x| *x == team).unwrap());
+    }
+    m.insert(&ctx.kv)?;
+
+    Ok(())
+  }
+
   // Quals
 
   #[endpoint]

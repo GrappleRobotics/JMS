@@ -133,6 +133,7 @@ pub struct LiveScore {
   pub melody_adjust: bool,
   pub ensemble_adjust: bool,
   pub adjustment: isize,
+  pub is_dq: bool
 }
 
 impl Default for LiveScore {
@@ -312,6 +313,7 @@ impl LiveScore {
       melody_adjust: false,
       ensemble_adjust: false,
       adjustment: 0,
+      is_dq: false,
     }
   }
 
@@ -390,8 +392,8 @@ impl LiveScore {
       },
       coopertition_met: self.coop,
       melody_threshold,
-      melody_rp: (total_notes >= melody_threshold) || self.melody_adjust,
-      ensemble_rp: (endgame_points >= config.ensemble_points_threshold as isize && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= config.ensemble_stage_count_threshold) || self.ensemble_adjust,
+      melody_rp: !self.is_dq && ((total_notes >= melody_threshold) || self.melody_adjust),
+      ensemble_rp: !self.is_dq && ((endgame_points >= config.ensemble_points_threshold as isize && self.endgame.iter().filter(|&x| matches!(*x, EndgameType::Stage(_))).count() >= config.ensemble_stage_count_threshold) || self.ensemble_adjust),
       endgame_harmony_points,
       endgame_onstage_points,
       endgame_park_points,
@@ -419,13 +421,17 @@ impl LiveScore {
     };
     d.total_score = (d.mode_score.auto as isize + d.mode_score.teleop as isize + d.penalty_score as isize + self.adjustment).max(0) as usize;
 
+    if self.is_dq {
+      d.total_score = 0;
+    }
+
     d
   }
 
   pub fn derive(&self, other_alliance: &LiveScore, config: ScoringConfig) -> DerivedScore {
     let mut d = self.partial_derive(other_alliance, config);
     let other_d = other_alliance.partial_derive(self, config);
-    
+
     let win_status = match d.total_score.cmp(&other_d.total_score) {
       std::cmp::Ordering::Greater => WinStatus::WIN,
       std::cmp::Ordering::Less => WinStatus::LOSS,
@@ -550,6 +556,7 @@ impl LiveScore {
       melody_adjust: false,
       ensemble_adjust: false,
       adjustment: 0,
+      is_dq: false,
     }
   }
 }
@@ -572,6 +579,7 @@ mod tests {
       melody_adjust: false,
       ensemble_adjust: false,
       adjustment: 0,
+      is_dq: false
     };
 
     let red = LiveScore {
@@ -586,6 +594,7 @@ mod tests {
       melody_adjust: false,
       ensemble_adjust: false,
       adjustment: 0,
+      is_dq: false
     };
 
     let mut config = ScoringConfig::default();
