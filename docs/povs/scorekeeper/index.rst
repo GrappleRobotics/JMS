@@ -1,11 +1,20 @@
 SCOREKEEPER
 ===========
 
-As a scorekeeper, your job is to make sure that the matches are flowing and to manage scoring. You're the "hands-on-keyboard" of the FTA and the Head Referee. 
+As a scorekeeper, your job is to configure JMS, make sure that the matches are flowing, and to manage scoring. you're the "hands-on-keyboard" of the fta and the head referee. 
 
 To get started, familiarise yourself with The JMS UI: :doc:`/full-walkthrough/00-navigation/index`
 
 Once you know about all the peripheral elements, let's get started by looking at how you use JMS to perform your role.
+
+Configure JMS
+*************
+On setup day, your job is to work with the FTA to configure JMS. See :doc:`before-the-event` to see how this is done.
+
+.. toctree::
+  :hidden:
+  
+  before-the-event
 
 Keep Matches Running
 ********************
