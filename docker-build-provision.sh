@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 docker build -t jms-provision-builder:latest -f Dockerfile.provision .

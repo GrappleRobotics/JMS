@@ -9,10 +9,10 @@ jobs:
     - uses: actions/checkout@v4
     - name: Run Docker Build
       run: |
-        ./docker-build.sh
+        chmod +x docker-build.sh && ./docker-build.sh
     - name: Build ISO
       run: |
-        ./docker-build-provision.sh
+        chmod +x docker-build-provision.sh && ./docker-build-provision.sh
     - uses: actions/upload-artifact@v3
       with:
         name: JMS Installer
