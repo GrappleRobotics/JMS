@@ -1,0 +1,23 @@
+name: Build Docker Images & ISOs
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run Docker Build
+      run: |
+        ./docker-build.sh
+    - name: Build ISO
+      run: |
+        ./docker-build-provision.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: JMS Installer
+        path: output/
+    - uses: actions/upload-artifact@v3
+      with:
+        name: JMS-Docker-Images
+        path: docker_images/
