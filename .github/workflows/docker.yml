@@ -12,7 +12,7 @@ jobs:
         chmod +x docker-build.sh && ./docker-build.sh
     - name: Build ISO
       run: |
-        chmod +x docker-build-provision.sh && ./docker-build-provision.sh
+        chmod +x docker-build-provision.sh && chmod +x ./provision/build.sh && ./docker-build-provision.sh
     - uses: actions/upload-artifact@v3
       with:
         name: JMS Installer
