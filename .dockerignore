@@ -11,6 +11,5 @@ README.md
 /images
 /docker-build.ps1
 /docker-build.sh
-/output
-/cache
-/docker_images
+/build
+!/build/docs

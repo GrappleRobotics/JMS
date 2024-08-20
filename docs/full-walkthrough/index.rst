@@ -5,4 +5,3 @@ This page is all about **using JMS**, i.e. everything you need to do on the day 
 
 .. toctree::
    00-navigation/index
-   01-event-wizard/index

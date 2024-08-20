@@ -83,6 +83,10 @@ export default function Home() {
         <HomeTile name="Rankings" href="/rankings" img="rankings.png"> View Team Standings and the Playoff Bracket </HomeTile>
         <HomeTile name="Audience Display" href="/audience" img="audience.jpg"> View the Audience Display </HomeTile>
       </HomeTileRow>
+      <HomeTileSep> Help! </HomeTileSep>
+      <HomeTileRow>
+        <HomeTile name="Documentation" href="/docs/index.html"> Official JMS Documentation </HomeTile>
+      </HomeTileRow>
     </UserPage>
   )
 }

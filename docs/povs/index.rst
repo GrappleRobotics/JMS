@@ -11,3 +11,4 @@ Select your role from the below list for a guided walkthrough.
   :maxdepth: 1
   
   scorekeeper/index
+  referee-scorer/index

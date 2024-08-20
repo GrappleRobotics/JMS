@@ -60,8 +60,8 @@ echo "JMS_INTERFACE=$TARGET_INTERFACE" >> /mnt/sysimage/jms/.env
 echo "JMS_DATA_DIR=/jms/data" >> /mnt/sysimage/jms/.env
 
 # Copy through the additional stuff
-cp -r /run/install/repo/docker_images /mnt/sysimage/jms
-cp /run/install/repo/docker_images/docker-compose.yml /mnt/sysimage/jms/docker-compose.yml
+cp -r /run/install/repo/docker-images /mnt/sysimage/jms
+cp /run/install/repo/docker-images/docker-compose.yml /mnt/sysimage/jms/docker-compose.yml
 
 chvt 1
 %end

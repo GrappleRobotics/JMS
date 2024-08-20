@@ -6,6 +6,7 @@ ADD jms-ui/yarn.lock jms-ui/
 RUN cd jms-ui && yarn install
 
 ADD jms-ui jms-ui
+ADD build/docs jms-ui/public/docs
 COPY --from=jaci/jms:latest /jms/schema.json /app/jms-websocket/schema.json
 RUN cd jms-ui && yarn build
 
