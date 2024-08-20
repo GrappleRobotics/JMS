@@ -15,7 +15,7 @@ export default function AllianceSelectionScene({ eventDetails, alliances, rankin
     { team: r.team, rank: i + 1 }
   ));
 
-  return <AudienceCard event_name={eventDetails.event_name} className="audience-alliance-selection">
+  return <AudienceCard event_name={eventDetails.event_name} logo={eventDetails.event_logo} className="audience-alliance-selection">
     <Row>
       <Col md={7} className="audience-card-title"> Alliance Selection </Col>
       <Col className="audience-card-title text-end"> Remaining Teams </Col>

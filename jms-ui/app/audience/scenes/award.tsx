@@ -15,7 +15,7 @@ interface AwardSceneProps {
 export default function AwardScene({ eventDetails, award_id, awards, teams }: AwardSceneProps) {
   const award = awards.find(a => a.id === award_id);
 
-  return award && <AudienceCard event_name={eventDetails.event_name} className="audience-award">
+  return award && <AudienceCard event_name={eventDetails.event_name} logo={eventDetails.event_logo} className="audience-award">
     <Row>
       <Col className="award-title" style={{ fontSize: ( award.name.length > 25 ? "1.25em" : "2em") }}>
         <FontAwesomeIcon icon={faTrophy} className="trophy" /> &nbsp;

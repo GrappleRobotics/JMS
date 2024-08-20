@@ -54,7 +54,7 @@ export default function MatchResultsScene({ eventDetails, match_id, matches, tea
                               .then(setScores));
   }, [ match_id ])
 
-  return <AudienceCard event_name={eventDetails.event_name} className="audience-results">
+  return <AudienceCard event_name={eventDetails.event_name} logo={eventDetails.event_logo} className="audience-results">
     <Row>
       <Col className="audience-card-title" md="auto">
         { match?.name || match_id }

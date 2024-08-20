@@ -4,12 +4,13 @@ import { Col, Row } from "react-bootstrap";
 type AudienceCardProps = {
   className?: string,
   event_name?: string | null,
+  logo?: string | null,
   children: React.ReactNode
 };
 
 export default class AudienceCard extends React.PureComponent<AudienceCardProps> {
   render() {
-    const { className, event_name, children } = this.props;
+    const { className, event_name, logo, children } = this.props;
 
     return <div className={`audience-card ${className || ""}`}>
       <div className="audience-card-inner">
@@ -21,7 +22,10 @@ export default class AudienceCard extends React.PureComponent<AudienceCardProps>
             { event_name || "" }
           </Col>
           <Col md="auto">
-            <img src="/img/tourney_logo.png" />
+            {/* <img src="/img/tourney_logo.png" /> */}
+            {
+              logo && <img src={logo}></img>
+            }
           </Col>
         </Row>
 

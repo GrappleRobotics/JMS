@@ -11,7 +11,7 @@ interface PlayoffBracketSceneProps {
 }
 
 export default function PlayoffBracketScene({ eventDetails, matches, next_match, teams, playoff_mode }: PlayoffBracketSceneProps) {
-  return <AudienceCard event_name={eventDetails?.event_name} className="audience-playoff-bracket">
+  return <AudienceCard event_name={eventDetails?.event_name} logo={eventDetails?.event_logo} className="audience-playoff-bracket">
     {
       playoff_mode && <PlayoffBracketGraph
         matches={matches}

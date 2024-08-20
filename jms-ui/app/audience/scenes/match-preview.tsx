@@ -50,7 +50,7 @@ export default function MatchPreviewSceneInner({ eventDetails, currentMatch, mat
   }
 
 
-  return <AudienceCard event_name={eventDetails.event_name} className="audience-preview">
+  return <AudienceCard event_name={eventDetails.event_name} logo={eventDetails.event_logo} className="audience-preview">
     <Row>
       <Col className="audience-card-title" md="auto">
         { match?.name || currentMatch?.match_id }

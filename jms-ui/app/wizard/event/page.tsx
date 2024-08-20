@@ -220,6 +220,24 @@ export default withPermission(["ManageEvent"], function EventWizardUsers() {
           onChangeComplete={ c => updateDetails({ av_chroma_key: { $set: c.hex } }) }
         />
       </Col>
+      <Col md="auto" className="mx-2">
+        <h6> Tournament Logo </h6>
+        {
+          details?.event_logo ? <React.Fragment>
+            <img src={details.event_logo} width="200px" height="200px"></img> <br />
+            <Button variant="red" onClick={() => updateDetails({ event_logo: { $set: null } })}>Delete</Button>
+          </React.Fragment> : <input type="file" id="logo" name="logo" accept="image/png,image/jpeg" onChange={event => {
+            if (event.target.files === null)
+                return;
+            const f = event.target.files[0];
+            var reader = new FileReader();
+            reader.onloadend = function() {
+              updateDetails({ event_logo: { $set: reader.result } });
+            }
+            reader.readAsDataURL(f);
+          }} />
+        }
+      </Col>
     </Row>
     <br />
     <p className="text-muted"> 
