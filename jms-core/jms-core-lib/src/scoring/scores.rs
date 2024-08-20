@@ -523,7 +523,7 @@ impl LiveScore {
     let mut rng = rand::thread_rng();
 
     let rand_endgame = |rng: &mut ThreadRng| {
-      match rng.gen_range(0..=5) {
+      match rng.gen_range(0..5) {
         0 => EndgameType::None,
         1 => EndgameType::Parked,
         x => EndgameType::Stage(x - 2)
