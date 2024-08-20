@@ -89,9 +89,9 @@ cat > /usr/local/bin/jms-provision.sh <<'EOF'
 set -e
 
 # Install Images
-docker image load --input /jms/docker_images/jms.tar
-docker image load --input /jms/docker_images/jms-ui.tar
-docker image load --input /jms/docker_images/jms-nginx.tar
+docker image load --input /jms/docker-images/jms.tar
+docker image load --input /jms/docker-images/jms-ui.tar
+docker image load --input /jms/docker-images/jms-nginx.tar
 
 # Start containers
 pushd /jms
