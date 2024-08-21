@@ -32,6 +32,10 @@ impl UnifiClient {
     format!("{}/api/{}", self.uri_base, fragment)
   }
 
+  pub fn apiv2_url(&self, fragment: &str) -> String {
+    format!("{}/v2/api/{}", self.uri_base, fragment)
+  }
+
   pub async fn login(&self, username: &str, password: &str) -> anyhow::Result<()> {
     let result = self.client
       .post(self.api_url("login"))
@@ -63,6 +67,35 @@ impl UnifiClient {
     Ok(())
   }
 
+  pub async fn get_default_v2(&self, fragment: &str) -> anyhow::Result<serde_json::Value> {
+    let result = self.client
+      .get(self.apiv2_url(&format!("site/default/{}", fragment)))
+      .send()
+      .await?;
+    let result = result.error_for_status()?;
+    Ok(result.json().await?)
+  }
+
+  pub async fn post_default_v2(&self, fragment: &str, body: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    let result = self.client
+      .post(self.apiv2_url(&format!("site/default/{}", fragment)))
+      .json(&body)
+      .send()
+      .await?;
+    let result = result.error_for_status()?;
+    Ok(result.json().await?)
+  }
+
+  pub async fn put_default_v2(&self, fragment: &str, body: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    let result = self.client
+      .put(self.apiv2_url(&format!("site/default/{}", fragment)))
+      .json(&body)
+      .send()
+      .await?;
+    let result = result.error_for_status()?;
+    Ok(result.json().await?)
+  }
+
   pub async fn get_default(&self, fragment: &str) -> anyhow::Result<serde_json::Value> {
     self.get(&format!("s/default/rest/{}", fragment)).await
   }
@@ -77,63 +110,218 @@ impl UnifiClient {
     result.error_for_status()?;
     Ok(())
   }
+
+  pub async fn post_default(&self, fragment: &str, body: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    let result = self.client
+      .post(self.api_url(&format!("s/default/rest/{}", fragment)))
+      .json(&body)
+      .send()
+      .await?;
+
+    let result = result.error_for_status()?;
+    Ok(result.json().await?)
+  }
 }
 
-pub async fn configure_ap_teams(config: &NetworkConfig, settings: &NetworkingSettings) -> anyhow::Result<()> {
+pub struct UnifiNetwork {
+  vlan: usize,
+  ssid: String,
+  passkey: Option<String>,
+  hidden: bool,
+  band: String,
+  ap_group: String,
+  enabled: bool,
+}
+
+pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) -> anyhow::Result<()> {
   info!("Starting Unifi Update....");
   let client = UnifiClient::new()?;
   client.login(&settings.radio_username, &settings.radio_password).await?;
 
-  let networks = client.get_default("networkconf").await?.get("data").cloned().ok_or(anyhow::anyhow!("No Networkconf Data Given"))?;
-  let wlans = client.get_default("wlanconf").await?.get("data").cloned().ok_or(anyhow::anyhow!("No WLAN Conf Data Given"))?;
+  let mut network_confs = vec![ ];
 
-  // Build VLAN lookup
-  let mut network_ids = HashMap::new();
-  for network in networks.as_array().ok_or(anyhow::anyhow!("Malformed"))? {
-    if let Some(vlan_tag) = network.get("vlan").and_then(|x| x.as_i64()) {
-      let id = network.get("_id").and_then(|x| x.as_str()).ok_or(anyhow::anyhow!("Malformed"))?;
-      network_ids.insert(id.to_owned(), vlan_tag);
-    }
+  // TODO: Disable wireless meshing.
+  // TODO: Auto-configure Credentials on first boot.
+
+  if let Some(admin_ssid) = settings.admin_ssid.clone() {
+    network_confs.push(UnifiNetwork {
+      ap_group: "Admin APs".to_owned(),
+      band: "2g".to_owned(),
+      ssid: admin_ssid,
+      passkey: settings.admin_password.clone(),
+      hidden: true,
+      vlan: 1,
+      enabled: true
+    });
   }
 
-  // Map which vlan belongs to which config
-  let mut vlan_configs = HashMap::new();
-  vlan_configs.insert(10, config.blue1.clone());
-  vlan_configs.insert(20, config.blue2.clone());
-  vlan_configs.insert(30, config.blue3.clone());
-  vlan_configs.insert(40, config.red1.clone());
-  vlan_configs.insert(50, config.red2.clone());
-  vlan_configs.insert(60, config.red3.clone());
+  if let Some(guest_ssid) = settings.guest_ssid.clone() {
+    network_confs.push(UnifiNetwork {
+      ap_group: "Team Network APs".to_owned(),
+      band: "2g".to_owned(),
+      ssid: guest_ssid,
+      passkey: settings.guest_password.clone(),
+      hidden: false,
+      vlan: 200,
+      enabled: true
+    });
+  }
 
-  // Update the WLANs
-  for mut wlan in wlans.as_array().ok_or(anyhow::anyhow!("Malformed!"))?.clone() {
-    let network_id = wlan.get("networkconf_id").and_then(|x| x.as_str()).map(|x| x.to_owned());
-    let id = wlan.get("_id").and_then(|x| x.as_str()).map(|x| x.to_owned()).ok_or(anyhow::anyhow!("Malformed"))?;
-    let wlan_mut = wlan.as_object_mut().ok_or(anyhow::anyhow!("Malformed"))?;
-    if let Some(network_id) = network_id {
-      if let Some(vlan) = network_ids.get(&network_id) {
-        if let Some((team, wpa_key)) = vlan_configs.get(vlan) {
-          wlan_mut.insert("name".to_owned(), json!(team.map(|x| format!("{}", x)).unwrap_or(format!("unoccupied-{}", vlan))));
-          wlan_mut.insert("hide_ssid".to_owned(), json!(true));
-          wlan_mut.insert("wlan_band".to_owned(), json!("5g"));
-          wlan_mut.insert("wlan_bands".to_owned(), json!(["5g"]));
-          wlan_mut.insert("wpa_mode".to_owned(), json!("wpa2"));
-          if let Some(wpa_key) = wpa_key {
-            wlan_mut.insert("enabled".to_owned(), json!(true));
-            wlan_mut.insert("x_passphrase".to_owned(), json!(wpa_key));
-          } else {
-            wlan_mut.insert("enabled".to_owned(), json!(false));
-          }
-        }
+  for (vlan, (team, passkey)) in &[(10, &config.blue1), (20, &config.blue2), (30, &config.blue3), (40, &config.red1), (50, &config.red2), (60, &config.red3)] {
+    network_confs.push(UnifiNetwork {
+      vlan: *vlan,
+      ssid: team.map(|team| format!("{}", team)).unwrap_or(format!("unoccupied-{}", vlan)),
+      passkey: passkey.to_owned(),
+      hidden: true,
+      band: "5g".to_owned(),
+      ap_group: "Field APs".to_owned(),
+      enabled: passkey.is_some()
+    });
+  }
+
+  let networks = client.get_default("networkconf").await?.get("data")
+    .cloned().ok_or(anyhow::anyhow!("No Networkconf Data Given"))?
+    .as_array().ok_or(anyhow::anyhow!("Malformed!"))?.clone();
+
+  let wlans = client.get_default("wlanconf").await?.get("data")
+    .cloned().ok_or(anyhow::anyhow!("No WLAN Conf Data Given"))?
+    .as_array().ok_or(anyhow::anyhow!("Malformed"))?.clone();
+
+  let apgroups = client.get_default_v2("apgroups").await?.get("data")
+    .cloned().ok_or(anyhow::anyhow!("No AP Group Conf Data Given"))?
+    .as_array().ok_or(anyhow::anyhow!("Malformed"))?.clone();
+
+  for netconf in network_confs {
+    let candidate_network = networks.iter().find(|net| net.get("vlan").and_then(|x| x.as_i64()) == Some(netconf.vlan as i64)).and_then(|net| net.get("_id")).and_then(|id| id.as_str());
+    let candidate_network_id = match candidate_network {
+      Some(id) => id.to_owned(),
+      None => {
+        let resp = client.post_default("networkconf", json!({
+          "is_nat": true,
+          "vlan": netconf.vlan,
+          "purpose": "vlan-only",
+          "igmp_snooping": false,
+          "name": format!("VLAN{}", netconf.vlan),
+          "dhcpguard_enabled": false,
+          "vlan_enabled": true,
+          "enabled": true,
+        })).await?;
+        let id = resp.get("data").ok_or(anyhow::anyhow!("No Network Data Given"))?.get("_id").ok_or(anyhow::anyhow!("No Network ID Given!"))?;
+        id.as_str().ok_or(anyhow::anyhow!("Malformed!"))?.to_owned()
       }
-    }
+    };
 
-    client.put_default(&format!("wlanconf/{}", id), wlan).await?;
+    let candidate_apgroup = apgroups.iter().find(|apgroup| apgroup.get("name").and_then(|x| x.as_str()) == Some(&netconf.ap_group)).and_then(|apgroup| apgroup.get("_id")).and_then(|id| id.as_str());
+    let candidate_apgroup_id = match candidate_apgroup {
+      Some(id) => id.to_owned(),
+      None => {
+        let resp = client.post_default_v2("apgroups", json!({
+          "device_macs": [],
+          "name": netconf.ap_group
+        })).await?;
+        let id = resp.get("data").ok_or(anyhow::anyhow!("No APGroup Data Given"))?.get("_id").ok_or(anyhow::anyhow!("No APGroup ID Given!"))?;
+        id.as_str().ok_or(anyhow::anyhow!("Malformed!"))?.to_owned()
+      }
+    };
+
+    let candidate_wlan = wlans.iter().find(|wlan| wlan.get("networkconf_id").and_then(|x| x.as_str()) == Some(&candidate_network_id));
+    match candidate_wlan.cloned() {
+      Some(mut wlan) => {
+        let id = wlan.get("_id").and_then(|x| x.as_str()).map(|x| x.to_owned()).ok_or(anyhow::anyhow!("Malformed"))?;
+        let wlan_mut = wlan.as_object_mut().ok_or(anyhow::anyhow!("Malformed"))?;
+        wlan_mut.insert("name".to_owned(), json!(netconf.ssid));
+        wlan_mut.insert("hide_ssid".to_owned(), json!(netconf.hidden));
+        wlan_mut.insert("wlan_band".to_owned(), json!(netconf.band));
+        wlan_mut.insert("wlan_bands".to_owned(), json!([netconf.band]));
+        wlan_mut.insert("wpa_mode".to_owned(), json!("wpa2"));
+        wlan_mut.insert("enabled".to_owned(), json!(netconf.enabled));
+        wlan_mut.insert("ap_group_ids".to_owned(), json!([candidate_apgroup_id]));
+        if let Some(wpa_key) = &netconf.passkey {
+          wlan_mut.insert("security".to_owned(), json!("wpapsk"));
+          wlan_mut.insert("x_passphrase".to_owned(), json!(wpa_key));
+        } else {
+          wlan_mut.insert("security".to_owned(), json!("open"));
+        }
+        client.put_default(&format!("wlanconf/{}", id), wlan).await?;
+      },
+      None => {
+        client.post_default("networkconf", json!({
+          "networkconf_id": candidate_network_id,
+          "name": netconf.ssid,
+          "hide_ssid": netconf.hidden,
+          "wlan_band": netconf.band,
+          "wlan_bands": [netconf.band],
+          "wpa_mode": "wpa2",
+          "enabled": netconf.enabled,
+          "security": if netconf.passkey.is_some() { "wpapsk" } else { "open" },
+          "x_passphrase": netconf.passkey.unwrap_or("".to_owned()),
+          "ap_group_ids": [candidate_apgroup_id],
+          "minrate_setting_preference": "auto"
+        })).await?;
+      },
+    }
   }
 
   info!("Unifi Update Complete!");
+
   Ok(())
 }
+
+// pub async fn configure_ap_teams(config: &NetworkConfig, settings: &NetworkingSettings) -> anyhow::Result<()> {
+//   info!("Starting Unifi Update....");
+//   let client = UnifiClient::new()?;
+//   client.login(&settings.radio_username, &settings.radio_password).await?;
+
+//   let networks = client.get_default("networkconf").await?.get("data").cloned().ok_or(anyhow::anyhow!("No Networkconf Data Given"))?;
+//   let wlans = client.get_default("wlanconf").await?.get("data").cloned().ok_or(anyhow::anyhow!("No WLAN Conf Data Given"))?;
+
+//   // Build VLAN lookup
+//   let mut network_ids = HashMap::new();
+//   for network in networks.as_array().ok_or(anyhow::anyhow!("Malformed"))? {
+//     if let Some(vlan_tag) = network.get("vlan").and_then(|x| x.as_i64()) {
+//       let id = network.get("_id").and_then(|x| x.as_str()).ok_or(anyhow::anyhow!("Malformed"))?;
+//       network_ids.insert(id.to_owned(), vlan_tag);
+//     }
+//   }
+
+//   // Map which vlan belongs to which config
+//   let mut vlan_configs = HashMap::new();
+//   vlan_configs.insert(10, config.blue1.clone());
+//   vlan_configs.insert(20, config.blue2.clone());
+//   vlan_configs.insert(30, config.blue3.clone());
+//   vlan_configs.insert(40, config.red1.clone());
+//   vlan_configs.insert(50, config.red2.clone());
+//   vlan_configs.insert(60, config.red3.clone());
+
+//   // Update the WLANs
+//   for mut wlan in wlans.as_array().ok_or(anyhow::anyhow!("Malformed!"))?.clone() {
+//     let network_id = wlan.get("networkconf_id").and_then(|x| x.as_str()).map(|x| x.to_owned());
+//     let id = wlan.get("_id").and_then(|x| x.as_str()).map(|x| x.to_owned()).ok_or(anyhow::anyhow!("Malformed"))?;
+//     let wlan_mut = wlan.as_object_mut().ok_or(anyhow::anyhow!("Malformed"))?;
+//     if let Some(network_id) = network_id {
+//       if let Some(vlan) = network_ids.get(&network_id) {
+//         if let Some((team, wpa_key)) = vlan_configs.get(vlan) {
+//           wlan_mut.insert("name".to_owned(), json!(team.map(|x| format!("{}", x)).unwrap_or(format!("unoccupied-{}", vlan))));
+//           wlan_mut.insert("hide_ssid".to_owned(), json!(true));
+//           wlan_mut.insert("wlan_band".to_owned(), json!("5g"));
+//           wlan_mut.insert("wlan_bands".to_owned(), json!(["5g"]));
+//           wlan_mut.insert("wpa_mode".to_owned(), json!("wpa2"));
+//           if let Some(wpa_key) = wpa_key {
+//             wlan_mut.insert("enabled".to_owned(), json!(true));
+//             wlan_mut.insert("x_passphrase".to_owned(), json!(wpa_key));
+//           } else {
+//             wlan_mut.insert("enabled".to_owned(), json!(false));
+//           }
+//         }
+//       }
+//     }
+
+//     client.put_default(&format!("wlanconf/{}", id), wlan).await?;
+//   }
+
+//   info!("Unifi Update Complete!");
+//   Ok(())
+// }
 
 pub async fn force_reprovision(settings: &NetworkingSettings) -> anyhow::Result<()> {
   info!("Starting Unifi Reprovision....");

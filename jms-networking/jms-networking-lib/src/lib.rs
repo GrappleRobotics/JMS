@@ -20,6 +20,9 @@ pub struct NetworkingSettings {
   pub admin_channel: Option<usize>,
   pub admin_ssid: Option<String>,
   pub admin_password: Option<String>,
+
+  pub guest_ssid: Option<String>,
+  pub guest_password: Option<String>
 }
 
 impl Default for NetworkingSettings {
@@ -35,7 +38,10 @@ impl Default for NetworkingSettings {
       team_channel: None,
       admin_channel: None,
       admin_ssid: Some("JMS".to_owned()),
-      admin_password: Some("myEventR0cks".to_owned())
+      admin_password: Some("myEventR0cks".to_owned()),
+
+      guest_ssid: Some("Team WiFi".to_owned()),
+      guest_password: None,
     }
   }
 }

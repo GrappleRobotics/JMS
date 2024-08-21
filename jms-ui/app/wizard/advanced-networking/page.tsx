@@ -115,7 +115,7 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
               <BufferedFormControl
                 type="text"
                 value={settings.admin_ssid || ""}
-                disabled={settings.radio_type === "Unifi"}
+                // disabled={settings.radio_type === "Unifi"}
                 onUpdate={v => update({ admin_ssid: nullIfEmpty(v as string) })}
               />
             </InputGroup>
@@ -126,8 +126,33 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
               <BufferedFormControl
                 type="text"
                 value={settings.admin_password || ""}
-                disabled={settings.radio_type === "Unifi"}
+                // disabled={settings.radio_type === "Unifi"}
                 onUpdate={v => update({ admin_password: nullIfEmpty(v as string) })}
+              />
+            </InputGroup>
+          </Col>
+        </Row>
+
+        <Row className="mt-2">
+          <Col>
+            <InputGroup>
+              <InputGroup.Text>Guest SSID</InputGroup.Text>
+              <BufferedFormControl
+                type="text"
+                value={settings.guest_ssid || ""}
+                // disabled={settings.radio_type === "Unifi"}
+                onUpdate={v => update({ guest_ssid: nullIfEmpty(v as string) })}
+              />
+            </InputGroup>
+          </Col>
+          <Col>
+            <InputGroup>
+              <InputGroup.Text>Guest Passkey</InputGroup.Text>
+              <BufferedFormControl
+                type="text"
+                value={settings.guest_password || ""}
+                // disabled={settings.radio_type === "Unifi"}
+                onUpdate={v => update({ guest_password: nullIfEmpty(v as string) })}
               />
             </InputGroup>
           </Col>
@@ -137,7 +162,7 @@ export default withPermission(["FTA"], function AdvancedNetworking() {
           <Col md="auto">
             <InputGroup>
               <InputGroup.Text>Team Channel</InputGroup.Text>
-              <Form.Select value={settings.team_channel || "auto"} onChange={v => update({ team_channel: v.target.value === "auto" ? null : parseInt(v.target.value) })}>
+              <Form.Select disabled={settings.radio_type === "Unifi"} value={settings.team_channel || "auto"} onChange={v => update({ team_channel: v.target.value === "auto" ? null : parseInt(v.target.value) })}>
                 {
                   ["auto", 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 96, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165, 169, 173, 177]
                     .map(channel => <option key={channel} value={channel}>{ channel }</option>)

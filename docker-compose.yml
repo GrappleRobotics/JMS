@@ -135,7 +135,7 @@ services:
     networks:
       jms-ext:
         ipv4_address: 10.0.100.7
-      jms:
+      # jms:   # This can't be here - Unifi gets confused with the default route otherwise. But it's ok, we can still reach it. 
 
   # Support
   redis:

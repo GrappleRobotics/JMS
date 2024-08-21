@@ -13,7 +13,7 @@
   "jms-spare-2"=80;
   "jms-spare-3"=90;
   "jms-uplink"=99;
-  "jms-admin"=100;
+  "jms-admin"=1;
   "jms-guest"=200;
 }
 

@@ -44,7 +44,7 @@ async fn do_team_network_update(network: NetworkConfig, settings: NetworkingSett
   mikrotik::configure_firewall(&network, &settings).await.map_err(|e| anyhow::anyhow!("Mikrotik Error: {}", e))?;
   match settings.radio_type {
     RadioType::Linksys => linksys_ap::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?,
-    RadioType::Unifi => unifi::configure_ap_teams(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?,
+    RadioType::Unifi => unifi::configure(&network, &settings).await.map_err(|e| anyhow::anyhow!("AP Error: {}", e))?,
   }
   info!("Network Update Complete!");
   Ok(())
