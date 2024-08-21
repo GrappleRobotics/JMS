@@ -148,6 +148,25 @@ pub async fn provision_controller(client: &UnifiClient) -> anyhow::Result<()> {
 
   tokio::time::sleep(Duration::from_secs(5)).await;
 
+  // Disable Meshing
+  let settings_json = client.get_default("get/setting").await?;
+  let all_settings = settings_json.get("data").and_then(|data| data.as_array()).ok_or(anyhow::anyhow!("Malformed!"))?;
+  for setting in all_settings {
+    if setting.get("key").map(|key| key.as_str() == Some("connectivity")) == Some(true) {
+      let id = setting.get("id").and_then(|id| id.as_str()).ok_or(anyhow::anyhow!("Malformed!"))?;
+      client.put_default("group/setting", json!({
+        "objects":[{
+          "id":id,
+          "data":{
+            "_id":id,
+            "key":"connectivity",
+            "enabled":false
+          }
+        }]
+      })).await?;
+    }
+  }
+  
   info!("Unifi Controller provisioned!");
 
   Ok(())
@@ -163,7 +182,6 @@ pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) ->
   let mut network_confs = vec![ ];
 
   // TODO: Disable wireless meshing.
-  // TODO: Auto-configure Credentials on first boot.
 
   if let Some(admin_ssid) = settings.admin_ssid.clone() {
     network_confs.push(UnifiNetwork {
