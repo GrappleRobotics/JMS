@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use jms_networking_lib::NetworkingSettings;
 use log::info;
 use reqwest::ClientBuilder;
 use serde_json::json;
+use tokio::time::Duration;
 
 use crate::NetworkConfig;
 
@@ -133,10 +132,33 @@ pub struct UnifiNetwork {
   enabled: bool,
 }
 
+pub async fn provision_controller(client: &UnifiClient) -> anyhow::Result<()> {
+  info!("Provisioning Unifi Controller for the first time....");
+
+  client.post("cmd/sitemgr", json!(
+    {"cmd":"add-default-admin","name":"FTA","email":"fta@jms.local","x_password":"jmsR0cks"}
+  )).await?;
+
+  client.post("set/setting/super_identity", json!({ "name": "JMS" })).await?;
+  client.post("set/setting/country", json!({ "code": "36" })).await?;   // Australia, TODO: Update to reflect actual country
+  client.post("set/setting/locale", json!({ "timezone": iana_time_zone::get_timezone().unwrap_or("Australia/Sydney".to_owned()) })).await?;
+  client.post("set/setting/super_mgmt", json!({ "autobackup_enabled":false, "backup_to_cloud_enabled":false })).await?;
+  client.post("set/setting/mgmt", json!({"x_ssh_username":"FTA","x_ssh_password":"jmsR0cks"})).await?;
+  client.post("cmd/system", json!({"cmd":"set-installed"})).await?;
+
+  tokio::time::sleep(Duration::from_secs(5)).await;
+
+  info!("Unifi Controller provisioned!");
+
+  Ok(())
+}
+
 pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) -> anyhow::Result<()> {
   info!("Starting Unifi Update....");
   let client = UnifiClient::new()?;
-  client.login(&settings.radio_username, &settings.radio_password).await?;
+  if let Err(_) = client.login(&settings.radio_username, &settings.radio_password).await {
+    provision_controller(&client).await.ok();
+  }
 
   let mut network_confs = vec![ ];
 
