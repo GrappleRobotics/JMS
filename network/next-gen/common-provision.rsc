@@ -37,12 +37,16 @@
   :global trunks ("bridge-trunk", [:toarray [/interface/ethernet/find where comment~"#jms-trunk"]])
 
   :foreach iname,vlan in=$vlanmap do={
-    add bridge=bridge-trunk vlan-ids=$vlan comment="#$iname" tagged="$trunks"
+    :if ($iname = "jms-admin") do={
+      add bridge=bridge-trunk vlan-ids=$vlan comment="#$iname" tagged="bridge-trunk"
+    } else={
+      add bridge=bridge-trunk vlan-ids=$vlan comment="#$iname" tagged="$trunks"
+    }
   }
 
 /interface/bridge/port
   :foreach iface in=[/interface/ethernet/find where comment~"#jms-.*"] do={ remove [find interface=[/interface/ethernet/get $iface name]] }
-  :foreach iface in=[/interface/ethernet/find where comment~"#jms-trunk"] do={ add bridge=bridge-trunk pvid=100 interface=[/interface/ethernet/get $iface name] }
+  :foreach iface in=[/interface/ethernet/find where comment~"#jms-trunk"] do={ add bridge=bridge-trunk pvid=1 interface=[/interface/ethernet/get $iface name] }
 
   :foreach iname,vlan in=$vlanmap do={
     :foreach iface in=[/interface/ethernet/find where comment="#$iname"] do={ add bridge=bridge-trunk pvid=$vlan interface=[/interface/ethernet/get $iface name] frame-types=admit-only-untagged-and-priority-tagged }
@@ -59,7 +63,7 @@
   remove [find comment~"#jms-.*"]
   add interface=[/interface/vlan/find where comment~"#jms-admin"] comment="#jms-admin" address="$switchip/24" network="10.0.100.0"
 
-/interface/bridge/set vlan-filtering=yes pvid=100 bridge-trunk
+/interface/bridge/set vlan-filtering=yes pvid=1 bridge-trunk
 
 :if ($iscoreswitch = false) do={
   /ip/route

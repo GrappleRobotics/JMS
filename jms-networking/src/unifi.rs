@@ -227,12 +227,15 @@ pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) ->
     .cloned().ok_or(anyhow::anyhow!("No WLAN Conf Data Given"))?
     .as_array().ok_or(anyhow::anyhow!("Malformed"))?.clone();
 
-  let apgroups = client.get_default_v2("apgroups").await?.get("data")
-    .cloned().ok_or(anyhow::anyhow!("No AP Group Conf Data Given"))?
-    .as_array().ok_or(anyhow::anyhow!("Malformed"))?.clone();
-
   for netconf in network_confs {
-    let candidate_network = networks.iter().find(|net| net.get("vlan").and_then(|x| x.as_i64()) == Some(netconf.vlan as i64)).and_then(|net| net.get("_id")).and_then(|id| id.as_str());
+    let apgroups = client.get_default_v2("apgroups").await?
+      .clone().as_array().ok_or(anyhow::anyhow!("Malformed"))?.clone();
+
+    // Network 1 is a special case - we have to use the default since we use VLAN1 for ADMIN, as opposed to VLAN100 (due to a unifi restriction)
+    let candidate_network = match netconf.vlan {
+      1 => networks.iter().find(|net| net.get("name").and_then(|x| x.as_str()) == Some("Default")),
+      _ => networks.iter().find(|net| net.get("vlan").and_then(|x| x.as_i64()) == Some(netconf.vlan as i64))
+    }.and_then(|net| net.get("_id")).and_then(|id| id.as_str());
     let candidate_network_id = match candidate_network {
       Some(id) => id.to_owned(),
       None => {
@@ -246,7 +249,10 @@ pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) ->
           "vlan_enabled": true,
           "enabled": true,
         })).await?;
-        let id = resp.get("data").ok_or(anyhow::anyhow!("No Network Data Given"))?.get("_id").ok_or(anyhow::anyhow!("No Network ID Given!"))?;
+        let id = resp.get("data").ok_or(anyhow::anyhow!("No Network Data Given"))?
+          .as_array().ok_or(anyhow::anyhow!("Malformed!"))?
+          .get(0).ok_or(anyhow::anyhow!("Malformed!"))?
+          .get("_id").ok_or(anyhow::anyhow!("No Network ID Given!"))?;
         id.as_str().ok_or(anyhow::anyhow!("Malformed!"))?.to_owned()
       }
     };
@@ -259,7 +265,7 @@ pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) ->
           "device_macs": [],
           "name": netconf.ap_group
         })).await?;
-        let id = resp.get("data").ok_or(anyhow::anyhow!("No APGroup Data Given"))?.get("_id").ok_or(anyhow::anyhow!("No APGroup ID Given!"))?;
+        let id = resp.get("_id").ok_or(anyhow::anyhow!("No APGroup ID Given!"))?;
         id.as_str().ok_or(anyhow::anyhow!("Malformed!"))?.to_owned()
       }
     };
@@ -285,7 +291,7 @@ pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) ->
         client.put_default(&format!("wlanconf/{}", id), wlan).await?;
       },
       None => {
-        client.post_default("networkconf", json!({
+        let mut json_body = json!({
           "networkconf_id": candidate_network_id,
           "name": netconf.ssid,
           "hide_ssid": netconf.hidden,
@@ -294,10 +300,15 @@ pub async fn configure(config: &NetworkConfig, settings: &NetworkingSettings) ->
           "wpa_mode": "wpa2",
           "enabled": netconf.enabled,
           "security": if netconf.passkey.is_some() { "wpapsk" } else { "open" },
-          "x_passphrase": netconf.passkey.unwrap_or("".to_owned()),
           "ap_group_ids": [candidate_apgroup_id],
           "minrate_setting_preference": "auto"
-        })).await?;
+        });
+
+        if netconf.passkey.is_some() {
+          json_body.as_object_mut().unwrap().insert("x_passphrase".to_owned(), json!(netconf.passkey.unwrap_or("".to_owned())));
+        }
+
+        client.post_default("wlanconf", json_body).await?;
       },
     }
   }
