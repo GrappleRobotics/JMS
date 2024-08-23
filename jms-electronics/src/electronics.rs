@@ -118,13 +118,13 @@ impl JMSElectronics {
               (ArenaState::Estop, _, _) => {
                 if tick_n % 4 < 2 {
                   (
-                    Pattern::DiagonalStripes(Colour::new(255, 0, 0), Colour::new(5, 0, 0)),
-                    Colour::new(255, 255, 255)
+                    Pattern::DiagonalStripes(Colour::new(120, 0, 0), Colour::new(5, 0, 0)),
+                    Colour::new(0, 0, 0)
                   )
                 } else {
                   (
-                    Pattern::DiagonalStripes(Colour::new(5, 0, 0), Colour::new(255, 0, 0)),
-                    Colour::new(255, 255, 255)
+                    Pattern::DiagonalStripes(Colour::new(5, 0, 0), Colour::new(120, 0, 0)),
+                    Colour::new(0, 0, 0)
                   )
                 }
               },

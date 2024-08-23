@@ -97,7 +97,7 @@ impl LoadedMatch {
         if remaining <= Duration::zero() {
           self.do_change_state(MatchPlayState::Cooldown);
         }
-        endgame = remaining <= Duration::seconds(30);
+        endgame = remaining <= Duration::seconds(20);
       }
       MatchPlayState::Cooldown => {
         remaining_max = Duration::seconds(3);
