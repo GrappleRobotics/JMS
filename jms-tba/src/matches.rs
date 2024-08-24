@@ -1,6 +1,6 @@
 use jms_base::kv;
 use jms_core_lib::{db::{Singleton, Table}, models::{self, MatchType, PlayoffModeType}, scoring::scores::{EndgameType, MatchScoreSnapshot, ScoringConfig, SnapshotScore}};
-use log::{error, warn};
+use log::{error, info, warn};
 
 use crate::{teams::TBATeam, client::TBAClient};
 
@@ -32,10 +32,23 @@ pub struct TBAMatch {
   pub time_utc: Option<String>
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct TBAGetMatch {
+  pub key: String,
+  pub comp_level: String,
+  pub set_number: usize,
+  pub match_number: usize,
+}
+
 pub struct TBAMatchUpdate {}
 
 impl TBAMatchUpdate {
   pub async fn issue(kv: &kv::KVConnection) -> anyhow::Result<()> {
+    let mut to_delete: Vec<TBAGetMatch> = match TBAClient::get("matches/simple", kv).await {
+      Ok(v) => v,
+      Err(_) => vec![]
+    };
+
     let playoff_type = models::PlayoffMode::get(kv)?;
     let matches = models::Match::all(kv)?;
     let scores = models::CommittedMatchScores::all_map(kv)?;
@@ -90,12 +103,16 @@ impl TBAMatchUpdate {
               time_utc: Some(chrono::DateTime::<chrono::Utc>::from(m.start_time).format("%+").to_string())
             };
 
+            let pos = to_delete.iter().position(|x| x.comp_level == tba_match.comp_level.0 && x.match_number == tba_match.match_number && x.set_number == tba_match.set_number);
+            if let Some(pos) = pos {
+              to_delete.remove(pos);
+            }
             tba_matches.push(tba_match);
           },
           _ => error!("Could not convert match to TBA format: {}", m.id)
         }
 
-        // Push to TBA
+        info!("Updating Matches...");
         if tba_matches.len() > 0 {
           match TBAClient::post("matches", "update", &tba_matches, kv).await {
             Ok(_) => {},
@@ -112,6 +129,20 @@ impl TBAMatchUpdate {
           }
         }
       }
+    }
+
+    // Push to TBA
+
+    // TODO: These keys should be substringed to just the fragment
+    if to_delete.len() > 0 {
+      let to_del = to_delete.iter().filter_map(|x| x.key.split_once("_").map(|x| x.1.to_owned())).collect::<Vec<String>>();
+      info!("Matches to Delete: {:?}", to_del);
+      match TBAClient::post("matches", "delete", &to_del, kv).await {
+        Ok(_) => (),
+        Err(e) => error!("Could not delete matches: {}", e)
+      }
+    } else {
+      info!("No matches to delete");
     }
 
     Ok(())

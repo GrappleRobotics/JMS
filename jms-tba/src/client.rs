@@ -38,4 +38,26 @@ impl TBAClient {
       }
     }
   }
+
+  pub async fn get<T: serde::de::DeserializeOwned>(noun: &str, kv: &kv::KVConnection) -> anyhow::Result<T> {
+    let code = models::EventDetails::get(kv)?.code;
+    let tba_settings = TBASettings::get(kv)?;
+
+    match (code, tba_settings.api_key) {
+      (Some(code), Some(key)) if code.trim() != "" => {
+        let fragment = format!("/api/v3/event/{}/{}", code, noun);
+        let response = reqwest::Client::new()
+          .get(format!("{}{}", "https://www.thebluealliance.com", fragment))
+          .header("X-TBA-Auth-Key", key)
+          .send()
+          .await?
+          .json().await?;
+
+        Ok(response)
+      },
+      _ => {
+        anyhow::bail!("No TBA API Key given!")
+      }
+    }
+  }
 }

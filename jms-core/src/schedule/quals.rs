@@ -23,7 +23,7 @@ impl QualsMatchGenerator {
     let team_balance_anneal = Annealer::new(1.0, 0.0, params.team_anneal_steps);
 
     let teams: Vec<usize> = models::Team::all(kv)?.iter().filter(|&t| t.schedule).map(|t| t.number).collect();
-    let existing_matches = models::Match::all(kv)?;
+    let existing_matches = models::Match::sorted(kv)?;
 
     // Determine timeslots for generation
     let mut slots = vec![];
@@ -37,7 +37,9 @@ impl QualsMatchGenerator {
               offset = m.start_time + cycle_time.0;
             } else {
               // No matches in this slot - happy days.
-              slots.push( ( offset, offset + cycle_time.0 ) );
+              if offset >= chrono::Local::now() {
+                slots.push( ( offset, offset + cycle_time.0 ) );
+              }
               offset = offset + cycle_time.0;
             }
           }
@@ -63,7 +65,7 @@ impl QualsMatchGenerator {
     info!("Match Generation Completed in {}", gen_end_t - gen_start_t);
       
     // Commit
-    let match_n_offset = existing_matches.iter().filter(|x| x.match_type == MatchType::Qualification).map(|x| x.match_number).max().unwrap_or(0);
+    let match_n_offset = existing_matches.iter().filter(|x| x.match_type == MatchType::Qualification).map(|x| x.set_number).max().unwrap_or(0);
     for (i, col) in team_sched.0.column_iter().enumerate() {
       let teams = col.as_slice();
       let blue = teams[0..3].to_vec();

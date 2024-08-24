@@ -1,4 +1,4 @@
-use std::{borrow::Cow, net::{IpAddr, Ipv4Addr}, time::Duration};
+use std::{borrow::Cow, collections::HashMap, net::{IpAddr, Ipv4Addr}, time::Duration};
 
 use binmarshal::AsymmetricCow;
 use grapple_frc_msgs::grapple::{jms::{Colour, JMSCardUpdate, JMSElectronicsUpdate, JMSMessage, JMSRole, Pattern}, misc::MiscMessage, GrappleDeviceMessage, TaggedGrappleMessage};
@@ -41,6 +41,8 @@ impl JMSElectronics {
     let mut entry_condition = ArenaEntryCondition::get(&self.kv)?;
     let mut current_match: Option<SerialisedLoadedMatch> = self.kv.json_get(ARENA_MATCH_KEY, "$").ok();
 
+    let mut estop_counter = HashMap::new();
+    
     // let mut arena_is_estopped = false;
     let mut arena_state = self.kv.json_get::<ArenaState>(ARENA_STATE_KEY, "$")?;
 
@@ -232,26 +234,59 @@ impl JMSElectronics {
                     match ep.status.role {
                       JMSRole::ScoringTable => {
                         let estop_state = invert ^ io[0];
-                        if estop_state && arena_state != ArenaState::Estop {
-                          match ArenaRPCClient::signal(&self.mq, jms_arena_lib::ArenaSignal::Estop, "Field Electronics (Scoring Table)".to_string()).await? {
-                            Ok(()) => (),
-                            Err(e) => warn!("Field Electronics - Signal Error: {}", e)
+                        if let Some(counter) = estop_counter.get_mut(&endpoint.to_string()) {
+                          if estop_state {
+                            *counter += 1;
+                            if *counter > 20 && arena_state != ArenaState::Estop {
+                              match ArenaRPCClient::signal(&self.mq, jms_arena_lib::ArenaSignal::Estop, "Field Electronics (Scoring Table)".to_string()).await? {
+                                Ok(()) => (),
+                                Err(e) => warn!("Field Electronics - Signal Error: {}", e)
+                              }
+                            }
+                          } else {
+                            *counter = 0;
                           }
+                        } else {
+                          estop_counter.insert(endpoint.to_string(), 0);
                         }
                       },
                       JMSRole::Red(stn) => {
                         if let Some(stn) = stations.iter_mut().find(|x| x.id.alliance == Alliance::Red && x.id.station == stn as usize) {
                           let estop_state = invert ^ io[0];
-                          if estop_state != stn.physical_estop {
-                            stn.set_physical_estop(estop_state, &self.kv)?;
+                          if let Some(counter) = estop_counter.get_mut(&endpoint.to_string()) {
+                            if estop_state {
+                              *counter += 1;
+                              if *counter > 20 && !stn.physical_estop {
+                                stn.set_physical_estop(true, &self.kv)?;
+                              }
+                            } else {
+                              *counter = 0;
+                              if stn.physical_estop {
+                                stn.set_physical_estop(false, &self.kv)?;
+                              }
+                            }
+                          } else {
+                            estop_counter.insert(endpoint.to_string(), 0);
                           }
                         }
                       },
                       JMSRole::Blue(stn) => {
                         if let Some(stn) = stations.iter_mut().find(|x| x.id.alliance == Alliance::Blue && x.id.station == stn as usize) {
                           let estop_state = invert ^ io[0];
-                          if estop_state != stn.physical_estop {
-                            stn.set_physical_estop(estop_state, &self.kv)?;
+                          if let Some(counter) = estop_counter.get_mut(&endpoint.to_string()) {
+                            if estop_state {
+                              *counter += 1;
+                              if *counter > 20 && !stn.physical_estop {
+                                stn.set_physical_estop(true, &self.kv)?;
+                              }
+                            } else {
+                              *counter = 0;
+                              if stn.physical_estop {
+                                stn.set_physical_estop(false, &self.kv)?;
+                              }
+                            }
+                          } else {
+                            estop_counter.insert(endpoint.to_string(), 0);
                           }
                         }
                       },
