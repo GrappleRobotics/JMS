@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCOREKEEPER - Event Setup &mdash; JMS 2024 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=172f29ee"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="REFEREE / SCORER" href="../referee-scorer/index.html" />
+    <link rel="prev" title="SCOREKEEPER" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            JMS
+          </a>
+              <div class="version">
+                2024.1.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">POV: You’re a …. - A Guide for Users</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">SCOREKEEPER</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html#configure-jms">Configure JMS</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">SCOREKEEPER - Event Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#keep-matches-running">Keep Matches Running</a></li>
+<li class="toctree-l3"><a class="reference internal" href="index.html#manage-scoring">Manage Scoring</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../referee-scorer/index.html">REFEREE / SCORER</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../full-walkthrough/index.html">Full Walkthrough</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">JMS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">POV: You’re a …. - A Guide for Users</a></li>
+          <li class="breadcrumb-item"><a href="index.html">SCOREKEEPER</a></li>
+      <li class="breadcrumb-item active">SCOREKEEPER - Event Setup</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/povs/scorekeeper/before-the-event.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="scorekeeper-event-setup">
+<h1>SCOREKEEPER - Event Setup<a class="headerlink" href="#scorekeeper-event-setup" title="Permalink to this heading"></a></h1>
+<p>As Scorekeeper, you play a pivotal role in setting up JMS so the event runs smoothly. This guide will take you through the Event Wizard - the interface used to configure JMS for your event.</p>
+<p>To access the Event Wizard, log into JMS (<a class="reference external" href="http://10.0.100.10/">http://10.0.100.10/</a>) and select the “Event Wizard” tile from the homepage.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Don’t configure anything in “Advanced” or “Integrations” - this should already be done by your FTA. The settings in here are usually to do with integrations with outside services and the field hardware. If you’re unsure, chat to your FTA and they will guide you through it.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>During event setup, make sure you <strong>check with the FTA</strong> before performing these steps. Although most steps are reversible, it’s important the two of you are on the same page!</p>
+</div>
+<section id="managing-users">
+<h2>Managing Users<a class="headerlink" href="#managing-users" title="Permalink to this heading"></a></h2>
+<p>Step 1 is to configure the users of the JMS software. Your FTA should have granted you admin access to JMS, and your volunteer coordinator should have given you a list of volunteers.</p>
+<p>In the “User Management” pane, add each of the users who will be using JMS and assign them permissions. A general outline of roles and permissions is given below:</p>
+<ul class="simple">
+<li><p><strong>FTA</strong> - Admin, FTA</p></li>
+<li><p><strong>FTAA</strong> - FTAA</p></li>
+<li><p><strong>Head Referee</strong> - Head Referee</p></li>
+<li><p><strong>Referee and Scorers</strong> - Scoring, Estop</p></li>
+<li><p><strong>CSA</strong> - Ticketing</p></li>
+<li><p><strong>AV</strong> - ManageAudience</p></li>
+</ul>
+<p>Game Announcers and the Audience Display can access their JMS screens without authentication.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In some games, such as CRESCENDO, Human Players may require a tablet to activate certain field elements. In this case, make a generic HPBlue and HPRed account with <em>only</em> the HumanPlayerBlue or HumanPlayerRed role!</p>
+<p>You’ll have to login to their account on their tablets, so make sure when you do that you set a memorable (but hard to guess) PIN.</p>
+</div>
+<img alt="../../_images/add-user.png" src="../../_images/add-user.png" />
+<p>Give each user their username and instruct them to login as soon as they can to set their PIN. For their first-time login, they can simply login with their username and a blank PIN.</p>
+</section>
+<section id="event-details">
+<h2>Event Details<a class="headerlink" href="#event-details" title="Permalink to this heading"></a></h2>
+<p>Step 2 is to configure your event. The “Event Details” pane contains everything you need to set in regards to details about the event itself.</p>
+<img alt="../../_images/event-details.png" src="../../_images/event-details.png" />
+<p><strong>Event Code</strong> is the sync code used for your event. If your event is registered on TheBlueAlliance (TBA), this will be the same code in the URL of your event. If you’re running a scrimmage or an event that doesn’t sync to TBA, you can leave this blank or make one up in the format &lt;year&gt;&lt;code&gt; (e.g. 2024auwarp). Just make sure it’s not already taken!</p>
+<p><strong>Event Name</strong> is the event name that will display on all audience screens - make it short and sweet!</p>
+<p><strong>Webcast URLs</strong> are the URLs to where the event is being livestreamed, if any. These will be sync’d with TBA if configured.</p>
+<p><strong>Playoff Settings</strong> describe your playoff format. For most competitions post-2023, this should be a Double Bracket. Configure the number of alliances you wish to have, what awards you want to give out during the breaks, how long per award, and the minimum break between rounds.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You will have to enter the awards first on the “Manage Awards” pane. You don’t have to do this <em>immediately</em>, but you should do it before the playoff schedule gets generated.</p>
+</div>
+<p><strong>AV Settings</strong> are at the bottom and configure the look-and-feel of the Audience Display. Set these in collaboration with your A/V team.</p>
+</section>
+<section id="team-setup">
+<h2>Team Setup<a class="headerlink" href="#team-setup" title="Permalink to this heading"></a></h2>
+<p>Next up is setting up the teams who will compete in your tournament. In the “Manage Teams” pane, you can either enter team details one-by-one or load them from a prepopulated CSV prepared by your event coordination team.</p>
+<p>You can edit any team details here at any point during the tournament, but you can only add and delete prior to generating the qualification schedule.</p>
+<p>There’s also an “Update from TBA” button for convenience, which will populate team name, affiliation, and location if they exist on TBA.</p>
+</section>
+<section id="manage-schedule">
+<h2>Manage Schedule<a class="headerlink" href="#manage-schedule" title="Permalink to this heading"></a></h2>
+<p>Next up is configuring the event schedule. JMS provides a Google Calendar-esque interface for creating your schedule. You can go in as much or as little detail as you like, but the key parts are the Qualification match blocks and the Playoff match blocks.</p>
+<img alt="../../_images/manage-schedule.png" src="../../_images/manage-schedule.png" />
+<p>Click-and-drag to enter new blocks. For Qualification matches, you will have to specify a “cycle time” - the time between the start of one match and the start of the following match. Set this value in consultation with your FTA. Most regionals set this to be 7-8 minutes, however for most smaller offseasons 11 minutes is usually recommended.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Playoff matches will simply grow to the time alloted, so if you’re finding your cycle time to be too rapid - try expanding your playoff blocks.</p>
+</div>
+<p>The top of the screen will show you the total amount of quals matches that will be played, as well as the amount of quals matches per team.</p>
+<a class="reference internal image-reference" href="../../_images/schedule-counter.png"><img alt="../../_images/schedule-counter.png" src="../../_images/schedule-counter.png" style="width: 244.0px; height: 61.5px;" /></a>
+</section>
+<section id="qualification-schedule">
+<h2>Qualification Schedule<a class="headerlink" href="#qualification-schedule" title="Permalink to this heading"></a></h2>
+<p>The next tab is to generate the Qualification Schedule. Hit the “Generate Qualification Schedule” button and configure your parameters.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Usually, you can leave these parameters at their default. Most schedules will generate in a matter of seconds, but you can optionally increase these values if you want to be extra sure your schedules are balanced.</p>
+</div>
+<p>After the schedule is generated, you can delete any unplayed matches. Once a match is played, however, it cannot be deleted.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>If you change your schedule blocks / time allocation for qualification matches, you can update the quals schedule in one of two ways:</p>
+<p><strong>Keep what’s been generated and just fill the extra space</strong> by clicking “Generate Qualification Schedule”, or</p>
+<p><strong>Scrap the unplayed matches and regenerate from scratch</strong> by clicking “Delete Unplayed” first.</p>
+</div>
+<img alt="../../_images/quals-gen.png" src="../../_images/quals-gen.png" />
+</section>
+<section id="alliance-selection-and-playoffs">
+<h2>Alliance Selection and Playoffs<a class="headerlink" href="#alliance-selection-and-playoffs" title="Permalink to this heading"></a></h2>
+<p>At the conclusion of Qualifications, you can start the Alliance Selections process by going to the “Alliance Selections” tab.</p>
+<p>Here, you can move add teams to and move teams between alliances. There’s a handy “Promote Captains” button for when alliances pick another alliance’s captain, which will the subsequent alliance captains up in rank and invite the next ranked team.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Any changes you make here will show on the Audience Display immediately!</p>
+</div>
+<p>The Playoff Schedule should manage itself from this point forth, however you can manually force an update by going to the “Playoff Schedule” tab and selecting “Update Playoff Schedule”.</p>
+</section>
+<section id="assign-awards">
+<h2>Assign Awards<a class="headerlink" href="#assign-awards" title="Permalink to this heading"></a></h2>
+<p>You can create and assign awards in the “Manage Awards” pane. To create a new award, simply type its name into the “New Award Name” field and hit “Enter”. From here, you can also assign awardees.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The WINNER and FINALIST awards will be automatically generated, so there’s no need to add them in here.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Make sure your screen is clear from prying eyes whilst on this pane!</p>
+</div>
+<img alt="../../_images/awards.png" src="../../_images/awards.png" />
+<p>Awards can then be displayed from the “Audience Display Controls” tile on the homepage.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="SCOREKEEPER" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../referee-scorer/index.html" class="btn btn-neutral float-right" title="REFEREE / SCORER" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Grapple Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
